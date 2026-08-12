@@ -71,7 +71,7 @@ export default function FormularioQuejaPublicaPage() {
   if (estado.status === 'invalid') {
     return (
       <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <div className="w-full max-w-md rounded-lg border bg-white p-8 text-center" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
           <div className="mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#dc3545', fontSize: '20px' }}>!</div>
           <h2 className="font-bold m-0" style={{ fontSize: '1.15rem', color: '#212529' }}>Enlace no válido</h2>
           <p className="mt-2 text-sm" style={{ color: '#6c757d' }}>Este enlace no es válido o ya no está disponible.</p>
@@ -107,7 +107,7 @@ export default function FormularioQuejaPublicaPage() {
   if (folioRegistrado) {
     return (
       <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-        <div className="w-full max-w-md rounded-xl bg-white p-8 text-center" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+        <div className="w-full max-w-md rounded-lg border bg-white p-8 text-center" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
           <div className="mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#198754', fontSize: '20px' }}>✓</div>
           <h2 className="font-bold m-0" style={{ fontSize: '1.15rem', color: '#212529' }}>Queja registrada</h2>
           <p className="mt-2 text-sm" style={{ color: '#6c757d' }}>
@@ -122,7 +122,7 @@ export default function FormularioQuejaPublicaPage() {
 
   return (
     <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-      <div className="w-full max-w-lg rounded-xl bg-white p-8" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <div className="w-full max-w-lg rounded-lg border bg-white p-8" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
         <div className="mb-5 text-center">
           <div className="mx-auto mb-3 flex items-center justify-center rounded-lg font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#0d6efd', fontSize: '20px' }}>E</div>
           <h2 className="font-bold m-0" style={{ fontSize: '1.25rem', color: '#212529' }}>Registro de queja</h2>

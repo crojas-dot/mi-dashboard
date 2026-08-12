@@ -8,32 +8,34 @@ interface StatCardProps {
   onClick?: () => void
 }
 
-const colorClasses = {
-  blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
-  green: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-  red: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-  purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+const colorStyles: Record<string, { color: string; bg: string }> = {
+  blue: { color: '#0d6efd', bg: '#e7f1ff' },
+  amber: { color: '#e0a800', bg: '#fff8e1' },
+  green: { color: '#198754', bg: '#e8f5ee' },
+  red: { color: '#dc3545', bg: '#fdeeee' },
+  purple: { color: '#6f42c1', bg: '#f1ecf9' },
 }
 
 export default function StatCard({ title, value, icon, color, subtitle, trend, onClick }: StatCardProps) {
+  const cs = colorStyles[color] || colorStyles.blue
   return (
     <div
-      className={`rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-900 ${onClick ? 'cursor-pointer' : ''}`}
+      className={`rounded-lg border bg-white ${onClick ? 'cursor-pointer' : ''}`}
+      style={{ borderColor: '#dee2e6', padding: '1rem' }}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
-          {subtitle && <p className="mt-1 text-xs text-gray-400">{subtitle}</p>}
+          <p className="mb-1 font-medium" style={{ color: '#6c757d', fontSize: '0.8125rem' }}>{title}</p>
+          <p className="font-bold leading-none" style={{ color: '#212529', fontSize: '1.75rem' }}>{value}</p>
+          {subtitle && <p className="mt-1.5" style={{ color: '#6c757d', fontSize: '0.75rem' }}>{subtitle}</p>}
           {trend && (
-            <p className={`mt-1 text-xs font-medium ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`mt-1 font-medium ${trend.positive ? '' : ''}`} style={{ color: trend.positive ? '#198754' : '#dc3545', fontSize: '0.75rem' }}>
               {trend.value}
             </p>
           )}
         </div>
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-lg ${colorClasses[color]}`}>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: cs.bg, color: cs.color }}>
           {icon}
         </div>
       </div>

@@ -42,29 +42,21 @@ export function useCrearQuejaComentario() {
   return useMutation({
     mutationFn: async ({
       quejaId,
-      usuarioId,
       comentario,
       tipo,
       visibleCliente,
     }: {
       quejaId: string
-      usuarioId?: string | null
       comentario: string
       tipo: 'interno' | 'cliente'
       visibleCliente: boolean
     }) => {
-      const { data, error } = await supabase
-        .from('quejas_comentarios')
-        .insert([{
-          queja_id: quejaId,
-          usuario_id: usuarioId || null,
-          comentario,
-          tipo,
-          visible_cliente: visibleCliente,
-          fecha: new Date().toISOString(),
-        }])
-        .select()
-        .single()
+      const { data, error } = await supabase.rpc('agregar_comentario_queja', {
+        p_queja_id: quejaId,
+        p_comentario: comentario.trim(),
+        p_tipo: tipo,
+        p_visible_cliente: visibleCliente,
+      })
       if (error) throw error
       return data as QuejaComentario
     },

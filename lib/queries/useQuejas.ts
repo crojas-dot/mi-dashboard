@@ -50,9 +50,9 @@ export function useQuejas(params: QuejasParams = {}) {
     queryKey: quejasKey(params),
     queryFn: () => fetchQuejas(params),
     placeholderData: keepPreviousData,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchInterval: 30000,
+    staleTime: Infinity,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
   })
 }
 
@@ -137,8 +137,8 @@ export function useQuejasEstadisticas() {
   return useQuery({
     queryKey: quejasEstadisticasKey,
     queryFn: fetchQuejasEstadisticas,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchInterval: 30000,
+    staleTime: Infinity,
+    gcTime: 30 * 60 * 1000,
+    retry: 1,
   })
 }

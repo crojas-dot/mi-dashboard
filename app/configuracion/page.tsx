@@ -13,6 +13,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
+import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/Modal'
 
 type Tab = 'catalogos' | 'sla' | 'general' | 'formularios'
@@ -135,6 +136,10 @@ export default function ConfiguracionPage() {
 
   return (
     <div className="flex h-full flex-col">
+      <PageHeader title="Configuración" description="Catálogos, SLA y configuraciones del sistema">
+        <Button size="sm" variant="secondary" onClick={() => { invalidateCatalogos(); invalidateSLA(); invalidateConfigs() }}><RotateCcw className="h-3.5 w-3.5" /> Recargar</Button>
+      </PageHeader>
+
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
            {tabs.map((t) => {
@@ -147,7 +152,6 @@ export default function ConfiguracionPage() {
             )
           })}
         </div>
-        <Button size="sm" variant="secondary" onClick={() => { invalidateCatalogos(); invalidateSLA(); invalidateConfigs() }}><RotateCcw className="h-3.5 w-3.5" /> Recargar</Button>
       </div>
 
       <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
@@ -182,10 +186,10 @@ export default function ConfiguracionPage() {
               </div>
             )}
 
-            <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#2c3e50' }}>
+                  <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Valor</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Color</th>
                     <th className="px-3 py-2 text-left font-semibold text-white w-16">Orden</th>
@@ -235,10 +239,10 @@ export default function ConfiguracionPage() {
               </div>
             )}
 
-            <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#2c3e50' }}>
+                  <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Proceso</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Prioridad</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Alerta (días)</th>
@@ -274,10 +278,10 @@ export default function ConfiguracionPage() {
               </button>
             </div>
 
-            <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#2c3e50' }}>
+                  <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Nombre</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Estado</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Creado</th>
@@ -356,10 +360,10 @@ export default function ConfiguracionPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
               <table className="w-full text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#2c3e50' }}>
+                  <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Clave</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Valor</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Descripción</th>

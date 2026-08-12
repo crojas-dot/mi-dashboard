@@ -40,7 +40,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
-      <div className="w-full max-w-sm rounded-xl bg-white p-8" style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+      <div className="w-full max-w-sm rounded-lg border bg-white p-8" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 flex items-center justify-center rounded-lg font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#0d6efd', fontSize: '20px' }}>E</div>
           <h2 className="font-bold m-0" style={{ fontSize: '1.25rem', color: '#212529' }}>ECA-QMS</h2>

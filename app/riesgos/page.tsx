@@ -38,9 +38,9 @@ export default function RiesgosPage() {
 
   const colorCelda = (p: number, i: number) => {
     const m = p * i
-    if (m <= 2) return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-    if (m <= 4) return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400'
-    return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+    if (m <= 2) return { bg: '#d1e7dd', color: '#0f5132' }
+    if (m <= 4) return { bg: '#fff3cd', color: '#664d03' }
+    return { bg: '#f8d7da', color: '#842029' }
   }
 
   return (
@@ -49,8 +49,8 @@ export default function RiesgosPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nuevo Riesgo</Button>
       </PageHeader>
 
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-        <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">Matriz de Riesgos 3x3</h3>
+      <div className="rounded-lg border bg-white p-4" style={{ borderColor: '#dee2e6' }}>
+        <h3 className="mb-4 text-sm font-semibold" style={{ color: '#212529' }}>Matriz de Riesgos 3x3</h3>
         <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
           <div className="text-gray-500">Prob \ Imp</div>
           {[1, 2, 3].map((i) => <div key={i} className="text-gray-500">Impacto {i}</div>)}
@@ -59,8 +59,9 @@ export default function RiesgosPage() {
               <div className="text-gray-500">Prob. {p}</div>
               {[1, 2, 3].map((i) => {
                 const cell = matriz.find((m) => m.p === p && m.i === i)
+                const c = colorCelda(p, i)
                 return (
-                  <div key={`${p}-${i}`} className={`flex flex-col items-center justify-center rounded-lg p-3 ${colorCelda(p, i)}`}>
+                  <div key={`${p}-${i}`} className="flex flex-col items-center justify-center rounded p-3" style={{ backgroundColor: c.bg, color: c.color }}>
                     <span className="text-lg font-bold">{cell?.items.length || 0}</span>
                     <span className="text-[10px]">riesgos</span>
                   </div>

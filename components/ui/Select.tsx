@@ -12,8 +12,8 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
       <div className="relative">
         <select
           ref={ref}
-          className={`appearance-none rounded-lg border border-gray-300 bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${className}`}
-          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', cursor: 'pointer', color: '#212529', ...style }}
+          className={`appearance-none rounded-lg border bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${className}`}
+          style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', cursor: 'pointer', color: '#212529', borderColor: '#dee2e6', ...style }}
           {...props}
         >
           {children}

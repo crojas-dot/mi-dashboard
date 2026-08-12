@@ -38,7 +38,6 @@ export default function Header() {
 
   const title = titles[pathname] || 'QMS'
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
-
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
   const [sonidoSeleccionado, setSonidoSeleccionado] = useState<string>(user?.notif_sonido_id || SONIDO_DEFAULT)
@@ -145,7 +144,11 @@ export default function Header() {
 
   return (
     <header className="flex items-center justify-between px-5" style={{ height: '56px', backgroundColor: '#fff', borderBottom: '1px solid #dee2e6' }}>
-      <h1 className="font-bold m-0" style={{ fontSize: '1.75rem', color: '#212529' }}>{title}</h1>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center rounded font-bold text-white shrink-0" style={{ width: '26px', height: '26px', backgroundColor: '#0d6efd', fontSize: '11px' }}>E</div>
+        <span className="font-semibold" style={{ color: '#343a40', fontSize: '0.95rem' }}>ECA-QMS</span>
+        <span className="hidden md:inline text-sm" style={{ color: '#6c757d', fontWeight: 400 }}>/ {title}</span>
+      </div>
 
       <div ref={rootRef} className="flex items-center gap-2">
         <div className="relative">
@@ -167,7 +170,7 @@ export default function Header() {
 
           {menuAbierto === 'notif' && (
             <>
-              <div className="absolute right-0 z-50 mt-2 w-80 rounded-xl border border-gray-200 bg-white shadow-lg" style={{ top: '100%' }}>
+              <div className="absolute right-0 z-50 mt-2 w-80 rounded-lg border bg-white" style={{ top: '100%', borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
                 <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
                   <p className="text-sm font-medium text-gray-900">Notificaciones</p>
                   <div className="flex items-center gap-1.5">
@@ -255,7 +258,7 @@ export default function Header() {
           </button>
 
           {menuAbierto === 'user' && (
-            <div className="absolute right-0 z-50 mt-2 w-64 rounded-xl border border-gray-200 bg-white shadow-lg" style={{ top: '100%' }}>
+            <div className="absolute right-0 z-50 mt-2 w-64 rounded-lg border bg-white" style={{ top: '100%', borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
               <div className="border-b border-gray-100 px-4 py-3">
                 <p className="m-0 text-sm font-semibold truncate" style={{ color: '#212529' }}>{user?.nombre || 'Usuario'}</p>
                 <p className="m-0 text-xs truncate" style={{ color: '#6c757d' }}>{user?.email || ''}</p>

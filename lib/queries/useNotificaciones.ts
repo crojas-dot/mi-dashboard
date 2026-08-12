@@ -13,7 +13,10 @@ export function useNotificaciones(userId: string, enabled = true) {
     queryKey: notificacionesKey(userId),
     queryFn: () => listarNotificaciones(userId),
     enabled: !!userId && enabled,
-    refetchInterval: 15000,
+    staleTime: Infinity,
+    gcTime: 5 * 60 * 1000,
+    refetchInterval: 60000,
+    retry: 1,
   })
 }
 

@@ -14,10 +14,17 @@ interface ButtonProps {
 const base = 'inline-flex items-center justify-center gap-2 font-medium transition-all focus:outline-none disabled:opacity-50 disabled:pointer-events-none'
 
 const variantStyles: Record<string, React.CSSProperties> = {
-  primary: { backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '6px' },
-  secondary: { backgroundColor: '#fff', color: '#6c757d', border: '1px solid #dee2e6', borderRadius: '6px' },
-  danger: { backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '6px' },
-  ghost: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', borderRadius: '6px' },
+  primary: { backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '4px' },
+  secondary: { backgroundColor: '#fff', color: '#6c757d', border: '1px solid #dee2e6', borderRadius: '4px' },
+  danger: { backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '4px' },
+  ghost: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', borderRadius: '4px' },
+}
+
+const hoverStyles: Record<string, React.CSSProperties> = {
+  primary: { backgroundColor: '#0b5ed7' },
+  secondary: { backgroundColor: '#f8f9fa' },
+  danger: { backgroundColor: '#dc3545', color: '#fff' },
+  ghost: { backgroundColor: '#f8f9fa' },
 }
 
 const sizeStyles: Record<string, React.CSSProperties> = {
@@ -37,14 +44,13 @@ export default function Button({ variant = 'primary', size = 'md', loading, disa
       onClick={onClick}
       onMouseEnter={(e) => {
         if (!disabled) {
-          const t = e.currentTarget
-          if (variant === 'primary') t.style.backgroundColor = '#0b5ed7'
-          else t.style.backgroundColor = '#f8f9fa'
+          const h = hoverStyles[variant]
+          if (h) Object.assign(e.currentTarget.style, h)
         }
       }}
       onMouseLeave={(e) => {
         if (!disabled) {
-          e.currentTarget.style.backgroundColor = variantStyles[variant].backgroundColor || '#0d6efd'
+          Object.assign(e.currentTarget.style, variantStyles[variant])
         }
       }}
     >

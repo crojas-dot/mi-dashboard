@@ -1,6 +1,6 @@
 export function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg shadow-sm" style={{ border: '1px solid #dee2e6' }}>
+    <div className="overflow-x-auto rounded-lg" style={{ border: '1px solid #dee2e6' }}>
       <table className="w-full text-left" style={{ fontSize: '0.85rem' }}>{children}</table>
     </div>
   )

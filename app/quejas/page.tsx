@@ -9,6 +9,7 @@ import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
+import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import Button from '@/components/ui/Button'
 import StatCard from '@/components/StatCard'
@@ -91,6 +92,12 @@ export default function QuejasPage() {
 
   return (
     <div className="flex h-full flex-col">
+      <PageHeader title="Quejas" description="Registro y seguimiento de quejas">
+        <button onClick={() => setNuevaOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-white hover:bg-blue-700 shrink-0" style={{ backgroundColor: '#0d6efd', height: '38px', padding: '0 14px', border: 'none', cursor: 'pointer' }}>
+          <Plus className="h-4 w-4" /> Nueva queja
+        </button>
+      </PageHeader>
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4 shrink-0">
         <StatCard
           title="Resueltas a tiempo"
@@ -141,18 +148,15 @@ export default function QuejasPage() {
           <option value="">Prioridad</option>
           {prioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
         </Select>
-        <button onClick={() => setNuevaOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-white transition-colors hover:bg-blue-700 shrink-0" style={{ backgroundColor: '#0d6efd', height: '38px', padding: '0 14px', border: 'none', cursor: 'pointer' }}>
-          <Plus className="h-4 w-4" /> Nueva
-        </button>
       </div>
 
-      <div ref={tableRef} className="flex-1 overflow-auto rounded-lg border border-gray-200 shadow-sm" style={{ minHeight: 0 }}>
+      <div ref={tableRef} className="flex-1 overflow-auto rounded-lg border" style={{ minHeight: 0, borderColor: '#dee2e6' }}>
         {loading ? (
           <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
         ) : (
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="sticky top-0 z-10" style={{ backgroundColor: '#2c3e50' }}>
+              <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
@@ -203,8 +207,8 @@ export default function QuejasPage() {
         </div>
       )}
 
-      <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} estados={estados} prioridades={prioridades} />
-      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={() => { invalidateQuejas() }} estados={estados} prioridades={prioridades} categorias={categorias} />
+      <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} prioridades={prioridades} />
+      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={() => { invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />
     </div>
   )
 }

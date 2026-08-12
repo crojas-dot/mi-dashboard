@@ -3,6 +3,7 @@
 import { useDashboard } from '@/lib/queries/useDashboard'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import PageHeader from '@/components/ui/PageHeader'
 
 const estadoBadge: Record<string, string> = {
   Abierta: 'red', Alta: 'red', 'En Proceso': 'amber', Planificada: 'blue',
@@ -17,11 +18,11 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h3 className="font-bold mb-4" style={{ color: '#212529', fontSize: '1.75rem' }}>Panel de Control General</h3>
+      <PageHeader title="Dashboard" description="Panel de control general" />
 
       <div className="grid grid-cols-4 gap-3 mb-4">
         {indicadores.map((ind) => (
-          <a key={ind.label} href={ind.url} className="block text-white no-underline rounded-lg shadow-sm transition-shadow hover:shadow-md" style={{ backgroundColor: ind.color }}>
+          <a key={ind.label} href={ind.url} className="block text-white no-underline rounded-lg" style={{ backgroundColor: ind.color }}>
             <div className="p-4">
               <h6 style={{ fontSize: '1rem', fontWeight: 400, margin: 0 }}>{ind.label}</h6>
               <h2 className="font-bold m-0" style={{ fontSize: '2rem' }}>{ind.valor}</h2>

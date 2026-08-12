@@ -206,9 +206,9 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
             {[1, 2].map((p) => (
               <div key={p} className="flex items-center gap-1.5">
                 <div
-                  className="flex items-center justify-center rounded-full text-xs font-semibold text-white"
+                  className="flex items-center justify-center text-xs font-semibold text-white"
                   style={{
-                    width: '22px', height: '22px',
+                    width: '22px', height: '22px', borderRadius: '4px',
                     backgroundColor: paso >= p ? '#0d6efd' : '#ced4da',
                   }}
                 >
@@ -235,18 +235,18 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                     <button
                       key={m.value}
                       onClick={() => setModulo(m.value)}
-                      className={`flex items-center gap-2.5 rounded-xl border p-3 text-left text-sm transition-all ${
-                        selected ? 'border-2 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+                      className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-sm transition-all ${
+                        selected ? 'border-2' : 'hover:bg-gray-50'
                       }`}
                       style={{
                         backgroundColor: selected ? '#0d6efd' : '#fff',
-                        borderColor: selected ? '#0d6efd' : undefined,
+                        borderColor: selected ? '#0d6efd' : '#dee2e6',
                         cursor: 'pointer',
                       }}
                     >
                       <div
                         className="flex items-center justify-center rounded-lg shrink-0"
-                        style={{ width: '34px', height: '34px', backgroundColor: selected ? 'rgba(255,255,255,0.2)' : '#f0f4f8' }}
+                        style={{ width: '34px', height: '34px', backgroundColor: selected ? 'rgba(255,255,255,0.2)' : '#e7f1ff' }}
                       >
                         <Icon style={{ width: '16px', height: '16px', color: selected ? '#fff' : '#0d6efd' }} />
                       </div>
@@ -391,7 +391,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                   <div>
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>Resumen por Estado</h3>
                     <div className="flex gap-3 flex-wrap">
-                      <div className="rounded-lg border border-gray-200 px-4 py-2 text-center bg-white" style={{ minWidth: '80px' }}>
+                      <div className="rounded-lg border px-4 py-2 text-center bg-white" style={{ borderColor: '#dee2e6', minWidth: '80px' }}>
                         <p className="text-2xl font-bold m-0" style={{ color: '#0d6efd' }}>{resultados.length}</p>
                         <p className="text-xs m-0" style={{ color: '#6c757d' }}>Total</p>
                       </div>
@@ -401,7 +401,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                           return acc
                         }, {})
                       ).map(([estado, count]) => (
-                        <div key={estado} className="rounded-lg border border-gray-200 px-4 py-2 text-center bg-white" style={{ minWidth: '80px' }}>
+                        <div key={estado} className="rounded-lg border px-4 py-2 text-center bg-white" style={{ borderColor: '#dee2e6', minWidth: '80px' }}>
                           <p className="text-2xl font-bold m-0" style={{ color: '#212529' }}>{count}</p>
                           <p className="text-xs m-0" style={{ color: '#6c757d' }}>{estado}</p>
                         </div>
@@ -415,14 +415,14 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>
                       Distribución por {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                     </h3>
-                    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#f8f9fa' }}>
-                            <th className="px-3 py-2 text-left font-semibold" style={{ color: '#212529' }}>
+                          <tr style={{ backgroundColor: '#343a40' }}>
+                            <th className="px-3 py-2 text-left font-semibold text-white">
                               {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                             </th>
-                            <th className="px-3 py-2 text-right font-semibold" style={{ color: '#212529' }}>Cantidad</th>
+                            <th className="px-3 py-2 text-right font-semibold text-white">Cantidad</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -447,12 +447,12 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                 {incluir.tabla && (
                   <div>
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>Registros</h3>
-                    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#f8f9fa' }}>
+                          <tr style={{ backgroundColor: '#343a40' }}>
                             {columnsPorModulo[modulo]?.map((col) => (
-                              <th key={col.key} className="px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ color: '#212529' }}>
+                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
                                 {col.label}
                               </th>
                             ))}
@@ -485,12 +485,12 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                 {incluir.vencidos && resultados.length > 0 && campoVencido[modulo] && (
                   <div>
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#dc3545' }}>Registros Vencidos / Por Vencer</h3>
-                    <div className="rounded-lg border border-red-200 overflow-hidden bg-white">
+                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dc3545' }}>
                       <table className="w-full text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#fef2f2' }}>
+                          <tr style={{ backgroundColor: '#343a40' }}>
                             {columnsPorModulo[modulo]?.map((col) => (
-                              <th key={col.key} className="px-3 py-2 text-left font-semibold whitespace-nowrap" style={{ color: '#dc3545' }}>
+                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
                                 {col.label}
                               </th>
                             ))}

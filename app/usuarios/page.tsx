@@ -71,9 +71,9 @@ export default function UsuariosPage() {
 
   const stats: StatCard[] = [
     { label: 'Usuarios', value: total, icon: <Users className="h-5 w-5" />, color: '#0d6efd', bg: '#e7f1ff' },
-    { label: 'Activos', value: activos, icon: <UserCheck className="h-5 w-5" />, color: '#15803d', bg: '#f0fdf4' },
-    { label: 'Inactivos', value: inactivos, icon: <UserX className="h-5 w-5" />, color: '#dc3545', bg: '#fff5f5' },
-    { label: 'Administradores', value: admins, icon: <ShieldCheck className="h-5 w-5" />, color: '#6d28d9', bg: '#f5f3ff' },
+    { label: 'Activos', value: activos, icon: <UserCheck className="h-5 w-5" />, color: '#198754', bg: '#e8f5ee' },
+    { label: 'Inactivos', value: inactivos, icon: <UserX className="h-5 w-5" />, color: '#dc3545', bg: '#fdeeee' },
+    { label: 'Administradores', value: admins, icon: <ShieldCheck className="h-5 w-5" />, color: '#6f42c1', bg: '#f1ecf9' },
   ]
 
   function abrirCrear() {
@@ -156,7 +156,7 @@ export default function UsuariosPage() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3 rounded-xl border p-4" style={{ borderColor: '#e9ecef', backgroundColor: '#fff' }}>
+          <div key={s.label} className="flex items-center gap-3 rounded-lg border p-4" style={{ borderColor: '#dee2e6', backgroundColor: '#fff' }}>
             <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: s.bg, color: s.color }}>{s.icon}</div>
             <div>
               <p className="m-0 text-2xl font-bold leading-none" style={{ color: '#212529' }}>{s.value}</p>

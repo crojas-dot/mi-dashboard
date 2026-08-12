@@ -42,10 +42,10 @@ export default function Modal({ open, onClose, title, size = 'md', children }: M
       style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
-      <div className={`flex w-full ${sizes[size]} max-h-[90vh] flex-col bg-white shadow-xl`} style={{ borderRadius: '12px', border: 'none' }}>
+      <div className={`flex w-full ${sizes[size]} max-h-[90vh] flex-col bg-white`} style={{ borderRadius: '0.375rem', border: 'none' }}>
         <div
-          className="flex shrink-0 items-center justify-between rounded-t-xl px-4 py-3 text-white"
-          style={{ backgroundColor: '#212529', borderTopLeftRadius: '12px', borderTopRightRadius: '12px' }}
+          className="flex shrink-0 items-center justify-between px-4 py-3 text-white"
+          style={{ backgroundColor: '#212529', borderTopLeftRadius: '0.375rem', borderTopRightRadius: '0.375rem' }}
         >
           <h5 className="m-0 font-semibold" style={{ fontSize: '14px' }}>{title}</h5>
           <button
@@ -61,7 +61,7 @@ export default function Modal({ open, onClose, title, size = 'md', children }: M
             </svg>
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 rounded-b-xl" style={{ backgroundColor: '#f8f9fa' }}>{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 rounded-b-lg" style={{ backgroundColor: '#f8f9fa' }}>{children}</div>
       </div>
     </div>
   )
