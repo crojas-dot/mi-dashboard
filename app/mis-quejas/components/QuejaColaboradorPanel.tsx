@@ -117,7 +117,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
         <div className="flex items-center text-sm">
           <button
             type="button"
-            onClick={() => { setIsExpanded(false); onClose() }}
+            onClick={onClose}
             className="cursor-pointer rounded px-2 py-1 font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
             Mis Quejas

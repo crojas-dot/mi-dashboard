@@ -40,23 +40,20 @@ export default function MisQuejasPage() {
   }
 
   return (
-    <div className="relative flex h-full w-full flex-col">
-      <style dangerouslySetInnerHTML={{ __html: `
-        .custom-fat-scrollbar::-webkit-scrollbar { height: 18px !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-track { background: #f8fafc !important; border-radius: 10px !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; border-radius: 10px !important; border: 3px solid #f8fafc !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8 !important; }
-      ` }} />
+    <div className="flex h-full w-full flex-col">
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
+      {/* Tabla a ancho completo (nunca se mueve ni encoge).
+          Con el panel abierto se recorta 500px a la derecha (las columnas quedan bajo el panel)
+          y aparece el scrollbar horizontal único para desplazarlas. */}
       <div
-        className="flex-1 min-w-0 custom-fat-scrollbar w-full shrink-0 select-none overflow-x-auto rounded-lg border pb-4"
-        style={{ borderColor: '#dee2e6' }}
+        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-lg border pb-4 ${panelOpen ? '' : 'monday-scroll-no-x'}`}
+        style={{ borderColor: '#dee2e6', marginRight: panelOpen ? '500px' : undefined }}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full min-w-max select-text text-left text-sm">
+            <table className={`w-full text-left text-sm select-text ${panelOpen ? 'min-w-[calc(100%+500px)]' : 'min-w-[1200px]'}`}>
               <thead>
                 <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
@@ -66,7 +63,6 @@ export default function MisQuejasPage() {
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Estado</th>
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Límite investigación</th>
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Fecha</th>
-                  <th className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></th>
                 </tr>
               </thead>
               <tbody>
@@ -84,7 +80,6 @@ export default function MisQuejasPage() {
                         {q.fecha_limite_investigacion ? new Date(q.fecha_limite_investigacion).toLocaleDateString('es-ES') : '—'}
                       </td>
                       <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
-                      <td className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></td>
                     </tr>
                   ))
                 )}
