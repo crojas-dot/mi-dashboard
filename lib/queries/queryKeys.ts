@@ -11,4 +11,6 @@ export const queryKeys = {
   reuniones: ['reuniones'] as const,
   procesos: ['procesos'] as const,
   usuarios: ['usuarios'] as const,
+  permisos: ['permisos'] as const,
+  quejasActividad: ['quejas_actividad'] as const,
 }

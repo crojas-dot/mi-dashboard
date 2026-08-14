@@ -416,7 +416,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                       Distribución por {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                     </h3>
                     <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
-                      <table className="w-full text-sm">
+                      <table className="w-full select-text text-sm">
                         <thead>
                           <tr style={{ backgroundColor: '#343a40' }}>
                             <th className="px-3 py-2 text-left font-semibold text-white">
@@ -448,7 +448,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                   <div>
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>Registros</h3>
                     <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
-                      <table className="w-full text-sm">
+                      <table className="w-full select-text text-sm">
                         <thead>
                           <tr style={{ backgroundColor: '#343a40' }}>
                             {columnsPorModulo[modulo]?.map((col) => (
@@ -486,7 +486,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                   <div>
                     <h3 className="text-sm font-semibold mb-2" style={{ color: '#dc3545' }}>Registros Vencidos / Por Vencer</h3>
                     <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dc3545' }}>
-                      <table className="w-full text-sm">
+                      <table className="w-full select-text text-sm">
                         <thead>
                           <tr style={{ backgroundColor: '#343a40' }}>
                             {columnsPorModulo[modulo]?.map((col) => (

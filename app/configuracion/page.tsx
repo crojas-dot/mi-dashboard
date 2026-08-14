@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, ChevronDown, Check, X, Link as LinkIcon } from 'lucide-react'
+import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, ChevronDown, Check, X, Link as LinkIcon, ShieldCheck, Eye } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -15,8 +15,10 @@ import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/Modal'
+import RolesAccesos from './components/RolesAccesos'
+import ModoVistaActiva from './components/ModoVistaActiva'
 
-type Tab = 'catalogos' | 'sla' | 'general' | 'formularios'
+type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas'
 
 interface ConfigGeneral { clave: string; valor: any; descripcion: string; categoria: string }
 
@@ -122,6 +124,8 @@ export default function ConfiguracionPage() {
     { key: 'sla', label: 'SLA y Plazos', icon: Clock },
     { key: 'general', label: 'General', icon: SettingsIcon },
     { key: 'formularios', label: 'Formularios', icon: LinkIcon },
+    { key: 'roles', label: 'Roles y Accesos', icon: ShieldCheck },
+    { key: 'vistas', label: 'Vistas', icon: Eye },
   ]
 
   const { user, initialized } = useAuthStore()
@@ -187,7 +191,7 @@ export default function ConfiguracionPage() {
             )}
 
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
-              <table className="w-full text-sm">
+              <table className="w-full select-text text-sm">
                 <thead>
                   <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Valor</th>
@@ -240,7 +244,7 @@ export default function ConfiguracionPage() {
             )}
 
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
-              <table className="w-full text-sm">
+              <table className="w-full select-text text-sm">
                 <thead>
                   <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Proceso</th>
@@ -279,7 +283,7 @@ export default function ConfiguracionPage() {
             </div>
 
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
-              <table className="w-full text-sm">
+              <table className="w-full select-text text-sm">
                 <thead>
                   <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Nombre</th>
@@ -358,10 +362,14 @@ export default function ConfiguracionPage() {
               </div>
             </Modal>
           </div>
+        ) : tab === 'roles' ? (
+          <RolesAccesos />
+        ) : tab === 'vistas' ? (
+          <ModoVistaActiva />
         ) : (
           <div className="space-y-4">
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
-              <table className="w-full text-sm">
+              <table className="w-full select-text text-sm">
                 <thead>
                   <tr style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2 text-left font-semibold text-white">Clave</th>

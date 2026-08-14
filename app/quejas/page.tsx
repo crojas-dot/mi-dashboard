@@ -64,7 +64,7 @@ export default function QuejasPage() {
   const prioridadVariant: Record<string, string> = { Baja: 'blue', Media: 'amber', Alta: 'orange', Crítica: 'red' }
   const estadoVariant: Record<string, string> = {
     Recibido: 'gray', 'No Procede': 'red', 'En Investigación': 'amber',
-    Resuelto: 'green', Finalizado: 'gray',
+    'Pendiente de Revisión GC': 'purple', Resuelto: 'green', Finalizado: 'gray',
     Abierta: 'blue', 'En Proceso': 'orange', Cerrada: 'green',
   }
 
@@ -154,7 +154,7 @@ export default function QuejasPage() {
         {loading ? (
           <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
         ) : (
-          <table className="w-full text-left text-sm">
+          <table className="w-full select-text text-left text-sm">
             <thead>
               <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>

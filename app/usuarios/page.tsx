@@ -18,7 +18,11 @@ import PasswordModal from '@/components/usuarios/PasswordModal'
 import ResetPasswordModal from '@/components/usuarios/ResetPasswordModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
-const roles = ['admin', 'calidad'] as const
+const roles = ['admin', 'calidad', 'colaborador'] as const
+
+const rolLabel: Record<string, string> = { admin: 'Administrador', calidad: 'Calidad', colaborador: 'Colaborador' }
+const rolVariant: Record<string, string> = { admin: 'blue', calidad: 'gray', colaborador: 'green' }
+const rolColor: Record<string, string> = { admin: '#0d6efd', calidad: '#6c757d', colaborador: '#198754' }
 
 interface StatCard {
   label: string
@@ -179,7 +183,7 @@ export default function UsuariosPage() {
         </div>
         <Select value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setSearch('') }}>
           <option value="">Todos los roles</option>
-          {roles.map((r) => <option key={r} value={r}>{r === 'admin' ? 'Administrador' : 'Calidad'}</option>)}
+          {roles.map((r) => <option key={r} value={r}>{rolLabel[r]}</option>)}
         </Select>
         <Select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setSearch('') }}>
           <option value="">Todos los estados</option>
@@ -213,7 +217,7 @@ export default function UsuariosPage() {
                     <div className="flex items-center gap-3">
                       <div
                         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-                        style={{ backgroundColor: u.rol === 'admin' ? '#0d6efd' : '#6c757d' }}
+                        style={{ backgroundColor: rolColor[u.rol] || '#6c757d' }}
                       >
                         {u.nombre.charAt(0).toUpperCase()}
                       </div>
@@ -226,7 +230,7 @@ export default function UsuariosPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant={u.rol === 'admin' ? 'blue' : 'gray'}>{u.rol === 'admin' ? 'Administrador' : 'Calidad'}</Badge></TableCell>
+                  <TableCell><Badge variant={rolVariant[u.rol] || 'gray'}>{rolLabel[u.rol] || u.rol}</Badge></TableCell>
                   <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'red'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
                   <TableCell className="text-sm whitespace-nowrap" style={{ color: '#6c757d' }}>
                     {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}

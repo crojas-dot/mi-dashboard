@@ -40,7 +40,7 @@ export function actualizarDetallesQueja(input: {
   })
 }
 
-export function transicionarQueja(quejaId: string, nuevoEstado: string, resolucion?: string) {
+export function transicionarQueja(quejaId: string, nuevoEstado: string, resolucion: string | null = null) {
   return callRpc<Queja>('transicionar_queja', {
     p_queja_id: quejaId,
     p_nuevo_estado: nuevoEstado,

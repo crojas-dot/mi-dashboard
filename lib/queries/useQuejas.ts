@@ -11,6 +11,7 @@ export interface QuejasParams {
   search?: string
   estado?: string
   prioridad?: string
+  responsableId?: string
 }
 
 function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams> {
@@ -20,6 +21,7 @@ function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams
     search: params.search ?? '',
     estado: params.estado ?? '',
     prioridad: params.prioridad ?? '',
+    responsableId: params.responsableId ?? '',
   }
 }
 
@@ -33,11 +35,12 @@ export interface QuejasResult {
 }
 
 export async function fetchQuejas(params: QuejasParams = {}): Promise<QuejasResult> {
-  const { page, pageSize, search, estado, prioridad } = normalizeQuejasParams(params)
+  const { page, pageSize, search, estado, prioridad, responsableId } = normalizeQuejasParams(params)
   let query = supabase.from('quejas').select('*', { count: 'exact' })
   if (search) query = query.or(`folio.ilike.%${search}%,cliente_nombre.ilike.%${search}%`)
   if (estado) query = query.eq('estado', estado)
   if (prioridad) query = query.eq('prioridad', prioridad)
+  if (responsableId) query = query.eq('responsable_id', responsableId)
   const { data, error, count } = await query
     .order('fecha', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1)
@@ -53,6 +56,8 @@ export function useQuejas(params: QuejasParams = {}) {
     staleTime: Infinity,
     gcTime: 30 * 60 * 1000,
     retry: 1,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -140,5 +145,7 @@ export function useQuejasEstadisticas() {
     staleTime: Infinity,
     gcTime: 30 * 60 * 1000,
     retry: 1,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   })
 }

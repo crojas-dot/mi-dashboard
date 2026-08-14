@@ -17,6 +17,7 @@ import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 const titles: Record<string, string> = {
   '/': 'Dashboard',
   '/quejas': 'Quejas',
+  '/mis-quejas': 'Mis Quejas',
   '/documentos': 'Documentos',
   '/sacp': 'SACP',
   '/riesgos': 'Riesgos',

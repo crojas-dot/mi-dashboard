@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, MessageSquareWarning, FileCheck2, ClipboardList,
-  ShieldAlert, ClipboardCheck, SearchCheck, Workflow,
+  ShieldAlert, ClipboardCheck, SearchCheck, Workflow, Inbox,
   BadgeCheck, SlidersHorizontal, BarChart2, ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
 import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
 import { fetchQuejas, quejasKey } from '@/lib/queries/useQuejas'
 import { fetchDocumentos, documentosKey } from '@/lib/queries/useDocumentos'
@@ -20,12 +21,13 @@ import { fetchProcesos, procesosKey } from '@/lib/queries/useProcesos'
 import { fetchUsuarios, usuariosKey } from '@/lib/queries/useUsuarios'
 import { fetchDashboard, dashboardKey } from '@/lib/queries/useDashboard'
 
-const sections: { label: string; roles?: string[]; links: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+const sections: { label: string; links: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
   {
     label: 'Gestión',
     links: [
       { href: '/', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/quejas', label: 'Quejas', icon: MessageSquareWarning },
+      { href: '/mis-quejas', label: 'Mis Quejas', icon: Inbox },
       { href: '/documentos', label: 'Documentos', icon: FileCheck2 },
       { href: '/sacp', label: 'SACP', icon: ClipboardList },
     ],
@@ -41,7 +43,6 @@ const sections: { label: string; roles?: string[]; links: { href: string; label:
   },
   {
     label: 'Administración',
-    roles: ['admin'],
     links: [
       { href: '/usuarios', label: 'Usuarios', icon: BadgeCheck },
       { href: '/reporteria', label: 'Reportería', icon: BarChart2 },
@@ -66,7 +67,7 @@ const prefetchMap: Record<string, { queryKey: readonly unknown[]; queryFn: () =>
 export default function Sidebar() {
   const pathname = usePathname()
   const { collapsed, toggle } = useSidebarStore()
-  const { user } = useAuthStore()
+  const { user, permisos } = useAuthStore()
   const prefetch = useHoverPrefetch()
 
   return (
@@ -111,14 +112,17 @@ export default function Sidebar() {
       <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 12px' }} />
 
        <nav className="flex-1 overflow-y-auto px-2">
-         {sections.filter((s) => !s.roles || s.roles.includes(user?.rol ?? '')).map((section) => (
+         {sections.map((section) => {
+           const linksVisibles = section.links.filter((link) => tienePermiso(permisos, moduloDeRuta(link.href), false, user?.rol))
+           if (linksVisibles.length === 0) return null
+           return (
           <div key={section.label} className="mb-2">
             {!collapsed && (
               <p className="px-3 mb-1 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.25)' }}>
                 {section.label}
               </p>
             )}
-            {section.links.map((link) => {
+            {linksVisibles.map((link) => {
               const isActive = pathname === link.href
               const Icon = link.icon
               return (
@@ -159,7 +163,8 @@ export default function Sidebar() {
               )
             })}
           </div>
-        ))}
+           )
+         })}
       </nav>
 
       <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 12px' }} />

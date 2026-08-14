@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
   const nombre = (body.nombre || '').trim()
   const email = (body.email || '').trim().toLowerCase()
-  const rol = body.rol === 'admin' ? 'admin' : 'calidad'
+  const rol = ['admin', 'calidad', 'colaborador'].includes(body.rol) ? body.rol : 'calidad'
   const estado = body.estado === 'inactivo' ? 'inactivo' : 'activo'
   const tempPassword =
     typeof body.password === 'string' && body.password.length >= 8 ? body.password : crypto.randomUUID().slice(0, 16)
@@ -165,7 +165,7 @@ export async function PATCH(request: NextRequest) {
     updates.nombre = nombre.trim()
   }
   if (rol !== undefined) {
-    updates.rol = rol === 'admin' ? 'admin' : 'calidad'
+    updates.rol = ['admin', 'calidad', 'colaborador'].includes(rol) ? rol : 'calidad'
   }
   if (estado !== undefined) {
     updates.estado = estado === 'inactivo' ? 'inactivo' : 'activo'

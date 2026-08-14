@@ -100,6 +100,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
               <option value="" disabled>Seleccionar rol</option>
               <option value="admin">Administrador</option>
               <option value="calidad">Calidad</option>
+              <option value="colaborador">Colaborador</option>
             </Select>
           </div>
           <div>

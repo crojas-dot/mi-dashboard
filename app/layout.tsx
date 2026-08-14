@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body>
+      <body className="select-none">
         <QueryProvider>
           <AuthShell>{children}</AuthShell>
           <ToastProvider />
