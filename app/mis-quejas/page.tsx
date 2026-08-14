@@ -50,10 +50,9 @@ export default function MisQuejasPage() {
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
       <div
-        /* Usamos la clase que ya exista en globals.css (tabla-scroll-gordo). 
-           Añadimos paddingRight dinámico para reservar el espacio del panel derecho */
+        /* Reservamos espacio a la derecha permanentemente para que la tabla NUNCA cambie de tamaño */
         className="flex-1 min-w-0 tabla-scroll-gordo w-full select-none overflow-x-auto overflow-y-hidden rounded-lg border pb-4"
-        style={{ borderColor: '#dee2e6', paddingRight: panelOpen ? '500px' : undefined }}
+        style={{ borderColor: '#dee2e6', paddingRight: '500px' }}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
