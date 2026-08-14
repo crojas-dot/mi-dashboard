@@ -167,7 +167,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       </nav>
 
       {/* Blank-page content */}
-      <div className="flex-1 select-text overflow-y-auto px-8 py-6">
+      <div className="flex-1 select-text overflow-y-auto tabla-scroll-gordo px-8 py-6">
         {activeTab === 'detalle' && (
           <div className="mx-auto max-w-2xl">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{queja.folio}</h1>
@@ -232,7 +232,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               <textarea
                 rows={2}
                 placeholder="Registrá un avance o comentario de tu investigación..."
-                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-400"
+                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border[...]"
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
               />
@@ -288,7 +288,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               <textarea
                 rows={7}
                 placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
-                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border[...]"
                 value={resolucion}
                 onChange={(e) => setResolucion(e.target.value)}
                 disabled={estado === 'Recibido' || resolucionEnviada}
