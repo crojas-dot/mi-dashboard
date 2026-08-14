@@ -41,24 +41,19 @@ export default function MisQuejasPage() {
 
   return (
     <div className="relative flex h-full w-full flex-col">
-      <style dangerouslySetInnerHTML={{ __html: `
-        /* keep legacy alias if any component uses custom-fat-scrollbar inline */
-        .custom-fat-scrollbar::-webkit-scrollbar { height: 22px !important; width: 22px !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-track { background: #f8fafc !important; border-radius: 10px !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; border-radius: 10px !important; border: 3px solid #f8fafc !important; }
-        .custom-fat-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8 !important; }
-      ` }} />
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
       <div
-        className="flex-1 min-w-0 tabla-scroll-gordo w-full select-none overflow-x-auto overflow-y-auto rounded-lg border pb-4"
+        // make container positioned so an absolute spacer can extend scroll width WITHOUT affecting layout
+        className="relative flex-1 min-w-0 tabla-scroll-gordo select-none overflow-x-auto overflow-y-auto rounded-lg border pb-4 w-full"
         style={{ borderColor: '#dee2e6' }}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : (
             <>
-              <table className="w-full min-w-max select-text text-left text-sm">
+              {/* Remove w-full so the table uses intrinsic min width and doesn't stretch/shrink to container */}
+              <table className="min-w-max select-text text-left text-sm">
                 <thead>
                   <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
                     <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
@@ -93,11 +88,11 @@ export default function MisQuejasPage() {
                 </tbody>
               </table>
 
-              {/* Spacer: only when panel is open, so no blank space when closed */}
+              {/* Absolute spacer: extends scroll area to the right without changing table layout */}
               {panelOpen && (
                 <div
                   aria-hidden="true"
-                  style={{ display: 'inline-block', width: '500px', height: 1 }}
+                  style={{ position: 'absolute', top: 0, right: -500, width: 500, height: 1 }}
                 />
               )}
             </>
