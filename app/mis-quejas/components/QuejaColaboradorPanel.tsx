@@ -9,7 +9,6 @@ import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { transicionarQueja } from '@/lib/services/quejaWorkflowService'
-import { PANEL_WIDTH } from '../constants'
 
 interface Props {
   queja: Queja | null
@@ -111,8 +110,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
   return (
     <aside
-      className={`fixed top-0 right-0 z-50 flex h-screen flex-col bg-white border-l border-gray-200 shadow-2xl transition-[width] duration-300 ease-in-out`}
-      style={{ width: isExpanded ? '100%' : `${PANEL_WIDTH}px` }}
+      className={`fixed top-0 right-0 z-50 flex h-screen flex-col bg-white border-l border-gray-200 shadow-2xl transition-[width] duration-300 ease-in-out ${isExpanded ? 'w-full' : 'w-[500px]'}`}
     >
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2.5">
