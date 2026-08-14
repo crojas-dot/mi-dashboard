@@ -50,8 +50,10 @@ export default function MisQuejasPage() {
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
       <div
-        className="flex-1 min-w-0 custom-fat-scrollbar w-full shrink-0 select-none overflow-x-auto rounded-lg border pb-4"
-        style={{ borderColor: '#dee2e6' }}
+        /* Usamos la clase que ya exista en globals.css (tabla-scroll-gordo). 
+           Añadimos paddingRight dinámico para reservar el espacio del panel derecho */
+        className="flex-1 min-w-0 tabla-scroll-gordo w-full select-none overflow-x-auto overflow-y-hidden rounded-lg border pb-4"
+        style={{ borderColor: '#dee2e6', paddingRight: panelOpen ? '500px' : undefined }}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
@@ -103,7 +105,9 @@ export default function MisQuejasPage() {
               <ChevronLeft className="h-4 w-4" />
             </button>
             {Array.from({ length: Math.max(totalPages, 1) }, (_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${page === i ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{i + 1}</button>
+              <button key={i} onClick={() => setPage(i)} className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${page === i ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                {i + 1}
+              </button>
             ))}
             <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page === totalPages - 1} className="flex items-center justify-center rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 hover:bg-gray-100">
               <ChevronRight className="h-4 w-4" />
