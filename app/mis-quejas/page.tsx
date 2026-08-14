@@ -42,7 +42,8 @@ export default function MisQuejasPage() {
   return (
     <div className="relative flex h-full w-full flex-col">
       <style dangerouslySetInnerHTML={{ __html: `
-        .custom-fat-scrollbar::-webkit-scrollbar { height: 18px !important; }
+        /* keep legacy alias if any component uses custom-fat-scrollbar inline */
+        .custom-fat-scrollbar::-webkit-scrollbar { height: 22px !important; width: 22px !important; }
         .custom-fat-scrollbar::-webkit-scrollbar-track { background: #f8fafc !important; border-radius: 10px !important; }
         .custom-fat-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1 !important; border-radius: 10px !important; border: 3px solid #f8fafc !important; }
         .custom-fat-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8 !important; }
@@ -50,47 +51,56 @@ export default function MisQuejasPage() {
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
       <div
-        /* Reservamos espacio a la derecha permanentemente para que la tabla NUNCA cambie de tamaño */
-        className="flex-1 min-w-0 tabla-scroll-gordo w-full select-none overflow-x-auto overflow-y-hidden rounded-lg border pb-4"
-        style={{ borderColor: '#dee2e6', paddingRight: '500px' }}
+        className="flex-1 min-w-0 tabla-scroll-gordo w-full select-none overflow-x-auto overflow-y-auto rounded-lg border pb-4"
+        style={{ borderColor: '#dee2e6' }}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : (
-            <table className="w-full min-w-max select-text text-left text-sm">
-              <thead>
-                <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Prioridad</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Estado</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Límite investigación</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Fecha</th>
-                  <th className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {quejas.length === 0 ? (
-                  <EmptyState message="No tienes quejas asignadas" />
-                ) : (
-                  quejas.map((q) => (
-                    <tr key={q.id} onClick={() => setPanelOpen(q)} className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><span className="font-mono text-sm font-medium">{q.folio}</span></td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap font-medium text-gray-900">{q.cliente_nombre}</td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap text-gray-600">{q.categoria}</td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">
-                        {q.fecha_limite_investigacion ? new Date(q.fecha_limite_investigacion).toLocaleDateString('es-ES') : '—'}
-                      </td>
-                      <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
-                      <td className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+            <>
+              <table className="w-full min-w-max select-text text-left text-sm">
+                <thead>
+                  <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Prioridad</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Estado</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Límite investigación</th>
+                    <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Fecha</th>
+                    <th className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {quejas.length === 0 ? (
+                    <EmptyState message="No tienes quejas asignadas" />
+                  ) : (
+                    quejas.map((q) => (
+                      <tr key={q.id} onClick={() => setPanelOpen(q)} className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50">
+                        <td className="px-3 py-2.5 align-middle whitespace-nowrap"><span className="font-mono text-sm font-medium">{q.folio}</span></td>
+                        <td className="px-3 py-2.5 align-middle whitespace-nowrap font-medium text-gray-900">{q.cliente_nombre}</td>
+                        <td className="px-3 py-2.5 align-middle whitespace-nowrap text-gray-600">{q.categoria}</td>
+                        <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge></td>
+                        <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
+                        <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">
+                          {q.fecha_limite_investigacion ? new Date(q.fecha_limite_investigacion).toLocaleDateString('es-ES') : '—'}
+                        </td>
+                        <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                        <td className={panelOpen ? 'min-w-[450px]' : 'w-0 px-0'}></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+
+              {/* Spacer: only when panel is open, so no blank space when closed */}
+              {panelOpen && (
+                <div
+                  aria-hidden="true"
+                  style={{ display: 'inline-block', width: '500px', height: 1 }}
+                />
+              )}
+            </>
           )}
       </div>
 
