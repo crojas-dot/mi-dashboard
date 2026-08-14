@@ -1,5 +1,7 @@
 'use client'
 
+import { Loader2 } from 'lucide-react'
+
 interface ButtonProps {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost'
   size?: 'sm' | 'md'
@@ -11,55 +13,19 @@ interface ButtonProps {
   children: React.ReactNode
 }
 
-const base = 'inline-flex items-center justify-center gap-2 font-medium transition-all focus:outline-none disabled:opacity-50 disabled:pointer-events-none'
-
-const variantStyles: Record<string, React.CSSProperties> = {
-  primary: { backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '4px' },
-  secondary: { backgroundColor: '#fff', color: '#6c757d', border: '1px solid #dee2e6', borderRadius: '4px' },
-  danger: { backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '4px' },
-  ghost: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', borderRadius: '4px' },
+const variants = {
+  primary: 'border-primary bg-primary text-primary-foreground hover:brightness-95 shadow-sm',
+  secondary: 'border-border bg-card text-foreground hover:bg-muted',
+  danger: 'border-destructive/35 bg-card text-destructive hover:bg-destructive hover:text-white',
+  ghost: 'border-transparent bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground',
 }
-
-const hoverStyles: Record<string, React.CSSProperties> = {
-  primary: { backgroundColor: '#0b5ed7' },
-  secondary: { backgroundColor: '#f8f9fa' },
-  danger: { backgroundColor: '#dc3545', color: '#fff' },
-  ghost: { backgroundColor: '#f8f9fa' },
-}
-
-const sizeStyles: Record<string, React.CSSProperties> = {
-  sm: { padding: '0.25rem 0.5rem', fontSize: '0.875rem' },
-  md: { padding: '0.375rem 0.75rem', fontSize: '0.875rem' },
-}
+const sizes = { sm: 'min-h-9 px-3 text-sm', md: 'min-h-10 px-4 text-sm' }
 
 export default function Button({ variant = 'primary', size = 'md', loading, disabled, onClick, type = 'button', className = '', children }: ButtonProps) {
-  const style = { ...variantStyles[variant], ...sizeStyles[size] }
-
   return (
-    <button
-      type={type}
-      className={`${base} ${className}`}
-      style={style}
-      disabled={disabled || loading}
-      onClick={onClick}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          const h = hoverStyles[variant]
-          if (h) Object.assign(e.currentTarget.style, h)
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          Object.assign(e.currentTarget.style, variantStyles[variant])
-        }
-      }}
-    >
-      {loading && (
-        <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      )}
+    <button type={type} disabled={disabled || loading} onClick={onClick}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg border font-semibold transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}>
+      {loading && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
       {children}
     </button>
   )

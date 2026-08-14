@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bell, LogOut, KeyRound, BellRing, BellOff, X, Inbox, Play } from 'lucide-react'
+import { Bell, LogOut, KeyRound, BellRing, BellOff, X, Inbox, Play, Menu } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useNotificaciones, useMarcarNotificacionLeida, useMarcarTodasLeidas, useArchivarNotificacion, useArchivarTodas } from '@/lib/queries/useNotificaciones'
@@ -29,7 +29,7 @@ const titles: Record<string, string> = {
   '/reporteria': 'Reportería',
 }
 
-export default function Header() {
+export default function Header({ onMenuClick }: { onMenuClick?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout, setPrefs } = useAuthStore()
@@ -144,11 +144,15 @@ export default function Header() {
   const roleVariant: Record<string, string> = { admin: 'blue', calidad: 'green', coordinador: 'amber', revisor: 'purple', usuario: 'gray' }
 
   return (
-    <header className="flex items-center justify-between px-5" style={{ height: '56px', backgroundColor: '#fff', borderBottom: '1px solid #dee2e6' }}>
-      <div className="flex items-center gap-2">
-        <div className="flex items-center justify-center rounded font-bold text-white shrink-0" style={{ width: '26px', height: '26px', backgroundColor: '#0d6efd', fontSize: '11px' }}>E</div>
-        <span className="font-semibold" style={{ color: '#343a40', fontSize: '0.95rem' }}>ECA-QMS</span>
-        <span className="hidden md:inline text-sm" style={{ color: '#6c757d', fontWeight: 400 }}>/ {title}</span>
+    <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border bg-card/95 px-4 text-card-foreground shadow-sm backdrop-blur sm:px-6 lg:px-8">
+      <div className="flex min-w-0 items-center gap-3">
+        <button type="button" onClick={onMenuClick} className="flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground lg:hidden" aria-label="Abrir navegación">
+          <Menu className="size-5" />
+        </button>
+        <div className="min-w-0">
+          <p className="truncate text-base font-semibold tracking-tight text-foreground">{title}</p>
+          <p className="hidden text-xs text-muted-foreground sm:block">Sistema de Gestión de Calidad</p>
+        </div>
       </div>
 
       <div ref={rootRef} className="flex items-center gap-2">

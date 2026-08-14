@@ -2,73 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/auth-store'
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login, user, initialized, init } = useAuthStore()
-  const router = useRouter()
-
+  const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [loading, setLoading] = useState(false)
+  const { login, user, initialized, init } = useAuthStore(); const router = useRouter()
   useEffect(() => { init() }, [init])
-
-  useEffect(() => {
-    if (initialized && user) router.replace('/')
-  }, [user, initialized, router])
-
-  if (!initialized) {
-    return (
-      <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    )
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    const result = await login(email, password)
-    if (result.error) {
-      setError(result.error)
-    }
-    setLoading(false)
-  }
-
-  return (
-    <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
-      <div className="w-full max-w-sm rounded-lg border bg-white p-8" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex items-center justify-center rounded-lg font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#0d6efd', fontSize: '20px' }}>E</div>
-          <h2 className="font-bold m-0" style={{ fontSize: '1.25rem', color: '#212529' }}>ECA-QMS</h2>
-          <p className="mt-1" style={{ color: '#6c757d', fontSize: '0.85rem' }}>Sistema de Gestión de Calidad</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Correo electrónico</label>
-            <input type="email" required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6' }} value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Contraseña</label>
-            <input type="password" required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6' }} value={password} onChange={(e) => setPassword(e.target.value)} />
-          </div>
-
-          {error && <p className="text-sm" style={{ color: '#dc3545' }}>{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: '#0d6efd', border: 'none', cursor: 'pointer' }}
-          >
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-        </form>
-      </div>
-    </div>
-  )
+  useEffect(() => { if (initialized && user) router.replace('/') }, [user, initialized, router])
+  if (!initialized) return <div className="flex min-h-screen items-center justify-center bg-background"><Loader2 className="size-7 animate-spin text-primary" /></div>
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault(); setError(''); setLoading(true); const result = await login(email, password); if (result.error) setError(result.error); setLoading(false) }
+  return <div className="grid min-h-screen bg-background lg:grid-cols-[1.1fr_0.9fr]">
+    <section className="hidden flex-col justify-between bg-[var(--sidebar)] p-12 text-white lg:flex"><div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground">E</span><span className="text-lg font-semibold">ECA-QMS</span></div><div className="max-w-xl"><ShieldCheck className="mb-6 size-10 text-blue-300" /><h1 className="text-balance text-4xl font-semibold leading-tight tracking-tight">Calidad que se puede seguir, medir y mejorar.</h1><p className="mt-5 max-w-lg text-base leading-relaxed text-[var(--sidebar-muted)]">Una plataforma central para gestionar procesos, hallazgos, riesgos y acciones de mejora del Ente Costarricense de Acreditación.</p></div><p className="text-xs text-[var(--sidebar-muted)]">Sistema institucional de uso interno</p></section>
+    <main className="flex items-center justify-center px-5 py-10 sm:px-8"><div className="w-full max-w-md"><div className="mb-8 lg:hidden"><span className="flex size-11 items-center justify-center rounded-xl bg-primary font-bold text-primary-foreground">E</span></div><div className="mb-8"><div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-accent text-accent-foreground"><LockKeyhole className="size-5" /></div><h2 className="text-3xl font-semibold tracking-tight text-foreground">Bienvenido</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">Ingresa tus credenciales para acceder al sistema.</p></div><form onSubmit={handleSubmit} className="flex flex-col gap-5"><label className="flex flex-col gap-2 text-sm font-medium text-foreground">Correo electrónico<input type="email" required autoComplete="email" className="h-11 w-full rounded-lg border border-input bg-card px-3 text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" placeholder="nombre@eca.or.cr" value={email} onChange={(e) => setEmail(e.target.value)} /></label><label className="flex flex-col gap-2 text-sm font-medium text-foreground">Contraseña<input type="password" required autoComplete="current-password" className="h-11 w-full rounded-lg border border-input bg-card px-3 text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20" value={password} onChange={(e) => setPassword(e.target.value)} /></label>{error && <div role="alert" className="rounded-lg border border-destructive/25 bg-red-50 px-3 py-2.5 text-sm text-destructive dark:bg-red-950/30">{error}</div>}<button type="submit" disabled={loading} className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition hover:brightness-95 disabled:opacity-50">{loading && <Loader2 className="size-4 animate-spin" />}{loading ? 'Ingresando…' : 'Ingresar'}</button></form><p className="mt-8 text-center text-xs text-muted-foreground">Acceso protegido · ECA-QMS</p></div></main>
+  </div>
 }
