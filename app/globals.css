@@ -40,6 +40,7 @@ body {
 }
 
 /* Scrollbars estilo Monday.com: gruesos, thumb tipo cuadrito redondeado */
+/* Valores globales por defecto (Chromium) */
 ::-webkit-scrollbar { width: 15px; height: 15px; }
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
@@ -53,25 +54,42 @@ body {
 ::-webkit-scrollbar-thumb:hover { background: #a0a0a0; }
 ::-webkit-scrollbar-corner { background: #f1f1f1; }
 
+/* Firefox global default (gentle) */
 * {
   scrollbar-width: thin;
   scrollbar-color: #bdbdbd #f1f1f1;
 }
 
-/* Scroll gordo real para tablas con overflow horizontal (p. ej. /mis-quejas) */
-.tabla-scroll-gordo::-webkit-scrollbar {
-  height: 16px !important;
+/* Scroll gordo real para tablas con overflow horizontal (p. ej. /mis-quejas)
+   y alias para compatibilidad con la clase inline usada en componentes. */
+.tabla-scroll-gordo,
+.custom-fat-scrollbar {
+  /* Firefox */
+  scrollbar-width: auto;                 /* auto = más visible (no thin) */
+  scrollbar-color: #cbd5e1 #f8fafc;      /* thumb color / track color */
 }
-.tabla-scroll-gordo::-webkit-scrollbar-track {
+
+/* Chromium / Blink: grosor vertical y altura horizontal */
+.tabla-scroll-gordo::-webkit-scrollbar,
+.custom-fat-scrollbar::-webkit-scrollbar {
+  width: 20px;    /* grosor del scrollbar VERTICAL (aumenta el ancho) */
+  height: 22px;   /* grosor del scrollbar HORIZONTAL (aumenta la altura) */
+}
+
+.tabla-scroll-gordo::-webkit-scrollbar-track,
+.custom-fat-scrollbar::-webkit-scrollbar-track {
   background-color: #f8fafc !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
 }
-.tabla-scroll-gordo::-webkit-scrollbar-thumb {
+
+.tabla-scroll-gordo::-webkit-scrollbar-thumb,
+.custom-fat-scrollbar::-webkit-scrollbar-thumb {
   background-color: #cbd5e1 !important;
-  border-radius: 8px !important;
-  border: 3px solid #f8fafc !important;
+  border-radius: 10px !important;
+  border: 4px solid #f8fafc !important; /* espacio visual alrededor del thumb */
 }
-.tabla-scroll-gordo::-webkit-scrollbar-thumb:hover {
+.tabla-scroll-gordo::-webkit-scrollbar-thumb:hover,
+.custom-fat-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #94a3b8 !important;
 }
 
