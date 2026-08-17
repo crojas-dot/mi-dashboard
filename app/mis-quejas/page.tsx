@@ -47,15 +47,14 @@ export default function MisQuejasPage() {
           Con el panel abierto se recorta 500px a la derecha (las columnas quedan bajo el panel)
           y aparece el scrollbar horizontal único para desplazarlas. */}
       <div
-        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-lg border pb-4 ${panelOpen ? '' : 'monday-scroll-no-x'}`}
-        style={{ borderColor: '#dee2e6', marginRight: panelOpen ? 'calc(500px - 16px)' : undefined }}
+        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-lg border border-qms-border pb-4 ${panelOpen ? 'mr-[calc(500px-16px)]' : 'monday-scroll-no-x'}`}
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : (
             <table className={`w-full text-left text-sm select-text ${panelOpen ? 'min-w-[calc(100%+484px)]' : 'min-w-[1200px]'}`}>
               <thead>
-                <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
+                <tr className="sticky top-0 z-10 bg-qms-header">
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
                   <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
