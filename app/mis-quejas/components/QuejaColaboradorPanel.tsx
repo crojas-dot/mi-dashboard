@@ -60,19 +60,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const estado = queja.estado ?? ''
   const resolucionEnviada = ESTADOS_ENVIADOS.includes(estado)
 
-  const handleIniciarInvestigacion = async () => {
-    setLoading(true)
-    try {
-      await transicionarQueja(queja.id, 'En Investigación')
-      showSuccess('Investigación iniciada. Plazo: 15 días.')
-      onUpdated()
-    } catch (error) {
-      showError(error as Error, 'No se pudo iniciar la investigación')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleEnviarRevision = async () => {
     if (!resolucion.trim()) {
       showError(null, 'Escribí la conclusión antes de enviarla a revisión')
@@ -80,7 +67,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     }
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'Pendiente de Revisión GC', resolucion)
+      await transicionarQueja(queja.id, 'Pendiente de Revisión GC', { resolucion })
       showSuccess('Resolución enviada a Gestión de Calidad')
       setResolucion('')
       onUpdated()
@@ -273,15 +260,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
           <div className="mx-auto max-w-2xl">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Resolución</h1>
             <p className="mt-1 text-sm text-gray-500">Documentá la conclusión de tu investigación.</p>
-
-            {estado === 'Recibido' && (
-              <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-                <p className="mb-3 text-sm text-gray-600">
-                  Iniciá la investigación de esta queja antes de documentar la resolución. Tenés 15 días.
-                </p>
-                <Button onClick={handleIniciarInvestigacion} loading={loading}>Iniciar investigación</Button>
-              </div>
-            )}
 
             <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
               <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Conclusión de la investigación</h2>

@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import Button from '@/components/ui/Button'
+
+const CATEGORIAS_PUBLICAS = ['Queja', 'Denuncia', 'Sugerencia', 'Reclamo', 'Felicitación']
 
 interface FormularioPublico {
   id: string
@@ -33,8 +33,6 @@ export default function FormularioQuejaPublicaPage() {
   const [descripcion, setDescripcion] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [folioRegistrado, setFolioRegistrado] = useState<string | null>(null)
-
-  const { data: categorias = [] } = useCatalogoTipo('categoria_queja', 'quejas')
 
   useEffect(() => {
     let alive = true
@@ -145,15 +143,11 @@ export default function FormularioQuejaPublicaPage() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Categoría</label>
-            {categorias.length > 0 ? (
-              <select required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6', backgroundColor: '#fff' }} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-                <option value="">Seleccionar categoría</option>
-                {categorias.map((c) => <option key={c.valor} value={c.valor}>{c.valor}</option>)}
-              </select>
-            ) : (
-              <input required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6' }} placeholder="Escribir categoría" value={categoria} onChange={(e) => setCategoria(e.target.value)} />
-            )}
+            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Categoría *</label>
+            <select required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6', backgroundColor: '#fff' }} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+              <option value="">Seleccionar categoría</option>
+              {CATEGORIAS_PUBLICAS.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Descripción *</label>

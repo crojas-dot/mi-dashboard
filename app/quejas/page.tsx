@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useDeferredValue } from 'react'
+import { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react'
 import { Plus, Search, Loader2, ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, CalendarRange } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
@@ -11,7 +11,6 @@ import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
-import Button from '@/components/ui/Button'
 import StatCard from '@/components/StatCard'
 import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
@@ -25,8 +24,14 @@ export default function QuejasPage() {
   const [nuevaOpen, setNuevaOpen] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState<Queja | null>(null)
   const [page, setPage] = useState(0)
+  const [ahora, setAhora] = useState(() => Date.now())
   const pageSize = 25
   const tableRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const id = setInterval(() => setAhora(Date.now()), 60000)
+    return () => clearInterval(id)
+  }, [])
 
   const { data, isLoading: loading } = useQuejas({
     page,
@@ -76,7 +81,7 @@ export default function QuejasPage() {
 
   function calcularSLA(fecha: string, prioridad: string, estado: string): { label: string; variant: string } {
     if (estadoVariant[estado] === 'green') return { label: 'Completado', variant: 'green' }
-    const dias = Math.floor((Date.now() - new Date(fecha).getTime()) / 86400000)
+    const dias = Math.floor((ahora - new Date(fecha).getTime()) / 86400000)
     const sla = slaMap[prioridad]
     if (sla) {
       if (dias <= sla.dias_alerta) return { label: `${dias}d`, variant: 'green' }

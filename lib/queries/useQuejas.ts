@@ -61,6 +61,40 @@ export function useQuejas(params: QuejasParams = {}) {
   })
 }
 
+export interface QuejaAdjunto {
+  id: string
+  queja_id: string
+  nombre: string
+  storage_path: string
+  tamano: number
+  tipo_mime: string
+  usuario_id?: string | null
+  created_at: string
+}
+
+export function quejaAdjuntosKey(quejaId: string) {
+  return [...queryKeys.quejas, 'adjuntos', quejaId] as const
+}
+
+export async function fetchQuejaAdjuntos(quejaId: string): Promise<QuejaAdjunto[]> {
+  if (!quejaId) return []
+  const { data, error } = await supabase
+    .from('queja_adjuntos')
+    .select('*')
+    .eq('queja_id', quejaId)
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data as QuejaAdjunto[]) ?? []
+}
+
+export function useQuejaAdjuntos(quejaId: string) {
+  return useQuery({
+    queryKey: quejaAdjuntosKey(quejaId),
+    queryFn: () => fetchQuejaAdjuntos(quejaId),
+    enabled: !!quejaId,
+  })
+}
+
 export interface SLAConfig {
   id: string
   proceso: string
