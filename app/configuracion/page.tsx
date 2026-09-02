@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, ChevronDown, Check, X, Link as LinkIcon, ShieldCheck, Eye } from 'lucide-react'
+import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, ChevronDown, Check, X, Link as LinkIcon, ShieldCheck, Eye, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
@@ -17,8 +17,9 @@ import PageHeader from '@/components/ui/PageHeader'
 import Modal from '@/components/Modal'
 import RolesAccesos from './components/RolesAccesos'
 import ModoVistaActiva from './components/ModoVistaActiva'
+import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
 
-type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas'
+type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas' | 'ia'
 
 interface ConfigGeneral { clave: string; valor: any; descripcion: string; categoria: string }
 
@@ -126,6 +127,7 @@ export default function ConfiguracionPage() {
     { key: 'formularios', label: 'Formularios', icon: LinkIcon },
     { key: 'roles', label: 'Roles y Accesos', icon: ShieldCheck },
     { key: 'vistas', label: 'Vistas', icon: Eye },
+    { key: 'ia', label: 'IA', icon: Sparkles },
   ]
 
   const { user, initialized } = useAuthStore()
@@ -366,6 +368,8 @@ export default function ConfiguracionPage() {
           <RolesAccesos />
         ) : tab === 'vistas' ? (
           <ModoVistaActiva />
+        ) : tab === 'ia' ? (
+          <AIProvidersManager />
         ) : (
           <div className="space-y-4">
             <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
@@ -393,7 +397,9 @@ export default function ConfiguracionPage() {
                             <button onClick={() => setEditConfig({})} className="rounded px-2 py-1 text-xs text-gray-600">X</button>
                           </div>
                         ) : (
-                          <span className="text-sm">{cfg.valor}</span>
+                          <span className="text-sm font-mono text-xs">
+                            {typeof cfg.valor === 'object' ? JSON.stringify(cfg.valor, null, 2) : String(cfg.valor)}
+                          </span>
                         )}
                       </td>
                       <td className="px-3 py-2 text-gray-600">{cfg.descripcion}</td>

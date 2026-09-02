@@ -19,7 +19,8 @@ import {
   descargarAdjuntoQueja,
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { Send, GitBranch, Download, Upload, FileText, RotateCcw } from 'lucide-react'
+import { Send, GitBranch, Download, Upload, FileText, RotateCcw, Eye } from 'lucide-react'
+import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 
 interface Props {
   queja: Queja | null
@@ -125,11 +126,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const [reaperturaAbierta, setReaperturaAbierta] = useState(false)
   const [motivoReapertura, setMotivoReapertura] = useState('')
   const [reabriendo, setReabriendo] = useState(false)
+  const [previewAdjunto, setPreviewAdjunto] = useState<QuejaAdjunto | null>(null)
 
   const queryClient = useQueryClient()
   const quejaId = queja?.id ?? ''
   const { data: comentarios = [] } = useQuejaComentarios(quejaId)
-  const { data: adjuntos = [] } = useQuejaAdjuntos(quejaId)
+  const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
   const { data: usuarios = [] } = useUsuarios({ estado: 'activo' })
   const user = useAuthStore((s) => s.user)
@@ -151,6 +153,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     setResolucion('')
     setReaperturaAbierta(false)
     setMotivoReapertura('')
+    setPreviewAdjunto(null)
   }
 
   if (!queja) return null
@@ -348,7 +351,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   }
 
   return (
-    <Modal open={!!queja} onClose={onClose} title={`Queja ${queja.folio}`} size="lg">
+    <>
+      <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
+      <Modal open={!!queja} onClose={onClose} title={`Queja ${queja.folio}`} size="lg">
       <div className="space-y-5 select-text">
         {/* Sección 1: Datos de la queja */}
         <div className="space-y-6">
@@ -409,6 +414,70 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
               )}
             </div>
           </div>
+        </div>
+
+        {/* Evidencias adjuntas: visibles en TODOS los estados (incluye las
+            enviadas desde el formulario público, usuario_id NULL). La subida
+            interna se mantiene solo en «En Investigación»; el RPC
+            registrar_adjunto_queja limita quién puede subir. */}
+        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-base font-semibold text-gray-800">Evidencias adjuntas</p>
+            <span className="text-xs text-gray-400">{adjuntos.length} archivo(s)</span>
+          </div>
+          {adjuntosLoading ? (
+            <p className="text-sm text-gray-400">Cargando evidencias...</p>
+          ) : adjuntos.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              {estadoActual === 'Recibido'
+                ? 'Sin evidencias todavía. Los archivos enviados desde el formulario público aparecerán aquí.'
+                : 'Sin adjuntos todavía.'}
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {adjuntos.map((a) => (
+                <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
+                  <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => setPreviewAdjunto(a)}
+                    className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                    title="Vista previa"
+                  >
+                    {a.nombre}
+                  </button>
+                  <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
+                    <Eye className="h-4 w-4" />
+                  </button>
+                  <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                  <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
+                    {new Date(a.created_at).toLocaleDateString('es-ES')}
+                  </span>
+                  <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
+                    <Download className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {estadoActual === 'En Investigación' && (
+            <div className="flex items-center gap-2 pt-1">
+              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+                <Upload className="h-3.5 w-3.5" /> Subir archivo
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={subiendoAdjunto}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    e.target.value = ''
+                    if (f) handleSubirAdjunto(f)
+                  }}
+                />
+              </label>
+              {subiendoAdjunto && <span className="text-xs text-gray-500">Subiendo...</span>}
+            </div>
+          )}
         </div>
 
         {/* Sección 2: Análisis / Resolución (oculto en Recibido; en En Investigación solo al presionar Resolver) */}
@@ -498,42 +567,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
             {/* ── EN INVESTIGACIÓN: adjuntos + resolver ── */}
             {estadoActual === 'En Investigación' && (
               <>
-                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider sm:w-36 shrink-0">Responsable</label>
-                  <BuscadorResponsable responsables={responsables} value={responsableValue} onChange={handleSeleccionarResponsable} />
-                </div>
-
-                <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Adjuntos</p>
-                  {adjuntos.length === 0 && <p className="text-sm text-gray-400">Sin adjuntos todavía.</p>}
-                  <ul className="space-y-1">
-                    {adjuntos.map((a) => (
-                      <li key={a.id} className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-                        <span className="min-w-0 flex-1 truncate text-sm text-gray-700">{a.nombre}</span>
-                        <span className="text-xs text-gray-400 whitespace-nowrap">{formatBytes(a.tamano)}</span>
-                        <button type="button" onClick={() => handleDescargarAdjunto(a)} className="text-gray-500 hover:text-blue-600" title="Descargar">
-                          <Download className="h-4 w-4" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="flex items-center gap-2 pt-1">
-                    <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                      <Upload className="h-3.5 w-3.5" /> Subir archivo
-                      <input
-                        type="file"
-                        className="hidden"
-                        disabled={subiendoAdjunto}
-                        onChange={(e) => {
-                          const f = e.target.files?.[0]
-                          e.target.value = ''
-                          if (f) handleSubirAdjunto(f)
-                        }}
-                      />
-                    </label>
-                    {subiendoAdjunto && <span className="text-xs text-gray-500">Subiendo...</span>}
+                <div className="rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</p>
+                    <p className="text-sm font-medium text-gray-900">{responsableActual?.nombre ?? 'Sin asignar'}</p>
                   </div>
+                  <p className="mt-1 text-xs text-gray-400">El responsable queda fijo durante la investigación. No se puede modificar.</p>
                 </div>
 
                 {!resolucionAbierta ? (
@@ -557,7 +596,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <Button onClick={handleConfirmarResolucion} loading={loading}>Confirmar resolución</Button>
-                      <Button variant="ghost" onClick={() => { setResolucionAbierta(false); setResolucion('') }}>Cancelar</Button>
+                      <Button variant="ghost" onClick={() => { setResolucionAbierta(false); setResolucion('') }}>Volver</Button>
                     </div>
                   </>
                 )}
@@ -690,5 +729,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
         </div>
       </div>
     </Modal>
+    </>
   )
 }

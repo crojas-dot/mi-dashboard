@@ -23,8 +23,12 @@ app/
   layout.tsx                 root layout (providers + AuthShell)
   page.tsx                   / Dashboard
   login/page.tsx             /login (Supabase Auth email/password)
-  api/usuarios/route.ts      ÚNICA ruta API (CRUD usuarios, service-role)
-  quejas/  page.tsx + NuevaQuejaModal, QuejaDetalleModal (máquina de estados, comentarios, responsable, notas, derivar SACP)
+  api/usuarios/route.ts      CRUD usuarios (service-role)
+  api/drive/upload/route.ts       subida interna de adjuntos a Google Drive (Bearer)
+  api/drive/download/route.ts     descarga streaming de adjuntos desde Drive (Bearer)
+  api/drive/upload-public/route.ts subida pública de evidencias /q/[token] (valida token)
+  quejas/  page.tsx + NuevaQuejaModal, QuejaDetalleModal (decisión de procedencia, adjuntos, responsable fijo en investigación, reapertura, comentarios, derivar SACP)
+  mis-quejas/ page.tsx + QuejaColaboradorPanel (panel fixed 500px expandible + tabs Detalle/Análisis/Resolución; solo quejas donde soy responsable)
   configuracion/ page.tsx     catálogos + SLA + config + Formularios (solo admin)
   procesos/  page.tsx + NuevoProcesoModal
   auditorias/page.tsx + NuevaAuditoriaModal  (modal de hallazgos inline)
@@ -34,7 +38,7 @@ app/
   reporteria/page.tsx + GeneradorInformeModal (informes imprimibles)
   sacp/      page.tsx + NuevaSACPModal       (acciones, avance % inline)
   usuarios/  page.tsx + modales (solo admin, usa /api/usuarios)
-  q/[token]/ page.tsx    formulario público de quejas (sin auth)
+  q/[token]/ page.tsx    formulario público de quejas (sin auth, categorías fijas obligatorias)
 components/
   AuthShell.tsx              guard de auth global (redirige a /login; salta guard para /login y /q)
   Sidebar.tsx                sidebar colapsable + hover-prefetch (admin-only sección) — SIN bloque de usuario al pie
@@ -48,11 +52,11 @@ lib/
   auth.ts                    signIn/signOut/getAppUser (Supabase Auth)
   types.ts                   solo tipo Queja (resto definidos por query)
   providers/  QueryProvider (React Query), ToastProvider (sonner)
-  queries/    queryKeys + useQuejas (incl. useSLAConfig, useQuejasEstadisticas), useCatalogos, useDashboard,
+  queries/    queryKeys + useQuejas (incl. useSLAConfig, useQuejasEstadisticas, useQuejaAdjuntos), useCatalogos, useDashboard,
               useAuditorias, useDocumentos, useProcesos, useReuniones, useRiesgos, useSACP, useUsuarios,
-              useFormulariosPublicos, useQuejaComentarios, useNotificaciones
-  server/     auth.ts (getCurrentUser Bearer), supabase-admin.ts (service client)
-  services/   quejaWorkflowService (RPC del flujo transaccional de quejas), folioService, notificacionService,
+              useFormulariosPublicos, useQuejaComentarios, useQuejaActividad, useNotificaciones
+  server/     auth.ts (getCurrentUser Bearer), supabase-admin.ts (service client), drive.ts (getDriveClient JWT Service Account + buscarOCrearSubcarpeta por folio)
+  services/   quejaWorkflowService (transicionarQueja 6 params, adjuntos storage, reabrirQueja), folioService, notificacionService,
               errorToast, passwordGenerator, sonidosNotificacion
               + capa legacy SIN uso: queja/auditoria/documento/proceso/reunion/riesgo/sacp/user Service
   store/      auth-store (Zustand), sidebar-store, theme-store (HUÉRFANO, sin toggle)
@@ -61,7 +65,12 @@ hooks/
   useRealtimeSubscription.ts suscripción Realtime + invalidación de queries (consumidores: /quejas y Header)
 supabase/  *.sql (seeds/RPC/dumps) · 001 (formulario público + alertas) · 002 (prefs notif + archivada) ·
            003 (selección sonido) · 004 (realtime + notif queja pública) · 005_seguridad_flujos_quejas.sql
-           (RPC transaccionales de quejas + RLS reforzada) · rls-policies.sql en raíz
+           (RPC transaccionales de quejas + RLS reforzada) · 006 (permisos dinámicos rol+modulo, rol colaborador,
+           quejas_actividad, estado GC) · 007 (queja_adjuntos + registrar_adjunto_queja + reabrir_queja + bucket
+           storage)            · 008 (drop overload viejo transicionar_queja) · 009 (transicionar_queja COMPLETA 6 params)
+           · 010 (config drive_folder_id_quejas para Drive) · 011 v4 (RPCs adjuntos público+interno alineados a la
+           tabla real: dual-write nombre/nombre_archivo y storage_path/url_archivo)
+           · rls-policies.sql en raíz
 ```
 
 ## 2. Frontend — Detalle por página
@@ -69,7 +78,7 @@ supabase/  *.sql (seeds/RPC/dumps) · 001 (formulario público + alertas) · 002
 | Ruta | Datos | Componentes clave |
 |------|-------|-------------------|
 | `/` | 4 KPIs (quejas ≠Cerrada, acciones ≠Cerrada, docs Borrador, riesgos Activos) + tareas pendientes (top 8 por vencimiento). "Actividad Reciente" es **100% hardcodeada** | Table, Badge, StatCard |
-| `/quejas` | búsqueda folio/cliente, filtros estado/prioridad, paginación 25, SLA visual por prioridad vs `sla_config` | NuevaQuejaModal, QuejaDetalleModal |
+| `/quejas` | búsqueda folio/cliente, filtros estado/prioridad, paginación 25, SLA visual por prioridad vs `sla_config`; estado `ahora` + setInterval 60s para Date.now (purity lint) | NuevaQuejaModal, QuejaDetalleModal |
 | `/configuracion` | 4 tabs: Catálogos (cascada módulo→tipo, CRUD), SLA y Plazos (`sla_config`), General (`configuraciones_sistema` update por clave), Formularios (enlaces `/q/[token]`). Guard `rol==='admin'` | — |
 | `/procesos` | tabla estática `procesos` | NuevoProcesoModal |
 | `/auditorias` | `auditorias` + modal hallazgos (`hallazgos` eq auditoria_id, SOLO lectura) | NuevaAuditoriaModal |
@@ -79,11 +88,12 @@ supabase/  *.sql (seeds/RPC/dumps) · 001 (formulario público + alertas) · 002
 | `/reporteria` | wizard 3 pasos: módulo → filtros → informe con tabla/resumen por estado/distribución/vencidos + `window.print` | GeneradorInformeModal |
 | `/sacp` | acciones con barra %, avance (100% → "En Validación"), cierre solo desde "En Validación" (→ "Cerrada" 100%) | NuevaSACPModal, modales inline |
 | `/usuarios` | stats + filtros + CRUD vía `/api/usuarios`. Guard `rol==='admin'` | UsuarioFormModal, PasswordModal, ResetPasswordModal, ConfirmDialog |
-| `/q/[token]` | formulario público de quejas sin auth (valida token en `formularios_publicos` activo; crea vía RPC `crear_queja_publica`; muestra folio) | — |
+| `/q/[token]` | formulario público de quejas sin auth (valida token en `formularios_publicos` activo; crea vía RPC `crear_queja_publica`; muestra folio). Categoría = select FIJO obligatorio: Queja, Denuncia, Sugerencia, Reclamo, Felicitación (sin catálogo) | — |
+| `/mis-quejas` | solo quejas donde `responsable_id = yo`. Toggle de páginas (ver sección 5 regla 30). Panel fixed 500px + expandir | QuejaColaboradorPanel |
 
 ## 3. Backend — API routes
 
-**Única:** `app/api/usuarios/route.ts` (runtime nodejs, usa service-role para operar Supabase Auth `admin`).
+**Rutas:** `app/api/usuarios/route.ts` y `app/api/drive/*` (todas `runtime nodejs`; usuarios usa service-role para operar Supabase Auth `admin`; drive usa service-role para leer config/autorizar + Service Account de Google).
 
 - **GET** — admin o calidad. Lista `usuarios` con filtros `search`/`rol`/`estado`.
 - **POST** — solo admin. Crea auth user (`admin.createUser`, email_confirm) + fila `usuarios` con `auth_id`. Rollback: si falla insert, borra el auth user. Genera contraseña temporal (≥8 o random).
@@ -101,6 +111,8 @@ Todas las tablas usan `id uuid` PK salvo indicado. Verificado con dump del dashb
 | `usuarios` | id, nombre, email, rol, estado, departamento, telefono, avatar_url, ultimo_acceso, created_at, auth_id (FK→auth.users.id), notif_habilitadas, notif_sonido, notif_sonido_id (CHECK 8 ids) |
 | `quejas` | id, folio, cliente_nombre, email_cliente, telefono, categoria, descripcion, prioridad, estado, fecha, fecha_sla, fecha_limite_investigacion, fecha_cierre, resolucion, notas, responsable_id (FK→usuarios), derivado_sacp_id (FK→acciones) |
 | `quejas_comentarios` | id, queja_id (FK→quejas), usuario_id (FK→usuarios), comentario, tipo, visible_cliente, fecha |
+| `queja_adjuntos` | id, queja_id (FK→quejas), nombre, storage_path, tamano (bigint), tipo_mime, usuario_id (FK→usuarios), created_at — RLS en 007 (staff SELECT todo; colaborador solo sus quejas; INSERT solo vía RPC) |
+| `quejas_actividad` | id, queja_id (FK→quejas), tipo (default 'nota'), descripcion, usuario_id (FK→usuarios), created_at — RLS en 006 |
 | `acciones` | id, folio, tipo, origen, origen_id, descripcion, responsable_id (FK→usuarios), fecha_limite, estado, prioridad, seguimiento_porcentaje, validado_por_gc, eficacia, notas, fecha_apertura |
 | `auditorias` | id, folio, tipo, proceso_area, auditor_lider_id (FK→usuarios), equipo_auditor, fecha_inicio, fecha_fin, estado, objetivo, alcance, created_at |
 | `hallazgos` | id, auditoria_id (FK→auditorias), tipo, descripcion, evidencia, requisito, estado, responsable_id (FK→usuarios), derivado_sacp_id (FK→acciones), created_at |
@@ -119,14 +131,15 @@ Todas las tablas usan `id uuid` PK salvo indicado. Verificado con dump del dashb
 | `catalogos` | id, tipo, valor, color, orden, activo, modulo — RLS en 005 (anon: solo `categoria_queja` activa de `quejas`) |
 | `sla_config` | id, proceso, prioridad, dias_alerta (int), dias_vencimiento (int) — RLS en 005 |
 | `configuraciones_sistema` | clave (PK), valor (jsonb), descripcion, categoria — RLS en 005 |
-| `permisos` | rol + modulo + accion (PK compuesta), permitido — RLS en 005 |
+| `permisos` | rol + modulo (PK compuesta), leer, escribir — RLS en 005/006 (staff SELECT / admin write) |
 | `formularios_publicos` | id, modulo (default 'quejas'), nombre, token (único, auto), activo, creado_por (FK→usuarios), created_at |
 
 **Reglas de la DB:**
 - `catalogos.modulo` = feature area (`'quejas'`, `'sacp'`, `'documentos'`, `'auditorias'`, `'riesgos'`, `'general'`); `tipo` agrupa valores (`'categoria_queja'`, `'estado_queja'`, `'prioridad'`, `'estado_sacp'`, `'tipo_sacp'`, `'estado_documento'`, `'estado_auditoria'`, `'tipo_auditoria'`...); `valor` = display; `activo` puede ser NULL/true — **siempre** filtrar con `.or('activo.is.null,activo.eq.true')`.
 - RLS activo en TODAS las tablas de negocio (quejas, acciones, auditorias, documentos, procesos, riesgos, reuniones, etc.). Desde la migración 005 también tienen RLS `catalogos`, `sla_config`, `configuraciones_sistema`, `permisos` (staff SELECT / admin write; `catalogos` además expone a `anon` solo `categoria_queja` activa). Sin RLS: `informes_config`.
-- `quejas` y `quejas_comentarios`: SELECT solo staff (`app_es_staff()`); **las mutaciones pasan solo por RPC** (no hay INSERT/UPDATE directo). `notificaciones`: SELECT/UPDATE solo propias (`usuario_id = app_usuario_actual_id()`). `formularios_publicos`: anon SELECT `activo=true`, solo admin ALL.
+- `quejas` y `quejas_comentarios`: SELECT solo staff (`app_es_staff()`) + política 006 para colaborador (solo sus quejas); **las mutaciones pasan solo por RPC** (no hay INSERT/UPDATE directo). `queja_adjuntos` (007): SELECT staff/colaborador-propio, INSERT solo vía RPC `registrar_adjunto_queja`. `notificaciones`: SELECT/UPDATE solo propias (`usuario_id = app_usuario_actual_id()`). `formularios_publicos`: anon SELECT `activo=true`, solo admin ALL.
 - Folios: funciones RPC `generar_folio_queja/sacp/auditoria/riesgo/documento` (SECURITY DEFINER, sin args) → formato `PREFIJO-AAAA-NNNN` (QUEJA-, SACP-, AUD-, RIESGO-, DOC-) con secuencias `seq_folio_*` (START 1 CACHE 20). Reset anual manual (ALTER SEQUENCE). Triggers de auto-folio están **comentados** — el frontend llama al RPC explícitamente.
+- `transicionar_queja` (migración 009) tiene **6 params con default**: `(p_queja_id, p_nuevo_estado, p_resolucion, p_justificacion_procede, p_responsable_id, p_motivo_reapertura)`. El cliente envía **SIEMPRE los 6 (null si no aplica)** — si existieran dos overloads (el viejo de 3 params fue eliminado en 008), PostgREST tira "Could not choose the best candidate function".
 - `lib/queries/useQuejas.ts` usa `select('*', {count:'exact'})`, `or(folio.ilike/cliente_nombre.ilike)`, `eq` estado/prioridad, `order('fecha', desc)`, `.range(page*25, ...)`.
 
 ## 5. Reglas de negocio IMPLEMENTADAS
@@ -144,12 +157,12 @@ Todas las tablas usan `id uuid` PK salvo indicado. Verificado con dump del dashb
 11. **Dashboard:** 4 KPIs + tareas pendientes de quejas (≠Cerrada, vence=fecha_sla) y acciones (≠Cerrada, vence=fecha_limite).
 12. **Catálogo vacío:** modales de quejas muestran `<input>` de texto libre si el catálogo viene vacío (fallback).
 13. **React Query:** `staleTime: Infinity`, `gcTime: 30min`, `retry: 1`, sin refetch on focus; invalidación manual tras mutaciones.
-14. **Formulario público de quejas:** ruta `/q/[token]` pública (sin auth) — `AuthShell` salta el guard para `['/login', '/q']`. El formulario valida el token contra `formularios_publicos` (`activo=true`) y crea la queja vía RPC `crear_queja_publica(...)` (SECURITY DEFINER, estado `Recibido`). No abre INSERT directo a `anon`.
+14. **Formulario público de quejas:** ruta `/q/[token]` pública (sin auth) — `AuthShell` salta el guard para `['/login', '/q']`. El formulario valida el token contra `formularios_publicos` (`activo=true`) y crea la queja vía RPC `crear_queja_publica(...)` (SECURITY DEFINER, estado `Recibido`). No abre INSERT directo a `anon`. Los adjuntos opcionales (input múltiple) van al endpoint `POST /api/drive/upload-public` (FormData `file`+`folio`+`token`: valida token activo + queja en `Recibido`, sube a Drive en la subcarpeta del folio y responde `drive_file_id` + `queja_id`); luego cada archivo se registra vía RPC `registrar_adjunto_queja_publica` (migración 011, ejecutable por `anon`) que inserta en `queja_adjuntos` con `usuario_id = NULL`, exige estado `Recibido` y aplica tope de 10 evidencias. Si fallan N evidencias, el ciudadano igualmente ve su folio (toast avisando los fallidos).
 15. **Gestión de enlaces:** tab "Formularios" en `/configuracion` (solo admin): crea enlaces con token, copia URL, activar/desactivar, eliminar. Hook `lib/queries/useFormulariosPublicos.ts`.
-16. **Máquina de estados queja:** `Recibido → (No Procede | En Investigación) → Resuelto → Finalizado`. Validada en la DB por el RPC `transicionar_queja` (rechaza transiciones inválidas). "Procede" setea `fecha_limite_investigacion = now()+15d`; "No Procede" (exige `resolucion`) y "Finalizar" setean `fecha_cierre`; "Resuelto" exige `resolucion`. El flujo se dispara desde `QuejaDetalleModal` vía `quejaWorkflowService`.
+16. **Máquina de estados queja:** `Recibido → (No Procede | En Investigación) → Resuelto → Finalizado`, con `Pendiente de Revisión GC` opcional entre En Investigación y Resuelto y reapertura desde Resuelto/Finalizado. Validada en la DB por el RPC `transicionar_queja` (6 params, rechaza transiciones inválidas). **Recibido (admin/calidad)**: botones Procede/No Procede; "No Procede" exige justificación → `p_resolucion`; "Procede" exige justificación (→ `p_justificacion_procede`, se guarda en `notas` como `[Procede] ...`) + responsable (→ `p_responsable_id`) y setea `fecha_limite_investigacion = now()+15d`. "En Investigación → Resuelto" exige `p_resolucion` (staff) y el responsable queda FIJO (no editable). "GC → Resuelto/En Investigación" solo staff. "Resuelto → Finalizado" solo staff. Reapertura (Resuelto/Finalizado → En Investigación) solo staff con `p_motivo_reapertura` obligatorio (→ `notas` como `[Reapertura] ...`, nuevo plazo 15 días). Flujo disparado desde `QuejaDetalleModal` vía `quejaWorkflowService`.
 17. **Comentarios de quejas:** `quejas_comentarios` (tipo `interno`/`cliente`, `visible_cliente`) listado y alta en `QuejaDetalleModal`. Hook `lib/queries/useQuejaComentarios.ts`.
-18. **Responsable y notas:** selects de responsable (admin/calidad activos vía `/api/usuarios`) y textarea `notas` editables en `QuejaDetalleModal` en cualquier estado.
-19. **Derivar a SACP:** botón en estados `En Investigación`/`Resuelto`; crea `acciones` con `origen='queja'`, `origen_id`, folio por RPC y guarda `quejas.derivado_sacp_id`.
+18. **Responsable:** se asigna SOLO en el flujo de "Procede" (Recibido). En "En Investigación" es fijo (no editable); en el resto de estados el selector de responsable solo está en Recibido. `actualizarDetallesQueja` permite cambiar responsable/notas/prioridad/categoría (staff).
+19. **Derivar a SACP:** botón en estados `En Investigación`/`Resuelto`; crea `acciones` con `origen='queja'`, `origen_id`, folio por RPC y guarda `quejas.derivado_sacp_id`. Idempotente.
 20. **Notificaciones reales:** las mutaciones de quejas insertan notificaciones **dentro de los RPC** (`transicionar_queja`, `agregar_comentario_queja`, `crear_queja_publica`, `procesar_alertas_quejas`) dirigidas al responsable + admin/calidad activos. `notificacionService.ts` (crearNotificacion/listar/marcar/archivar) se usa para listar y actualizar del Header. Campana conectada a `useNotificaciones` (no leídas, dropdown, marcar leída/todas, archivar, vaciar, refetch 60s).
 21. **Alertas de vencimiento:** función `procesar_alertas_quejas()` (3 y 1 día antes de `fecha_limite_investigacion`) + cron diario 06:00 (solo si `pg_cron` está disponible; si no, queda pendiente Edge Function). Insertar filas en `mail_queue` sin worker (envío de email NO implementado).
 22. **Indicadores en `/quejas`:** 4 StatCards (resueltas a tiempo %, procedencia %, quejas del mes, total) vía `useQuejasEstadisticas`.
@@ -157,23 +170,53 @@ Todas las tablas usan `id uuid` PK salvo indicado. Verificado con dump del dashb
 24. **Centro de notificaciones:** archivar individual (botón "x" al hover) y "Vaciar" (todas visibles) setean `notificaciones.archivada=true` (query filtra `.eq('archivada', false)`); si `notif_habilitadas=false` no se pide el badge/query (`enabled`); beep Web Audio cuando sube el conteo de no-leídas solo si `notif_sonido=true`.
 25. **Sonido de notificación (8 MP3 reales autohospedados):** `usuarios.notif_sonido_id` (CHECK en 8 ids `notification/{info,success,popup,error}` + `game/{coin,void,hit,miss}`, lista y `playNotificationSound()` en `lib/services/sonidosNotificacion.ts`); selector con preview (▶) dentro de las preferencias del menú de usuario, visible solo si el toggle de sonido está on; RPC `actualizar_mis_preferencias_notificacion` recibe `p_sonido_id`. Los mp3 son los originales de react-sounds (`public/sounds/*.mp3`, 4 notificación + 4 juego) descargados del CDN y autocontenidos — se reproducen decodificados vía `decodeAudioData` + `AudioContext` (sin CDN en runtime, funciona tras firewall). Migración 003 tiene el CHECK de 8 ids (con DROP previo del RPC por 42P13).
 26. **Realtime** (`useRealtimeSubscription` en `hooks/`): `/quejas` suscribe a `quejas` (invalida quejas+estadísticas+dashboard); `Header` suscribe a `notificaciones` por `usuario_id` (badge + beep inmediato). Migración 004 habilita realtime para quejas y notificaciones y además `crear_queja_publica` ahora notifica a todos los admin/calidad activos (`tipo='queja_nueva'`) + inserta `mail_queue`.
-27. **Capa transaccional de quejas (migración 005):** helpers SECURITY DEFINER `app_es_staff()` / `app_es_admin()` / `app_usuario_actual_id()`. RPCs `crear_queja_interna`, `actualizar_detalles_queja`, `transicionar_queja`, `derivar_queja_a_sacp`, `agregar_comentario_queja` (validan staff, `FOR UPDATE`, escriben `logs`). Cliente: `lib/services/quejaWorkflowService.ts` (`crearQuejaInterna`, `actualizarDetallesQueja`, `transicionarQueja`, `derivarQuejaASACP`, `agregarComentarioQueja`). `derivar_queja_a_sacp` solo en `En Investigación`/`Resuelto` y es idempotente.
+27. **Capa transaccional de quejas (migración 005):** helpers SECURITY DEFINER `app_es_staff()` / `app_es_admin()` / `app_usuario_actual_id()`. RPCs `crear_queja_interna`, `actualizar_detalles_queja`, `transicionar_queja`, `derivar_queja_a_sacp`, `agregar_comentario_queja` (validan staff, `FOR UPDATE`, escriben `logs`). Cliente: `lib/services/quejaWorkflowService.ts` (`crearQuejaInterna`, `actualizarDetallesQueja`, `transicionarQueja` con 6 params, `derivarQuejaASACP`, `agregarComentarioQueja`). `derivar_queja_a_sacp` solo en `En Investigación`/`Resuelto` y es idempotente.
+28. **Adjuntos de quejas (Google Drive vía Service Account):** los archivos NO tocan Supabase Storage (el bucket privado `quejas-adjuntos` solo retiene adjuntos legacy previos; sin INSERT nuevo). Todo va a Google Drive server-to-server con credenciales `GOOGLE_CLIENT_EMAIL`/`GOOGLE_PRIVATE_KEY` (.env.local). La carpeta raíz se lee dinámicamente de `configuraciones_sistema` (clave `drive_folder_id_quejas`, string jsonb editable desde `/configuracion → General`; migración 010) y el backend hace **creación perezosa** de la subcarpeta por folio (`QUEJA-2026-0045`: busca con `supportsAllDrives`; si no existe, la crea) — helper compartido `lib/server/drive.ts`. **La subida NO usa `drive.files.create` de googleapis**: su ensamblador multipart/gaxios resultó lentísimo (minutos para archivos pequeños, con Buffer o con stream); `subirArchivoASubcarpeta` arma el `multipart/related` a mano y lo envía con `fetch` nativo (undici) a `upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true` con `Content-Length` exacto y `AbortSignal.timeout(120s)`; el Bearer sale de `auth.getAccessToken()` **normalizado** (devuelve `string | {token}` — sin normalizar se manda `Bearer [object Object]` → 401). googleapis queda solo para JWT firmado, operaciones de carpeta y descarga. Metadatos en `queja_adjuntos`: `storage_path` guarda el **`drive_file_id`** (paths legacy contienen `/`, los IDs de Drive no — así los distingue el cliente). Endpoints: `POST /api/drive/upload` (interna: Bearer vía `getCurrentUser`, autoriza staff O responsable de la queja, folio resuelto desde la DB — nunca del cliente, máx 50 MB) y `GET /api/drive/download?id=<fileId>` (stream seguro `alt=media` con `Readable.toWeb`: valida Bearer, resuelve el adjunto por `storage_path`, verifica staff o responsable, streamea con `Content-Disposition`/`Content-Type` sin exponer el enlace real de Drive; 404 si Drive ya no tiene el archivo). Registro en DB siempre vía RPC `registrar_adjunto_queja` (staff o colaborador-responsable, escribe `logs`; sin INSERT directo por RLS) con `p_storage_path = drive_file_id`. Cliente `quejaWorkflowService`: `subirAdjuntoQueja` (fetch multipart al endpoint + RPC) y `descargarAdjuntoQueja` con lógica mixta (legacy: signed URL 60s → `window.open`; Drive: fetch Bearer → Blob → ObjectURL → click `<a download>` invisible). UI en `QuejaDetalleModal`: sección "Evidencias adjuntas" visible en TODOS los estados (incluye las públicas con `usuario_id NULL`), subir archivo SOLO en "En Investigación"; hook `useQuejaAdjuntos`.
+29. **Panel Mis Quejas (`QuejaColaboradorPanel`):** tabs Detalle/Análisis/Resolución. Detalle muestra datos + bloque "Justificación de Gestión de Calidad" (`queja.notas`, contiene `[Procede] ...`). Análisis = actividad (`quejas_actividad`, notas tipo 'nota' vía `useQuejaActividad`). Resolución: textarea conclusión + botón "Enviar a Revisión GC" (`En Investigación → Pendiente de Revisión GC` con `p_resolucion`; colaborador-responsable puede). NO hay botón "Iniciar investigación" — la investigación arranca sola cuando admin/calidad asigna responsable (15 días).
 
 ## 6. Reglas en el esquema pero NO implementadas (gaps / deuda técnica)
 
-- **Quejas:** `fecha_sla` y `fecha_limite_investigacion` sí se persisten (RPCs 005); las alertas dependen de `pg_cron`/Edge Function (mail_queue se llena, sin worker de envío).
+- **Quejas:** `fecha_sla` y `fecha_limite_investigacion` sí se persisten (RPCs 005/009); las alertas dependen de `pg_cron`/Edge Function (mail_queue se llena, sin worker de envío).
 - **SACP:** `origen`/`origen_id`/`fecha_apertura` los escribe `derivar_queja_a_sacp`; `eficacia`, `validado_por_gc`, `responsable_id`, `prioridad`, `notas` — en la interfaz pero nunca escritos.
 - **Auditorías:** no hay CRUD de hallazgos; "Derivado a SACP" solo es un badge si el campo viene poblado.
 - **Documentos:** `documento_versiones`/`versiones_documentos` nunca se escriben; campos Drive `drive_file_id*` sin uso; historial es placeholder.
-- **Permisos:** tabla sembrada (admin/coordinador/revisor/usuario) pero NUNCA consultada — toda la autorización es `rol === 'admin'`.
-- **Sin escritores:** `informes_config`, `tareas`, `solicitudes_documentales`. `logs` sí lo escriben los RPC de quejas (crear/transición/derivar); `mail_queue` lo escribe `procesar_alertas_quejas` y `crear_queja_publica` (sin worker de envío).
-- **Capa muerta:** `lib/services/*Service.ts` (queja, auditoria, documento, proceso, reunion, riesgo, sacp, user, notificacion) no es importada por ninguna página (páginas usan hooks + supabase directo; el flujo de quejas usa `quejaWorkflowService`). `theme-store` sin consumidores; `theme-toggle.tsx` no existe.
+- **Permisos:** tabla dinámica 006 (rol+modulo leer/escribir) SI consultada por `auth-store` vía RPC `app_mis_permisos`, pero la UI sigue autorizando por `rol === 'admin'`.
+- **Sin escritores:** `informes_config`, `tareas`, `solicitudes_documentales`. `logs` sí lo escriben los RPC de quejas (crear/transición/derivar/adjunto/reapertura); `mail_queue` lo escribe `procesar_alertas_quejas` y `crear_queja_publica` (sin worker de envío).
+- **Capa muerta:** `lib/services/*Service.ts` (queja, auditoria, documento, proceso, reunion, riesgo, sacp, user, notificacion) no es importada por ninguna página (páginas usan hooks + supabase directo; el flujo de quejas usa `quejaWorkflowService`). `reabrir_queja` (RPC 007) existe pero la UI usa `transicionar_queja` con `p_motivo_reapertura`. `theme-store` sin consumidores; `theme-toggle.tsx` no existe.
 
 ## 7. Convenciones y gotchas
 
 - **Estilos:** Tailwind v4 CSS-first (`@import "tailwindcss"` en `globals.css`); existe `tailwind.config.ts` pero el sistema real es v4 sin depender de él. Mucho estilo inline con paleta fija: primario `#0d6efd`, dark `#212529`/`#2c3e50`/`#343a40`, bordes `#dee2e6`, texto `#6c757d`. Clases `dark:` presentes en muchas páginas pero sin toggle conectado.
+- **Tokens semánticos (`/mis-quejas` y `globals.css` @theme):** `--color-qms-primary #0d6efd`, `--color-qms-primary-dark #0b5ed7`, `--color-qms-dark #212529`, `--color-qms-muted #6c757d`, `--color-qms-border #dee2e6`, `--color-qms-header #343a40`, `--color-qms-surface #ffffff`, `--color-qms-scroll #cbd5e1`, `--color-qms-scroll-hover #94a3b8`. Solo `/mis-quejas` los usa; el resto del sistema sigue con hex inline.
+- **Scrollbars Monday (`globals.css`):** `.monday-scroll` (thumb 12px ancho / 28px alto horizontal, radius 4px, `background-clip: content-box`, `:horizontal` top/bottom 6px y left/right 20px, hover `var(--color-qms-scroll-hover)`; Firefox `scrollbar-width: auto` + `scrollbar-color`); `.monday-scroll-no-x` oculta solo el scrollbar horizontal. Scrollbar global 15px.
+- **Split-pane `/mis-quejas`:** `AuthShell` main tiene `p-4` (16px) → el panel ocupa `mr-[calc(500px-16px)]` cuando está abierto; la tabla usa `min-w-[calc(100%+484px)]` abierto / `min-w-[1200px]` cerrado para que NUNCA se encoja. Panel `fixed top-0 right-0 z-50 h-screen w-[500px]` ↔ `w-full` (isExpanded), `shadow-2xl`.
+- **Select / copia:** `layout.tsx` tiene `<body className="select-none">` + excepciones `select-text` en tablas/paneles.
+- **Purity lint (`react-hooks/set-state-in-effect`):** PROHIBIDO `setState` sincrónico en `useEffect`; patrones permitidos: ajuste en render con primitivos (`prevQuejaId` en QuejaColaboradorPanel/QuejaDetalleModal) o escrituras DOM directas a refs (`.scrollLeft` vía `syncPill`).
 - **Tipos:** `lib/types.ts` solo tiene `Queja`; cada hook declara sus tipos localmente.
 - **Búsqueda con retraso:** `useDeferredValue` en quejas/usuarios.
-- **RPC:** `.rpc()` en la app: `folioService.generarFolio`, `crear_queja_publica` (formulario público `/q/[token]`), `actualizar_mis_preferencias_notificacion` (preferencias del usuario autenticado), y el flujo de quejas vía `quejaWorkflowService` (`crear_queja_interna`, `actualizar_detalles_queja`, `transicionar_queja`, `derivar_queja_a_sacp`, `agregar_comentario_queja`).
+- **RPC:** `.rpc()` en la app: `folioService.generarFolio`, `crear_queja_publica` (formulario público `/q/[token]`), `actualizar_mis_preferencias_notificacion` (preferencias del usuario autenticado), y el flujo de quejas vía `quejaWorkflowService` (`crear_queja_interna`, `actualizar_detalles_queja`, `transicionar_queja` con 6 params siempre, `derivar_queja_a_sacp`, `agregar_comentario_queja`, `registrar_adjunto_queja` tras subir a Drive) y `registrar_adjunto_queja_publica` (migración 011, `RETURNS uuid`: registra las evidencias del formulario público como `anon` con `usuario_id NULL`, exige estado `Recibido`, tope 10). Ambos RPCs de adjuntos (011 v4) hacen **dual-write** a las columnas legacy reales de la tabla (`nombre_archivo`, `url_archivo`) además de las estándar — la tabla `queja_adjuntos` en producción NO coincide con el CREATE del 007 del repo. `reabrir_queja` (007) sin uso en la UI.
+- **Gotcha PostgREST:** si en la DB existen DOS overloads de un RPC y el nuevo tiene defaults, enviar menos parámetros tira "Could not choose the best candidate function" — el cliente envía SIEMPRE los 6 params de `transicionar_queja` (null si no aplica) y el overload viejo se elimina con la migración 008.
+- **Gotchas Google Drive (adjuntos):** `auth.getAccessToken()` devuelve `string | {token}` — normalizar SIEMPRE antes de armar headers crudos (sin normalizar sale `Bearer [object Object]` → 401 "Expected OAuth 2 access token"). NO subir archivos con `drive.files.create` (multipart de gaxios lento/cuelga): usar `subirArchivoASubcarpeta` (REST con fetch nativo). La carpeta raíz debe compartirse con la Service Account como Editor. La tabla real `queja_adjuntos` tiene columnas legacy (`nombre_archivo`, `url_archivo`) NOT NULL: los RPC hacen dual-write; el script 011 v4 incluye detector WARNING para columnas NOT NULL sin default no mapeadas.
+- **Purity lint (`react-hooks/purity`):** `Date.now()` no se puede llamar en render; en `app/quejas/page.tsx` se resuelve con `useState(() => Date.now())` + `setInterval` 60s.
 - **Errores:** `errorToast.ts` (showError/showSuccess) envuelve sonner + console.error.
-- **Env vars (.env.local):** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (esta última es del proyecto real, ref `fykhrrpeo...`).
+- **Env vars (.env.local):** `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (esta última es del proyecto real, ref `fykhrrpeo...`), `GOOGLE_CLIENT_EMAIL` + `GOOGLE_PRIVATE_KEY` (Service Account de Google Drive, key con `\n` literales entre comillas; compartir la carpeta raíz con el email de la SA como Editor).
+
+## 8. Subsistema de IA Multi-Proveedor (ilimitado)
+
+Gestor de IA dinámico, sin modelos fijos. Configuración en `configuraciones_sistema` (jsonb, RLS staff SELECT / admin write):
+
+- **`ai_providers`** (`lib/ai/types.ts` `AIProvider[]`): `{ id, nombre, tipo: 'gemini'|'anthropic'|'openai', base_url?, api_key, tokens_usados: number }`. `base_url` solo aplica a tipo `openai` y permite endpoints compatibles (OpenAI, DeepSeek, Grok xAI, OpenRouter…). `tokens_usados` es un **odómetro histórico** que inicia en 0 y solo se incrementa (no hay límites).
+- **`ai_routing`** (`AIRouting` = `Record<modulo, { proveedor_id, modelo_nombre, system_prompt? }>`): mapea cada módulo QMS → proveedor + **nombre de modelo exacto** + (opcional) **system prompt de especialización** (ej. `quejas → { proveedor_id, modelo_nombre: 'grok-beta', system_prompt: 'Eres un auditor…' }`). Módulos válidos: `quejas, sacp, documentos, auditorias, riesgos, revision, general`.
+
+**Factory (`lib/ai/aiFactory.ts`):** `crearClienteIA(provider, modelo)` devuelve `AIClient.analizar({ prompt, system?, maxTokens?, temperature?, archivos? })`. OpenAI y Anthropic usan `fetch` nativo (sin SDK): OpenAI `/chat/completions` (Bearer, imágenes vía `image_url` data URI; PDFs no visionables se notifican como texto), Anthropic `/v1/messages` (x-api-key + anthropic-version, imágenes vía `image` base64). **Gemini usa el SDK oficial `@google/generative-ai`** (`new GoogleGenerativeAI(api_key)`, `getGenerativeModel({ model: cleanModel, systemInstruction })` + `generateContent` con parts `inlineData` base64 para cualquier MIME incl. PDF); el SDK no expone `listModels`, así que el diagnóstico de modelos habilitados se hace vía `fetch` al REST `v1beta/models?key=`. `archivos: ArchivoIA[] = { nombre, mime, buffer }`. Timeout 120s. Cada `analizar` devuelve `{ texto, uso? }` normalizando `usage` nativo (OpenAI `usage`, Anthropic `usage.input/output_tokens`, Gemini `usageMetadata`) a `{ prompt_tokens, completion_tokens, total_tokens }`.
+
+**Blindaje Gemini:** el `modelo` se sanitiza con `.trim().toLowerCase().replace(/[\r\n]/g,'').replace(/^models\//,'')`; si queda vacío → `'gemini-1.5-flash'`. Ante 404/`not found`, el `catch` imprime en consola del server la lista de modelos habilitados para esa API Key y, si `gemini-1.5-flash` está disponible, **reintenta automáticamente** con ese modelo por defecto.
+
+**Endpoint (`app/api/ai/analizar/route.ts`, `runtime nodejs`):** recibe `{ modulo, entidad_id, tipo_consulta: 'auto'|'custom', prompt_usuario? }`. Autentica con `getCurrentUser`; autoriza staff OR (si módulo `quejas`) el `responsable_id` de la queja. `resolverEntidad` busca la queja por `id` O `folio` (el panel envía el UUID). Lee `ai_providers`+`ai_routing`, resuelve proveedor/modelo/system_prompt. Extrae campos de la queja (descripción, notas, resolución, etc.). **Descarga los adjuntos en Buffer**: para `queja_adjuntos` con `storage_path` sin `/` (Drive) usa `descargarArchivoDrive` (googleapis `files.get` `alt:media`→arraybuffer); con `/` (legacy Supabase) usa `admin.storage.download`. Topes: 10 archivos, 10MB c/u, 15MB total (omite el resto). Empaqueta system_prompt + texto + buffers y llama al cliente. Si `uso.total_tokens > 0`, **incrementa `tokens_usados` del proveedor** en `ai_providers` (read-modify-write del jsonb con service client). Devuelve `{ analisis, archivos_procesados, tokens_consumidos }`. **Las API keys NUNCA salen del servidor**.
+
+**UI:**
+- `components/configuracion/AIProvidersManager.tsx` (tab **IA** en `/configuracion`, solo admin): CRUD de proveedores (nombre/tipo/url/apikey con show-hide) con **auto-guardado en BD** al agregar/actualizar/eliminar (no existe botón "Guardar proveedores"; el enrutamiento sí tiene su botón "Guardar enrutamiento", y al eliminar un proveedor se limpia y persiste también el enrutamiento que lo referenciaba). **Odómetro de consumo** neutral por proveedor (`☁️ Tokens consumidos: N` en badge gris, sin barras ni límites; ícono discreto 🧹 para reiniciar a 0 solo si el admin lo desea). Matriz de enrutamiento por módulo con **selector inteligente de modelo**: al elegir un proveedor, el `<select>` de modelo se puebla con sugerencias según `tipo` — gemini: `gemini-1.5-flash`, `gemini-1.5-pro`; openai: `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`; anthropic: `claude-3-5-sonnet-20240620`, `claude-3-opus-20240229`, `claude-3-haiku-20240307` — + opción final **"Otro (Escribir manual)"** que revela un `<input>` libre para modelos exóticos (DeepSeek, Grok, OpenRouter…). Botón **Especializar** abre Modal de system-prompt por módulo (verde/check si ya tiene contexto). Guarda vía `upsert` en `configuraciones_sistema` con `onConflict: 'clave'`; al guardar preserva `tokens_usados` de BD (merge) salvo resets explícitos.
+- `lib/services/aiService.ts` `analizarIA(payload)` → fetch autenticado a `/api/ai/analizar`.
+- `app/mis-quejas/components/QuejaColaboradorPanel.tsx` (tab **Análisis**): tarjeta "Asistente IA" con botón **✨ Análisis IA** (auto) y chat (prompt custom) contra `modulo:'quejas'`.
+
+**Seguridad:** las API keys se guardan en texto plano en `configuraciones_sistema` (accesible por admin vía cliente anon RLS). El endpoint las usa solo server-side. Si se requiere secreto fuerte, mover a variables de entorno/Vault y referenciar por id.

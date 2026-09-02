@@ -85,25 +85,69 @@ export function reabrirQueja(quejaId: string, motivo: string) {
 }
 
 export async function subirAdjuntoQueja(quejaId: string, file: File): Promise<QuejaAdjunto> {
-  const nombreLimpio = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-  const storagePath = `${quejaId}/${Date.now()}-${nombreLimpio}`
-  const { error: uploadError } = await supabase.storage
-    .from('quejas-adjuntos')
-    .upload(storagePath, file, { upsert: false })
-  if (uploadError) throw uploadError
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('queja_id', quejaId)
+
+  const res = await fetch('/api/drive/upload', {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  })
+  if (!res.ok) {
+    let detalle = ''
+    try {
+      detalle = (await res.json())?.error ?? ''
+    } catch {
+      detalle = ''
+    }
+    throw new Error(detalle || `No se pudo subir el archivo a Google Drive (HTTP ${res.status})`)
+  }
+  const { drive_file_id: driveFileId } = (await res.json()) as { drive_file_id: string }
+
   return callRpc<QuejaAdjunto>('registrar_adjunto_queja', {
     p_queja_id: quejaId,
     p_nombre: file.name,
-    p_storage_path: storagePath,
+    p_storage_path: driveFileId,
     p_tamano: file.size,
     p_tipo_mime: file.type || 'application/octet-stream',
   })
 }
 
 export async function descargarAdjuntoQueja(adjunto: QuejaAdjunto): Promise<void> {
-  const { data, error } = await supabase.storage
-    .from('quejas-adjuntos')
-    .createSignedUrl(adjunto.storage_path, 60)
-  if (error || !data?.signedUrl) throw error ?? new Error('No se pudo generar el enlace de descarga')
-  window.open(data.signedUrl, '_blank')
+  if (adjunto.storage_path.includes('/')) {
+    const { data, error } = await supabase.storage
+      .from('quejas-adjuntos')
+      .createSignedUrl(adjunto.storage_path, 60)
+    if (error || !data?.signedUrl) throw error ?? new Error('No se pudo generar el enlace de descarga')
+    window.open(data.signedUrl, '_blank')
+    return
+  }
+
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+  const res = await fetch(`/api/drive/download?id=${encodeURIComponent(adjunto.storage_path)}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  })
+  if (!res.ok) {
+    let detalle = ''
+    try {
+      detalle = (await res.json())?.error ?? ''
+    } catch {
+      detalle = ''
+    }
+    throw new Error(detalle || `No se pudo descargar el archivo (HTTP ${res.status})`)
+  }
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = adjunto.nombre
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
 }

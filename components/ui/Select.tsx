@@ -9,10 +9,10 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className = '', children, style, ...props }, ref) => {
     return (
-      <div className="relative">
+      <div className="relative w-full">
         <select
           ref={ref}
-          className={`appearance-none rounded-lg border bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${className}`}
+          className={`appearance-none rounded-lg border bg-white text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-full ${className}`}
           style={{ padding: '0.5rem 2rem 0.5rem 0.75rem', cursor: 'pointer', color: '#212529', borderColor: '#dee2e6', ...style }}
           {...props}
         >

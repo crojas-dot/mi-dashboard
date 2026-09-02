@@ -1,14 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize } from 'lucide-react'
+import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles } from 'lucide-react'
 import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { transicionarQueja } from '@/lib/services/quejaWorkflowService'
+import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { transicionarQueja, descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
+import { analizarIA } from '@/lib/services/aiService'
+import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 
 interface Props {
   queja: Queja | null
@@ -19,6 +22,12 @@ interface Props {
 type Tab = 'detalle' | 'actividad' | 'resolucion'
 
 const ESTADOS_ENVIADOS = ['Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
 
 const estadoVariant: Record<string, string> = {
   Recibido: 'gray', 'No Procede': 'red', 'En Investigación': 'amber',
@@ -34,10 +43,17 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const [nota, setNota] = useState('')
   const [loading, setLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [previewAdjunto, setPreviewAdjunto] = useState<QuejaAdjunto | null>(null)
+  const [aiAutoLoading, setAiAutoLoading] = useState(false)
+  const [aiResult, setAiResult] = useState('')
+  const [chat, setChat] = useState<{ role: 'user' | 'ia'; content: string }[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
 
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
   const crearActividad = useCrearQuejaActividad()
+  const { data: adjuntos = [] } = useQuejaAdjuntos(quejaId)
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -53,6 +69,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     setResolucion('')
     setNota('')
     setIsExpanded(false)
+    setPreviewAdjunto(null)
+    setAiResult('')
+    setChat([])
+    setChatInput('')
+    setAiAutoLoading(false)
+    setChatLoading(false)
   }
 
   if (!queja) return null
@@ -78,6 +100,39 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     }
   }
 
+  const handleAnalisisAuto = async () => {
+    setAiAutoLoading(true)
+    setAiResult('')
+    try {
+      const txt = await analizarIA({ modulo: 'quejas', entidad_id: queja.id, tipo_consulta: 'auto' })
+      setAiResult(txt)
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'No se pudo generar el análisis IA'
+      showError(e as Error, errorMsg)
+      setAiResult('')
+    } finally {
+      setAiAutoLoading(false)
+    }
+  }
+
+  const handleEnviarIA = async () => {
+    const msg = chatInput.trim()
+    if (!msg) return
+    setChat((c) => [...c, { role: 'user', content: msg }])
+    setChatInput('')
+    setChatLoading(true)
+    try {
+      const txt = await analizarIA({ modulo: 'quejas', entidad_id: queja.id, tipo_consulta: 'custom', prompt_usuario: msg })
+      setChat((c) => [...c, { role: 'ia', content: txt }])
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : 'No se pudo obtener respuesta de IA'
+      showError(e as Error, errorMsg)
+      setChat((c) => c.slice(0, -1))
+    } finally {
+      setChatLoading(false)
+    }
+  }
+
   const handleAgregarNota = async () => {
     if (!nota.trim()) return
     try {
@@ -91,7 +146,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
   const tabs: { key: Tab; label: string; icon: typeof Info }[] = [
     { key: 'detalle', label: 'Detalle', icon: Info },
-    { key: 'actividad', label: 'Actividad', icon: Activity },
+    { key: 'actividad', label: 'Análisis', icon: Activity },
     { key: 'resolucion', label: 'Resolución', icon: CheckCircle },
   ]
 
@@ -206,13 +261,115 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 <p className="mt-2 text-sm text-gray-400">Sin descripción.</p>
               )}
             </div>
+
+            {queja.notas && (
+              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
+                <h2 className="text-xs font-medium uppercase tracking-wider text-amber-700">Justificación de Gestión de Calidad</h2>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-amber-900">{queja.notas}</p>
+              </div>
+            )}
+
+            <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
+              <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Evidencias adjuntas</h2>
+              {adjuntos.length === 0 ? (
+                <p className="mt-2 text-sm text-gray-400">Sin evidencias todavía.</p>
+              ) : (
+                <ul className="mt-3 space-y-1">
+                  {adjuntos.map((a) => (
+                    <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                      <button
+                        type="button"
+                        onClick={() => setPreviewAdjunto(a)}
+                        className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                        title="Vista previa"
+                      >
+                        {a.nombre}
+                      </button>
+                      <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                      <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                        className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
+                        title="Descargar"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         )}
 
         {activeTab === 'actividad' && (
           <div className="mx-auto max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Actividad</h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Análisis</h1>
             <p className="mt-1 text-sm text-gray-500">Registrá avances y comentarios de tu investigación.</p>
+
+            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" style={{ color: '#0d6efd' }} />
+                <h2 className="text-xs font-medium uppercase tracking-wider text-blue-700">Asistente IA</h2>
+              </div>
+              <p className="mt-1 text-xs text-blue-900/70">Analizá la queja con el proveedor configurado en Configuración → IA.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <Button size="sm" onClick={handleAnalisisAuto} loading={aiAutoLoading}>
+                  <Sparkles className="h-3.5 w-3.5" /> Análisis IA
+                </Button>
+              </div>
+              {aiAutoLoading && (
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-blue-700">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Obteniendo contexto y consultando a la IA…
+                </p>
+              )}
+              {aiResult && (
+                <textarea
+                  className="w-full min-h-[500px] p-6 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap mt-3"
+                  value={aiResult}
+                  onChange={(e) => setAiResult(e.target.value)}
+                  placeholder="El análisis de la IA aparecerá aquí..."
+                />
+              )}
+
+              {chat.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {chat.map((m, i) => (
+                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'border border-gray-200 bg-white text-gray-800'}`}>
+                        <span className="whitespace-pre-wrap">{m.content}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {chatLoading && (
+                <div className="mt-2 flex justify-start">
+                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analizando…
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 flex items-end gap-2">
+                <textarea
+                  rows={2}
+                  placeholder="Hacé una pregunta sobre esta queja..."
+                  className="flex-1 resize-none rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-400"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  disabled={chatLoading}
+                />
+                <Button size="sm" onClick={handleEnviarIA} loading={chatLoading} disabled={!chatInput.trim()}>
+                  <Send className="h-3.5 w-3.5" /> Enviar
+                </Button>
+              </div>
+            </div>
 
             <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
               <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Agregar nota</h2>
@@ -301,6 +458,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
           </div>
         )}
       </div>
+
+      <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
     </aside>
   )
 }
