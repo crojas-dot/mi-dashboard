@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles } from 'lucide-react'
+import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles, Edit, Eye as EyeIcon } from 'lucide-react'
 import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -12,6 +12,7 @@ import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { transicionarQueja, descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { analizarIA } from '@/lib/services/aiService'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
+import ReactMarkdown from 'react-markdown'
 
 interface Props {
   queja: Queja | null
@@ -49,6 +50,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const [chat, setChat] = useState<{ role: 'user' | 'ia'; content: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
+  const [modoEdicion, setModoEdicion] = useState(false)
 
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
@@ -328,14 +330,42 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 </p>
               )}
               {aiResult && (
-                <textarea
-                  className="w-full min-h-[500px] p-6 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap mt-3"
-                  value={aiResult}
-                  onChange={(e) => setAiResult(e.target.value)}
-                  placeholder="El análisis de la IA aparecerá aquí..."
-                />
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-xs font-medium text-gray-500">Resultado del análisis</h3>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => setModoEdicion(!modoEdicion)}
+                      className="gap-1.5"
+                    >
+                      {modoEdicion ? (
+                        <span className="flex items-center gap-1.5">
+                          <EyeIcon className="h-3.5 w-3.5" />
+                          Vista Lectura
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <Edit className="h-3.5 w-3.5" />
+                          Editar
+                        </span>
+                      )}
+                    </Button>
+                  </div>
+                  {modoEdicion ? (
+                    <textarea
+                      className="w-full min-h-[500px] p-6 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap"
+                      value={aiResult}
+                      onChange={(e) => setAiResult(e.target.value)}
+                      placeholder="El análisis de la IA aparecerá aquí..."
+                    />
+                  ) : (
+                    <div className="prose prose-blue max-w-none min-h-[400px] p-6 bg-white border border-gray-200 rounded-lg shadow-sm font-sans leading-relaxed text-gray-800">
+                      <ReactMarkdown>{aiResult}</ReactMarkdown>
+                    </div>
+                  )}
+                </div>
               )}
-
               {chat.length > 0 && (
                 <div className="mt-4 space-y-2">
                   {chat.map((m, i) => (
@@ -347,7 +377,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                   ))}
                 </div>
               )}
-
               {chatLoading && (
                 <div className="mt-2 flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">

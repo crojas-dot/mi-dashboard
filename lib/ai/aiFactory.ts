@@ -1,5 +1,7 @@
 import { GoogleGenerativeAI, type Part, type GenerateContentResult } from '@google/generative-ai'
 import type { AIProvider, ArchivoIA } from './types'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { obtenerModelosDisponibles, obtenerModelosCache, guardarModelosCache, invalidarModelosCache } from './modelDiscovery'
 
 export const IA_SYSTEM_PROMPT =
   'Sos un asistente experto en Gestión de Calidad (norma ISO 9001 / acreditación, Ente Costarricense de Acreditación). ' +
@@ -29,6 +31,54 @@ export interface AIClient {
 }
 
 const TIMEOUT_MS = 120_000
+
+export async function invalidarCacheGeminiFlashAuto(admin: SupabaseClient): Promise<void> {
+  await invalidarModelosCache(admin, 'gemini')
+}
+
+export async function resolverGeminiFlashAuto(
+  admin: SupabaseClient,
+  apiKey: string,
+): Promise<string | null> {
+  const dummyProvider: AIProvider = {
+    id: 'gemini',
+    nombre: 'Gemini',
+    tipo: 'gemini',
+    api_key: apiKey,
+    tokens_usados: 0,
+    limite_tokens: 30_000_000,
+    modelos: [],
+  }
+  return resolverModeloAuto(admin, dummyProvider)
+}
+
+export async function resolverModeloAuto(
+  admin: SupabaseClient,
+  provider: AIProvider,
+): Promise<string | null> {
+  const cached = await obtenerModelosCache(admin, provider.id)
+  if (cached && cached.length > 0) {
+    console.log(`[aiFactory] Caché vigente para ${provider.nombre}, usando: ${cached[0]}`)
+    return cached[0]
+  }
+
+  console.log(`[aiFactory] Consultando modelos disponibles de ${provider.nombre}...`)
+  const resultado = await obtenerModelosDisponibles(provider)
+
+  if (resultado.modelos.length > 0) {
+    await guardarModelosCache(admin, provider.id, resultado.modelos)
+    console.log(`[aiFactory] ${resultado.modelos.length} modelos cacheados para ${provider.nombre}: ${resultado.modelos[0]}`)
+    return resultado.modelos[0]
+  }
+
+  if (cached && cached.length > 0) {
+    console.warn(`[aiFactory] ListModels falló, usando caché expirada de ${provider.nombre}: ${cached[0]}`)
+    return cached[0]
+  }
+
+  console.warn(`[aiFactory] Sin modelos disponibles para ${provider.nombre}`)
+  return null
+}
 
 function quitarSlashFinal(url: string): string {
   return url.replace(/\/+$/, '')
@@ -210,30 +260,31 @@ function crearGemini(provider: AIProvider, modeloOriginal: string): AIClient {
         .replace(/[\r\n]/g, '')
         .replace(/^models\//, '')
       if (!cleanModel) cleanModel = 'gemini-2.5-flash'
+      const finalModelName = cleanModel
       const parts: Part[] = [{ text: prompt }]
       for (const a of archivos) {
         parts.push({ inlineData: { data: aBase64(a.buffer), mimeType: a.mime } })
       }
-      const generar = async (modelName: string) =>
+      const generarCon = (modelName: string) =>
         genAI.getGenerativeModel({ model: modelName, systemInstruction: system }).generateContent({
           contents: [{ role: 'user', parts }],
           generationConfig: { temperature, maxOutputTokens: maxTokens },
         })
       try {
-        const result = await generar(cleanModel)
+        const result = await generarCon(finalModelName)
         return procesarResultadoGemini(result, provider.nombre)
       } catch (err) {
         const e = err as { status?: number; response?: { status?: number } }
         const status = e?.status ?? e?.response?.status
         const es404 = status === 404 || /404|not found|is not found/i.test(String((err as Error).message))
         if (es404) {
-          console.error(`[Gemini] El modelo "${cleanModel}" no está disponible (status ${status ?? 'desconocido'}).`)
+          console.error(`[Gemini] El modelo "${finalModelName}" no está disponible (status ${status ?? 'desconocido'}).`)
           const lista = await listarModelosGemini(provider.api_key)
           console.error('[Gemini] Modelos habilitados para esta API Key:', lista)
           const fallback = 'gemini-2.5-flash'
-          if (cleanModel !== fallback && lista.includes(fallback)) {
+          if (finalModelName !== fallback && lista.includes(fallback)) {
             console.error(`[Gemini] Reintentando con modelo por defecto "${fallback}".`)
-            const result2 = await generar(fallback)
+            const result2 = await generarCon(fallback)
             return procesarResultadoGemini(result2, provider.nombre)
           }
         }

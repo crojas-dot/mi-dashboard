@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
-import { crearClienteIA, IA_SYSTEM_PROMPT } from '@/lib/ai/aiFactory'
+import { IA_SYSTEM_PROMPT, resolverModeloAuto } from '@/lib/ai/aiFactory'
+import { invalidarModelosCache, esModeloAuto, esOpenRouter } from '@/lib/ai/modelDiscovery'
+import { guardarUltimoExito, obtenerUltimoExito, registrarFallo, obtenerModelosNoPenalizados } from '@/lib/ai/modelMemory'
 import { getDriveClient, buscarOCrearSubcarpeta } from '@/lib/server/drive'
 import type { AIProvider, AIRouting } from '@/lib/ai/types'
-import { GoogleAIFileManager } from '@google/generative-ai/server'
-import { type Part } from '@google/generative-ai'
-import * as fs from 'fs'
-import * as path from 'path'
-import * as os from 'os'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -31,28 +29,111 @@ const INSTRUCCIONES_AUTO =
   '(3) Posibles causas raíz, (4) Recomendaciones, (5) Próximos pasos sugeridos. ' +
   'Si hay archivos adjuntos, tenlos en cuenta. Usá viñetas y lenguaje claro.'
 
+const TIMEOUT_IA_MS = 15000
+const MAX_SUBFALLBACK = 10
 
+async function ejecutarProveedorIA(
+  admin: SupabaseClient,
+  provider: AIProvider,
+  modelo: string,
+  system: string,
+  prompt: string,
+): Promise<{ text: string; tokens: number }> {
+  let tokens = 0
 
-// Exponential backoff retry helper
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  baseDelayMs = 2000
-): Promise<T> {
-  let lastError: Error
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn()
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
-      const isRetryable = /429|503|rate.?limit|quota|exhausted|overloaded/i.test(lastError.message)
-      if (!isRetryable || attempt === maxRetries) throw lastError
-      const delay = baseDelayMs * Math.pow(2, attempt)
-      console.warn(`[api/ai/analizar] Intento ${attempt + 1} falló, reintentando en ${delay}ms:`, lastError.message)
-      await new Promise((resolve) => setTimeout(resolve, delay))
-    }
+  if (esModeloAuto(modelo)) {
+    const resolved = await resolverModeloAuto(admin, provider)
+    if (!resolved) throw new Error(`No se pudo resolver "${modelo}" para ${provider.nombre} y no hay fallback disponible`)
+    modelo = resolved
+    console.log(`[api/ai] Modelo auto resuelto para ${provider.nombre}: ${modelo}`)
   }
-  throw lastError!
+
+  if (esOpenRouter(provider) && Array.isArray(provider.modelos) && provider.modelos.length > 0 && !provider.modelos.includes(modelo)) {
+    console.warn(`[api/ai] Modelo "${modelo}" no está en la lista de gratuitos de OpenRouter, usando: ${provider.modelos[0]}`)
+    modelo = provider.modelos[0]
+  }
+
+  if (provider.tipo === 'gemini') {
+    const { GoogleGenerativeAI } = await import('@google/generative-ai')
+    const genAI = new GoogleGenerativeAI(provider.api_key)
+    const model = genAI.getGenerativeModel({
+      model: modelo,
+      systemInstruction: system,
+      generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
+    })
+    const result = await model.generateContent(
+      { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+      { signal: AbortSignal.timeout(TIMEOUT_IA_MS) },
+    )
+    const text = result.response.text()
+    if (!text) throw new Error('Respuesta vacía de Gemini')
+    const usage = result.response.usageMetadata
+    if (usage) tokens = usage.totalTokenCount ?? 0
+    return { text: text.trim(), tokens }
+  }
+
+  if (provider.tipo === 'openai') {
+    const baseUrl = provider.base_url?.replace(/\/+$/, '') || 'https://api.openai.com/v1'
+    const maxTokens = esOpenRouter(provider) ? 1024 : 8192
+    const res = await fetch(`${baseUrl}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${provider.api_key}`,
+      },
+      body: JSON.stringify({
+        model: modelo,
+        temperature: 0.3,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: prompt },
+        ],
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_IA_MS),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+    }
+    const json = await res.json()
+    const text = json?.choices?.[0]?.message?.content
+    if (!text) throw new Error('Respuesta vacía del proveedor OpenAI')
+    if (json?.usage?.total_tokens) tokens = json.usage.total_tokens
+    return { text: text.trim(), tokens }
+  }
+
+  if (provider.tipo === 'anthropic') {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': provider.api_key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: modelo,
+        max_tokens: 8192,
+        temperature: 0.3,
+        system,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_IA_MS),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+    }
+    const json = await res.json()
+    const text = json?.content?.[0]?.text
+    if (!text) throw new Error('Respuesta vacía de Anthropic')
+    if (json?.usage) {
+      tokens = (json.usage.input_tokens ?? 0) + (json.usage.output_tokens ?? 0)
+    }
+    return { text: text.trim(), tokens }
+  }
+
+  throw new Error(`Tipo de proveedor no soportado: ${provider.tipo}`)
 }
 
 async function resolverEntidad(
@@ -170,6 +251,32 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   const providers: AIProvider[] = Array.isArray(provData?.valor) ? (provData!.valor as AIProvider[]) : []
+
+  // Auto-reset mensual: verificar si hemos cruzado de mes y resetear tokens_usados
+  const ahora = new Date()
+  const mesActual = ahora.getFullYear() * 12 + ahora.getMonth()
+  const providersConReset = providers.map((p) => {
+    const ultimoReset = p.tokens_updated_at ? new Date(p.tokens_updated_at) : null
+    const mesUltimoReset = ultimoReset ? ultimoReset.getFullYear() * 12 + ultimoReset.getMonth() : -1
+    if (mesUltimoReset !== mesActual) {
+      return { ...p, tokens_usados: 0, tokens_updated_at: new Date().toISOString() }
+    }
+    return p
+  })
+  
+  // Si hubo resets, persistir inmediatamente
+  if (providersConReset.some((p, i) => p.tokens_usados !== providers[i].tokens_usados)) {
+    await admin
+      .from('configuraciones_sistema')
+      .update({ valor: providersConReset })
+      .eq('clave', 'ai_providers')
+    const { data: provData2 } = await admin
+      .from('configuraciones_sistema')
+      .select('valor')
+      .eq('clave', 'ai_providers')
+      .maybeSingle()
+    providers.splice(0, providers.length, ...(Array.isArray(provData2?.valor) ? (provData2!.valor as AIProvider[]) : []))
+  }
   const routing: AIRouting =
     routData?.valor && typeof routData.valor === 'object' ? (routData.valor as AIRouting) : {}
 
@@ -238,135 +345,38 @@ export async function POST(request: NextRequest) {
     ? `${userPrompt}\n\n--- Contexto pre-generado (.contexto_qms.txt) ---\n${contextoAdicional}`
     : userPrompt
 
-  const isGemini = provider.tipo === 'gemini'
+  const tieneFallback = !!ruta.fallback_provider_id
+
   let analisis = ''
   let totalTokens = 0
 
+  const inicio = Date.now()
+  let modeloUsado = ruta.modelo_nombre
+
+  const ultimoExito = await obtenerUltimoExito(admin, provider.id)
+  if (ultimoExito && ultimoExito !== ruta.modelo_nombre && Array.isArray(provider.modelos) && provider.modelos.includes(ultimoExito)) {
+    console.log(`[api/ai] Usando último modelo exitoso: ${ultimoExito} (configurado: ${ruta.modelo_nombre})`)
+    modeloUsado = ultimoExito
+  }
+
+  console.log(`[api/ai][diag] Iniciando análisis. Modelo: ${modeloUsado}`)
+
   try {
-    if (isGemini) {
-      // RUTA VIP PARA GEMINI: Usar Files API
-      analisis = await withRetry(async () => {
-        const fileManager = new GoogleAIFileManager(provider.api_key)
+    const resultado = await ejecutarProveedorIA(admin, provider, modeloUsado, system, promptFinal)
+    analisis = resultado.text
+    totalTokens = resultado.tokens
 
-        // Descargar .contexto_qms.txt
-        let contextoContent = ''
-        if (contextoAdicional) {
-          contextoContent = contextoAdicional
-        } else if (modulo === 'quejas') {
-          const folio = String(entidad.folio ?? '')
-          if (folio) {
-            const { data: config } = await admin
-              .from('configuraciones_sistema')
-              .select('valor')
-              .eq('clave', 'drive_folder_id_quejas')
-              .maybeSingle()
-            const rootFolderId = typeof config?.valor === 'string' ? config.valor.trim() : ''
-            if (rootFolderId) {
-              const drive = getDriveClient()
-              if (drive) {
-                try {
-                  const subcarpetaId = await buscarOCrearSubcarpeta(drive, rootFolderId, folio)
-                  const listRes = await drive.files.list({
-                    q: `'${subcarpetaId}' in parents and name = '.contexto_qms.txt' and trashed = false`,
-                    fields: 'files(id, name)',
-                    supportsAllDrives: true,
-                    includeItemsFromAllDrives: true,
-                  })
-                  const contextoFile = listRes.data.files?.[0]
-                  if (contextoFile?.id) {
-                    const downloadRes = await drive.files.get(
-                      { fileId: contextoFile.id, alt: 'media' },
-                      { responseType: 'text' },
-                    )
-                    contextoContent = String(downloadRes.data ?? '').trim()
-                  }
-                } catch (e) {
-                  console.warn('[api/ai/analizar] No se pudo leer .contexto_qms.txt:', (e as Error).message)
-                }
-              }
-            }
-          }
-        }
+    await guardarUltimoExito(admin, provider.id, modeloUsado)
 
-        let tempFilePath = ''
-        if (contextoContent) {
-          const fileName = `contexto_${Date.now()}_${Math.random().toString(36).slice(2)}.txt`
-          tempFilePath = path.join(os.tmpdir(), fileName)
-          fs.writeFileSync(tempFilePath, contextoContent, 'utf-8')
-        }
+    const duracion = Date.now() - inicio
+    console.log(`[api/ai][diag] Análisis completado en ${duracion}ms. Modelo: ${modeloUsado}. Tokens: ${totalTokens}`)
 
-        // Subir archivo a Gemini Files API si existe contexto
-        let fileUri = ''
-        try {
-          if (tempFilePath) {
-            const uploadResult = await fileManager.uploadFile(tempFilePath, {
-              mimeType: 'text/plain',
-              displayName: 'contexto_qms.txt',
-            })
-            fileUri = uploadResult.file.uri
-            console.log('[api/ai/analizar] Archivo subido a Gemini Files API:', fileUri)
-          }
-        } finally {
-          // Limpiar archivo temporal
-          if (tempFilePath && fs.existsSync(tempFilePath)) {
-            try {
-              fs.unlinkSync(tempFilePath)
-              console.log('[api/ai/analizar] Archivo temporal limpiado:', tempFilePath)
-            } catch (cleanupError) {
-              console.warn('[api/ai/analizar] No se pudo limpiar archivo temporal:', cleanupError)
-            }
-          }
-        }
-
-        // Preparar partes del contenido
-        const parts: Part[] = [{ text: promptFinal }]
-        if (fileUri) {
-          parts.push({ fileData: { mimeType: 'text/plain', fileUri } })
-        }
-
-        // Llamar a Gemini con maxOutputTokens: 8192
-        const { GoogleGenerativeAI } = await import('@google/generative-ai')
-        const genAI = new GoogleGenerativeAI(provider.api_key)
-        const model = genAI.getGenerativeModel({
-          model: ruta.modelo_nombre,
-          systemInstruction: system,
-          generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
-        })
-
-        const result = await model.generateContent({ contents: [{ role: 'user', parts }] })
-        const text = result.response.text()
-        if (!text) throw new Error('Respuesta vacía de Gemini')
-        
-        // Extraer tokens si están disponibles
-        const usage = result.response.usageMetadata
-        if (usage) {
-          totalTokens = usage.totalTokenCount ?? 0
-        }
-        
-        return text.trim()
-      })
-    } else {
-      // RUTA UNIVERSAL PARA OTROS PROVEEDORES (Groq, OpenAI, Anthropic, etc.)
-      analisis = await withRetry(async () => {
-        const cliente = crearClienteIA(provider, ruta.modelo_nombre)
-        const resultado = await cliente.analizar({
-          system,
-          prompt: promptFinal,
-          archivos: [],
-          maxTokens: 8192,
-          temperature: 0.3,
-        })
-        if (resultado.uso?.total_tokens) {
-          totalTokens = resultado.uso.total_tokens
-        }
-        return resultado.texto
-      })
-    }
-
-    // Actualizar tokens usados
+    // Actualizar tokens usados (con auto-reset mensual ya aplicado arriba)
     if (totalTokens > 0) {
       const providersActualizados = providers.map((p) =>
-        p.id === provider.id ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens } : p,
+        p.id === provider.id
+          ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
+          : p,
       )
       await admin
         .from('configuraciones_sistema')
@@ -379,19 +389,94 @@ export async function POST(request: NextRequest) {
       tokens_consumidos: totalTokens,
     })
   } catch (error) {
+    const duracion = Date.now() - inicio
     const mensaje = error instanceof Error ? error.message : 'Error al consultar el proveedor IA'
-    console.error('[api/ai/analizar]', mensaje)
-    // Detectar errores de proveedor saturado (503, 429, etc.)
+    console.error(`[api/ai][diag] Error tras ${duracion}ms: ${mensaje}`)
+
+    await registrarFallo(admin, provider.id, modeloUsado)
+    await invalidarModelosCache(admin, provider.id)
+    console.warn(`[api/ai] Modelo ${modeloUsado} falló (${mensaje.split('\n')[0]}), invalidando caché de ${provider.nombre}`)
+
+    const esErrorRecuperable =
+      /\b(4\d{2}|5\d{2})\b/.test(mensaje) ||
+      /rate.?limit|quota|exhausted|overloaded|saturad/i.test(mensaje) ||
+      /timeout|abort/i.test(mensaje)
+
+    // Sub-fallback intra-proveedor: probar otros modelos del mismo proveedor antes de saltar al respaldo externo
+    if (esErrorRecuperable && Array.isArray(provider.modelos) && provider.modelos.length > 1) {
+      const todosAlternativos = provider.modelos.filter((m) => m !== modeloUsado)
+      const modelosAlternativos = (await obtenerModelosNoPenalizados(admin, provider.id, todosAlternativos)).slice(0, MAX_SUBFALLBACK)
+      console.log(`[api/ai] Sub-fallback: probando ${modelosAlternativos.length} modelos no penalizados de ${provider.nombre}`)
+      for (const modeloAlt of modelosAlternativos) {
+        try {
+          console.log(`[api/ai] Modelo ${modeloUsado} falló, intentando sub-modelo: ${modeloAlt}`)
+          const sub = await ejecutarProveedorIA(admin, provider, modeloAlt, system, promptFinal)
+          analisis = sub.text
+          totalTokens = sub.tokens
+          await guardarUltimoExito(admin, provider.id, modeloAlt)
+          console.warn(`[api/ai] Sub-modelo ${modeloAlt} respondió OK`)
+
+          if (totalTokens > 0) {
+            const providersActualizados = providers.map((p) =>
+              p.id === provider.id
+                ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
+                : p,
+            )
+            await admin
+              .from('configuraciones_sistema')
+              .update({ valor: providersActualizados })
+              .eq('clave', 'ai_providers')
+          }
+
+          return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
+        } catch (subErr) {
+          const subMsg = subErr instanceof Error ? subErr.message : String(subErr)
+          await registrarFallo(admin, provider.id, modeloAlt)
+          console.warn(`[api/ai] Sub-modelo ${modeloAlt} falló: ${subMsg.split('\n')[0]}`)
+        }
+      }
+    }
+
+    if (esErrorRecuperable && tieneFallback && ruta.fallback_provider_id && ruta.fallback_modelo) {
+      const fallbackProvider = providers.find((p) => p.id === ruta.fallback_provider_id)
+      if (fallbackProvider?.api_key) {
+        try {
+          console.warn(
+            `[api/ai] Modelo ${modeloUsado} falló con ${mensaje.split('\n')[0]}, intentando respaldo: ${fallbackProvider.nombre}/${ruta.fallback_modelo}`,
+          )
+          const fb = await ejecutarProveedorIA(admin, fallbackProvider, ruta.fallback_modelo, system, promptFinal)
+          analisis = fb.text
+          totalTokens = fb.tokens
+          await guardarUltimoExito(admin, fallbackProvider.id, ruta.fallback_modelo)
+
+          if (totalTokens > 0) {
+            const providersActualizados = providers.map((p) =>
+              p.id === fallbackProvider.id
+                ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
+                : p,
+            )
+            await admin
+              .from('configuraciones_sistema')
+              .update({ valor: providersActualizados })
+              .eq('clave', 'ai_providers')
+          }
+
+          return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
+        } catch (fbError) {
+          const fbMsg = fbError instanceof Error ? fbError.message : String(fbError)
+          await registrarFallo(admin, fallbackProvider.id, ruta.fallback_modelo)
+          console.error(`[api/ai] Respaldo ${fallbackProvider.nombre}/${ruta.fallback_modelo} también falló: ${fbMsg.split('\n')[0]}`)
+        }
+      }
+    }
+
     const esErrorProveedor = /503|429|saturado|rate.?limit|quota|exhausted|overloaded/i.test(mensaje)
     if (esErrorProveedor) {
       return NextResponse.json(
         { error: 'El proveedor de IA está saturado. Por favor, intente en un minuto.' },
-        { status: 503 }
+        { status: 503 },
       )
     }
     return NextResponse.json({ error: mensaje }, { status: 502 })
-  } finally {
-    // Limpieza de archivos temporales en /tmp
-    // (Los archivos se limpian automáticamente por Vercel, pero por seguridad)
   }
 }

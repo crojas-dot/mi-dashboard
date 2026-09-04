@@ -9,6 +9,7 @@ export interface AIProvider {
   tokens_usados: number
   limite_tokens: number
   modelos: string[]
+  tokens_updated_at?: string
 }
 
 export interface AIRuta {

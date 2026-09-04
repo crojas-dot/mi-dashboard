@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi } from 'lucide-react'
+import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi, RefreshCw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIProviderTipo, AIRouting } from '@/lib/ai/types'
@@ -26,10 +26,10 @@ const TIPOS: { value: AIProviderTipo; label: string }[] = [
   { value: 'openai', label: 'Estándar OpenAI (OpenAI, DeepSeek, Grok, OpenRouter…)' },
 ]
 
-const MODELOS_SUGERIDOS: Record<AIProviderTipo, string[]> = {
-  gemini: ['gemini-1.5-flash', 'gemini-1.5-pro'],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-  anthropic: ['claude-3-5-sonnet-20240620', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
+const LIMITE_POR_TIPO: Record<AIProviderTipo, number> = {
+  gemini: 30_000_000,
+  anthropic: 250_000,
+  openai: 6_000_000, // Groq / OpenAI / Otros compatibles
 }
 
 const CLAVE_PROVEEDORES = 'ai_providers'
@@ -51,7 +51,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   const [modalModulo, setModalModulo] = useState<string | null>(null)
   const [sysPrompt, setSysPrompt] = useState('')
   const [reseteados, setReseteados] = useState<Set<string>>(new Set())
-  const [customModulos, setCustomModulos] = useState<Set<string>>(new Set())
+  const [expandedFallbacks, setExpandedFallbacks] = useState<Set<string>>(new Set())
+  const [syncingModels, setSyncingModels] = useState<Set<string>>(new Set())
+  const [cacheTtlValue, setCacheTtlValue] = useState<number>(1)
+  const [cacheTtlUnit, setCacheTtlUnit] = useState<'minutes' | 'hours' | 'days'>('days')
 
   useEffect(() => {
     let activo = true
@@ -59,19 +62,71 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       const { data } = await supabase
         .from('configuraciones_sistema')
         .select('clave, valor')
-        .in('clave', [CLAVE_PROVEEDORES, CLAVE_ROUTING])
+        .in('clave', [CLAVE_PROVEEDORES, CLAVE_ROUTING, 'ai_cache_ttl_minutes'])
       if (!activo) return
       const porClave = new Map((data ?? []).map((r) => [r.clave, r.valor]))
       const provs = Array.isArray(porClave.get(CLAVE_PROVEEDORES)) ? (porClave.get(CLAVE_PROVEEDORES) as AIProvider[]) : []
       const rut = porClave.get(CLAVE_ROUTING)
+      const ttlMinutes = typeof porClave.get('ai_cache_ttl_minutes') === 'number' ? (porClave.get('ai_cache_ttl_minutes') as number) : 1440
+      let value: number
+      let unit: 'minutes' | 'hours' | 'days'
+      if (ttlMinutes >= 1440 && ttlMinutes % 1440 === 0) {
+        value = ttlMinutes / 1440
+        unit = 'days'
+      } else if (ttlMinutes >= 60 && ttlMinutes % 60 === 0) {
+        value = ttlMinutes / 60
+        unit = 'hours'
+      } else {
+        value = ttlMinutes
+        unit = 'minutes'
+      }
       setProviders(provs)
       setRouting(rut && typeof rut === 'object' ? (rut as AIRouting) : {})
+      setCacheTtlValue(value)
+      setCacheTtlUnit(unit)
       setLoading(false)
     })()
     return () => {
       activo = false
     }
   }, [])
+
+  useEffect(() => {
+    if (loading || providers.length === 0) return
+    let cancelado = false
+    ;(async () => {
+      const { esOpenRouter, obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
+      const openRouterProviders = providers.filter(p => esOpenRouter(p))
+      for (const p of openRouterProviders) {
+        if (p.modelos.some(m => m.startsWith('~') || /:paid|:premium/i.test(m))) {
+          try {
+            const resultado = await obtenerModelosDisponibles(p)
+            if (cancelado) return
+            if (resultado.modelos.length > 0) {
+              const listaLimpia = providers.map(pr => pr.id === p.id ? { ...pr, modelos: resultado.modelos } : pr)
+              setProviders(listaLimpia)
+              await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_PROVEEDORES, valor: listaLimpia, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+              const nuevoRouting = { ...routing }
+              let routingCambiado = false
+              for (const m of Object.keys(nuevoRouting)) {
+                if (nuevoRouting[m]?.proveedor_id === p.id && !resultado.modelos.includes(nuevoRouting[m].modelo_nombre)) {
+                  nuevoRouting[m] = { ...nuevoRouting[m], modelo_nombre: resultado.modelos[0] }
+                  routingCambiado = true
+                }
+              }
+              if (routingCambiado) {
+                setRouting(nuevoRouting)
+                await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_ROUTING, valor: nuevoRouting, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+              }
+            }
+          } catch {
+            // Silenciar errores de auto-cleanup
+          }
+        }
+      }
+    })()
+    return () => { cancelado = true }
+  }, [loading, providers, routing])
 
   const upsertClave = async (clave: string, valor: unknown) => {
     const { error } = await supabase.from('configuraciones_sistema').upsert(
@@ -120,8 +175,23 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     }
   }
 
+  const guardarTtl = async () => {
+    const val = Math.max(1, Math.round(cacheTtlValue))
+    const multiplier = cacheTtlUnit === 'days' ? 1440 : cacheTtlUnit === 'hours' ? 60 : 1
+    const ttlMinutes = val * multiplier
+    try {
+      await upsertClave('ai_cache_ttl_minutes', ttlMinutes)
+      const unitLabel = cacheTtlUnit === 'days' ? 'días' : cacheTtlUnit === 'hours' ? 'horas' : 'minutos'
+      showSuccess(`TTL de caché actualizado a ${val} ${unitLabel} (${ttlMinutes} min)`)
+    } catch (e) {
+      showError(e as Error, 'No se pudo guardar el TTL')
+    }
+  }
+
+  const getLimitePorTipo = (tipo: AIProviderTipo) => LIMITE_POR_TIPO[tipo] ?? 250_000
+
   const abrirNuevo = () =>
-    setEditingProvider({ id: '', nombre: '', tipo: 'openai', base_url: '', api_key: '', modelos: [], tokens_usados: 0, limite_tokens: 100000 } as AIProvider)
+    setEditingProvider({ id: '', nombre: '', tipo: 'openai', base_url: '', api_key: '', modelos: [], tokens_usados: 0, limite_tokens: getLimitePorTipo('openai') } as AIProvider)
 
   const abrirEditar = (p: AIProvider) =>
     setEditingProvider(p)
@@ -167,14 +237,14 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     }
   }
 
-  const aplicarForm = () => {
+  const aplicarForm = async () => {
     if (!editingProvider) return
     const p = editingProvider
     if (!p.nombre.trim() || !p.api_key.trim()) {
       showError(null, 'Nombre y API Key son obligatorios')
       return
     }
-    const modelosArray = (p.modelos as unknown as string).split(',').map((m: string) => m.trim()).filter(Boolean) as string[]
+    const modelosArray = (p.modelos as string[]).filter(Boolean).map(m => m.trim())
     const base = {
       nombre: p.nombre.trim(),
       tipo: p.tipo,
@@ -187,8 +257,27 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       ? providers.map((prov) => (prov.id === p.id ? { ...prov, ...base } : prov))
       : [...providers, { id: crypto.randomUUID(), tokens_usados: 0, ...base }]
     setProviders(nuevaLista)
-    persistirProveedores(nuevaLista)
+    await persistirProveedores(nuevaLista)
     cerrarEditor()
+
+    const savedId = p.id && p.id !== '' ? p.id : nuevaLista[nuevaLista.length - 1].id
+    const savedProvider = nuevaLista.find(pr => pr.id === savedId)
+    if (savedProvider && savedProvider.modelos.length === 0) {
+      try {
+        const { obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
+        const resultado = await obtenerModelosDisponibles(savedProvider)
+        if (resultado.modelos.length > 0) {
+          const listaFinal = nuevaLista.map(pr =>
+            pr.id === savedId ? { ...pr, modelos: resultado.modelos } : pr
+          )
+          setProviders(listaFinal)
+          await persistirProveedores(listaFinal)
+          showSuccess(`${resultado.modelos.length} modelos sincronizados automáticamente para ${savedProvider.nombre}`)
+        }
+      } catch {
+        // Silenciar errores de auto-sync
+      }
+    }
   }
 
   const eliminarProveedor = async (id: string) => {
@@ -205,11 +294,6 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       return s
     })
     setRouting(nuevoRouting)
-    setCustomModulos((prev) => {
-      const s = new Set(prev)
-      s.delete(id)
-      return s
-    })
     await persistirProveedores(nuevaLista)
     try {
       await upsertClave(CLAVE_ROUTING, nuevoRouting)
@@ -225,26 +309,92 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     await persistirProveedores(nuevaLista)
   }
 
+  const sincronizarModelos = async (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider) return
+
+    setSyncingModels(prev => new Set(prev).add(providerId))
+    try {
+      const { obtenerModelosDisponibles, esOpenRouter } = await import('@/lib/ai/modelDiscovery')
+      const resultado = await obtenerModelosDisponibles(provider)
+
+      if (resultado.modelos.length === 0) {
+        if (esOpenRouter(provider)) {
+          showError(null, 'OpenRouter no tiene modelos gratuitos disponibles. Agregue créditos o use otro proveedor (Groq, Gemini, etc.).')
+        } else {
+          showError(null, `No se encontraron modelos para ${provider.nombre}. Verifique la API key.`)
+        }
+        return
+      }
+
+      const nuevaLista = providers.map(p =>
+        p.id === providerId ? { ...p, modelos: resultado.modelos } : p
+      )
+      setProviders(nuevaLista)
+      await persistirProveedores(nuevaLista)
+
+      try {
+        const { limpiarMemoriaModelos } = await import('@/lib/ai/modelMemory')
+        const { createServiceClient } = await import('@/lib/server/supabase-admin')
+        const admin = createServiceClient()
+        if (admin) await limpiarMemoriaModelos(admin, providerId, resultado.modelos)
+      } catch {
+        // Silenciar errores de limpieza de memoria
+      }
+
+      let routingActualizado = false
+      if (esOpenRouter(provider)) {
+        const modeloDefault = resultado.modelos[0]
+        const nuevoRouting = { ...routing }
+        for (const m of Object.keys(nuevoRouting)) {
+          if (nuevoRouting[m]?.proveedor_id === providerId && !resultado.modelos.includes(nuevoRouting[m].modelo_nombre)) {
+            nuevoRouting[m] = { ...nuevoRouting[m], modelo_nombre: modeloDefault }
+            routingActualizado = true
+          }
+        }
+        if (routingActualizado) {
+          setRouting(nuevoRouting)
+          await upsertClave(CLAVE_ROUTING, nuevoRouting)
+        }
+      }
+
+      let toastMsg = `${resultado.modelos.length} modelos gratuitos sincronizados para ${provider.nombre}`
+      if (resultado.descartados > 0) {
+        toastMsg += ` (${resultado.descartados} de pago/descartados de ${resultado.total} totales)`
+      }
+      if (routingActualizado) {
+        toastMsg += `. Enrutamiento actualizado (modelos de pago reemplazados)`
+      }
+      showSuccess(toastMsg)
+    } catch (e) {
+      showError(e as Error, 'No se pudieron obtener los modelos del proveedor')
+    } finally {
+      setSyncingModels(prev => {
+        const s = new Set(prev)
+        s.delete(providerId)
+        return s
+      })
+    }
+  }
+
   const actualizarRuta = (
     modulo: string,
     campo: 'proveedor_id' | 'modelo_nombre' | 'system_prompt',
     valor: string,
   ) => {
-    setRouting((prev) => ({ ...prev, [modulo]: { ...prev[modulo], [campo]: valor } }))
-  }
-
-  const manejarCambioModelo = (modulo: string, valor: string) => {
-    if (valor === '__otro__') {
-      setCustomModulos((prev) => new Set(prev).add(modulo))
-      actualizarRuta(modulo, 'modelo_nombre', '')
-    } else {
-      setCustomModulos((prev) => {
-        const s = new Set(prev)
-        s.delete(modulo)
-        return s
-      })
-      actualizarRuta(modulo, 'modelo_nombre', valor)
-    }
+    setRouting((prev) => {
+      const next = { ...prev, [modulo]: { ...prev[modulo], [campo]: valor } }
+      // Auto-seleccionar modelo si el proveedor tiene exactamente 1 modelo
+      if (campo === 'proveedor_id' && valor) {
+        const prov = providers.find((p) => p.id === valor)
+        if (prov?.modelos?.length === 1) {
+          next[modulo].modelo_nombre = prov.modelos[0]
+        } else {
+          next[modulo].modelo_nombre = ''
+        }
+      }
+      return next
+    })
   }
 
   const abrirModalContexto = (moduloId: string) => {
@@ -371,6 +521,20 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                     <td className="px-3 py-2 text-center">
                       <div className="flex items-center justify-center gap-1">
                         <button
+                          type="button"
+                          onClick={() => sincronizarModelos(p.id)}
+                          disabled={syncingModels.has(p.id)}
+                          className="rounded p-1 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          title="Sincronizar modelos desde el proveedor"
+                        >
+                          {syncingModels.has(p.id) ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
                           onClick={() => abrirEditar(p)}
                           className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
                           style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
@@ -404,71 +568,160 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           {MODULOS_QMS.map((m) => {
             const ruta = routing[m.id]
             const prov = providers.find((p) => p.id === ruta?.proveedor_id)
-            const sugerencias = prov ? MODELOS_SUGERIDOS[prov.tipo] : []
-            const esCustom = customModulos.has(m.id) || (!!ruta?.modelo_nombre && !sugerencias.includes(ruta.modelo_nombre))
             return (
-              <div key={m.id} className="flex items-center gap-3 rounded-lg border border-gray-200 bg-slate-50 p-3">
-                <span className="w-40 shrink-0 text-sm font-medium text-gray-700">{m.label}</span>
-                <Select
-                  value={ruta?.proveedor_id ?? ''}
-                  onChange={(e) => actualizarRuta(m.id, 'proveedor_id', e.target.value)}
-                >
-                  <option value="">Sin proveedor</option>
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre} ({p.tipo})
-                    </option>
-                  ))}
-                </Select>
-                {!prov ? (
-                  <input
-                    className="w-56 rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1.5 text-sm text-gray-400"
-                    placeholder="Elegí un proveedor primero"
-                    disabled
-                  />
-                ) : (
-                  <>
+              <div key={m.id} className="space-y-2">
+                <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-slate-50 p-3">
+                  <span className="w-40 shrink-0 text-sm font-medium text-gray-700">{m.label}</span>
+                  <Select
+                    value={ruta?.proveedor_id ?? ''}
+                    onChange={(e) => actualizarRuta(m.id, 'proveedor_id', e.target.value)}
+                  >
+                    <option value="">Sin proveedor</option>
+                    {providers.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre} ({p.tipo})
+                      </option>
+                    ))}
+                  </Select>
+                  {!prov ? (
+                    <input
+                      className="w-56 rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1.5 text-sm text-gray-400"
+                      placeholder="Elegí un proveedor primero"
+                      disabled
+                    />
+                  ) : (
                     <Select
-                      value={esCustom ? '__otro__' : ruta?.modelo_nombre ?? ''}
-                      onChange={(e) => manejarCambioModelo(m.id, e.target.value)}
+                      value={ruta?.modelo_nombre ?? ''}
+                      onChange={(e) => actualizarRuta(m.id, 'modelo_nombre', e.target.value)}
                     >
                       <option value="">Seleccionar modelo</option>
-                      {sugerencias.map((mod) => (
-                        <option key={mod} value={mod}>{mod}</option>
-                      ))}
-                      <option value="__otro__">Otro (Escribir manual)</option>
+                      {(prov.modelos?.length ?? 0) > 0 ? (
+                        prov.modelos.map((mod) => <option key={mod} value={mod}>{mod}</option>)
+                      ) : (
+                        <option value="" disabled>Sincronice modelos con el botón ↻</option>
+                      )}
                     </Select>
-                    {esCustom && (
-                      <input
-                        className="w-56 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm"
-                        placeholder="Modelo personalizado (ej: grok-beta)"
-                        value={ruta?.modelo_nombre ?? ''}
-                        onChange={(e) => actualizarRuta(m.id, 'modelo_nombre', e.target.value)}
-                      />
-                    )}
-                  </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => abrirModalContexto(m.id)}
+                    className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      ruta?.system_prompt?.trim()
+                        ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
+                        : 'border-blue-600 text-blue-600 hover:bg-blue-50'
+                    }`}
+                    title="Definir el rol / system prompt de la IA para este módulo"
+                  >
+                    {ruta?.system_prompt?.trim() ? <Check className="h-3.5 w-3.5" /> : <Brain className="h-3.5 w-3.5" />}
+                    {ruta?.system_prompt?.trim() ? 'Especializado' : 'Especializar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setExpandedFallbacks(prev => {
+                      const next = new Set(prev)
+                      if (next.has(m.id)) next.delete(m.id)
+                      else next.add(m.id)
+                      return next
+                    })}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                    title="Configurar proveedor de respaldo (fallback)"
+                  >
+                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedFallbacks.has(m.id) ? 'rotate-90' : ''}`} />
+                    Respaldo
+                  </button>
+                </div>
+                {expandedFallbacks.has(m.id) && (
+                  <div className="ml-11 mt-2 pt-2 border-t border-gray-200 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <span className="w-40 shrink-0 text-xs font-medium text-gray-500">Respaldo (Fallback)</span>
+                      <Select
+                        value={routing[m.id]?.fallback_provider_id ?? ''}
+                        onChange={(e) => {
+                          const newRouting = { ...routing }
+                          if (!newRouting[m.id]) newRouting[m.id] = { proveedor_id: '', modelo_nombre: '', system_prompt: '' }
+                          newRouting[m.id].fallback_provider_id = e.target.value
+                          // Auto-seleccionar modelo fallback si el proveedor tiene exactamente 1 modelo
+                          if (e.target.value) {
+                            const fbProv = providers.find((p) => p.id === e.target.value)
+                            if (fbProv?.modelos?.length === 1) {
+                              newRouting[m.id].fallback_modelo = fbProv.modelos[0]
+                            } else {
+                              newRouting[m.id].fallback_modelo = ''
+                            }
+                          } else {
+                            newRouting[m.id].fallback_modelo = ''
+                          }
+                          setRouting(newRouting)
+                        }}
+                      >
+                        <option value="">Sin proveedor de respaldo</option>
+                        {providers.filter(p => p.id !== routing[m.id]?.proveedor_id).map((p) => (
+                          <option key={p.id} value={p.id}>{p.nombre} ({p.tipo})</option>
+                        ))}
+                      </Select>
+                      {routing[m.id]?.fallback_provider_id && (
+                        <Select
+                          value={routing[m.id]?.fallback_modelo ?? ''}
+                          onChange={(e) => {
+                            const newRouting = { ...routing }
+                            if (!newRouting[m.id]) newRouting[m.id] = { proveedor_id: '', modelo_nombre: '', system_prompt: '' }
+                            newRouting[m.id].fallback_modelo = e.target.value
+                            setRouting(newRouting)
+                          }}
+                        >
+                          <option value="">Seleccionar modelo</option>
+                          {(() => {
+                            const fallbackProvId = routing[m.id]?.fallback_provider_id
+                            const fallbackProv = fallbackProvId ? providers.find(p => p.id === fallbackProvId) : null
+                            if (!fallbackProv) return <option value="" disabled>Primero elegí un proveedor</option>
+                            return (fallbackProv.modelos?.length ?? 0) > 0 ? (
+                              fallbackProv.modelos.map((mod) => <option key={mod} value={mod}>{mod}</option>)
+                            ) : (
+                              <option value="" disabled>Sincronice modelos con el botón ↻</option>
+                            )
+                          })()}
+                        </Select>
+                      )}
+                    </div>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => abrirModalContexto(m.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                    ruta?.system_prompt?.trim()
-                      ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
-                      : 'border-blue-600 text-blue-600 hover:bg-blue-50'
-                  }`}
-                  title="Definir el rol / system prompt de la IA para este módulo"
-                >
-                  {ruta?.system_prompt?.trim() ? <Check className="h-3.5 w-3.5" /> : <Brain className="h-3.5 w-3.5" />}
-                  {ruta?.system_prompt?.trim() ? 'Especializado' : 'Especializar'}
-                </button>
-              </div>
-            )
-          })}
+                </div>
+              )
+            })}
         </div>
 
         <div className="mt-3">
           <Button size="sm" onClick={guardarRouting} loading={guardandoRut}>
             <Save className="h-3.5 w-3.5" /> Guardar enrutamiento
+          </Button>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-sm font-semibold text-gray-800">Caché de resolución de modelos</h3>
+        <p className="mt-1 text-xs text-gray-500">
+          Los modelos se resuelven dinámicamente desde la API de cada proveedor. Este caché evita consultas frecuentes a ListModels.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <label className="text-xs font-medium text-gray-600">TTL del caché:</label>
+          <input
+            type="number"
+            min="1"
+            className="w-20 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            value={cacheTtlValue}
+            onChange={(e) => setCacheTtlValue(Math.max(1, parseInt(e.target.value) || 1))}
+          />
+          <select
+            className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            value={cacheTtlUnit}
+            onChange={(e) => setCacheTtlUnit(e.target.value as 'minutes' | 'hours' | 'days')}
+          >
+            <option value="minutes">minutos</option>
+            <option value="hours">horas</option>
+            <option value="days">días</option>
+          </select>
+          <Button size="sm" onClick={guardarTtl}>
+            <Save className="h-3.5 w-3.5" /> Guardar TTL
           </Button>
         </div>
       </div>
@@ -520,7 +773,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
               <div className="min-w-0">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de API *</label>
                 <div className="w-full">
-                  <Select value={editingProvider?.tipo ?? 'openai'} onChange={(e) => setEditingProvider({ ...editingProvider!, tipo: e.target.value as AIProviderTipo })}>
+                  <Select value={editingProvider?.tipo ?? 'openai'} onChange={(e) => {
+                      const nuevoTipo = e.target.value as AIProviderTipo
+                      setEditingProvider({ ...editingProvider!, tipo: nuevoTipo, limite_tokens: getLimitePorTipo(nuevoTipo) })
+                    }}>
                     {TIPOS.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
@@ -552,11 +808,11 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 <label className="block text-xs font-medium text-gray-600 mb-1">Modelos Soportados *</label>
                 <input
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  placeholder="gemini-1.5-flash, gemini-1.5-pro, gemini-2.0-flash"
-                  value={Array.isArray(editingProvider?.modelos) ? (editingProvider?.modelos as string[]).join(', ') : ''}
-                  onChange={(e) => setEditingProvider({ ...editingProvider!, modelos: e.target.value })}
+                  placeholder="ej. modelo-1, modelo-2"
+                  value={(editingProvider?.modelos as string[] | undefined)?.join(', ') || ''}
+                  onChange={(e) => setEditingProvider({ ...editingProvider!, modelos: e.target.value.split(',').map(m => m.trimStart()) })}
                 />
-                <p className="mt-1 text-xs text-gray-500">Separados por coma: gemini-1.5-flash, gemini-1.5-pro</p>
+                <p className="mt-1 text-xs text-gray-500">Separados por coma: modelo-1, modelo-2</p>
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">API Key *</label>
@@ -571,59 +827,6 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                   />
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-gray-200 space-y-4">
-            <h6 className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <ChevronRight className="h-4 w-4" /> Enrutamiento de Respaldo (Fallback)
-            </h6>
-            <p className="text-xs text-gray-500">Si el proveedor principal falla, se usará este respaldo automáticamente.</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Proveedor Secundario</label>
-                <Select
-                  value={routing[editingProvider?.id ?? '']?.fallback_provider_id ?? ''}
-                  onChange={(e) => {
-                    const providerId = editingProvider?.id
-                    if (!providerId) return
-                    const newRouting = { ...routing }
-                    if (!newRouting[providerId]) newRouting[providerId] = { proveedor_id: providerId, modelo_nombre: '', system_prompt: '' }
-                    newRouting[providerId].fallback_provider_id = e.target.value
-                    // Reset modelo secundario al cambiar proveedor
-                    newRouting[providerId].fallback_modelo = ''
-                    setRouting(newRouting)
-                  }}
-                >
-                  <option value="">Sin respaldo</option>
-                  {providers.filter(p => p.id !== editingProvider?.id).map((p) => (
-                    <option key={p.id} value={p.id}>{p.nombre} ({p.tipo})</option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Modelo Secundario</label>
-                <Select
-                  value={routing[editingProvider?.id ?? '']?.fallback_modelo ?? ''}
-                  onChange={(e) => {
-                    const providerId = editingProvider?.id
-                    if (!providerId) return
-                    const newRouting = { ...routing }
-                    if (!newRouting[providerId]) newRouting[providerId] = { proveedor_id: providerId, modelo_nombre: '', system_prompt: '' }
-                    newRouting[providerId].fallback_modelo = e.target.value
-                    setRouting(newRouting)
-                  }}
-                >
-                  <option value="">Seleccionar modelo</option>
-                  {(() => {
-                    const fallbackProvId = routing[editingProvider?.id ?? '']?.fallback_provider_id
-                    const fallbackProv = fallbackProvId ? providers.find(p => p.id === fallbackProvId) : null
-                    if (!fallbackProv) return <option value="" disabled>Primero elegí un proveedor</option>
-                    return (fallbackProv?.modelos as string[])?.map((mod) => <option key={mod} value={mod}>{mod}</option>) || <option value="" disabled>Sin modelos</option>
-                  })()}
-                </Select>
-              </div>
-            </div>
           </div>
 
           <div className="flex items-end justify-end gap-2 pt-4 border-t border-gray-200">
@@ -638,6 +841,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
             </Button>
           </div>
         </div>
+      </div>
       </Modal>
     </div>
   )
