@@ -27,7 +27,7 @@ app/
   api/drive/upload/route.ts       subida interna de adjuntos a Google Drive (Bearer)
   api/drive/download/route.ts     descarga streaming de adjuntos desde Drive (Bearer)
   api/drive/upload-public/route.ts subida pública de evidencias /q/[token] (valida token)
-  api/ai/analizar/route.ts        análisis IA multi-proveedor (runtime nodejs, maxDuration 60, Strategy Pattern + auto-reset mensual + fallback 3 niveles + timeout 15s)
+  api/ai/analizar/route.ts        análisis IA multi-proveedor (runtime nodejs, maxDuration 60, Strategy Pattern + timeout dinámico + fallback a prueba de fallos + memoria de modelos)
   quejas/  page.tsx + NuevaQuejaModal, QuejaDetalleModal (decisión de procedencia, adjuntos, responsable fijo en investigación, reapertura, comentarios, derivar SACP)
   mis-quejas/ page.tsx + QuejaColaboradorPanel (panel fixed 500px expandible + tabs Detalle/Análisis/Resolución; solo quejas donde soy responsable; análisis IA con ReactMarkdown vista previa + textarea edición)
   configuracion/ page.tsx     catálogos + SLA + config + Formularios (solo admin)
@@ -63,6 +63,7 @@ lib/
               errorToast, passwordGenerator, sonidosNotificacion, aiService (analizarIA)
               + capa legacy SIN uso: queja/auditoria/documento/proceso/reunion/riesgo/sacp/user Service
   ai/         types.ts (AIProvider, AIRuta, AIRouting, ArchivoIA), aiFactory.ts (crearClienteIA multi-proveedor + blindaje Gemini + sanitización modelo + resolverGeminiFlashAuto con caché 24h)
+              modelDiscovery.ts (obtenerModelosDisponibles multi-proveedor + OpenRouter free-only estricto + DB cache), modelMemory.ts (guardarUltimoExito/obtenerUltimoExito/registrarFallo/obtenerModelosNoPenalizados + latencia + penalización condicional por tamaño de prompt), modelTesting.ts (testearModelo/testearProveedor con progreso en tiempo real + persistencia en BD)
   store/      auth-store (Zustand), sidebar-store, theme-store (HUÉRFANO, sin toggle)
 hooks/
   useHoverPrefetch.ts        prefetch por hover en Sidebar (80ms debounce)
@@ -180,6 +181,11 @@ Todas las tablas usan `id uuid` PK salvo indicado. Verificado con dump del dashb
 30. **Análisis IA dual-view (Lectura/Edición):** el resultado del análisis IA se muestra en modo **Lectura** por defecto (ReactMarkdown con clases `prose prose-blue`) con botón toggle a modo **Edición** (textarea plano). El toggle usa `modoEdicion` state. El usuario puede editar el resultado antes de copiar/guardar. Se importa `ReactMarkdown` de `react-markdown` y se usan iconos `Eye`/`Edit` de lucide-react para el toggle.
 31. **Cadena de fallback IA de 3 niveles:** (1) proveedor principal + modelo configurado (con `skipRetryOnSaturation` cuando hay fallback), (2) sub-fallback intra-proveedor: otros modelos del mismo provider (for...of secuencial sobre `provider.modelos`), (3) fallback externo: proveedor secundario (`fallback_provider_id` + `fallback_modelo`). Timeout de 15s por llamada. 404 se considera error recuperable. Logs: `[api/ai] Interceptado en route.ts`, `[api/ai] Comodín resuelto (cache/API/fallback)`, `[api/ai] Principal falló, intentando sub-modelo: ...`.
 32. **Blindaje Gemini 3 niveles:** (1) `resolverGeminiFlashAuto` en aiFactory.ts (caché 24h, regex estricta `/^models\/gemini-[0-9]+\.[0-9]+-flash$/`, rechaza preview/experimental), (2) `crearGemini` usa variable aislada `finalModelName` (no muta `cleanModel`), (3) `ejecutarProveedorIA` en route.ts intercepta PRIMERO `'gemini-flash-auto'` antes de la factoría. Si el cache contiene `'gemini-flash-auto'` → lo reemplaza por `'gemini-1.5-flash'`.
+33. **Memoria de modelos (modelMemory.ts):** `guardarUltimoExito` guarda modelo + latencia + tamaño del prompt. `obtenerUltimoExito` es inteligente por tamaño: si el éxito fue con prompt grande y latencia <45s, es válido para prompts grandes; si era corto y latencia >10s, se descarta. `registrarFallo` tiene penalización condicional: timeout en prompt grande (>10K) solo registro informativo sin penalizar. TTL progresivo: 1 fallo=30min, 2=1h, 3=4h.
+34. **Testeo de modelos (modelTesting.ts):** `testearProveedor` ejecuta hasta 20 modelos con 2 prompts (corto + largo), guarda resultados en BD (`ai_test_resultado_<id>`). UI con modal personalizado, progreso en tiempo real, botones Iniciar/Cancelar/Cerrar. Al sincronizar, excluye modelos con `ok: false` en test previo.
+35. **Descubrimiento de modelos (modelDiscovery.ts):** `obtenerModelosDisponibles` descubre modelos vía ListModels API. OpenRouter: filtrado estricto free-only (pricing.prompt=0 && pricing.completion=0, excluye `~`, `:paid`, `:premium`, batch, preview/beta/exp/dev, max 50). Caché en BD (`ai_modelos_cache_<id>`). Auto-limpieza de modelos pagados al cargar UI.
+36. **Timeout dinámico (route.ts):** `getTimeoutParaPrompt(tamanoPrompt, esOpenRouter)`: <5K→10-15s, 5-20K→20-30s, ≥20K→30-45s. Límite global: 50s (prompt corto) o 55s (prompt ≥10K). Sub-fallback: 5 modelos (corto) o 3 (grande).
+37. **Fallback a prueba de fallos:** Cualquier error (timeout, HTTP, red, parseo) → registro + invalidación caché + siguiente modelo. NO hay distinción por tipo de error. El cliente solo recibe error cuando TODAS las opciones se agotaron. Error final: `"Todos los modelos agotados (Xs). Último error: ..."`.
 
 ## 6. Reglas en el esquema pero NO implementadas (gaps / deuda técnica)
 
@@ -214,26 +220,72 @@ Gestor de IA dinámico, sin modelos fijos. Configuración en `configuraciones_si
 
 - **`ai_providers`** (`lib/ai/types.ts` `AIProvider[]`): `{ id, nombre, tipo: 'gemini'|'anthropic'|'openai', base_url?, api_key, tokens_usados: number, limite_tokens: number, modelos: string[], tokens_updated_at?: string }`. `base_url` solo aplica a tipo `openai` y permite endpoints compatibles (OpenAI, DeepSeek, Grok xAI, OpenRouter…). `tokens_usados` es un **odómetro mensual** que se **reinicia automáticamente al mes** (ver más abajo). `limite_tokens` define el techo para la barra de consumo visual (presets: gemini 30M, openai/Groq 6M, anthropic 250K). `modelos` es array de strings con los modelos soportados por ese proveedor. `tokens_updated_at` guarda timestamp del último reset/conteo para el auto-reset mensual.
 - **`ai_routing`** (`AIRouting` = `Record<modulo, { proveedor_id, modelo_nombre, system_prompt?, fallback_provider_id?, fallback_modelo? }>`): mapea cada módulo QMS → proveedor + **nombre de modelo exacto** + (opcional) **system prompt de especialización** + **enrutamiento en cascada (fallback)** con proveedor y modelo secundarios. Módulos válidos: `quejas, sacp, documentos, auditorias, riesgos, revision, general`.
+- **`ai_cache_ttl_minutes`** (number, default 1440 = 1 día): TTL para caché de modelos descubiertos. UI con selector de unidades (minutos/horas/días).
+- **`ai_modelos_cache_<providerId>`** (`{ modelos: string[], timestamp }`): caché de modelos descubiertos por proveedor.
+- **`ai_ultimo_exito_<providerId>`** (`{ modelo, timestamp, latenciaMs, tamanoPrompt }`): último modelo exitoso por proveedor, con latencia y tamaño del prompt.
+- **`ai_fallos_<providerId>`** (`{ modelo, fallos, ultimo_fallo }[]`): contador de fallos por modelo con TTL progresivo.
+- **`ai_test_resultado_<providerId>`** (`{ timestamp, resultados: [{ modelo, ok, latenciaMs, error }] }`): resultados de tests de modelos.
 
-**Factory (`lib/ai/aiFactory.ts`):** `crearClienteIA(provider, modelo)` devuelve `AIClient.analizar({ prompt, system?, maxTokens?, temperature?, archivos? })`. OpenAI y Anthropic usan `fetch` nativo (sin SDK): OpenAI `/chat/completions` (Bearer, imágenes vía `image_url` data URI; PDFs no visionables se notifican como texto), Anthropic `/v1/messages` (x-api-key + anthropic-version, imágenes vía `image` base64). **Gemini usa el SDK oficial `@google/generative-ai`** (`new GoogleGenerativeAI(api_key)`, `getGenerativeModel({ model: finalModelName, systemInstruction })` + `generateContent` con parts `inlineData` base64 para cualquier MIME incl. PDF); el SDK no expone `listModels`, así que el diagnóstico de modelos habilitados se hace vía `fetch` al REST `v1beta/models?key=`. `archivos: ArchivoIA[] = { nombre, mime, buffer }`. Timeout 120s. Cada `analizar` devuelve `{ texto, uso? }` normalizando `usage` nativo (OpenAI `usage`, Anthropic `usage.input/output_tokens`, Gemini `usageMetadata`) a `{ prompt_tokens, completion_tokens, total_tokens }`.
+### Modelos y descubrimiento (`lib/ai/modelDiscovery.ts`)
 
-**Blindaje Gemini (3 niveles de protección):**
+- **`obtenerModelosDisponibles(provider)`** → `{ modelos, total, descartados }`: descubre modelos vía ListModels API. Para OpenRouter: **filtrado estricto free-only** (pricing.prompt=0 && pricing.completion=0, excluye `~` prefix, `:paid`, `:premium`, batch, preview/beta/exp/dev, max 50 modelos). Para Gemini: REST `v1beta/models`. Para OpenAI: `/models`. Para Anthropic: no listModels (modelos fijos en DB).
+- **`esOpenRouter(provider)`**: detecta OpenRouter por `base_url` o `nombre`.
+- **`esModeloAuto(modelo)`**: detecta strings `*-auto` o `auto`.
+- **`obtenerModelosCache/guardarModelosCache/invalidarModelosCache`**: gestiona `ai_modelos_cache_<id>` en BD (no in-memory).
+
+### Memoria de modelos (`lib/ai/modelMemory.ts`)
+
+- **`guardarUltimoExito(admin, providerId, modelo, latenciaMs?, tamanoPrompt?)`**: guarda en `ai_ultimo_exito_<id>`. Limpia fallos del modelo.
+- **`obtenerUltimoExito(admin, providerId, tamanoPromptActual?)`**: lee último éxito. **Inteligente por tamaño**: si el éxito fue con prompt grande (>10K) y latencia <45s, es válido para prompts grandes; si era corto y latencia >10s, se descarta para prompts cortos. TTL 24h.
+- **`registrarFallo(admin, providerId, modelo, contexto?)`**: incrementa contador. **Penalización condicional**: si `contexto.esTimeout && contexto.tamanoPrompt >= 10000`, solo registro informativo sin penalizar (timeout en prompt grande no es culpa del modelo). TTL progresivo: 1 fallo=30min, 2=1h, 3=4h.
+- **`obtenerModelosNoPenalizados(admin, providerId, modelos)`**: filtra modelos penalizados por tiempo.
+- **`limpiarMemoriaModelos(admin, providerId, modelosActuales)`**: elimina registros de modelos que ya no existen.
+
+### Testeo de modelos (`lib/ai/modelTesting.ts`)
+
+- **`testearModelo(provider, modelo, promptPrueba)`**: ejecuta 1 prompt, retorna `{ ok, latenciaMs, error }`.
+- **`testearProveedor(admin, provider, opciones?)`**: testea hasta 20 modelos con 2 prompts (corto + largo). Accepta `onProgress(modelo, resultado)` para UI en tiempo real y `signal` para cancelación. Guarda en `ai_test_resultado_<id>`.
+- **`obtenerResultadoTest/admin, providerId)`**: lee resultados del test.
+- **`limpiarResultadoTest(admin, providerId, modelosActuales)`**: limpia modelos obsoletos.
+- **`modelosExcluidosPorTest(admin, providerId, modelos)`**: filtra modelos con `ok: false` del test previo.
+
+### Factory (`lib/ai/aiFactory.ts`)
+
+`crearClienteIA(provider, modelo)` devuelve `AIClient.analizar({ prompt, system?, maxTokens?, temperature?, archivos? })`. OpenAI y Anthropic usan `fetch` nativo (sin SDK): OpenAI `/chat/completions` (Bearer, imágenes vía `image_url` data URI; PDFs no visionables se notifican como texto), Anthropic `/v1/messages` (x-api-key + anthropic-version, imágenes vía `image` base64). **Gemini usa el SDK oficial `@google/generative-ai`** (`new GoogleGenerativeAI(api_key)`, `getGenerativeModel({ model: finalModelName, systemInstruction })` + `generateContent` con parts `inlineData` base64 para cualquier MIME incl. PDF); el SDK no expone `listModels`, así que el diagnóstico de modelos habilitados se hace vía `fetch` al REST `v1beta/models?key=`. `archivos: ArchivoIA[] = { nombre, mime, buffer }`. Timeout 120s. Cada `analizar` devuelve `{ texto, uso? }` normalizando `usage` nativo (OpenAI `usage`, Anthropic `usage.input/output_tokens`, Gemini `usageMetadata`) a `{ prompt_tokens, completion_tokens, total_tokens }`.
+
+### Blindaje Gemini (3 niveles de protección)
+
 1. **`resolverGeminiFlashAuto`** (exportada, caché 24h): resuelve `gemini-flash-auto` → modelo flash estable real. Filtro estricto con regex `/^models\/gemini-[0-9]+\.[0-9]+-flash$/` (rechaza preview, experimental, omni, lite). Cache resetea en fallback. Si el cache contiene `'gemini-flash-auto'` lo reemplaza por `'gemini-1.5-flash'`.
 2. **`crearGemini`**: usa variable aislada `finalModelName` (no muta `cleanModel`). Si es `'gemini-flash-auto'` → llama a `resolverGeminiFlashAuto`. Nunca pasa el string literal al SDK.
 3. **`ejecutarProveedorIA` en route.ts**: intercepta PRIMERO `'gemini-flash-auto'` antes de que llegue a la factoría. Reasigna `modelo` y loguea `[api/ai] Interceptado en route.ts`.
 
-Ante 404/`not found`, el `catch` imprime en consola del server la lista de modelos habilitados para esa API Key y, si `gemini-2.5-flash` está disponible, **reintenta automáticamente** con ese modelo por defecto.
+### Endpoint (`app/api/ai/analizar/route.ts`)
 
-**Endpoint (`app/api/ai/analizar/route.ts`, `runtime nodejs`, `export const maxDuration = 60`):** recibe `{ modulo, entidad_id, tipo_consulta: 'auto'|'custom', prompt_usuario? }`. Autentica con `getCurrentUser`; autoriza staff OR (si módulo `quejas`) el `responsable_id` de la queja. `resolverEntidad` busca la queja por `id` O `folio` (el panel envía el UUID). Lee `ai_providers`+`ai_routing`, resuelve proveedor/modelo/system_prompt. **Cadena de fallback de 3 niveles:**
+`runtime nodejs`, `maxDuration = 60`. Recibe `{ modulo, entidad_id, tipo_consulta: 'auto'|'custom', prompt_usuario? }`. Autentica con `getCurrentUser`; autoriza staff OR (si módulo `quejas`) el `responsable_id` de la queja. `resolverEntidad` busca la queja por `id` O `folio` (el panel envía el UUID). Lee `ai_providers`+`ai_routing`, resuelve proveedor/modelo/system_prompt.
 
-1. **Proveedor principal + modelo configurado** (con `skipRetryOnSaturation` cuando hay fallback).
-2. **Sub-fallback intra-proveedor**: si el principal falla (429/503/timeout/404), itera secuencialmente (`for...of`) sobre los demás modelos del mismo proveedor (`provider.modelos.filter(m => m !== ruta.modelo_nombre)`). Por cada modelo alternativo, intenta `ejecutarProveedorIA`. Si uno responde OK → actualiza tokens del proveedor principal y retorna. Si todos fallan → continúa.
-3. **Fallback externo**: proveedor secundario (`fallback_provider_id` + `fallback_modelo`). Llama directamente sin retry. Actualiza tokens del respaldo.
-4. Si todo falla → error al cliente.
+**Timeout dinámico por tamaño del prompt** (`getTimeoutParaPrompt`):
+| Tamaño prompt | OpenRouter | Otros |
+|---|---|---|
+| <5,000 chars | 10s | 15s |
+| 5,000–20,000 | 20s | 30s |
+| ≥20,000 | 30s | 45s |
 
-**Fail-Fast**: `withRetry` tiene flag `skipRetryOnSaturation` — cuando hay fallback configurado, NO reintenta en 429/503, lanza el error de inmediato para que el catch ejecute el siguiente nivel.
+**Límite global dinámico** (`TIMEOUT_GLOBAL_*_MS`):
+- Prompt <10K → 50s
+- Prompt ≥10K → 55s (máximo seguro bajo maxDuration=60s)
 
-**Timeout de 15s** (`TIMEOUT_IA_MS = 15000`): todas las llamadas AI (Gemini SDK, OpenAI fetch, Anthropic fetch) usan `AbortSignal.timeout(15000)`. Si el proveedor tarda >15s → abort → trigger fallback.
+**Sub-fallback dinámico** (`MAX_SUBFALLBACK_*`):
+- Prompt <10K → max 5 sub-modelos
+- Prompt ≥10K → max 3 sub-modelos (reduce intentos para no agotar tiempo global)
+
+**Cadena de fallback a prueba de fallos** (3 niveles):
+
+1. **Proveedor principal + modelo configurado** (usa último éxito si es rápido; timeout dinámico).
+2. **Sub-fallback intra-proveedor**: si el principal falla, itera sobre `obtenerModelosNoPenalizados` (max 5 o 3 según prompt). **Cualquier error** → registro + invalidación caché + siguiente modelo. Verifica tiempo global antes de cada intento.
+3. **Fallback externo**: proveedor secundario (`fallback_provider_id` + `fallback_modelo`). Verifica tiempo global antes de intentar.
+4. Si todo falla → `502` con `"Todos los modelos agotados (Xs). Último error: ..."`.
+
+**Fault-proof**: NO hay distinción por tipo de error (4xx/5xx/timeout/red/parseo). Cualquier excepción → registro + fallback. El cliente solo recibe error cuando **todas las opciones se agotaron**.
 
 **Auto-reset mensual**: al iniciar request, compara mes actual vs `tokens_updated_at`; si cambió mes → `tokens_usados = 0`, actualiza `tokens_updated_at`, persiste en BD. **Sin CRON job** — se ejecuta en cada request.
 
@@ -243,7 +295,8 @@ Ante 404/`not found`, el `catch` imprime en consola del server la lista de model
 
 Si `uso.total_tokens > 0`, **incrementa `tokens_usados`** y actualiza `tokens_updated_at` en `ai_providers` (read-modify-write jsonb con service client). Devuelve `{ analisis, tokens_consumidos }`. **Las API keys NUNCA salen del servidor**.
 
-**UI (`components/configuracion/AIProvidersManager.tsx`, tab **IA**, solo admin):**
+### UI (`components/configuracion/AIProvidersManager.tsx`, tab **IA**, solo admin)
+
 - **Modal estándar `size="lg"`** centrado + scroll interno (`max-h-[90vh]`).
 - **Campos**: Nombre, Tipo API (selector), URL Base (solo OpenAI), **Modelos Soportados** (comma-separated → `string[]`), **Límite de Tokens** (se **auto-rellena** al cambiar Tipo API: gemini 30M, openai 6M, anthropic 250K), API Key.
 - **Barra de consumo visual** en tabla: progress bar `w-36 h-2` con colores Tailwind (verde <70%, ámbar 70-90%, rojo >90%) + texto `{usados} / {límite} ({pct}%)`. Botón **Probar Conexión** por fila y en modal (fetch a `/models` o `/v1beta/models?key=` con API Key, toast éxito/error).
@@ -251,9 +304,16 @@ Si `uso.total_tokens > 0`, **incrementa `tokens_usados`** y actualiza `tokens_up
 - **Selectores de modelo**: dropdown 100% impulsado por `provider.modelos` (sin "Otro/Escribir manual"). Si proveedor tiene 1 solo modelo → **auto-selección**.
 - **Enrutamiento en cascada (fallback)** en tabla "Enrutamiento por módulo": botón "Respaldo" expande fila → selectores Proveedor Secundario + Modelo Secundario (cargado dinámicamente del proveedor elegido). Guarda en `routing[modulo].fallback_provider_id` y `fallback_modelo`.
 - **Auto-selección modelo**: al cambiar Proveedor (principal o fallback), si tiene 1 solo modelo → setea `modelo_nombre` automáticamente.
+- **Sincronización inteligente**: al sincronizar, excluye modelos con `ok: false` en test previo. Limpia memoria de fallos y resultados de modelos obsoletos.
+- **Test de modelos**: botón ▶ abre modal personalizado con lista de modelos, progreso en tiempo real (Loader2/CheckCircle/XCircle), botones Iniciar/Cancelar/Cerrar. `testearProveedor` ejecuta secuencialmente con `onProgress`. Modelos fallidos se excluyen de la lista.
+- **Auto-limpieza OpenRouter**: al cargar, detecta modelos `~`/`:paid` → re-silencia silenciosamente.
+- **TTL de caché**: configuración con selector de unidades (minutos/horas/días), persiste en `ai_cache_ttl_minutes`.
 
-**Frontend IA (`app/mis-quejas/components/QuejaColaboradorPanel.tsx`, tab **Análisis**):**
+### Frontend IA (`app/mis-quejas/components/QuejaColaboradorPanel.tsx`, tab **Análisis**)
+
 - Botón **✨ Análisis IA** (auto) + chat (prompt custom) → `modulo:'quejas'`.
 - **Borrador editable**: `<textarea>` con clases `w-full min-h-[500px] p-6 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap` enlazado a `aiResult`/`setAiResult` (texto plano, **sin `react-markdown`**).
 
-**Seguridad:** las API keys se guardan en texto plano en `configuraciones_sistema` (accesible por admin vía cliente anon RLS). El endpoint las usa solo server-side. Si se requiere secreto fuerte, mover a variables de entorno/Vault y referenciar por id.
+### Seguridad
+
+Las API keys se guardan en texto plano en `configuraciones_sistema` (accesible por admin vía cliente anon RLS). El endpoint las usa solo server-side. Si se requiere secreto fuerte, mover a variables de entorno/Vault y referenciar por id.

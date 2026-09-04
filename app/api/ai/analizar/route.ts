@@ -29,8 +29,17 @@ const INSTRUCCIONES_AUTO =
   '(3) Posibles causas raíz, (4) Recomendaciones, (5) Próximos pasos sugeridos. ' +
   'Si hay archivos adjuntos, tenlos en cuenta. Usá viñetas y lenguaje claro.'
 
-const TIMEOUT_IA_MS = 15000
-const MAX_SUBFALLBACK = 10
+const TIMEOUT_GLOBAL_BASE_MS = 50000
+const TIMEOUT_GLOBAL_GRANDE_MS = 55000
+const MAX_SUBFALLBACK = 5
+const MAX_SUBFALLBACK_GRANDE = 3
+const PROMPT_GRANDE = 10_000
+
+function getTimeoutParaPrompt(tamanoPrompt: number, esOpenRouter: boolean): number {
+  if (tamanoPrompt < 5000) return esOpenRouter ? 10_000 : 15_000
+  if (tamanoPrompt < 20_000) return esOpenRouter ? 20_000 : 30_000
+  return esOpenRouter ? 30_000 : 45_000
+}
 
 async function ejecutarProveedorIA(
   admin: SupabaseClient,
@@ -38,6 +47,7 @@ async function ejecutarProveedorIA(
   modelo: string,
   system: string,
   prompt: string,
+  timeoutMs: number,
 ): Promise<{ text: string; tokens: number }> {
   let tokens = 0
 
@@ -63,7 +73,7 @@ async function ejecutarProveedorIA(
     })
     const result = await model.generateContent(
       { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
-      { signal: AbortSignal.timeout(TIMEOUT_IA_MS) },
+      { signal: AbortSignal.timeout(timeoutMs) },
     )
     const text = result.response.text()
     if (!text) throw new Error('Respuesta vacía de Gemini')
@@ -90,7 +100,7 @@ async function ejecutarProveedorIA(
           { role: 'user', content: prompt },
         ],
       }),
-      signal: AbortSignal.timeout(TIMEOUT_IA_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
@@ -118,7 +128,7 @@ async function ejecutarProveedorIA(
         system,
         messages: [{ role: 'user', content: prompt }],
       }),
-      signal: AbortSignal.timeout(TIMEOUT_IA_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
@@ -346,6 +356,11 @@ export async function POST(request: NextRequest) {
     : userPrompt
 
   const tieneFallback = !!ruta.fallback_provider_id
+  const tamanoPrompt = promptFinal.length
+  const esOR = esOpenRouter(provider)
+  const timeoutModelo = getTimeoutParaPrompt(tamanoPrompt, esOR)
+  const timeoutGlobal = tamanoPrompt >= PROMPT_GRANDE ? TIMEOUT_GLOBAL_GRANDE_MS : TIMEOUT_GLOBAL_BASE_MS
+  const maxSubfb = tamanoPrompt >= PROMPT_GRANDE ? MAX_SUBFALLBACK_GRANDE : MAX_SUBFALLBACK
 
   let analisis = ''
   let totalTokens = 0
@@ -353,25 +368,26 @@ export async function POST(request: NextRequest) {
   const inicio = Date.now()
   let modeloUsado = ruta.modelo_nombre
 
-  const ultimoExito = await obtenerUltimoExito(admin, provider.id)
+  const ultimoExito = await obtenerUltimoExito(admin, provider.id, tamanoPrompt)
   if (ultimoExito && ultimoExito !== ruta.modelo_nombre && Array.isArray(provider.modelos) && provider.modelos.includes(ultimoExito)) {
     console.log(`[api/ai] Usando último modelo exitoso: ${ultimoExito} (configurado: ${ruta.modelo_nombre})`)
     modeloUsado = ultimoExito
   }
 
-  console.log(`[api/ai][diag] Iniciando análisis. Modelo: ${modeloUsado}`)
+  console.log(`[api/ai][diag] Iniciando análisis. Modelo: ${modeloUsado}. Prompt: ${tamanoPrompt} chars. Timeout modelo: ${timeoutModelo / 1000}s. Límite global: ${timeoutGlobal / 1000}s. Max sub-fallback: ${maxSubfb}`)
 
   try {
-    const resultado = await ejecutarProveedorIA(admin, provider, modeloUsado, system, promptFinal)
+    const inicioModelo = Date.now()
+    const resultado = await ejecutarProveedorIA(admin, provider, modeloUsado, system, promptFinal, timeoutModelo)
+    const latenciaMs = Date.now() - inicioModelo
     analisis = resultado.text
     totalTokens = resultado.tokens
 
-    await guardarUltimoExito(admin, provider.id, modeloUsado)
+    await guardarUltimoExito(admin, provider.id, modeloUsado, latenciaMs, tamanoPrompt)
 
     const duracion = Date.now() - inicio
     console.log(`[api/ai][diag] Análisis completado en ${duracion}ms. Modelo: ${modeloUsado}. Tokens: ${totalTokens}`)
 
-    // Actualizar tokens usados (con auto-reset mensual ya aplicado arriba)
     if (totalTokens > 0) {
       const providersActualizados = providers.map((p) =>
         p.id === provider.id
@@ -390,31 +406,31 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     const duracion = Date.now() - inicio
-    const mensaje = error instanceof Error ? error.message : 'Error al consultar el proveedor IA'
+    const mensaje = error instanceof Error ? error.message : 'Error desconocido al consultar IA'
     console.error(`[api/ai][diag] Error tras ${duracion}ms: ${mensaje}`)
 
-    await registrarFallo(admin, provider.id, modeloUsado)
+    await registrarFallo(admin, provider.id, modeloUsado, { esTimeout: /timeout|abort/i.test(mensaje), tamanoPrompt })
     await invalidarModelosCache(admin, provider.id)
-    console.warn(`[api/ai] Modelo ${modeloUsado} falló (${mensaje.split('\n')[0]}), invalidando caché de ${provider.nombre}`)
+    console.warn(`[api/ai] Modelo ${modeloUsado} falló, invalidando caché de ${provider.nombre}`)
 
-    const esErrorRecuperable =
-      /\b(4\d{2}|5\d{2})\b/.test(mensaje) ||
-      /rate.?limit|quota|exhausted|overloaded|saturad/i.test(mensaje) ||
-      /timeout|abort/i.test(mensaje)
-
-    // Sub-fallback intra-proveedor: probar otros modelos del mismo proveedor antes de saltar al respaldo externo
-    if (esErrorRecuperable && Array.isArray(provider.modelos) && provider.modelos.length > 1) {
+    if (Array.isArray(provider.modelos) && provider.modelos.length > 1) {
       const todosAlternativos = provider.modelos.filter((m) => m !== modeloUsado)
-      const modelosAlternativos = (await obtenerModelosNoPenalizados(admin, provider.id, todosAlternativos)).slice(0, MAX_SUBFALLBACK)
-      console.log(`[api/ai] Sub-fallback: probando ${modelosAlternativos.length} modelos no penalizados de ${provider.nombre}`)
+      const modelosAlternativos = (await obtenerModelosNoPenalizados(admin, provider.id, todosAlternativos)).slice(0, maxSubfb)
+      console.log(`[api/ai] Sub-fallback: probando ${modelosAlternativos.length} modelos de ${provider.nombre}`)
       for (const modeloAlt of modelosAlternativos) {
+        if (Date.now() - inicio >= timeoutGlobal) {
+          console.warn(`[api/ai] Tiempo global agotado (${Math.round((Date.now() - inicio) / 1000)}s), abortando sub-fallback`)
+          break
+        }
         try {
-          console.log(`[api/ai] Modelo ${modeloUsado} falló, intentando sub-modelo: ${modeloAlt}`)
-          const sub = await ejecutarProveedorIA(admin, provider, modeloAlt, system, promptFinal)
+          const inicioSub = Date.now()
+          console.log(`[api/ai] Intentando sub-modelo: ${modeloAlt} (${Math.round((Date.now() - inicio) / 1000)}s transcurridos)`)
+          const sub = await ejecutarProveedorIA(admin, provider, modeloAlt, system, promptFinal, timeoutModelo)
+          const latenciaSub = Date.now() - inicioSub
           analisis = sub.text
           totalTokens = sub.tokens
-          await guardarUltimoExito(admin, provider.id, modeloAlt)
-          console.warn(`[api/ai] Sub-modelo ${modeloAlt} respondió OK`)
+          await guardarUltimoExito(admin, provider.id, modeloAlt, latenciaSub, tamanoPrompt)
+          console.warn(`[api/ai] Sub-modelo ${modeloAlt} respondió OK (${latenciaSub}ms)`)
 
           if (totalTokens > 0) {
             const providersActualizados = providers.map((p) =>
@@ -431,52 +447,58 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
         } catch (subErr) {
           const subMsg = subErr instanceof Error ? subErr.message : String(subErr)
-          await registrarFallo(admin, provider.id, modeloAlt)
+          await registrarFallo(admin, provider.id, modeloAlt, { esTimeout: /timeout|abort/i.test(subMsg), tamanoPrompt })
+          await invalidarModelosCache(admin, provider.id)
           console.warn(`[api/ai] Sub-modelo ${modeloAlt} falló: ${subMsg.split('\n')[0]}`)
         }
       }
     }
 
-    if (esErrorRecuperable && tieneFallback && ruta.fallback_provider_id && ruta.fallback_modelo) {
-      const fallbackProvider = providers.find((p) => p.id === ruta.fallback_provider_id)
-      if (fallbackProvider?.api_key) {
-        try {
-          console.warn(
-            `[api/ai] Modelo ${modeloUsado} falló con ${mensaje.split('\n')[0]}, intentando respaldo: ${fallbackProvider.nombre}/${ruta.fallback_modelo}`,
-          )
-          const fb = await ejecutarProveedorIA(admin, fallbackProvider, ruta.fallback_modelo, system, promptFinal)
-          analisis = fb.text
-          totalTokens = fb.tokens
-          await guardarUltimoExito(admin, fallbackProvider.id, ruta.fallback_modelo)
-
-          if (totalTokens > 0) {
-            const providersActualizados = providers.map((p) =>
-              p.id === fallbackProvider.id
-                ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
-                : p,
+    if (tieneFallback && ruta.fallback_provider_id && ruta.fallback_modelo) {
+      if (Date.now() - inicio >= timeoutGlobal) {
+        console.warn(`[api/ai] Tiempo global agotado (${Math.round((Date.now() - inicio) / 1000)}s), abortando fallback externo`)
+      } else {
+        const fallbackProvider = providers.find((p) => p.id === ruta.fallback_provider_id)
+        if (fallbackProvider?.api_key) {
+          try {
+            const timeoutFb = getTimeoutParaPrompt(tamanoPrompt, esOpenRouter(fallbackProvider))
+            console.warn(
+              `[api/ai] Todos los modelos de ${provider.nombre} fallaron, intentando respaldo: ${fallbackProvider.nombre}/${ruta.fallback_modelo} (${Math.round((Date.now() - inicio) / 1000)}s transcurridos, timeout: ${timeoutFb / 1000}s)`,
             )
-            await admin
-              .from('configuraciones_sistema')
-              .update({ valor: providersActualizados })
-              .eq('clave', 'ai_providers')
-          }
+            const inicioFb = Date.now()
+            const fb = await ejecutarProveedorIA(admin, fallbackProvider, ruta.fallback_modelo, system, promptFinal, timeoutFb)
+            const latenciaFb = Date.now() - inicioFb
+            analisis = fb.text
+            totalTokens = fb.tokens
+            await guardarUltimoExito(admin, fallbackProvider.id, ruta.fallback_modelo, latenciaFb, tamanoPrompt)
 
-          return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
-        } catch (fbError) {
-          const fbMsg = fbError instanceof Error ? fbError.message : String(fbError)
-          await registrarFallo(admin, fallbackProvider.id, ruta.fallback_modelo)
-          console.error(`[api/ai] Respaldo ${fallbackProvider.nombre}/${ruta.fallback_modelo} también falló: ${fbMsg.split('\n')[0]}`)
+            if (totalTokens > 0) {
+              const providersActualizados = providers.map((p) =>
+                p.id === fallbackProvider.id
+                  ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
+                  : p,
+              )
+              await admin
+                .from('configuraciones_sistema')
+                .update({ valor: providersActualizados })
+                .eq('clave', 'ai_providers')
+            }
+
+            return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
+          } catch (fbError) {
+            const fbMsg = fbError instanceof Error ? fbError.message : String(fbError)
+            await registrarFallo(admin, fallbackProvider.id, ruta.fallback_modelo, { esTimeout: /timeout|abort/i.test(fbMsg), tamanoPrompt })
+            await invalidarModelosCache(admin, fallbackProvider.id)
+            console.error(`[api/ai] Respaldo ${fallbackProvider.nombre}/${ruta.fallback_modelo} también falló: ${fbMsg.split('\n')[0]}`)
+          }
         }
       }
     }
 
-    const esErrorProveedor = /503|429|saturado|rate.?limit|quota|exhausted|overloaded/i.test(mensaje)
-    if (esErrorProveedor) {
-      return NextResponse.json(
-        { error: 'El proveedor de IA está saturado. Por favor, intente en un minuto.' },
-        { status: 503 },
-      )
-    }
-    return NextResponse.json({ error: mensaje }, { status: 502 })
+    const duracionFinal = Date.now() - inicio
+    return NextResponse.json(
+      { error: `Todos los modelos agotados (${Math.round(duracionFinal / 1000)}s). Último error: ${mensaje.slice(0, 200)}` },
+      { status: 502 },
+    )
   }
 }

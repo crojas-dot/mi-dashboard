@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi, RefreshCw } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi, RefreshCw, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIProviderTipo, AIRouting } from '@/lib/ai/types'
@@ -55,6 +55,26 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   const [syncingModels, setSyncingModels] = useState<Set<string>>(new Set())
   const [cacheTtlValue, setCacheTtlValue] = useState<number>(1)
   const [cacheTtlUnit, setCacheTtlUnit] = useState<'minutes' | 'hours' | 'days'>('days')
+  const [testModal, setTestModal] = useState<{
+    abierto: boolean
+    providerId: string | null
+    providerNombre: string
+    modelos: string[]
+    progreso: { [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo' }
+    enCurso: boolean
+    cancelado: boolean
+    resultado: { buenos: number; malos: number; total: number } | null
+  }>({
+    abierto: false,
+    providerId: null,
+    providerNombre: '',
+    modelos: [],
+    progreso: {},
+    enCurso: false,
+    cancelado: false,
+    resultado: null,
+  })
+  const testAbortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     let activo = true
@@ -327,27 +347,41 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         return
       }
 
+      let modelosFinales = resultado.modelos
+      let excluidosPorTest = 0
+      try {
+        const { modelosExcluidosPorTest } = await import('@/lib/ai/modelTesting')
+        modelosFinales = await modelosExcluidosPorTest(supabase, providerId, resultado.modelos)
+        excluidosPorTest = resultado.modelos.length - modelosFinales.length
+      } catch {
+        // Sin test previo o error, usar todos
+      }
+
       const nuevaLista = providers.map(p =>
-        p.id === providerId ? { ...p, modelos: resultado.modelos } : p
+        p.id === providerId ? { ...p, modelos: modelosFinales } : p
       )
       setProviders(nuevaLista)
       await persistirProveedores(nuevaLista)
 
       try {
         const { limpiarMemoriaModelos } = await import('@/lib/ai/modelMemory')
+        const { limpiarResultadoTest } = await import('@/lib/ai/modelTesting')
         const { createServiceClient } = await import('@/lib/server/supabase-admin')
         const admin = createServiceClient()
-        if (admin) await limpiarMemoriaModelos(admin, providerId, resultado.modelos)
+        if (admin) {
+          await limpiarMemoriaModelos(admin, providerId, modelosFinales)
+          await limpiarResultadoTest(admin, providerId, modelosFinales)
+        }
       } catch {
         // Silenciar errores de limpieza de memoria
       }
 
       let routingActualizado = false
       if (esOpenRouter(provider)) {
-        const modeloDefault = resultado.modelos[0]
+        const modeloDefault = modelosFinales[0]
         const nuevoRouting = { ...routing }
         for (const m of Object.keys(nuevoRouting)) {
-          if (nuevoRouting[m]?.proveedor_id === providerId && !resultado.modelos.includes(nuevoRouting[m].modelo_nombre)) {
+          if (nuevoRouting[m]?.proveedor_id === providerId && !modelosFinales.includes(nuevoRouting[m].modelo_nombre)) {
             nuevoRouting[m] = { ...nuevoRouting[m], modelo_nombre: modeloDefault }
             routingActualizado = true
           }
@@ -358,7 +392,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         }
       }
 
-      let toastMsg = `${resultado.modelos.length} modelos gratuitos sincronizados para ${provider.nombre}`
+      let toastMsg = `${modelosFinales.length} modelos gratuitos sincronizados para ${provider.nombre}`
+      if (excluidosPorTest > 0) {
+        toastMsg += ` (${excluidosPorTest} excluidos por test previo)`
+      }
       if (resultado.descartados > 0) {
         toastMsg += ` (${resultado.descartados} de pago/descartados de ${resultado.total} totales)`
       }
@@ -375,6 +412,103 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         return s
       })
     }
+  }
+
+  const abrirTestModal = (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId)
+    if (!provider || provider.modelos.length === 0) return
+
+    const initial: { [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo' } = {}
+    for (const m of provider.modelos) initial[m] = 'pendiente'
+
+    setTestModal({
+      abierto: true,
+      providerId,
+      providerNombre: provider.nombre,
+      modelos: provider.modelos,
+      progreso: initial,
+      enCurso: false,
+      cancelado: false,
+      resultado: null,
+    })
+  }
+
+  const cerrarTestModal = () => {
+    if (testModal.enCurso) {
+      testAbortRef.current?.abort()
+    }
+    setTestModal(prev => ({ ...prev, abierto: false, enCurso: false }))
+    testAbortRef.current = null
+  }
+
+  const iniciarTest = async () => {
+    if (!testModal.providerId) return
+    const provider = providers.find(p => p.id === testModal.providerId)
+    if (!provider) return
+
+    const abortController = new AbortController()
+    testAbortRef.current = abortController
+
+    const initial: { [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo' } = {}
+    for (const m of provider.modelos) initial[m] = 'probando'
+
+    setTestModal(prev => ({ ...prev, enCurso: true, cancelado: false, progreso: initial, resultado: null }))
+
+    try {
+      const { testearProveedor } = await import('@/lib/ai/modelTesting')
+
+      const resultado = await testearProveedor(supabase, provider, {
+        maxModelos: 20,
+        signal: abortController.signal,
+        onProgress: (modelo: string, r: { ok: boolean }) => {
+          setTestModal(prev => ({
+            ...prev,
+            progreso: { ...prev.progreso, [modelo]: r.ok ? 'ok' : 'fallo' },
+          }))
+        },
+      })
+
+      const buenos = resultado.resultados.filter(r => r.ok).length
+      const malos = resultado.resultados.filter(r => !r.ok).length
+
+      const modelosOk = resultado.resultados.filter(r => r.ok).map(r => r.modelo)
+      const nuevosModelos = provider.modelos.filter(m => modelosOk.includes(m))
+
+      if (nuevosModelos.length > 0) {
+        const nuevaLista = providers.map(pr =>
+          pr.id === testModal.providerId ? { ...pr, modelos: nuevosModelos } : pr
+        )
+        setProviders(nuevaLista)
+        await persistirProveedores(nuevaLista)
+      }
+
+      setTestModal(prev => ({
+        ...prev,
+        enCurso: false,
+        resultado: { buenos, malos, total: resultado.resultados.length },
+      }))
+
+      const toastMsg = `${buenos} modelos buenos, ${malos} malos. Lista actualizada.`
+      if (malos > 0) {
+        showSuccess(`${toastMsg} (${malos} excluidos por test)`)
+      } else {
+        showSuccess(toastMsg)
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        setTestModal(prev => ({ ...prev, enCurso: false, cancelado: true }))
+        showSuccess('Test cancelado por el usuario')
+      } else {
+        setTestModal(prev => ({ ...prev, enCurso: false }))
+        showError(e as Error, 'No se pudo completar el test')
+      }
+    } finally {
+      testAbortRef.current = null
+    }
+  }
+
+  const cancelarTest = () => {
+    testAbortRef.current?.abort()
   }
 
   const actualizarRuta = (
@@ -458,9 +592,6 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 const pct = limite > 0 ? Math.min(100, Math.round((usados / limite) * 100)) : 0
                 const colorBarra = pct > 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'
                 const colorTexto = pct > 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600'
-                const modelos = (p.modelos ?? []).length > 0
-                  ? (p.modelos as string[]).slice(0, 3).join(', ') + ((p.modelos as string[]).length > 3 ? '…' : '')
-                  : '—'
                 return (
                   <tr key={p.id} className="border-b border-gray-200 hover:bg-gray-50">
                     <td className="px-3 py-2 font-medium text-gray-900">{p.nombre}</td>
@@ -469,7 +600,26 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                     </td>
                     <td className="px-3 py-2 text-gray-600">{p.base_url || '—'}</td>
                     <td className="px-3 py-2">
-                      <span className="font-mono text-xs text-gray-600" title={(p.modelos ?? []).join(', ')}>{modelos}</span>
+                      <div className="flex flex-col gap-0.5">
+                        {(p.modelos ?? []).length > 0 ? (
+                          (p.modelos as string[]).slice(0, 5).map((modelo) => {
+                            const testStatus = testModal.providerId === p.id ? testModal.progreso[modelo] : undefined
+                            return (
+                              <span key={modelo} className="font-mono text-xs text-gray-600 flex items-center gap-1">
+                                {testStatus === 'probando' && <Loader2 className="h-2.5 w-2.5 animate-spin text-blue-500" />}
+                                {testStatus === 'ok' && <CheckCircle className="h-2.5 w-2.5 text-green-500" />}
+                                {testStatus === 'fallo' && <XCircle className="h-2.5 w-2.5 text-red-500" />}
+                                {modelo}
+                              </span>
+                            )
+                          })
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                        {(p.modelos ?? []).length > 5 && (
+                          <span className="text-xs text-gray-400">+{(p.modelos as string[]).length - 5} más</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
@@ -522,8 +672,18 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                       <div className="flex items-center justify-center gap-1">
                         <button
                           type="button"
+                          onClick={() => abrirTestModal(p.id)}
+                          disabled={syncingModels.has(p.id) || p.modelos.length === 0}
+                          className="rounded p-1 text-gray-400 hover:text-purple-600 transition-colors disabled:opacity-50"
+                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          title="Testear modelos con prompts de prueba"
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => sincronizarModelos(p.id)}
-                          disabled={syncingModels.has(p.id)}
+                          disabled={syncingModels.has(p.id) || testModal.enCurso && testModal.providerId === p.id}
                           className="rounded p-1 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
                           style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
                           title="Sincronizar modelos desde el proveedor"
@@ -842,6 +1002,96 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           </div>
         </div>
       </div>
+      </Modal>
+
+      <Modal
+        open={testModal.abierto}
+        onClose={cerrarTestModal}
+        title={`Testear modelos — ${testModal.providerNombre}`}
+        size="lg"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Se probarán <strong>{testModal.modelos.length}</strong> modelos con 2 prompts (corto y largo).
+            {!testModal.enCurso && !testModal.resultado && ' Presione "Iniciar test" para comenzar.'}
+            {testModal.enCurso && ' El test está en curso…'}
+            {testModal.resultado && (
+              <span className={testModal.resultado.malos > 0 ? 'text-amber-600' : 'text-green-600'}>
+                {' '}{testModal.resultado.buenos} buenos, {testModal.resultado.malos} malos de {testModal.resultado.total} probados.
+              </span>
+            )}
+            {testModal.cancelado && ' Test cancelado por el usuario.'}
+          </p>
+
+          {testModal.enCurso && (
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+              {Object.values(testModal.progreso).filter(v => v !== 'pendiente').length} de {testModal.modelos.length} probados
+            </div>
+          )}
+
+          <div
+            className="rounded-lg border overflow-hidden"
+            style={{ borderColor: '#dee2e6', maxHeight: '50vh' }}
+          >
+            <div className="overflow-y-auto monday-scroll" style={{ maxHeight: 'calc(50vh - 8px)' }}>
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 z-10">
+                  <tr style={{ backgroundColor: '#343a40' }}>
+                    <th className="px-3 py-2 text-left font-semibold text-white">Modelo</th>
+                    <th className="px-3 py-2 text-center font-semibold text-white w-24">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {testModal.modelos.map((modelo) => {
+                    const status = testModal.progreso[modelo]
+                    return (
+                      <tr key={modelo} className="border-b border-gray-100 hover:bg-gray-50">
+                        <td className="px-3 py-1.5 font-mono text-xs text-gray-800">{modelo}</td>
+                        <td className="px-3 py-1.5 text-center">
+                          {status === 'pendiente' && <span className="text-xs text-gray-400">—</span>}
+                          {status === 'probando' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Probando
+                            </span>
+                          )}
+                          {status === 'ok' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                              <CheckCircle className="h-3 w-3" /> OK
+                            </span>
+                          )}
+                          {status === 'fallo' && (
+                            <span className="inline-flex items-center gap-1 text-xs text-red-600">
+                              <XCircle className="h-3 w-3" /> Fallo
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
+            {!testModal.enCurso && !testModal.resultado && (
+              <Button size="sm" onClick={iniciarTest}>
+                <Play className="h-3.5 w-3.5 mr-1" /> Iniciar test
+              </Button>
+            )}
+            {testModal.enCurso && (
+              <Button size="sm" variant="secondary" onClick={cancelarTest}>
+                <ShieldAlert className="h-3.5 w-3.5 mr-1" /> Cancelar
+              </Button>
+            )}
+            {(testModal.resultado || testModal.cancelado || (!testModal.enCurso && testModal.modelos.length > 0)) && (
+              <Button size="sm" variant="secondary" onClick={cerrarTestModal}>
+                Cerrar
+              </Button>
+            )}
+          </div>
+        </div>
       </Modal>
     </div>
   )
