@@ -63,18 +63,25 @@ export default function Header() {
     events: ['INSERT', 'UPDATE'],
   })
 
-  // Sonido al llegar una notificación nueva (solo si está habilitado y el toggle de sonido on)
-  // El primer render siembra el ref para no sonar por notificaciones ya existentes;
-  // cualquier incremento posterior (incluido 0→1) debe reproducir el tono.
+  // Sonido solo cuando el conteo de no leídas AUMENTA durante la sesión.
+  // Seed ref sin sonar en el primer render; comparar en renders posteriores.
   const prevCountRef = useRef<number | null>(null)
+  const initializedRef = useRef(false)
   useEffect(() => {
-    if (notifHabilitadas && notifSonido) {
-      const prev = prevCountRef.current
-      if (prev !== null && countNoLeidas > prev) playNotificationSound(user?.notif_sonido_id)
+    if (!notifHabilitadas || !notifSonido) {
       prevCountRef.current = countNoLeidas
-    } else {
-      prevCountRef.current = countNoLeidas
+      initializedRef.current = true
+      return
     }
+    if (!initializedRef.current) {
+      prevCountRef.current = countNoLeidas
+      initializedRef.current = true
+      return
+    }
+    if (countNoLeidas > prevCountRef.current!) {
+      playNotificationSound(user?.notif_sonido_id)
+    }
+    prevCountRef.current = countNoLeidas
   }, [countNoLeidas, notifHabilitadas, notifSonido, user?.notif_sonido_id])
 
   const irA = (enlace?: string, origenId?: string) => {
