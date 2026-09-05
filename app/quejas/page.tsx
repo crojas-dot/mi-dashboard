@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo, useRef, useDeferredValue, useEffect } from 'react'
-import { Plus, Search, Loader2, ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, CalendarRange } from 'lucide-react'
+import { useState, useMemo, useRef, useDeferredValue, useEffect, useCallback } from 'react'
+import { Plus, Search, Loader2, ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, CalendarRange, Eye } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
-import { useQuejas, useSLAConfig, useQuejasEstadisticas, quejasEstadisticasKey } from '@/lib/queries/useQuejas'
+import { useQuejas, useSLAConfig, useQuejasEstadisticas, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import Badge from '@/components/ui/Badge'
@@ -15,6 +15,10 @@ import StatCard from '@/components/StatCard'
 import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
+import { useQuejasVistas } from '@/hooks/useQuejasVistas'
+import { useAuthStore } from '@/lib/store/auth-store'
+import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -27,6 +31,8 @@ export default function QuejasPage() {
   const [ahora, setAhora] = useState(() => Date.now())
   const pageSize = 25
   const tableRef = useRef<HTMLDivElement>(null)
+  const { user } = useAuthStore()
+  const { esVista, marcarVista, marcarTodasVistas, contarNoVistas } = useQuejasVistas(user?.id)
 
   useEffect(() => {
     const id = setInterval(() => setAhora(Date.now()), 60000)
@@ -62,17 +68,7 @@ export default function QuejasPage() {
     ],
   })
 
-  const mesActual = estadisticas?.porMes.length
-    ? estadisticas.porMes[estadisticas.porMes.length - 1]
-    : null
-
-  const prioridadVariant: Record<string, string> = { Baja: 'blue', Media: 'amber', Alta: 'orange', Crítica: 'red' }
-  const estadoVariant: Record<string, string> = {
-    Recibido: 'gray', 'No Procede': 'red', 'En Investigación': 'amber',
-    'Pendiente de Revisión GC': 'purple', Resuelto: 'green', Finalizado: 'gray',
-    Abierta: 'blue', 'En Proceso': 'orange', Cerrada: 'green',
-  }
-
+  const mesActual = estadisticas?.mesActual ?? 0
   const slaMap = useMemo(() => {
     const m: Record<string, { dias_alerta: number; dias_vencimiento: number }> = {}
     for (const s of slaConfigs) m[s.prioridad] = s
@@ -94,6 +90,16 @@ export default function QuejasPage() {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
+  const quejaIds = useMemo(() => quejas.map((q) => q.id), [quejas])
+  const noVistasCount = contarNoVistas(quejaIds)
+
+  const prefetch = useHoverPrefetch()
+
+  const handleAbrirDetalle = useCallback((q: Queja) => {
+    setDetalleOpen(q)
+    // Marcar como visto en segundo plano — no bloquea la apertura
+    requestAnimationFrame(() => marcarVista(q.id))
+  }, [marcarVista])
 
   return (
     <div className="flex h-full flex-col">
@@ -106,24 +112,24 @@ export default function QuejasPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4 shrink-0">
         <StatCard
           title="Resueltas a tiempo"
-          value={`${estadisticas?.resueltasATiempo ?? 0}%`}
+          value={`${estadisticas?.pctATiempo ?? 0}%`}
           icon={<CheckCircle2 className="h-5 w-5" />}
           color="green"
-          subtitle={`vs fecha_sla de las resueltas/finalizadas (${estadisticas ? (estadisticas.totalDecididas - estadisticas.noProcede) : 0} evaluadas)`}
+          subtitle={`vs fecha_sla de las resueltas/finalizadas (${estadisticas?.resueltasTotal ?? 0} evaluadas)`}
         />
         <StatCard
           title="Procedencia"
-          value={`${estadisticas?.procedencia ?? 0}%`}
+          value={`${estadisticas?.pctProcedencia ?? 0}%`}
           icon={<ThumbsUp className="h-5 w-5" />}
           color="blue"
-          subtitle={`de quejas decididas no son "No Procede" (${estadisticas?.totalDecididas ?? 0} decididas, ${estadisticas?.noProcede ?? 0} no proceden)`}
+          subtitle={`de quejas decididas no son "No Procede" (${estadisticas?.totalConDecision ?? 0} decididas, ${estadisticas ? (estadisticas.totalConDecision - estadisticas.procedentes) : 0} no proceden)`}
         />
         <StatCard
           title="Quejas este mes"
-          value={mesActual?.total ?? 0}
+          value={mesActual}
           icon={<CalendarRange className="h-5 w-5" />}
           color="purple"
-          subtitle={mesActual?.mes ? new Date(mesActual.mes + '-01').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) : 'Sin datos'}
+          subtitle={new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
         />
         <StatCard
           title="Total quejas"
@@ -135,6 +141,19 @@ export default function QuejasPage() {
       </div>
 
       <div className="flex items-center gap-2 mb-3 shrink-0">
+        {noVistasCount > 0 && (
+          <button
+            onClick={() => marcarTodasVistas(quejaIds)}
+            className="inline-flex items-center gap-1.5 rounded-lg text-xs font-medium transition-colors shrink-0"
+            style={{ height: '34px', padding: '0 10px', border: '1px solid #dee2e6', background: '#fff', color: '#495057', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8f9fa' }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}
+            title="Marcar todas las quejas visibles como vistas"
+          >
+            <Eye style={{ width: '14px', height: '14px' }} />
+            {noVistasCount} sin ver
+          </button>
+        )}
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -177,15 +196,32 @@ export default function QuejasPage() {
               ) : (
                 quejas.map((q) => {
                   const sla = calcularSLA(q.fecha, q.prioridad, q.estado)
+                  const vista = esVista(q.id)
                   return (
-                    <tr key={q.id} onClick={() => setDetalleOpen(q)} className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-2.5 align-middle"><span className="font-mono text-sm font-medium">{q.folio}</span></td>
-                      <td className="px-3 py-2.5 align-middle font-medium text-gray-900">{q.cliente_nombre}</td>
-                      <td className="px-3 py-2.5 align-middle text-gray-600">{q.categoria}</td>
+                    <tr
+                      key={q.id}
+                      onClick={() => handleAbrirDetalle(q)}
+                      className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50"
+                      style={vista ? {} : { backgroundColor: 'rgba(13,110,253,0.05)' }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = vista ? '#f9fafb' : 'rgba(13,110,253,0.09)'
+                        prefetch({
+                          queryKey: quejaAdjuntosKey(q.id),
+                          queryFn: () => fetchQuejaAdjuntos(q.id),
+                          staleTime: Infinity,
+                        })
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = vista ? '' : 'rgba(13,110,253,0.05)'
+                      }}
+                    >
+                      <td className="px-3 py-2.5 align-middle"><span className={`font-mono text-sm ${vista ? 'font-medium' : 'font-bold text-gray-900'}`}>{q.folio}</span></td>
+                      <td className={`px-3 py-2.5 align-middle ${vista ? 'font-medium text-gray-900' : 'font-bold text-gray-900'}`}>{q.cliente_nombre}</td>
+                      <td className={`px-3 py-2.5 align-middle ${vista ? 'text-gray-600' : 'font-medium text-gray-800'}`}>{q.categoria}</td>
                       <td className="px-3 py-2.5 align-middle"><Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge></td>
                       <td className="px-3 py-2.5 align-middle"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
                       <td className="px-3 py-2.5 align-middle"><Badge variant={sla.variant}>{sla.label}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                      <td className={`px-3 py-2.5 align-middle whitespace-nowrap ${vista ? 'text-gray-500' : 'font-medium text-gray-700'}`}>{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
                     </tr>
                   )
                 })

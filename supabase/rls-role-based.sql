@@ -1,10 +1,11 @@
 -- ============================================================
--- Role-Based Row Level Security
--- Requires a 'role' column in the usuarios table:
---   'admin'            – full access to everything
---   'calidad'          – Gestoría de Calidad (read/write on most)
---   'operativo'        – Operativo (read-most, write-assigned)
---   'cliente_externo'  – Client (own quejas only)
+-- ⚠️ DEPRECATED — Este archivo NO se usa en el sistema actual.
+-- Las RLS activas están definidas en:
+--   005_seguridad_flujos_quejas.sql (RLS staff/admin helpers)
+--   006_permisos_dinamicos_colaborador.sql (permisos rol+modulo)
+--   007_quejas_adjuntos_y_reapertura.sql (adjuntos)
+-- No ejecutar este archivo — sobreescribiría las políticas actuales.
+-- Se conserva solo como referencia histórica.
 -- ============================================================
 
 -- Helper: get the current user's role from the usuarios table

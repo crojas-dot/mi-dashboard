@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
 import { getDriveClient, buscarOCrearSubcarpeta, subirArchivoASubcarpeta } from '@/lib/server/drive'
+import { MAX_FILE_BYTES, PLACEHOLDER_PREFIX, ALLOWED_MIME_TYPES, streamToBuffer } from '@/lib/server/uploadHelpers'
+import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 
 export const runtime = 'nodejs'
 
-const MAX_FILE_BYTES = 50 * 1024 * 1024
-const PLACEHOLDER_PREFIX = 'REEMPLAZAME'
-
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 30, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -34,6 +38,11 @@ export async function POST(request: NextRequest) {
   }
   if (file.size > MAX_FILE_BYTES) {
     return NextResponse.json({ error: 'El archivo supera el máximo de 50 MB' }, { status: 413 })
+  }
+
+  const mimeType = file.type || 'application/octet-stream'
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    return NextResponse.json({ error: `Tipo de archivo no permitido: ${mimeType}` }, { status: 415 })
   }
 
   const esStaff = ['admin', 'calidad'].includes(current.rol)
@@ -82,14 +91,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const buffer = await streamToBuffer(file.stream(), MAX_FILE_BYTES)
     const subcarpetaId = await buscarOCrearSubcarpeta(drive, rootFolderId, queja.folio)
     const resultado = await subirArchivoASubcarpeta(subcarpetaId, {
       nombre: file.name,
       tipoMime: file.type || 'application/octet-stream',
-      buffer: Buffer.from(await file.arrayBuffer()),
+      buffer,
     })
 
-    // Disparo proactivo fire-and-forget a Apps Script para pre-generar contexto
     const appsScriptUrl = process.env.APPS_SCRIPT_WEBAPP_URL
     if (appsScriptUrl) {
       fetch(appsScriptUrl, {

@@ -92,6 +92,8 @@ export function useQuejaAdjuntos(quejaId: string) {
     queryKey: quejaAdjuntosKey(quejaId),
     queryFn: () => fetchQuejaAdjuntos(quejaId),
     enabled: !!quejaId,
+    staleTime: Infinity,
+    gcTime: 30 * 60 * 1000,
   })
 }
 
@@ -118,57 +120,31 @@ export function useSLAConfig(proceso?: string) {
 }
 
 export interface QuejasEstadisticas {
+  total: number
+  mesActual: number
   resueltasATiempo: number
-  totalDecididas: number
-  noProcede: number
-  procedencia: number
-  porMes: { mes: string; total: number }[]
+  resueltasTotal: number
+  pctATiempo: number
+  procedentes: number
+  totalConDecision: number
+  pctProcedencia: number
 }
 
 export const quejasEstadisticasKey = [...queryKeys.quejas, 'estadisticas'] as const
 
 export async function fetchQuejasEstadisticas(): Promise<QuejasEstadisticas> {
-  const { data, error } = await supabase
-    .from('quejas')
-    .select('id, estado, fecha, fecha_cierre, fecha_sla')
+  const { data, error } = await supabase.rpc('obtener_estadisticas_quejas')
   if (error) throw error
-  const quejas = (data as Queja[]) ?? []
-
-  const decididas = quejas.filter((q) => q.estado !== 'Recibido')
-  const noProcede = quejas.filter((q) => q.estado === 'No Procede').length
-  const resueltas = quejas.filter((q) => q.estado !== 'Recibido' && q.estado !== 'No Procede')
-
-  let resueltasATiempo = 0
-  for (const q of resueltas) {
-    if (q.estado !== 'Resuelto' && q.estado !== 'Finalizado') continue
-    if (!q.fecha_cierre || !q.fecha_sla) {
-      // Sin fecha_sla persistida no se puede comparar; se considera a tiempo
-      resueltasATiempo++
-      continue
-    }
-    if (new Date(q.fecha_cierre).getTime() <= new Date(q.fecha_sla).getTime()) resueltasATiempo++
-  }
-
-  const porMesMap: Record<string, number> = {}
-  for (const q of quejas) {
-    const key = (q.fecha || '').slice(0, 7)
-    if (!key) continue
-    porMesMap[key] = (porMesMap[key] ?? 0) + 1
-  }
-  const porMes = Object.entries(porMesMap)
-    .map(([mes, total]) => ({ mes, total }))
-    .sort((a, b) => a.mes.localeCompare(b.mes))
-
-  const totalDecididas = decididas.length
-  const procedencia = totalDecididas > 0 ? Math.round(((totalDecididas - noProcede) / totalDecididas) * 100) : 0
-  const pctATiempo = resueltas.length > 0 ? Math.round((resueltasATiempo / resueltas.length) * 100) : 0
-
+  const r = data as Record<string, number>
   return {
-    resueltasATiempo: pctATiempo,
-    totalDecididas,
-    noProcede,
-    procedencia,
-    porMes: porMes.slice(-6),
+    total: r.total ?? 0,
+    mesActual: r.mes_actual ?? 0,
+    resueltasATiempo: r.resueltas_a_tiempo ?? 0,
+    resueltasTotal: r.resueltas_total ?? 0,
+    pctATiempo: r.pct_a_tiempo ?? 0,
+    procedentes: r.procedentes ?? 0,
+    totalConDecision: r.total_con_decision ?? 0,
+    pctProcedencia: r.pct_procedencia ?? 0,
   }
 }
 

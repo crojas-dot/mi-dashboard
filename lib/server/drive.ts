@@ -1,10 +1,11 @@
+import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { google } from 'googleapis'
 import type { drive_v3 } from 'googleapis'
 
 export const DRIVE_FOLDER_MIME = 'application/vnd.google-apps.folder'
 
-const DRIVE_TIMEOUT_MS = 120000
+const DRIVE_TIMEOUT_MS = 55000
 const DRIVE_UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files'
 
 type JwtAuth = InstanceType<typeof google.auth.JWT>
@@ -76,34 +77,6 @@ async function obtenerAccessToken(): Promise<string | null> {
   return accessToken ?? null
 }
 
-export async function hacerArchivoPublico(fileId: string): Promise<boolean> {
-  try {
-    const accessToken = await obtenerAccessToken()
-    if (!accessToken) return false
-    const res = await fetch(
-      `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}/permissions?supportsAllDrives=true`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: 'reader', type: 'anyone' }),
-        signal: AbortSignal.timeout(30000),
-      },
-    )
-    if (!res.ok) {
-      console.warn(`[drive] permiso anyone/reader falló para ${fileId}: HTTP ${res.status}`)
-      return false
-    }
-    console.log(`[drive] archivo público (anyone/reader): ${fileId}`)
-    return true
-  } catch (error) {
-    console.warn('[drive] error aplicando permiso público', fileId, error)
-    return false
-  }
-}
-
 export interface ArchivoParaDrive {
   nombre: string
   tipoMime: string
@@ -164,7 +137,6 @@ export async function subirArchivoASubcarpeta(
 
   const json = JSON.parse(texto) as { id?: string; name?: string; mimeType?: string }
   if (!json.id) throw new Error('Google Drive no devolvió el ID del archivo subido')
-  await hacerArchivoPublico(json.id)
   return { id: json.id, name: json.name ?? null, mimeType: json.mimeType ?? null }
 }
 

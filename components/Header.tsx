@@ -77,9 +77,13 @@ export default function Header() {
     }
   }, [countNoLeidas, notifHabilitadas, notifSonido, user?.notif_sonido_id])
 
-  const irA = (enlace?: string) => {
+  const irA = (enlace?: string, origenId?: string) => {
     setMenuAbierto(null)
-    if (enlace) router.push(enlace)
+    if (enlace) {
+      // Si hay un origen_id, agregarlo como query param para que la página destino abra el registro
+      const url = origenId ? `${enlace}?abrir=${origenId}` : enlace
+      router.push(url)
+    }
   }
 
   // Cerrar menús con click fuera o Escape
@@ -211,7 +215,7 @@ export default function Header() {
                       style={{ cursor: 'pointer', background: n.leida ? 'transparent' : 'rgba(13,110,253,0.06)' }}
                       onClick={() => {
                         if (!n.leida && user) marcarLeida.mutate({ id: n.id, userId: user.id })
-                        irA(n.enlace || undefined)
+                        irA(n.enlace || undefined, n.origen_id || undefined)
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8f9fa' }}
                       onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = n.leida ? 'transparent' : 'rgba(13,110,253,0.06)' }}

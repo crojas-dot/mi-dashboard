@@ -361,7 +361,15 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                     />
                   ) : (
                     <div className="prose prose-blue max-w-none min-h-[400px] p-6 bg-white border border-gray-200 rounded-lg shadow-sm font-sans leading-relaxed text-gray-800">
-                      <ReactMarkdown>{aiResult}</ReactMarkdown>
+                      <ReactMarkdown
+                        components={{
+                          a: ({ href, children }) => (
+                            <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+                          ),
+                        }}
+                      >
+                        {aiResult}
+                      </ReactMarkdown>
                     </div>
                   )}
                 </div>

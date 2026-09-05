@@ -1,3 +1,9 @@
+/**
+ * @deprecated Store huérfano — no existe toggle de tema en la UI.
+ * Se mantiene por compatibilidad pero no debe usarse en código nuevo.
+ * Para implementar dark mode en el futuro, crear un toggle en Header
+ * y conectar con este store.
+ */
 import { create } from 'zustand'
 
 type Theme = 'light' | 'dark'

@@ -54,7 +54,7 @@ export async function marcarLeida(id: string) {
 }
 
 export async function marcarTodasLeidas(userId: string) {
-  await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', userId).is('leida', false).eq('archivada', false)
+  await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', userId).eq('leida', false).eq('archivada', false)
 }
 
 export async function archivarNotificacion(id: string) {

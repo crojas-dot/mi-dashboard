@@ -11,13 +11,7 @@ import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
-
-const prioridadVariant: Record<string, string> = { Baja: 'blue', Media: 'amber', Alta: 'orange', Crítica: 'red' }
-const estadoVariant: Record<string, string> = {
-  Recibido: 'gray', 'No Procede': 'red', 'En Investigación': 'amber',
-  'Pendiente de Revisión GC': 'purple', Resuelto: 'green', Finalizado: 'gray',
-}
-
+import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
 export default function MisQuejasPage() {
   const { user } = useAuthStore()
   const [page, setPage] = useState(0)

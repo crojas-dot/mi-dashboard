@@ -3,6 +3,44 @@ import type { AIProvider, ArchivoIA } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { obtenerModelosDisponibles, obtenerModelosCache, guardarModelosCache, invalidarModelosCache } from './modelDiscovery'
 
+const BASE_URL_ALLOWLIST = new Set([
+  'api.openai.com',
+  'api.anthropic.com',
+  'openrouter.ai',
+  'api.groq.com',
+  'generativelanguage.googleapis.com',
+  'api.deepseek.com',
+  'api.mistral.ai',
+  'api.together.xyz',
+])
+
+const PRIVATE_IP_PATTERNS = [
+  /^127\./,
+  /^10\./,
+  /^172\.(1[6-9]|2\d|3[01])\./,
+  /^192\.168\./,
+  /^169\.254\./,
+  /^0\./,
+  /^localhost$/i,
+  /^\[?::1\]?$/,
+  /^\[?fc00:/i,
+  /^\[?fd00:/i,
+]
+
+export function validarBaseUrl(url: string): boolean {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return false
+  }
+  if (parsed.protocol !== 'https:') return false
+  const hostname = parsed.hostname.toLowerCase()
+  if (PRIVATE_IP_PATTERNS.some(p => p.test(hostname))) return false
+  if (hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '169.254.169.254') return false
+  return BASE_URL_ALLOWLIST.has(hostname)
+}
+
 export const IA_SYSTEM_PROMPT =
   'Sos un asistente experto en Gestión de Calidad (norma ISO 9001 / acreditación, Ente Costarricense de Acreditación). ' +
   'Respondé en español, con tono profesional, claro y estructurado. Usá viñetas cuando sea útil.'
@@ -30,7 +68,7 @@ export interface AIClient {
   analizar(args: AnalizarArgs): Promise<AnalizarResult>
 }
 
-const TIMEOUT_MS = 120_000
+const TIMEOUT_MS = 55_000
 
 export async function invalidarCacheGeminiFlashAuto(admin: SupabaseClient): Promise<void> {
   await invalidarModelosCache(admin, 'gemini')
@@ -115,6 +153,9 @@ function normalizarUso(u: TokenUsage | undefined): TokenUsage | undefined {
 
 function crearOpenAICompatible(provider: AIProvider, modelo: string): AIClient {
   const base = quitarSlashFinal(provider.base_url?.trim() || 'https://api.openai.com/v1')
+  if (!validarBaseUrl(base)) {
+    throw new Error('URL base del proveedor IA no está en la lista de dominios permitidos')
+  }
   return {
     async analizar({ prompt, system = IA_SYSTEM_PROMPT, maxTokens = 2000, temperature = 0.3, archivos = [] }) {
       const content: unknown[] = [{ type: 'text', text: prompt }]

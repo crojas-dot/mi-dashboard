@@ -366,12 +366,8 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       try {
         const { limpiarMemoriaModelos } = await import('@/lib/ai/modelMemory')
         const { limpiarResultadoTest } = await import('@/lib/ai/modelTesting')
-        const { createServiceClient } = await import('@/lib/server/supabase-admin')
-        const admin = createServiceClient()
-        if (admin) {
-          await limpiarMemoriaModelos(admin, providerId, modelosFinales)
-          await limpiarResultadoTest(admin, providerId, modelosFinales)
-        }
+        await limpiarMemoriaModelos(supabase, providerId, modelosFinales)
+        await limpiarResultadoTest(supabase, providerId, modelosFinales)
       } catch {
         // Silenciar errores de limpieza de memoria
       }

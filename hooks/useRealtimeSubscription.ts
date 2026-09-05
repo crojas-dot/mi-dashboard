@@ -25,23 +25,13 @@ interface SubscriptionConfig {
 
 /**
  * Subscribes to Supabase Realtime changes and invalidates React Query cache.
- *
- * Usage (in layout or page):
- *   useRealtimeSubscription({
- *     table: 'quejas',
- *     invalidateKeys: [['quejas'], ['dashboard-stats']],
- *   })
- *
- *   useRealtimeSubscription({
- *     table: 'notificaciones',
- *     filter: `user_id=eq.${userId}`,
- *     invalidateKeys: [['notificaciones', userId]],
- *   })
+ * Debounces invalidations by 750ms to prevent cascading refetches.
  */
 export function useRealtimeSubscription(config: SubscriptionConfig) {
   const queryClient = useQueryClient()
   const configRef = useRef(config)
   configRef.current = config
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const events = config.events ?? ['INSERT', 'UPDATE']
@@ -60,15 +50,20 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
           const eventType = payload.eventType.toUpperCase() as 'INSERT' | 'UPDATE' | 'DELETE'
           if (!events.includes(eventType)) return
 
-          const keys = configRef.current.invalidateKeys
-          for (const key of keys) {
-            queryClient.invalidateQueries({ queryKey: [...key] })
-          }
+          // Debounce invalidations to prevent rapid-fire refetches
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          debounceRef.current = setTimeout(() => {
+            const keys = configRef.current.invalidateKeys
+            for (const key of keys) {
+              queryClient.invalidateQueries({ queryKey: [...key] })
+            }
+          }, 750)
         },
       )
       .subscribe()
 
     return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
       supabase.removeChannel(channel)
     }
   }, [queryClient, config.table, config.filter])

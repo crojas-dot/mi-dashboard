@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
+import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 
 export const runtime = 'nodejs'
+
+function esEmailValido(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
 
 function parseBody(request: NextRequest) {
   return request.json().catch(() => null)
 }
 
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 20, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -48,6 +58,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 20, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -72,7 +87,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Nombre, email y rol son obligatorios' }, { status: 400 })
   }
 
-  if (!email.includes('@')) {
+  if (!esEmailValido(email)) {
     return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
   }
 
@@ -113,6 +128,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 20, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -159,6 +179,21 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  // Verificar que no se quede sin admins activos
+  if (rol !== undefined || estado !== undefined) {
+    const { data: targetUser } = await admin.from('usuarios').select('rol, estado').eq('id', id).maybeSingle()
+    if (targetUser?.rol === 'admin' && targetUser?.estado === 'activo') {
+      const nuevoRol = rol ?? targetUser.rol
+      const nuevoEstado = estado ?? targetUser.estado
+      if (nuevoRol !== 'admin' || nuevoEstado !== 'activo') {
+        const { count } = await admin.from('usuarios').select('id', { count: 'exact', head: true }).eq('rol', 'admin').eq('estado', 'activo')
+        if ((count ?? 0) <= 1) {
+          return NextResponse.json({ error: 'No se puede dejar el sistema sin administradores activos' }, { status: 409 })
+        }
+      }
+    }
+  }
+
   const updates: Record<string, unknown> = {}
 
   if (nombre !== undefined) {
@@ -172,7 +207,7 @@ export async function PATCH(request: NextRequest) {
   }
   if (email !== undefined) {
     const newEmail = email.trim().toLowerCase()
-    if (!newEmail.includes('@')) {
+    if (!esEmailValido(newEmail)) {
       return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
     }
     const { error: emailError } = await admin.auth.admin.updateUserById(authId, { email: newEmail })
@@ -204,6 +239,11 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 20, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -230,6 +270,15 @@ export async function DELETE(request: NextRequest) {
 
   if (current.auth_id === userRow.auth_id) {
     return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
+  }
+
+  // Verificar que no sea el último admin activo
+  const { data: userToDelete } = await admin.from('usuarios').select('rol').eq('id', id).maybeSingle()
+  if (userToDelete?.rol === 'admin') {
+    const { count } = await admin.from('usuarios').select('id', { count: 'exact', head: true }).eq('rol', 'admin').eq('estado', 'activo')
+    if ((count ?? 0) <= 1) {
+      return NextResponse.json({ error: 'No se puede eliminar el último administrador activo del sistema' }, { status: 409 })
+    }
   }
 
   const { error: authDeleteError } = await admin.auth.admin.deleteUser(userRow.auth_id)

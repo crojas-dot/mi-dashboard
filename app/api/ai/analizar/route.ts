@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
-import { IA_SYSTEM_PROMPT, resolverModeloAuto } from '@/lib/ai/aiFactory'
+import { IA_SYSTEM_PROMPT, resolverModeloAuto, validarBaseUrl } from '@/lib/ai/aiFactory'
 import { invalidarModelosCache, esModeloAuto, esOpenRouter } from '@/lib/ai/modelDiscovery'
 import { guardarUltimoExito, obtenerUltimoExito, registrarFallo, obtenerModelosNoPenalizados } from '@/lib/ai/modelMemory'
 import { getDriveClient, buscarOCrearSubcarpeta } from '@/lib/server/drive'
+import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 import type { AIProvider, AIRouting } from '@/lib/ai/types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -63,87 +64,106 @@ async function ejecutarProveedorIA(
     modelo = provider.modelos[0]
   }
 
-  if (provider.tipo === 'gemini') {
-    const { GoogleGenerativeAI } = await import('@google/generative-ai')
-    const genAI = new GoogleGenerativeAI(provider.api_key)
-    const model = genAI.getGenerativeModel({
-      model: modelo,
-      systemInstruction: system,
-      generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
-    })
-    const result = await model.generateContent(
-      { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
-      { signal: AbortSignal.timeout(timeoutMs) },
-    )
-    const text = result.response.text()
-    if (!text) throw new Error('Respuesta vacía de Gemini')
-    const usage = result.response.usageMetadata
-    if (usage) tokens = usage.totalTokenCount ?? 0
-    return { text: text.trim(), tokens }
-  }
+  // Crear AbortController nuevo por cada intento — nunca reutilizar señales
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  console.log(`[api/ai] Nueva señal para modelo ${modelo} (${timeoutMs}ms), provider: ${provider.nombre}`)
 
-  if (provider.tipo === 'openai') {
-    const baseUrl = provider.base_url?.replace(/\/+$/, '') || 'https://api.openai.com/v1'
-    const maxTokens = esOpenRouter(provider) ? 1024 : 8192
-    const res = await fetch(`${baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${provider.api_key}`,
-      },
-      body: JSON.stringify({
+  try {
+    if (provider.tipo === 'gemini') {
+      const { GoogleGenerativeAI } = await import('@google/generative-ai')
+      const genAI = new GoogleGenerativeAI(provider.api_key)
+      const model = genAI.getGenerativeModel({
         model: modelo,
-        temperature: 0.3,
-        max_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: prompt },
-        ],
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+        systemInstruction: system,
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.3 },
+      })
+      console.log(`[api/ai] Cliente Gemini creado para modelo: ${modelo}`)
+      const result = await model.generateContent(
+        { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+        { signal: controller.signal },
+      )
+      const text = result.response.text()
+      if (!text) throw new Error('Respuesta vacía de Gemini')
+      const usage = result.response.usageMetadata
+      if (usage) tokens = usage.totalTokenCount ?? 0
+      return { text: text.trim(), tokens }
     }
-    const json = await res.json()
-    const text = json?.choices?.[0]?.message?.content
-    if (!text) throw new Error('Respuesta vacía del proveedor OpenAI')
-    if (json?.usage?.total_tokens) tokens = json.usage.total_tokens
-    return { text: text.trim(), tokens }
-  }
 
-  if (provider.tipo === 'anthropic') {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': provider.api_key,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: modelo,
-        max_tokens: 8192,
-        temperature: 0.3,
-        system,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+    if (provider.tipo === 'openai') {
+      const baseUrl = provider.base_url?.replace(/\/+$/, '') || 'https://api.openai.com/v1'
+      if (!validarBaseUrl(baseUrl)) {
+        throw new Error(`URL base no permitida: ${baseUrl}. Dominios permitidos: api.openai.com, openrouter.ai, api.groq.com, api.deepseek.com, api.mistral.ai, api.together.xyz`)
+      }
+      const maxTokens = esOpenRouter(provider) ? 1024 : 8192
+      console.log(`[api/ai] Cliente OpenAI creado para modelo: ${modelo}`)
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${provider.api_key}`,
+        },
+        body: JSON.stringify({
+          model: modelo,
+          temperature: 0.3,
+          max_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: prompt },
+          ],
+        }),
+        signal: controller.signal,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+      }
+      const json = await res.json()
+      const text = json?.choices?.[0]?.message?.content
+      if (!text) throw new Error('Respuesta vacía del proveedor OpenAI')
+      if (json?.usage?.total_tokens) tokens = json.usage.total_tokens
+      return { text: text.trim(), tokens }
     }
-    const json = await res.json()
-    const text = json?.content?.[0]?.text
-    if (!text) throw new Error('Respuesta vacía de Anthropic')
-    if (json?.usage) {
-      tokens = (json.usage.input_tokens ?? 0) + (json.usage.output_tokens ?? 0)
-    }
-    return { text: text.trim(), tokens }
-  }
 
-  throw new Error(`Tipo de proveedor no soportado: ${provider.tipo}`)
+    if (provider.tipo === 'anthropic') {
+      console.log(`[api/ai] Cliente Anthropic creado para modelo: ${modelo}`)
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': provider.api_key,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: modelo,
+          max_tokens: 8192,
+          temperature: 0.3,
+          system,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        signal: controller.signal,
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(`[${provider.nombre}] ${res.status}: ${err?.error?.message || res.statusText}`)
+      }
+      const json = await res.json()
+      const text = json?.content?.[0]?.text
+      if (!text) throw new Error('Respuesta vacía de Anthropic')
+      if (json?.usage) {
+        tokens = (json.usage.input_tokens ?? 0) + (json.usage.output_tokens ?? 0)
+      }
+      return { text: text.trim(), tokens }
+    }
+
+    throw new Error(`Tipo de proveedor no soportado: ${provider.tipo}`)
+  } catch (err) {
+    // Forzar limpieza de recursos tras aborto — evitar estado corrupto
+    controller.abort()
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function resolverEntidad(
@@ -191,6 +211,11 @@ function construirTextoGenerico(modulo: string, entidad: Record<string, unknown>
 }
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (!rateLimit(ip, 10, 60_000)) {
+    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+  }
+
   const current = await getCurrentUser(request)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -389,15 +414,7 @@ export async function POST(request: NextRequest) {
     console.log(`[api/ai][diag] Análisis completado en ${duracion}ms. Modelo: ${modeloUsado}. Tokens: ${totalTokens}`)
 
     if (totalTokens > 0) {
-      const providersActualizados = providers.map((p) =>
-        p.id === provider.id
-          ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
-          : p,
-      )
-      await admin
-        .from('configuraciones_sistema')
-        .update({ valor: providersActualizados })
-        .eq('clave', 'ai_providers')
+      await admin.rpc('incrementar_tokens_proveedor', { p_provider_id: provider.id, p_tokens: totalTokens })
     }
 
     return NextResponse.json({
@@ -433,15 +450,7 @@ export async function POST(request: NextRequest) {
           console.warn(`[api/ai] Sub-modelo ${modeloAlt} respondió OK (${latenciaSub}ms)`)
 
           if (totalTokens > 0) {
-            const providersActualizados = providers.map((p) =>
-              p.id === provider.id
-                ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
-                : p,
-            )
-            await admin
-              .from('configuraciones_sistema')
-              .update({ valor: providersActualizados })
-              .eq('clave', 'ai_providers')
+            await admin.rpc('incrementar_tokens_proveedor', { p_provider_id: provider.id, p_tokens: totalTokens })
           }
 
           return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
@@ -450,6 +459,8 @@ export async function POST(request: NextRequest) {
           await registrarFallo(admin, provider.id, modeloAlt, { esTimeout: /timeout|abort/i.test(subMsg), tamanoPrompt })
           await invalidarModelosCache(admin, provider.id)
           console.warn(`[api/ai] Sub-modelo ${modeloAlt} falló: ${subMsg.split('\n')[0]}`)
+          // Pausa breve para permitir que conexiones pendientes se cierren completamente
+          await new Promise((r) => setTimeout(r, 200))
         }
       }
     }
@@ -473,15 +484,7 @@ export async function POST(request: NextRequest) {
             await guardarUltimoExito(admin, fallbackProvider.id, ruta.fallback_modelo, latenciaFb, tamanoPrompt)
 
             if (totalTokens > 0) {
-              const providersActualizados = providers.map((p) =>
-                p.id === fallbackProvider.id
-                  ? { ...p, tokens_usados: (p.tokens_usados ?? 0) + totalTokens, tokens_updated_at: new Date().toISOString() }
-                  : p,
-              )
-              await admin
-                .from('configuraciones_sistema')
-                .update({ valor: providersActualizados })
-                .eq('clave', 'ai_providers')
+              await admin.rpc('incrementar_tokens_proveedor', { p_provider_id: fallbackProvider.id, p_tokens: totalTokens })
             }
 
             return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
