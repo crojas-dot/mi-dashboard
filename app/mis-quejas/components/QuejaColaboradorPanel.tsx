@@ -1,15 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles, Edit, Eye as EyeIcon } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
 import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
-import { transicionarQueja, descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
+import { useQuejaAdjuntos, quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { analizarIA } from '@/lib/services/aiService'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ReactMarkdown from 'react-markdown'
@@ -39,6 +40,7 @@ const prioridadVariant: Record<string, string> = { Baja: 'blue', Media: 'amber',
 
 export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Props) {
   const { user } = useAuthStore()
+  const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('detalle')
   const [resolucion, setResolucion] = useState('')
   const [nota, setNota] = useState('')
@@ -51,6 +53,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [modoEdicion, setModoEdicion] = useState(false)
+  const [subiendoAdjuntoAnalisis, setSubiendoAdjuntoAnalisis] = useState(false)
 
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
@@ -143,6 +146,19 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       setNota('')
     } catch (error) {
       showError(error as Error, 'No se pudo agregar la nota')
+    }
+  }
+
+  const handleSubirAdjuntoAnalisis = async (file: File) => {
+    setSubiendoAdjuntoAnalisis(true)
+    try {
+      await subirAdjuntoQueja(queja.id, file)
+      queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
+      showSuccess('Adjunto de análisis subido')
+    } catch (error) {
+      showError(error as Error, 'No se pudo subir el adjunto de análisis')
+    } finally {
+      setSubiendoAdjuntoAnalisis(false)
     }
   }
 
@@ -276,33 +292,76 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               {adjuntos.length === 0 ? (
                 <p className="mt-2 text-sm text-gray-400">Sin evidencias todavía.</p>
               ) : (
-                <ul className="mt-3 space-y-1">
-                  {adjuntos.map((a) => (
-                    <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                      <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-                      <button
-                        type="button"
-                        onClick={() => setPreviewAdjunto(a)}
-                        className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                        title="Vista previa"
-                      >
-                        {a.nombre}
-                      </button>
-                      <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                      <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
-                        className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
-                        title="Descargar"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  {/* Evidencias del cliente (usuario_id NULL) */}
+                  {adjuntos.some((a) => !a.usuario_id) && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias del cliente</p>
+                      <ul className="space-y-1">
+                        {adjuntos.filter((a) => !a.usuario_id).map((a) => (
+                          <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                            <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                            <button
+                              type="button"
+                              onClick={() => setPreviewAdjunto(a)}
+                              className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                              title="Vista previa"
+                            >
+                              {a.nombre}
+                            </button>
+                            <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                            <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                              className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
+                              title="Descargar"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Evidencias de análisis (usuario_id presente) */}
+                  {adjuntos.some((a) => a.usuario_id) && (
+                    <div className="mt-3">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias de análisis</p>
+                      <ul className="space-y-1">
+                        {adjuntos.filter((a) => a.usuario_id).map((a) => (
+                          <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                            <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+                            <button
+                              type="button"
+                              onClick={() => setPreviewAdjunto(a)}
+                              className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                              title="Vista previa"
+                            >
+                              {a.nombre}
+                            </button>
+                            <Badge variant="blue">Análisis</Badge>
+                            <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                            <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                              className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
+                              title="Descargar"
+                            >
+                              <Download className="h-4 w-4" />
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -422,6 +481,70 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                   <Send className="h-3 w-3" /> Agregar nota
                 </Button>
               </div>
+            </div>
+
+            <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Evidencias de análisis</h2>
+                <span className="text-xs text-gray-400">{adjuntos.filter((a) => a.usuario_id).length} archivo(s)</span>
+              </div>
+              <p className="mt-1 text-xs text-gray-400">Archivos internos de investigación. Solo visibles para staff y responsable.</p>
+              
+              {adjuntos.filter((a) => a.usuario_id).length === 0 ? (
+                <p className="mt-2 text-sm text-gray-400">Sin evidencias de análisis todavía.</p>
+              ) : (
+                <ul className="mt-3 space-y-1">
+                  {adjuntos.filter((a) => a.usuario_id).map((a) => (
+                    <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+                      <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+                      <button
+                        type="button"
+                        onClick={() => setPreviewAdjunto(a)}
+                        className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                        title="Vista previa"
+                      >
+                        {a.nombre}
+                      </button>
+                      <Badge variant="blue">Análisis</Badge>
+                      <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                      <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
+                        <Eye className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                        className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
+                        title="Descargar"
+                      >
+                        <Download className="h-4 w-4" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              
+              {estado === 'En Investigación' && (
+                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-200">
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
+                    <Upload className="h-3.5 w-3.5" /> Subir evidencia de análisis
+                    <input
+                      type="file"
+                      className="hidden"
+                      disabled={subiendoAdjuntoAnalisis}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        e.target.value = ''
+                        if (f) handleSubirAdjuntoAnalisis(f)
+                      }}
+                    />
+                  </label>
+                  {subiendoAdjuntoAnalisis && (
+                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo...
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {actividadLoading ? (

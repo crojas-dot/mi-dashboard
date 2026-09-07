@@ -434,31 +434,72 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                 : 'Sin adjuntos todavía.'}
             </p>
           ) : (
-            <ul className="space-y-1">
-              {adjuntos.map((a) => (
-                <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
-                  <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-                  <button
-                    type="button"
-                    onClick={() => setPreviewAdjunto(a)}
-                    className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                    title="Vista previa"
-                  >
-                    {a.nombre}
-                  </button>
-                  <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
-                    <Eye className="h-4 w-4" />
-                  </button>
-                  <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                  <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
-                    {new Date(a.created_at).toLocaleDateString('es-ES')}
-                  </span>
-                  <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
-                    <Download className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              {/* Evidencias del cliente (usuario_id NULL) */}
+              {adjuntos.some((a) => !a.usuario_id) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias del cliente</p>
+                  <ul className="space-y-1">
+                    {adjuntos.filter((a) => !a.usuario_id).map((a) => (
+                      <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
+                        <FileText className="h-4 w-4 shrink-0 text-gray-400" />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewAdjunto(a)}
+                          className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                          title="Vista previa"
+                        >
+                          {a.nombre}
+                        </button>
+                        <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                        <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
+                          {new Date(a.created_at).toLocaleDateString('es-ES')}
+                        </span>
+                        <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Evidencias de análisis (usuario_id presente) */}
+              {adjuntos.some((a) => a.usuario_id) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias de análisis</p>
+                  <ul className="space-y-1">
+                    {adjuntos.filter((a) => a.usuario_id).map((a) => (
+                      <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
+                        <FileText className="h-4 w-4 shrink-0 text-blue-500" />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewAdjunto(a)}
+                          className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                          title="Vista previa"
+                        >
+                          {a.nombre}
+                        </button>
+                        <Badge variant="blue">Análisis</Badge>
+                        <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
+                          <Eye className="h-4 w-4" />
+                        </button>
+                        <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
+                        <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
+                          {new Date(a.created_at).toLocaleDateString('es-ES')}
+                        </span>
+                        <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
           {estadoActual === 'En Investigación' && (
             <div className="flex items-center gap-2 pt-1">

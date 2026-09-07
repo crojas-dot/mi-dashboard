@@ -92,8 +92,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const buffer = await streamToBuffer(file.stream(), MAX_FILE_BYTES)
-    const subcarpetaId = await buscarOCrearSubcarpeta(drive, rootFolderId, queja.folio)
-    const resultado = await subirArchivoASubcarpeta(subcarpetaId, {
+    const carpetaQuejaId = await buscarOCrearSubcarpeta(drive, rootFolderId, queja.folio)
+    const carpetaAnalisisId = await buscarOCrearSubcarpeta(drive, carpetaQuejaId, 'Analisis')
+    const resultado = await subirArchivoASubcarpeta(carpetaAnalisisId, {
       nombre: file.name,
       tipoMime: file.type || 'application/octet-stream',
       buffer,
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       fetch(appsScriptUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId: subcarpetaId }),
+        body: JSON.stringify({ folderId: carpetaQuejaId }),
       }).catch((err) => console.error('[api/drive/upload] Apps Script precarga falló:', err))
     }
 
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
       drive_file_id: resultado.id,
       name: resultado.name ?? file.name,
       mimeType: resultado.mimeType ?? (file.type || 'application/octet-stream'),
-      folder_id: subcarpetaId,
+      folder_id: carpetaAnalisisId,
     })
   } catch (error) {
     const mensaje = error instanceof Error ? error.message : 'Error al subir archivo a Drive'
