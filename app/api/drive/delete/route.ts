@@ -59,9 +59,9 @@ export async function DELETE(request: NextRequest) {
 
   const esResponsable = queja?.responsable_id === perfil?.id
 
-  if (esCliente && !esStaff) {
+  if (esCliente && current.rol !== 'admin') {
     return NextResponse.json(
-      { error: 'Solo el personal de administración puede eliminar evidencias del cliente' },
+      { error: 'Solo los administradores pueden eliminar evidencias del cliente' },
       { status: 403 },
     )
   }

@@ -117,6 +117,29 @@ export async function subirAdjuntoQueja(quejaId: string, file: File): Promise<Qu
   })
 }
 
+export async function eliminarAdjuntoQueja(adjuntoId: string): Promise<void> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData.session?.access_token
+
+  const res = await fetch('/api/drive/delete', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ adjuntoId }),
+  })
+  if (!res.ok) {
+    let detalle = ''
+    try {
+      detalle = (await res.json())?.error ?? ''
+    } catch {
+      detalle = ''
+    }
+    throw new Error(detalle || `No se pudo eliminar el adjunto (HTTP ${res.status})`)
+  }
+}
+
 export async function descargarAdjuntoQueja(adjunto: QuejaAdjunto): Promise<void> {
   if (adjunto.storage_path.includes('/')) {
     const { data, error } = await supabase.storage

@@ -10,9 +10,10 @@ import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaAdjuntos, quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
-import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
+import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja, eliminarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { analizarIA } from '@/lib/services/aiService'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
+import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import ReactMarkdown from 'react-markdown'
 
 interface Props {
@@ -169,15 +170,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const handleEliminarAdjunto = async (adjuntoId: string) => {
     setEliminandoAdjunto(adjuntoId)
     try {
-      const res = await fetch('/api/drive/delete', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adjuntoId }),
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'No se pudo eliminar el adjunto')
-      }
+      await eliminarAdjuntoQueja(adjuntoId)
       queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
       showSuccess('Adjunto eliminado')
       setConfirmarEliminacion(null)
@@ -189,10 +182,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   }
 
   const puedeEliminarAdjunto = (adjunto: QuejaAdjunto): boolean => {
-    const esStaff = user?.rol === 'admin' || user?.rol === 'calidad'
-    if (esStaff) return true
-    if (adjunto.usuario_id === null) return false
-    return queja.responsable_id === user?.id
+    if (adjunto.usuario_id === null) return user?.rol === 'admin'
+    return user?.rol === 'admin' || user?.rol === 'calidad' || queja.responsable_id === user?.id
   }
 
   const tabs: { key: Tab; label: string; icon: typeof Info }[] = [
@@ -355,29 +346,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                               <Download className="h-4 w-4" />
                             </button>
                             {puedeEliminarAdjunto(a) && (
-                              <>
-                                {confirmarEliminacion === a.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs text-red-600">¿Eliminar?</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleEliminarAdjunto(a.id)}
-                                      disabled={eliminandoAdjunto === a.id}
-                                      className="shrink-0 text-red-600 hover:text-red-800 disabled:opacity-50"
-                                      title="Confirmar"
-                                    >
-                                      {eliminandoAdjunto === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                                    </button>
-                                    <button type="button" onClick={() => setConfirmarEliminacion(null)} className="shrink-0 text-gray-500 hover:text-gray-700" title="Cancelar">
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </>
+                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             )}
                           </li>
                         ))}
@@ -415,29 +386,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                               <Download className="h-4 w-4" />
                             </button>
                             {puedeEliminarAdjunto(a) && (
-                              <>
-                                {confirmarEliminacion === a.id ? (
-                                  <div className="flex items-center gap-1">
-                                    <span className="text-xs text-red-600">¿Eliminar?</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleEliminarAdjunto(a.id)}
-                                      disabled={eliminandoAdjunto === a.id}
-                                      className="shrink-0 text-red-600 hover:text-red-800 disabled:opacity-50"
-                                      title="Confirmar"
-                                    >
-                                      {eliminandoAdjunto === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                                    </button>
-                                    <button type="button" onClick={() => setConfirmarEliminacion(null)} className="shrink-0 text-gray-500 hover:text-gray-700" title="Cancelar">
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                                    <Trash2 className="h-4 w-4" />
-                                  </button>
-                                )}
-                              </>
+                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             )}
                           </li>
                         ))}
@@ -601,31 +552,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                       >
                         <Download className="h-4 w-4" />
                       </button>
-                      {puedeEliminarAdjunto(a) && (
-                        <>
-                          {confirmarEliminacion === a.id ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-red-600">¿Eliminar?</span>
-                              <button
-                                type="button"
-                                onClick={() => handleEliminarAdjunto(a.id)}
-                                disabled={eliminandoAdjunto === a.id}
-                                className="shrink-0 text-red-600 hover:text-red-800 disabled:opacity-50"
-                                title="Confirmar"
-                              >
-                                {eliminandoAdjunto === a.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                            {puedeEliminarAdjunto(a) && (
+                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
+                                <Trash2 className="h-4 w-4" />
                               </button>
-                              <button type="button" onClick={() => setConfirmarEliminacion(null)} className="shrink-0 text-gray-500 hover:text-gray-700" title="Cancelar">
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </>
-                      )}
+                            )}
                     </li>
                   ))}
                 </ul>
@@ -728,6 +659,17 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       </div>
 
       <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
+
+      <ConfirmDialog
+        open={confirmarEliminacion !== null}
+        title="Eliminar adjunto"
+        message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer."
+        confirmLabel="Eliminar"
+        danger
+        loading={eliminandoAdjunto !== null}
+        onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)}
+        onCancel={() => setConfirmarEliminacion(null)}
+      />
     </aside>
   )
 }
