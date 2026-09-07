@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 export interface NavLink {
   href: string
   label: string
-  icon: LucideIcon | (() => Promise<{ default: LucideIcon }>)
+  icon: LucideIcon | (() => Promise<LucideIcon>)
   modulo?: string
 }
 

@@ -1,8 +1,8 @@
 'use client'
 
 import { Save } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { upsertClaveFn } from './actions'
 import { CLAVE_PROVEEDORES, CLAVE_ROUTING } from './constants'
@@ -36,7 +36,7 @@ export function CacheConfig({ cacheTtlValue, cacheTtlUnit, onCacheTtlChange, onS
         />
         <Select
           value={cacheTtlUnit}
-          onChange={(e) => onCacheTtlChange(cacheTtlValue, e.target.value as 'minutes' | 'hours' | 'days')}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onCacheTtlChange(cacheTtlValue, e.target.value as 'minutes' | 'hours' | 'days')}
         >
           <option value="minutes">minutos</option>
           <option value="hours">horas</option>

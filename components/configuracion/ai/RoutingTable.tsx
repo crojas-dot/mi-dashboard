@@ -2,8 +2,8 @@
 
 import { Brain, Check, ChevronRight, Save } from 'lucide-react'
 import type { AIProvider, AIRouting } from '@/lib/ai/types'
-import { Button } from '@/components/ui/Button'
-import { Select } from '@/components/ui/Select'
+import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import Modal from '@/components/Modal'
 import Textarea from '@/components/ui/Textarea'
 import { MODULOS_QMS } from './constants'
@@ -34,28 +34,26 @@ export function RoutingTable({
     campo: 'proveedor_id' | 'modelo_nombre' | 'system_prompt' | 'fallback_provider_id' | 'fallback_modelo',
     valor: string
   ) => {
-    onRoutingChange(prev => {
-      const next = { ...prev, [modulo]: { ...prev[modulo], [campo]: valor } }
-      if (campo === 'proveedor_id' && valor) {
-        const prov = providers.find(p => p.id === valor)
-        if (prov?.modelos?.length === 1) {
-          next[modulo].modelo_nombre = prov.modelos[0]
-        } else {
-          next[modulo].modelo_nombre = ''
-        }
+    const next = { ...routing, [modulo]: { ...routing[modulo], [campo]: valor } }
+    if (campo === 'proveedor_id' && valor) {
+      const prov = providers.find(p => p.id === valor)
+      if (prov?.modelos?.length === 1) {
+        next[modulo].modelo_nombre = prov.modelos[0]
+      } else {
+        next[modulo].modelo_nombre = ''
       }
-      if (campo === 'fallback_provider_id' && valor) {
-        const fbProv = providers.find(p => p.id === valor)
-        if (fbProv?.modelos?.length === 1) {
-          next[modulo].fallback_modelo = fbProv.modelos[0]
-        } else {
-          next[modulo].fallback_modelo = ''
-        }
-      } else if (campo === 'fallback_provider_id' && !valor) {
+    }
+    if (campo === 'fallback_provider_id' && valor) {
+      const fbProv = providers.find(p => p.id === valor)
+      if (fbProv?.modelos?.length === 1) {
+        next[modulo].fallback_modelo = fbProv.modelos[0]
+      } else {
         next[modulo].fallback_modelo = ''
       }
-      return next
-    })
+    } else if (campo === 'fallback_provider_id' && !valor) {
+      next[modulo].fallback_modelo = ''
+    }
+    onRoutingChange(next)
   }
 
   return (

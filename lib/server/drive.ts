@@ -146,24 +146,18 @@ export interface ArchivoDrive {
   nombre: string
 }
 
-export async function descargarArchivoDrive(fileId: string): Promise<ArchivoDrive | null> {
+export async function eliminarArchivoDrive(fileId: string): Promise<boolean> {
   const drive = getDriveClient()
-  if (!drive) return null
+  if (!drive) return false
   try {
-    const meta = await drive.files.get({ fileId, fields: 'name,mimeType', supportsAllDrives: true })
-    const res = await drive.files.get(
-      { fileId, alt: 'media', supportsAllDrives: true },
-      { responseType: 'arraybuffer' },
-    )
-    const datos = res.data as ArrayBuffer
-    if (!datos || datos.byteLength === 0) return null
-    return {
-      buffer: Buffer.from(datos),
-      mime: meta.data.mimeType || 'application/octet-stream',
-      nombre: meta.data.name || fileId,
-    }
+    await drive.files.delete({
+      fileId,
+      supportsAllDrives: true,
+    })
+    console.log(`[drive] archivo eliminado: ${fileId}`)
+    return true
   } catch (error) {
-    console.warn('[drive] descarga de archivo falló', fileId, error)
-    return null
+    console.warn('[drive] eliminación de archivo falló', fileId, error)
+    return false
   }
 }

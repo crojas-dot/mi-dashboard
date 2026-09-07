@@ -12,7 +12,7 @@ import EmptyState from './EmptyState'
 import PageHeader from './PageHeader'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from './DropdownMenu'
 import Tooltip from './Tooltip'
-import Avatar from './Avatar'
+import { Avatar } from './Avatar'
 import ScrollArea from './ScrollArea'
 import Separator from './Separator'
 

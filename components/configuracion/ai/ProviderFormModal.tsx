@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useRef, useState } from 'react'
 import { Wifi, Save, KeyRound, Loader2 } from 'lucide-react'
 import type { AIProvider, AIProviderTipo } from '@/lib/ai/types'
-import { Button } from '@/components/ui/Button'
+import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import { Input } from '@/components/ui/Input'
-import { Select } from '@/components/ui/Select'
+import Select from '@/components/ui/Select'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { getLimitePorTipo } from './actions'
 import { AI_PROVIDER_TIPOS } from './constants'
@@ -32,20 +32,30 @@ export function ProviderFormModal({
   onSave,
   onTestConnection,
 }: ProviderFormModalProps) {
-  const [formData, setFormData] = useState<EditingProvider>({
-    id: '',
-    nombre: '',
-    tipo: 'openai',
-    base_url: '',
-    api_key: '',
-    modelos: '',
-    tokens_usados: 0,
-    limite_tokens: 100000,
+  const [formData, setFormData] = useState<EditingProvider>(() => {
+    if (editingProvider) {
+      return {
+        ...editingProvider,
+        modelos: Array.isArray(editingProvider.modelos) ? editingProvider.modelos.join(', ') : editingProvider.modelos,
+      }
+    }
+    return {
+      id: '',
+      nombre: '',
+      tipo: 'openai',
+      base_url: '',
+      api_key: '',
+      modelos: '',
+      tokens_usados: 0,
+      limite_tokens: getLimitePorTipo('openai'),
+    }
   })
   const [saving, setSaving] = useState(false)
   const [testing, setTesting] = useState(false)
 
-  useEffect(() => {
+  const prevEditingId = useRef(editingProvider?.id ?? '')
+  if ((editingProvider?.id ?? '') !== prevEditingId.current) {
+    prevEditingId.current = editingProvider?.id ?? ''
     if (editingProvider) {
       setFormData({
         ...editingProvider,
@@ -63,7 +73,7 @@ export function ProviderFormModal({
         limite_tokens: getLimitePorTipo('openai'),
       })
     }
-  }, [editingProvider])
+  }
 
   const handleChange = (field: keyof EditingProvider, value: string | number) => {
     if (field === 'modelos') {
@@ -94,7 +104,7 @@ export function ProviderFormModal({
       id: formData.id || crypto.randomUUID(),
       nombre: formData.nombre.trim(),
       tipo: formData.tipo,
-      base_url: formData.base_url.trim() || undefined,
+      base_url: formData.base_url?.trim() || undefined,
       api_key: formData.api_key.trim(),
       modelos: modelosArray,
       limite_tokens: formData.limite_tokens ?? 100000,
@@ -164,7 +174,7 @@ export function ProviderFormModal({
               <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de API *</label>
               <Select
                 value={formData.tipo}
-                onChange={(e) => handleChange('tipo', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleChange('tipo', e.target.value)}
               >
                 {AI_PROVIDER_TIPOS.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
