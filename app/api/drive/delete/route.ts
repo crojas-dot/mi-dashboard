@@ -73,13 +73,6 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
-  if (adjunto.storage_path && !adjunto.storage_path.includes('/')) {
-    const eliminado = await eliminarArchivoDrive(adjunto.storage_path)
-    if (!eliminado) {
-      console.warn('[api/drive/delete] No se pudo eliminar el archivo de Drive, pero se continuará con la eliminación del registro')
-    }
-  }
-
   const { error: deleteError } = await admin
     .from('queja_adjuntos')
     .delete()
@@ -88,6 +81,12 @@ export async function DELETE(request: NextRequest) {
   if (deleteError) {
     console.error('[api/drive/delete] Error al eliminar registro:', deleteError)
     return NextResponse.json({ error: 'No se pudo eliminar el adjunto' }, { status: 500 })
+  }
+
+  if (adjunto.storage_path && !adjunto.storage_path.includes('/')) {
+    void eliminarArchivoDrive(adjunto.storage_path).catch((err) => {
+      console.warn('[api/drive/delete] Error al eliminar archivo de Drive en background:', adjunto.storage_path, err)
+    })
   }
 
   console.log(`[api/drive/delete] Adjunto eliminado: ${adjunto.nombre} (${adjuntoId})`)
