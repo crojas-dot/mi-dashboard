@@ -8,9 +8,9 @@ import { showError, showSuccess } from '@/lib/services/errorToast'
 
 const CATEGORIAS_PUBLICAS = ['Queja', 'Denuncia', 'Sugerencia', 'Reclamo', 'Felicitación']
 
-const MAX_ADJUNTO_BYTES = 50 * 1024 * 1024
-const EXTENSIONES_PERMITIDAS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']
-const ACCEPT_ADJUNTOS = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
+import { MAX_FILE_BYTES as MAX_ADJUNTO_BYTES } from '@/lib/constants/adjuntos'
+const EXTENSIONES_PERMITIDAS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']
+const ACCEPT_ADJUNTOS = 'image/jpeg,image/png,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt'
 
 interface FormularioPublico {
   id: string
@@ -40,7 +40,7 @@ interface ResumenEvidencias {
 }
 
 function esFormatoPermitido(file: File): boolean {
-  if (file.type.startsWith('image/') || file.type.startsWith('video/')) return true
+  if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return true
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
   return EXTENSIONES_PERMITIDAS.includes(ext)
 }
@@ -121,7 +121,7 @@ export default function FormularioQuejaPublicaPage() {
         continue
       }
       if (f.size > MAX_ADJUNTO_BYTES) {
-        rechazados.push(`${f.name} (supera el límite de 50 MB)`)
+        rechazados.push(`${f.name} (supera el límite de 4 MB)`)
         continue
       }
       aceptados.push(f)
@@ -150,7 +150,6 @@ export default function FormularioQuejaPublicaPage() {
     const fallidosNombres: string[] = []
     for (let i = 0; i < archivos.length; i++) {
       const f = archivos[i]
-      setEtapaEnvio(`Subiendo evidencias (${i + 1} de ${archivos.length})...`)
       try {
         const fd = new FormData()
         fd.append('file', f)
@@ -181,7 +180,7 @@ export default function FormularioQuejaPublicaPage() {
         const mensaje = err instanceof Error ? err.message : String(err)
         console.error('[evidencia fallida]', f.name, err)
         fallidosNombres.push(f.name)
-        showError(null, `Error al subir ${f.name}: ${mensaje}. Tu queja sigue registrada con el folio ${folioNuevo}.`)
+        // No mostramos error aquí para acumular todos los fallos; se mostrarán al final
       }
     }
     return { subidos, fallidosNombres }
@@ -206,14 +205,25 @@ export default function FormularioQuejaPublicaPage() {
       const folioNuevo = typeof res === 'string' ? res : res?.folio ?? ''
       if (!folioNuevo) throw new Error('La respuesta del servidor no incluyó el folio')
 
+      // Subir todos los adjuntos primero, luego notificar y mostrar el folio
       let resumen: ResumenEvidencias | null = null
       if (archivos.length > 0) {
         const r = await subirEvidencias(folioNuevo)
         resumen = { total: archivos.length, subidos: r.subidos, fallidos: r.fallidosNombres }
       }
 
-      setResumenEvidencias(resumen)
+      // Disparar la notificación al staff solo después de que los adjuntos
+      // estén registrados, para que la campana suene con la queja completa.
+      const { error: notifError } = await supabase.rpc('notificar_queja_publica', {
+        p_folio: folioNuevo,
+      })
+      if (notifError) {
+        console.error('[RPC notificar_queja_publica]', notifError)
+      }
+
+      // Solo después de que todos los adjuntos estén procesados, mostramos el folio
       setFolioRegistrado(folioNuevo)
+      setResumenEvidencias(resumen)
       setArchivos([])
       showSuccess('Queja registrada correctamente')
     } catch (err) {
@@ -293,7 +303,7 @@ export default function FormularioQuejaPublicaPage() {
             <label className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm transition-colors hover:bg-gray-50 ${enviando ? 'pointer-events-none opacity-60' : ''}`} style={{ borderColor: '#dee2e6' }}>
               <Paperclip className="h-4 w-4 shrink-0" style={{ color: '#6c757d' }} />
               <span style={{ color: '#6c757d' }}>
-                {archivos.length > 0 ? `${archivos.length} archivo(s) seleccionado(s)` : 'Adjuntar imágenes, videos, PDF u Office (máx. 50 MB c/u)'}
+                {archivos.length > 0 ? `${archivos.length} archivo(s) seleccionado(s)` : 'Adjuntar imágenes, PDF, texto u Office (máx. 4 MB c/u)'}
               </span>
               <input
                 type="file"

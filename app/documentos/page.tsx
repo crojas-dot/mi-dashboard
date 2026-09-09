@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { Plus, FileText, BookOpen, History, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { showError, showSuccess } from '@/lib/services/errorToast'
 import { supabase } from '@/lib/supabase'
 import { useDocumentos, documentosKey, type Documento } from '@/lib/queries/useDocumentos'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -17,10 +19,12 @@ import NuevoDocumentoModal from './components/NuevoDocumentoModal'
 const estadoVariant: Record<string, string> = { Borrador: 'gray', Publicado: 'green', Archivado: 'red', 'En Revisión': 'amber' }
 
 export default function DocumentosPage() {
-  const { data: documentos = [], isLoading: loading } = useDocumentos()
+  const [page, setPage] = useState(0)
+  const [tab, setTab] = useState<'todos' | 'maestra' | 'edicion'>('todos')
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useDocumentos(page, tab === 'maestra' ? 'Publicado' : tab === 'edicion' ? 'Borrador' : '')
+  const documentos = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateDocumentos = () => queryClient.invalidateQueries({ queryKey: documentosKey })
-  const [tab, setTab] = useState<'todos' | 'maestra' | 'edicion'>('todos')
   const [historialOpen, setHistorialOpen] = useState<Documento | null>(null)
   const [editVersion, setEditVersion] = useState('')
   const [nuevoOpen, setNuevoOpen] = useState(false)
@@ -31,7 +35,9 @@ export default function DocumentosPage() {
 
   const handleSaveVersion = async () => {
     if (!historialOpen || !editVersion) return
-    await supabase.from('documentos').update({ version_actual: editVersion }).eq('id', historialOpen.id)
+    const { error } = await supabase.from('documentos').update({ version_actual: editVersion }).eq('id', historialOpen.id)
+    if (error) { showError(error, 'No se pudo guardar la versión'); return }
+    showSuccess('Versión actualizada')
     setHistorialOpen(null)
     setEditVersion('')
     invalidateDocumentos()
@@ -45,7 +51,7 @@ export default function DocumentosPage() {
 
       <div className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
         {(['todos', 'maestra', 'edicion'] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'}`}>
+          <button key={t} onClick={() => { setTab(t); setPage(0) }} className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'}`}>
             {t === 'todos' && <FileText className="h-4 w-4" />}
             {t === 'maestra' && <BookOpen className="h-4 w-4" />}
             {t === 'edicion' && <History className="h-4 w-4" />}
@@ -54,7 +60,7 @@ export default function DocumentosPage() {
         ))}
       </div>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -93,6 +99,7 @@ export default function DocumentosPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevoDocumentoModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateDocumentos() }} />
 

@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useRiesgos, riesgosKey, type Riesgo } from '@/lib/queries/useRiesgos'
+import { useRiesgos, riesgosKey, useMatrizRiesgos } from '@/lib/queries/useRiesgos'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -15,7 +16,9 @@ import NuevoRiesgoModal from './components/NuevoRiesgoModal'
 const nivelColor: Record<string, string> = { Bajo: 'green', Medio: 'amber', Alto: 'red', Critico: 'red' }
 
 export default function RiesgosPage() {
-  const { data: riesgos = [], isLoading: loading } = useRiesgos()
+  const [page, setPage] = useState(0)
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useRiesgos(page)
+  const riesgos = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateRiesgos = () => queryClient.invalidateQueries({ queryKey: riesgosKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
@@ -28,13 +31,8 @@ export default function RiesgosPage() {
     return 'Critico'
   }
 
-  const matriz = useMemo(() => {
-    const grid: { p: number; i: number; items: Riesgo[] }[] = []
-    for (let p = 1; p <= 3; p++)
-      for (let i = 1; i <= 3; i++)
-        grid.push({ p, i, items: riesgos.filter((r) => r.probabilidad === p && r.impacto === i) })
-    return grid
-  }, [riesgos])
+  const matrizQuery = useMatrizRiesgos()
+  const matriz = matrizQuery.data ?? []
 
   const colorCelda = (p: number, i: number) => {
     const m = p * i
@@ -51,6 +49,7 @@ export default function RiesgosPage() {
 
       <div className="rounded-lg border bg-white p-4" style={{ borderColor: '#dee2e6' }}>
         <h3 className="mb-4 text-sm font-semibold" style={{ color: '#212529' }}>Matriz de Riesgos 3x3</h3>
+        {matrizQuery.error && <p role="alert">No se pudo cargar la matriz. <button onClick={() => void matrizQuery.refetch()}>Reintentar</button></p>}
         <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
           <div className="text-gray-500">Prob \ Imp</div>
           {[1, 2, 3].map((i) => <div key={i} className="text-gray-500">Impacto {i}</div>)}
@@ -62,7 +61,7 @@ export default function RiesgosPage() {
                 const c = colorCelda(p, i)
                 return (
                   <div key={`${p}-${i}`} className="flex flex-col items-center justify-center rounded p-3" style={{ backgroundColor: c.bg, color: c.color }}>
-                    <span className="text-lg font-bold">{cell?.items.length || 0}</span>
+                    <span className="text-lg font-bold">{matrizQuery.isPending || matrizQuery.error ? '—' : cell?.count ?? 0}</span>
                     <span className="text-[10px]">riesgos</span>
                   </div>
                 )
@@ -72,7 +71,7 @@ export default function RiesgosPage() {
         </div>
       </div>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -100,6 +99,7 @@ export default function RiesgosPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevoRiesgoModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateRiesgos() }} />
     </div>

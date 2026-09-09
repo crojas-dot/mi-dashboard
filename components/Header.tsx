@@ -41,11 +41,8 @@ export default function Header() {
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
-  const [sonidoSeleccionado, setSonidoSeleccionado] = useState<string>(user?.notif_sonido_id || SONIDO_DEFAULT)
+  const sonidoSeleccionado = user?.notif_sonido_id || SONIDO_DEFAULT
 
-  useEffect(() => {
-    if (user?.notif_sonido_id) setSonidoSeleccionado(user.notif_sonido_id)
-  }, [user?.notif_sonido_id])
 
   const { data: notificaciones = [] } = useNotificaciones(user?.id ?? '', notifHabilitadas)
   const marcarLeida = useMarcarNotificacionLeida()
@@ -132,7 +129,6 @@ export default function Header() {
   }
 
   const handlerCambiarSonido = async (id: string) => {
-    setSonidoSeleccionado(id)
     setPrefs({ notif_sonido_id: id })
     setGuardandoPrefs(true)
     try {
@@ -145,8 +141,7 @@ export default function Header() {
       showSuccess('Sonido actualizado')
     } catch (err) {
       showError(err as Error, 'No se pudo guardar el sonido')
-      setSonidoSeleccionado(user?.notif_sonido_id || SONIDO_DEFAULT)
-      setPrefs({ notif_sonido_id: user?.notif_sonido_id })
+        setPrefs({ notif_sonido_id: user?.notif_sonido_id })
     } finally {
       setGuardandoPrefs(false)
     }

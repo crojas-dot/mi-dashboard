@@ -1,6 +1,7 @@
 'use client'
 
-import { useDashboard } from '@/lib/queries/useDashboard'
+import Link from 'next/link'
+import { useDashboard, useActividadReciente } from '@/lib/queries/useDashboard'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
@@ -12,7 +13,10 @@ const estadoBadge: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const { data } = useDashboard()
+  const { data, isPending, error, refetch } = useDashboard()
+  const actividad = useActividadReciente()
+  if (error) return <div role="alert" className="p-4">No se pudo cargar el dashboard. <button onClick={() => void refetch()} className="underline">Reintentar</button></div>
+  if (isPending) return <p role="status" className="p-4">Cargando dashboard…</p>
   const indicadores = data?.indicadores ?? []
   const tareas = data?.tareas ?? []
 
@@ -22,12 +26,12 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-4 gap-3 mb-4">
         {indicadores.map((ind) => (
-          <a key={ind.label} href={ind.url} className="block text-white no-underline rounded-lg" style={{ backgroundColor: ind.color }}>
+          <Link key={ind.label} href={ind.url} className="block text-white no-underline rounded-lg" style={{ backgroundColor: ind.color }}>
             <div className="p-4">
               <h6 style={{ fontSize: '1rem', fontWeight: 400, margin: 0 }}>{ind.label}</h6>
               <h2 className="font-bold m-0" style={{ fontSize: '2rem' }}>{ind.valor}</h2>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
@@ -62,40 +66,14 @@ export default function DashboardPage() {
 
         <div>
           <h6 className="font-bold mb-2" style={{ fontSize: '1rem', color: '#212529' }}>Actividad Reciente</h6>
-          <div className="rounded-lg border" style={{ borderColor: '#dee2e6' }}>
-            <div className="flex items-start gap-3 px-3 py-2" style={{ borderBottom: '1px solid #dee2e6', fontSize: '0.85rem' }}>
-              <div className="mt-1.5 rounded-full shrink-0" style={{ width: '6px', height: '6px', backgroundColor: '#0d6efd' }} />
-              <div className="min-w-0 flex-1">
-                <p className="m-0" style={{ color: '#212529', fontWeight: 500 }}>Queja registrada</p>
-                <p className="m-0" style={{ color: '#6c757d' }}>Folio Q-2024-001</p>
-              </div>
-              <div className="shrink-0 text-right" style={{ color: '#6c757d' }}>
-                <p className="m-0">{new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
-                <p className="m-0">Ana Díaz</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 px-3 py-2" style={{ borderBottom: '1px solid #dee2e6', fontSize: '0.85rem' }}>
-              <div className="mt-1.5 rounded-full shrink-0" style={{ width: '6px', height: '6px', backgroundColor: '#0d6efd' }} />
-              <div className="min-w-0 flex-1">
-                <p className="m-0" style={{ color: '#212529', fontWeight: 500 }}>SACP actualizada</p>
-                <p className="m-0" style={{ color: '#6c757d' }}>AC-2024-015 en validación</p>
-              </div>
-              <div className="shrink-0 text-right" style={{ color: '#6c757d' }}>
-                <p className="m-0">{new Date(Date.now() - 3600000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
-                <p className="m-0">Carlos Mora</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3 px-3 py-2" style={{ fontSize: '0.85rem', borderBottom: 'none' }}>
-              <div className="mt-1.5 rounded-full shrink-0" style={{ width: '6px', height: '6px', backgroundColor: '#0d6efd' }} />
-              <div className="min-w-0 flex-1">
-                <p className="m-0" style={{ color: '#212529', fontWeight: 500 }}>Documento publicado</p>
-                <p className="m-0" style={{ color: '#6c757d' }}>PR-001 v3.2</p>
-              </div>
-              <div className="shrink-0 text-right" style={{ color: '#6c757d' }}>
-                <p className="m-0">{new Date(Date.now() - 7200000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}</p>
-                <p className="m-0">Ana Díaz</p>
-              </div>
-            </div>
+          <div className="rounded-lg border divide-y" style={{ borderColor: '#dee2e6' }}>
+            {actividad.isPending ? <p className="p-3 text-sm">Cargando actividad…</p>
+              : actividad.error ? <p role="alert" className="p-3 text-sm">No se pudo cargar la actividad. <button className="underline" onClick={() => void actividad.refetch()}>Reintentar</button></p>
+              : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>
+              : actividad.data.map((item) => <div key={item.id} className="p-3 text-sm">
+                <p>{item.descripcion}</p>
+                <p className="text-gray-500">{new Date(item.created_at).toLocaleString('es-CR')}</p>
+              </div>)}
           </div>
         </div>
       </div>

@@ -1,104 +1,45 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useCallback, useMemo, useSyncExternalStore } from 'react'
 
-const STORAGE_KEY_PREFIX = 'eca_quejas_vistas_'
-const MAX_ENTRIES = 500 // Limitar tamaño del localStorage
+const EVENT = 'eca-quejas-vistas'
+const MAX_ENTRIES = 500
+const EMPTY = '[]'
 
-/**
- * Hook que trackea qué quejas ha abierto/visto el usuario actual.
- * Usa localStorage por usuario para persistir entre sesiones.
- * Cuando el usuario abre el detalle de una queja, se marca como "vista".
- * Las no vistas se resaltan visualmente en la tabla (estilo Gmail).
- */
+function leer(key: string): string {
+  if (!key) return EMPTY
+  try { return localStorage.getItem(key) ?? EMPTY } catch { return EMPTY }
+}
+function parsear(raw: string): Set<string> {
+  try {
+    const value: unknown = JSON.parse(raw)
+    return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string').slice(-MAX_ENTRIES) : [])
+  } catch { return new Set() }
+}
+function subscribe(listener: () => void) {
+  window.addEventListener('storage', listener)
+  window.addEventListener(EVENT, listener)
+  return () => {
+    window.removeEventListener('storage', listener)
+    window.removeEventListener(EVENT, listener)
+  }
+}
 export function useQuejasVistas(userId: string | undefined) {
-  const storageKey = userId ? `${STORAGE_KEY_PREFIX}${userId}` : ''
-
-  const [vistas, setVistas] = useState<Set<string>>(() => {
-    if (!storageKey) return new Set()
+  const key = userId ? 'eca_quejas_vistas_' + userId : ''
+  const getSnapshot = useCallback(() => leer(key), [key])
+  const raw = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY)
+  const vistas = useMemo(() => parsear(raw), [raw])
+  const marcarTodasVistas = useCallback((ids: string[]) => {
+    if (!key) return
+    const next = parsear(leer(key))
+    for (const id of ids) next.add(id)
     try {
-      const raw = localStorage.getItem(storageKey)
-      if (raw) {
-        const arr: string[] = JSON.parse(raw)
-        return new Set(arr)
-      }
-    } catch {
-      // localStorage corrupto o no disponible
-    }
-    return new Set()
-  })
-
-  // Re-sync si cambia el userId
-  useEffect(() => {
-    if (!storageKey) {
-      setVistas(new Set())
-      return
-    }
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (raw) {
-        const arr: string[] = JSON.parse(raw)
-        setVistas(new Set(arr))
-      } else {
-        setVistas(new Set())
-      }
-    } catch {
-      setVistas(new Set())
-    }
-  }, [storageKey])
-
-  const persistir = useCallback((nuevoSet: Set<string>) => {
-    if (!storageKey) return
-    try {
-      // Limitar a MAX_ENTRIES más recientes (los últimos insertados)
-      const arr = Array.from(nuevoSet)
-      const trimmed = arr.length > MAX_ENTRIES ? arr.slice(-MAX_ENTRIES) : arr
-      localStorage.setItem(storageKey, JSON.stringify(trimmed))
-    } catch {
-      // Espacio lleno — limpiar y reintentar
-      try {
-        localStorage.removeItem(storageKey)
-      } catch {
-        // sin remedio
-      }
-    }
-  }, [storageKey])
-
-  /** Marcar una queja como vista */
-  const marcarVista = useCallback((quejaId: string) => {
-    setVistas((prev) => {
-      if (prev.has(quejaId)) return prev
-      const next = new Set(prev)
-      next.add(quejaId)
-      persistir(next)
-      return next
-    })
-  }, [persistir])
-
-  /** Verificar si una queja ya fue vista */
-  const esVista = useCallback((quejaId: string) => vistas.has(quejaId), [vistas])
-
-  /** Marcar todas las quejas visibles como vistas */
-  const marcarTodasVistas = useCallback((quejaIds: string[]) => {
-    setVistas((prev) => {
-      const next = new Set(prev)
-      let changed = false
-      for (const id of quejaIds) {
-        if (!next.has(id)) {
-          next.add(id)
-          changed = true
-        }
-      }
-      if (!changed) return prev
-      persistir(next)
-      return next
-    })
-  }, [persistir])
-
-  /** Cantidad de no vistas en un array de IDs */
-  const contarNoVistas = useCallback((quejaIds: string[]) => {
-    return quejaIds.filter((id) => !vistas.has(id)).length
-  }, [vistas])
-
+      localStorage.setItem(key, JSON.stringify([...next].slice(-MAX_ENTRIES)))
+      window.dispatchEvent(new Event(EVENT))
+    } catch { /* El navegador puede tener el almacenamiento deshabilitado. */ }
+  }, [key])
+  const marcarVista = useCallback((id: string) => marcarTodasVistas([id]), [marcarTodasVistas])
+  const esVista = useCallback((id: string) => vistas.has(id), [vistas])
+  const contarNoVistas = useCallback((ids: string[]) => ids.filter((id) => !vistas.has(id)).length, [vistas])
   return { esVista, marcarVista, marcarTodasVistas, contarNoVistas }
 }

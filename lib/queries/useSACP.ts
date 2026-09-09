@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { fetchPagina, paginaKey, type Pagina } from './pagination'
 import { queryKeys } from './queryKeys'
 
 export interface SACP {
@@ -21,15 +21,10 @@ export interface SACP {
 
 export const accionesKey = queryKeys.acciones
 
-export async function fetchAcciones(): Promise<SACP[]> {
-  const { data, error } = await supabase
-    .from('acciones')
-    .select('*')
-    .order('fecha_apertura', { ascending: false })
-  if (error) throw error
-  return (data as SACP[]) ?? []
+export async function fetchAcciones(page = 0, estado = ''): Promise<Pagina<SACP>> {
+  return fetchPagina<SACP>('acciones', 'fecha_apertura', page, estado)
 }
 
-export function useSACP() {
-  return useQuery({ queryKey: accionesKey, queryFn: fetchAcciones })
+export function useSACP(page = 0, estado = '') {
+  return useQuery({ queryKey: paginaKey(accionesKey, page, estado), queryFn: () => fetchAcciones(page, estado) })
 }

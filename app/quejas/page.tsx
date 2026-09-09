@@ -46,7 +46,7 @@ export default function QuejasPage() {
     estado: filtroEstado,
     prioridad: filtroPrioridad,
   })
-  const quejas = data?.data ?? []
+  const quejas = useMemo(() => data?.data ?? [], [data?.data])
   const totalCount = data?.count ?? 0
   const queryClient = useQueryClient()
   const invalidateQuejas = () => {

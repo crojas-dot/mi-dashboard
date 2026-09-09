@@ -11,7 +11,7 @@ export function getAuthToken(request: NextRequest): string | null {
   return header.slice('Bearer '.length)
 }
 
-export async function getCurrentUser(request: NextRequest): Promise<{ auth_id: string; rol: string; email: string } | null> {
+export async function getCurrentUser(request: NextRequest, signal?: AbortSignal): Promise<{ auth_id: string; rol: string; email: string } | null> {
   const token = getAuthToken(request)
   if (!token) return null
 
@@ -21,6 +21,10 @@ export async function getCurrentUser(request: NextRequest): Promise<{ auth_id: s
       persistSession: false,
     },
     global: {
+      ...(signal ? { fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+        ...init,
+        signal: init?.signal ? AbortSignal.any([signal, init.signal]) : signal,
+      }) } : {}),
       headers: { Authorization: `Bearer ${token}` },
     },
   })

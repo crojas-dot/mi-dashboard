@@ -29,11 +29,15 @@ export const dashboardKey = queryKeys.dashboard
 
 export async function fetchDashboard(): Promise<DashboardData> {
   const [qRes, aRes, docsRes, riesgosRes] = await Promise.all([
-    supabase.from('quejas').select('id, folio, cliente_nombre, fecha_sla, estado, prioridad', { count: 'exact', head: false }).neq('estado', 'Cerrada').limit(5),
-    supabase.from('acciones').select('id, folio, tipo, descripcion, fecha_limite, estado', { count: 'exact', head: false }).neq('estado', 'Cerrada').limit(5),
+    supabase.from('quejas').select('id, folio, cliente_nombre, fecha_sla, estado', { count: 'exact' }).not('estado', 'in', '(Finalizado,"No Procede",Cerrada)').order('fecha_sla', { ascending: true, nullsFirst: false }).order('id').limit(8),
+    supabase.from('acciones').select('id, folio, tipo, descripcion, fecha_limite, estado', { count: 'exact' }).neq('estado', 'Cerrada').order('fecha_limite', { ascending: true, nullsFirst: false }).order('id').limit(8),
     supabase.from('documentos').select('id, titulo, estado', { count: 'exact', head: true }).eq('estado', 'Borrador'),
-    supabase.from('riesgos').select('id, titulo', { count: 'exact', head: true }).eq('estado', 'Activo'),
+    supabase.from('riesgos').select('id', { count: 'exact', head: true }).eq('estado', 'Activo'),
   ])
+
+  for (const result of [qRes, aRes, docsRes, riesgosRes]) {
+    if (result.error) throw result.error
+  }
 
   type QuejaResumen = { id: string; folio: string; cliente_nombre: string; fecha_sla?: string | null; estado: string }
   type AccionResumen = { id: string; folio?: string | null; tipo: string; descripcion?: string | null; fecha_limite?: string | null; estado: string }
@@ -41,7 +45,12 @@ export async function fetchDashboard(): Promise<DashboardData> {
   const tareas = [
     ...(qRes.data ?? [] as QuejaResumen[]).map((q) => ({ id: q.id, titulo: q.cliente_nombre || q.folio, tipo: 'Queja', entidad: 'Quejas', vence: q.fecha_sla || '', estado: q.estado })),
     ...(aRes.data ?? [] as AccionResumen[]).map((a) => ({ id: a.id, titulo: a.folio || a.descripcion?.slice(0, 60) || '', tipo: a.tipo, entidad: 'SACP', vence: a.fecha_limite || '', estado: a.estado })),
-  ].sort((a, b) => { if (!a.vence) return 1; if (!b.vence) return -1; return new Date(a.vence).getTime() - new Date(b.vence).getTime() }).slice(0, 8)
+  ].sort((a, b) => {
+    if (!a.vence && !b.vence) return a.id.localeCompare(b.id)
+    if (!a.vence) return 1
+    if (!b.vence) return -1
+    return new Date(a.vence).getTime() - new Date(b.vence).getTime() || a.id.localeCompare(b.id)
+  }).slice(0, 8)
 
   const indicadores = [
     { label: 'Quejas Abiertas', valor: qRes.count ?? 0, color: '#dc3545', url: '/quejas' },
@@ -55,4 +64,16 @@ export async function fetchDashboard(): Promise<DashboardData> {
 
 export function useDashboard() {
   return useQuery({ queryKey: dashboardKey, queryFn: fetchDashboard })
+}
+
+export function useActividadReciente() {
+  return useQuery({
+    queryKey: [...dashboardKey, 'actividad'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('quejas_actividad')
+        .select('id, descripcion, created_at').order('created_at', { ascending: false }).order('id').limit(5)
+      if (error) throw error
+      return data ?? []
+    },
+  })
 }

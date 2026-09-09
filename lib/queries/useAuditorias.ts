@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { fetchPagina, paginaKey, type Pagina } from './pagination'
 import { queryKeys } from './queryKeys'
 
 export interface Auditoria {
@@ -26,17 +27,12 @@ export interface Hallazgo {
 
 export const auditoriasKey = queryKeys.auditorias
 
-export async function fetchAuditorias(): Promise<Auditoria[]> {
-  const { data, error } = await supabase
-    .from('auditorias')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return (data as Auditoria[]) ?? []
+export async function fetchAuditorias(page = 0, estado = ''): Promise<Pagina<Auditoria>> {
+  return fetchPagina<Auditoria>('auditorias', 'created_at', page, estado)
 }
 
-export function useAuditorias() {
-  return useQuery({ queryKey: auditoriasKey, queryFn: fetchAuditorias })
+export function useAuditorias(page = 0, estado = '') {
+  return useQuery({ queryKey: paginaKey(auditoriasKey, page, estado), queryFn: () => fetchAuditorias(page, estado) })
 }
 
 export function hallazgosKey(auditoriaId: string) {

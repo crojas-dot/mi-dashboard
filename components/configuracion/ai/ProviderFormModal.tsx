@@ -1,15 +1,15 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { Wifi, Save, KeyRound, Loader2 } from 'lucide-react'
-import type { AIProvider, AIProviderTipo } from '@/lib/ai/types'
+import { useRef, useState } from 'react';
+import { Wifi, Save, KeyRound, Loader2 } from 'lucide-react';
+import type { AIProvider, AIProviderTipo } from '@/lib/ai/types';
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
-import { Input } from '@/components/ui/Input'
+import { Input } from '@/components/ui/Input';
 import Select from '@/components/ui/Select'
-import { showError, showSuccess } from '@/lib/services/errorToast'
-import { getLimitePorTipo } from './actions'
-import { AI_PROVIDER_TIPOS } from './constants'
+import { showError, showSuccess } from '@/lib/services/errorToast';
+import { getLimitePorTipo } from './actions';
+import { AI_PROVIDER_TIPOS } from './constants';
 
 interface EditingProvider extends Omit<AIProvider, 'modelos'> {
   modelos: string | string[]
@@ -27,10 +27,8 @@ interface ProviderFormModalProps {
 export function ProviderFormModal({
   open,
   editingProvider,
-  providers,
   onClose,
   onSave,
-  onTestConnection,
 }: ProviderFormModalProps) {
   const [formData, setFormData] = useState<EditingProvider>(() => {
     if (editingProvider) {
@@ -129,10 +127,6 @@ export function ProviderFormModal({
     }
     setTesting(true)
     try {
-      const tempProvider: AIProvider = {
-        ...formData,
-        modelos: (formData.modelos as string).split(',').map(m => m.trim()).filter(Boolean),
-      } as AIProvider
       const base = formData.base_url.trim().replace(/\/+$/, '')
       const testUrl = formData.tipo === 'gemini'
         ? `${base}/v1beta/models?key=${formData.api_key}`

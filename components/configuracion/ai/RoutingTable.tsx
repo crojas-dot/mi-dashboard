@@ -1,12 +1,12 @@
 'use client'
 
-import { Brain, Check, ChevronRight, Save } from 'lucide-react'
-import type { AIProvider, AIRouting } from '@/lib/ai/types'
+import { Brain, Check, ChevronRight, Save } from 'lucide-react';
+import type { AIProvider, AIRouting } from '@/lib/ai/types';
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import Modal from '@/components/Modal'
-import Textarea from '@/components/ui/Textarea'
-import { MODULOS_QMS } from './constants'
+
+import { MODULOS_QMS } from './constants';
 
 interface RoutingTableProps {
   routing: AIRouting

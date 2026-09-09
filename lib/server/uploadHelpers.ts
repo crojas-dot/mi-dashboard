@@ -1,4 +1,5 @@
-const MAX_FILE_BYTES = 50 * 1024 * 1024
+import { MAX_UPLOAD_BODY_BYTES } from '@/lib/constants/adjuntos'
+export { MAX_FILE_BYTES } from '@/lib/constants/adjuntos'
 const PLACEHOLDER_PREFIX = 'REEMPLAZAME'
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -13,7 +14,21 @@ const ALLOWED_MIME_TYPES = new Set([
   'text/plain',
 ])
 
-export { MAX_FILE_BYTES, PLACEHOLDER_PREFIX, ALLOWED_MIME_TYPES }
+export { PLACEHOLDER_PREFIX, ALLOWED_MIME_TYPES }
+
+export class UploadBodyTooLargeError extends Error {}
+
+// Limita también peticiones sin Content-Length antes de interpretar multipart.
+export async function readUploadForm(request: Request): Promise<FormData> {
+  if (Number(request.headers.get('content-length')) > MAX_UPLOAD_BODY_BYTES) {
+    throw new UploadBodyTooLargeError('La solicitud supera el tamaño permitido')
+  }
+  if (!request.body) throw new Error('Solicitud vacía')
+  const body = await streamToBuffer(request.body, MAX_UPLOAD_BODY_BYTES)
+  return new Response(new Uint8Array(body), {
+    headers: { 'Content-Type': request.headers.get('content-type') ?? '' },
+  }).formData()
+}
 
 export async function streamToBuffer(
   stream: ReadableStream<Uint8Array>,
@@ -30,7 +45,7 @@ export async function streamToBuffer(
       totalBytes += value.length
       if (totalBytes > maxSize) {
         reader.cancel().catch(() => {})
-        throw new Error(`El archivo supera el máximo de ${Math.round(maxSize / 1024 / 1024)} MB`)
+        throw new UploadBodyTooLargeError(`El archivo supera el máximo de ${Math.round(maxSize / 1024 / 1024)} MB`)
       }
       chunks.push(value)
     }

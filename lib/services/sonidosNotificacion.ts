@@ -34,7 +34,7 @@ let unlocking = false
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null
   if (!audioCtx) {
-    const Ctx = window.AudioContext || (window as any).webkitAudioContext
+    const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!Ctx) return null
     try {
       audioCtx = new Ctx({ latencyHint: 'interactive' })

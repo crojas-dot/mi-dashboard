@@ -157,6 +157,9 @@ export async function eliminarArchivoDrive(fileId: string): Promise<boolean> {
     console.log(`[drive] archivo eliminado: ${fileId}`)
     return true
   } catch (error) {
+    // Un reintento después de borrar en Drive pero fallar en DB debe poder terminar.
+    const status = (error as { response?: { status?: number }; code?: number }).response?.status ?? (error as { code?: number }).code
+    if (status === 404) return true
     console.warn('[drive] eliminación de archivo falló', fileId, error)
     return false
   }

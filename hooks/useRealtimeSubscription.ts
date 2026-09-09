@@ -30,11 +30,10 @@ interface SubscriptionConfig {
 export function useRealtimeSubscription(config: SubscriptionConfig) {
   const queryClient = useQueryClient()
   const configRef = useRef(config)
-  configRef.current = config
+  useEffect(() => { configRef.current = config }, [config])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    const events = config.events ?? ['INSERT', 'UPDATE']
 
     const channel = supabase
       .channel(`realtime-${config.table}`)
@@ -48,7 +47,7 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
         },
         (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           const eventType = payload.eventType.toUpperCase() as 'INSERT' | 'UPDATE' | 'DELETE'
-          if (!events.includes(eventType)) return
+          if (!(configRef.current.events ?? ['INSERT', 'UPDATE', 'DELETE']).includes(eventType)) return
 
           // Debounce invalidations to prevent rapid-fire refetches
           if (debounceRef.current) clearTimeout(debounceRef.current)

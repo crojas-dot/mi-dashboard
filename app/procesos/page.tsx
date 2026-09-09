@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProcesos, procesosKey } from '@/lib/queries/useProcesos'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -13,7 +14,9 @@ import Button from '@/components/ui/Button'
 import NuevoProcesoModal from './components/NuevoProcesoModal'
 
 export default function ProcesosPage() {
-  const { data: procesos = [], isLoading: loading } = useProcesos()
+  const [page, setPage] = useState(0)
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useProcesos(page)
+  const procesos = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateProcesos = () => queryClient.invalidateQueries({ queryKey: procesosKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
@@ -24,7 +27,7 @@ export default function ProcesosPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nuevo Proceso</Button>
       </PageHeader>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -50,6 +53,7 @@ export default function ProcesosPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevoProcesoModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateProcesos() }} />
     </div>

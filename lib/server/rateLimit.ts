@@ -1,11 +1,19 @@
 const hits = new Map<string, { count: number; resetAt: number }>()
+const MAX_ENTRIES = 10_000
+let nextCleanup = 0
 
-export function rateLimit(ip: string, limit: number, windowMs: number): boolean {
+export function rateLimit(ip: string, limit: number, windowMs: number, scope = 'global'): boolean {
   const now = Date.now()
-  const entry = hits.get(ip)
+  if (now >= nextCleanup) {
+    for (const [key, value] of hits) if (value.resetAt <= now) hits.delete(key)
+    nextCleanup = now + 30_000
+  }
+  const key = `${scope}:${ip}`
+  const entry = hits.get(key)
 
-  if (!entry || now > entry.resetAt) {
-    hits.set(ip, { count: 1, resetAt: now + windowMs })
+  if (!entry || now >= entry.resetAt) {
+    if (!entry && hits.size >= MAX_ENTRIES) return false
+    hits.set(key, { count: 1, resetAt: now + windowMs })
     return true
   }
 

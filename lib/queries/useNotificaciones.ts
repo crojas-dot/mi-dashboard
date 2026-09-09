@@ -1,8 +1,8 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { listarNotificaciones, marcarLeida, marcarTodasLeidas, archivarNotificacion, archivarTodasVisibles, type Notificacion } from '@/lib/services/notificacionService'
-import { queryKeys } from './queryKeys'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { listarNotificaciones, marcarLeida, marcarTodasLeidas, archivarNotificacion, archivarTodasVisibles } from '@/lib/services/notificacionService';
+import { queryKeys } from './queryKeys';
 
 export function notificacionesKey(userId: string) {
   return [...queryKeys.dashboard, 'notificaciones', userId] as const

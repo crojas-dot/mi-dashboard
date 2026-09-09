@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
 import { getDriveClient, buscarOCrearSubcarpeta, subirArchivoASubcarpeta } from '@/lib/server/drive'
-import { MAX_FILE_BYTES, PLACEHOLDER_PREFIX, ALLOWED_MIME_TYPES, streamToBuffer } from '@/lib/server/uploadHelpers'
+import { MAX_FILE_BYTES, PLACEHOLDER_PREFIX, ALLOWED_MIME_TYPES, streamToBuffer, readUploadForm, UploadBodyTooLargeError } from '@/lib/server/uploadHelpers'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 
+import { programarContextoDrive } from '@/lib/server/driveContext'
+
 export const runtime = 'nodejs'
+export const maxDuration = 120
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 30, 60_000)) {
+  if (!rateLimit(ip, 30, 60_000, 'drive/upload')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
@@ -23,9 +26,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
-  const formData = await request.formData().catch(() => null)
-  if (!formData) {
-    return NextResponse.json({ error: 'FormData inválido' }, { status: 400 })
+  let formData: FormData
+  try {
+    formData = await readUploadForm(request)
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof UploadBodyTooLargeError ? 'El archivo supera el máximo de 4 MB' : 'FormData inválido' }, { status: error instanceof UploadBodyTooLargeError ? 413 : 400 })
   }
 
   const file = formData.get('file')
@@ -37,7 +42,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'El archivo está vacío' }, { status: 400 })
   }
   if (file.size > MAX_FILE_BYTES) {
-    return NextResponse.json({ error: 'El archivo supera el máximo de 50 MB' }, { status: 413 })
+    return NextResponse.json({ error: 'El archivo supera el máximo de 4 MB' }, { status: 413 })
   }
 
   const mimeType = file.type || 'application/octet-stream'
@@ -100,14 +105,7 @@ export async function POST(request: NextRequest) {
       buffer,
     })
 
-    const appsScriptUrl = process.env.APPS_SCRIPT_WEBAPP_URL
-    if (appsScriptUrl) {
-      fetch(appsScriptUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId: carpetaQuejaId }),
-      }).catch((err) => console.error('[api/drive/upload] Apps Script precarga falló:', err))
-    }
+    programarContextoDrive(carpetaQuejaId)
 
     return NextResponse.json({
       drive_file_id: resultado.id,

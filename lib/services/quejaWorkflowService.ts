@@ -1,3 +1,4 @@
+import { validarTamanoAdjunto } from '@/lib/constants/adjuntos'
 import { supabase } from '@/lib/supabase'
 import type { Queja } from '@/lib/types'
 import type { SACP } from '@/lib/queries/useSACP'
@@ -85,6 +86,7 @@ export function reabrirQueja(quejaId: string, motivo: string) {
 }
 
 export async function subirAdjuntoQueja(quejaId: string, file: File): Promise<QuejaAdjunto> {
+  validarTamanoAdjunto(file)
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
 

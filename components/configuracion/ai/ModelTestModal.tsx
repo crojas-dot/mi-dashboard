@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Loader2, Play, ShieldAlert, CheckCircle, XCircle, Save } from 'lucide-react'
-import type { AIProvider } from '@/lib/ai/types'
+import { useState, useRef } from 'react';
+import { Loader2, Play, ShieldAlert, CheckCircle, XCircle } from 'lucide-react';
+import type { AIProvider } from '@/lib/ai/types';
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
-import { ScrollArea } from '@/components/ui/ScrollArea'
-import { showError, showSuccess } from '@/lib/services/errorToast'
-import { supabase } from '@/lib/supabase'
+import { ScrollArea } from '@/components/ui/ScrollArea';
+import { showError, showSuccess } from '@/lib/services/errorToast';
+import { supabase } from '@/lib/supabase';
 
 interface TestProgress {
   [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo'

@@ -5,10 +5,11 @@ import { eliminarArchivoDrive } from '@/lib/server/drive'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 
 export const runtime = 'nodejs'
+export const maxDuration = 120
 
 export async function DELETE(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 30, 60_000)) {
+  if (!rateLimit(ip, 30, 60_000, 'drive/delete')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
@@ -57,7 +58,7 @@ export async function DELETE(request: NextRequest) {
     queja = data
   }
 
-  const esResponsable = queja?.responsable_id === perfil?.id
+  const esResponsable = !!perfil?.id && queja?.responsable_id === perfil.id
 
   if (esCliente && current.rol !== 'admin') {
     return NextResponse.json(
@@ -73,6 +74,14 @@ export async function DELETE(request: NextRequest) {
     )
   }
 
+  // Conservar la fila si Drive falla: la misma operación se puede reintentar.
+  if (adjunto.storage_path && !adjunto.storage_path.includes('/')) {
+    const eliminado = await eliminarArchivoDrive(adjunto.storage_path)
+    if (!eliminado) {
+      return NextResponse.json({ error: 'No se pudo eliminar el archivo en Drive. El registro se conserva; intentá de nuevo.' }, { status: 502 })
+    }
+  }
+
   const { error: deleteError } = await admin
     .from('queja_adjuntos')
     .delete()
@@ -83,11 +92,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'No se pudo eliminar el adjunto' }, { status: 500 })
   }
 
-  if (adjunto.storage_path && !adjunto.storage_path.includes('/')) {
-    void eliminarArchivoDrive(adjunto.storage_path).catch((err) => {
-      console.warn('[api/drive/delete] Error al eliminar archivo de Drive en background:', adjunto.storage_path, err)
-    })
-  }
 
   console.log(`[api/drive/delete] Adjunto eliminado: ${adjunto.nombre} (${adjuntoId})`)
 

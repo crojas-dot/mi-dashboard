@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, Loader2, Clock, Check } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useReuniones, reunionesKey, type Reunion } from '@/lib/queries/useReuniones'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -16,7 +17,9 @@ import NuevaReunionModal from './components/NuevaReunionModal'
 const estadoVariant: Record<string, string> = { Planificada: 'blue', Realizada: 'green', Cancelada: 'red' }
 
 export default function RevisionPage() {
-  const { data: reuniones = [], isLoading: loading } = useReuniones()
+  const [page, setPage] = useState(0)
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useReuniones(page)
+  const reuniones = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateReuniones = () => queryClient.invalidateQueries({ queryKey: reunionesKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
@@ -28,7 +31,7 @@ export default function RevisionPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nueva Reunión</Button>
       </PageHeader>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -54,6 +57,7 @@ export default function RevisionPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevaReunionModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateReuniones() }} />
 

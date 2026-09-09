@@ -32,7 +32,7 @@ export function useQuejaActividad(quejaId: string) {
     queryKey: quejaActividadKey(quejaId),
     queryFn: () => fetchQuejaActividad(quejaId),
     enabled: !!quejaId,
-    staleTime: Infinity,
+    staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
   })

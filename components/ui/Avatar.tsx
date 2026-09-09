@@ -1,8 +1,11 @@
 'use client'
 
-import { useState, type ImgHTMLAttributes } from 'react'
+import { useState } from 'react'
+import Image, { type ImageProps } from 'next/image'
 
-interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
+interface AvatarProps extends Omit<ImageProps, 'src' | 'alt'> {
+  src?: string
+  alt?: string
   fallback?: string
   size?: 'sm' | 'md' | 'lg' | 'xl'
   shape?: 'circle' | 'square'
@@ -26,7 +29,10 @@ export function Avatar({ fallback, size = 'md', shape = 'circle', className = ''
 
   if (src && !error) {
     return (
-      <img
+      <Image
+        unoptimized
+        width={{ sm: 24, md: 32, lg: 40, xl: 48 }[size]}
+        height={{ sm: 24, md: 32, lg: 40, xl: 48 }[size]}
         src={src}
         alt={alt || fallback || 'Avatar'}
         className={`${sizeClasses[size]} ${shapeClass} object-cover ${className}`}

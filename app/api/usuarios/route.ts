@@ -15,7 +15,7 @@ function parseBody(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 20, 60_000)) {
+  if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 20, 60_000)) {
+  if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 20, 60_000)) {
+  if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
@@ -240,7 +240,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 20, 60_000)) {
+  if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 

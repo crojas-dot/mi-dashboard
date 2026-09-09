@@ -1,18 +1,18 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
-import { KeyRound, LogOut, BellRing, BellOff, Loader2, Play } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/lib/store/auth-store'
-import { supabase } from '@/lib/supabase'
-import { showError, showSuccess } from '@/lib/services/errorToast'
-import { SONIDOS_NOTIFICACION, SONIDO_DEFAULT, playNotificationSound } from '@/lib/services/sonidosNotificacion'
+import { useState } from 'react';
+import { KeyRound, LogOut, BellRing, BellOff, Play } from 'lucide-react';
+
+
+import { supabase } from '@/lib/supabase';
+import { showError, showSuccess } from '@/lib/services/errorToast';
+import { SONIDOS_NOTIFICACION, SONIDO_DEFAULT, playNotificationSound } from '@/lib/services/sonidosNotificacion';
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import CambiarMiPasswordModal from '@/components/usuarios/CambiarMiPasswordModal'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/DropdownMenu'
-import { formatBytes } from '@/lib/utils/format'
-import { getRoleVariant, getRoleLabel } from '@/lib/constants/roles'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/DropdownMenu';
+
+import { getRoleVariant, getRoleLabel } from '@/lib/constants/roles';
 
 const SONIDO_DEFAULT_ID = SONIDO_DEFAULT
 
@@ -24,15 +24,13 @@ interface UserMenuProps {
 export function UserMenu({ user, onLogout }: UserMenuProps) {
   const [cambiarPasswordOpen, setCambiarPasswordOpen] = useState(false)
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
-  const [sonidoSeleccionado, setSonidoSeleccionado] = useState<string>(user?.notif_sonido_id || SONIDO_DEFAULT_ID)
+  const [sonidoEditado, setSonidoSeleccionado] = useState<string | null>(null)
+  const sonidoSeleccionado = sonidoEditado ?? user?.notif_sonido_id ?? SONIDO_DEFAULT_ID
 
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
 
-  useEffect(() => {
-    if (user?.notif_sonido_id) setSonidoSeleccionado(user.notif_sonido_id)
-  }, [user?.notif_sonido_id])
 
   const handlerPrefs = async (habilitadas: boolean, sonido: boolean) => {
     setGuardandoPrefs(true)

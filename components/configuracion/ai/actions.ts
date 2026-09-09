@@ -1,9 +1,9 @@
 'use client'
 
-import { supabase } from '@/lib/supabase'
-import { showError, showSuccess } from '@/lib/services/errorToast'
-import type { AIProvider, AIProviderTipo } from '@/lib/ai/types'
-import { LIMITE_POR_TIPO, CLAVE_PROVEEDORES, CLAVE_ROUTING } from './constants'
+import { supabase } from '@/lib/supabase';
+import { showError, showSuccess } from '@/lib/services/errorToast';
+import type { AIProvider, AIProviderTipo } from '@/lib/ai/types';
+import { LIMITE_POR_TIPO, CLAVE_PROVEEDORES, CLAVE_ROUTING } from './constants';
 
 export { CLAVE_PROVEEDORES, CLAVE_ROUTING }
 
@@ -139,7 +139,6 @@ export const sincronizarModelos = async (
       // Silenciar errores de limpieza de memoria
     }
 
-    let routingActualizado = false
     // Note: routing update would need to be handled by parent
 
     let toastMsg = `${modelosFinales.length} modelos gratuitos sincronizados para ${provider.nombre}`
@@ -168,8 +167,7 @@ export const reiniciarContador = async (
 export const eliminarProveedor = async (
   id: string,
   providers: AIProvider[],
-  onProvidersChange: (providers: AIProvider[]) => void,
-  onRoutingChange?: (routing: Record<string, unknown>) => void
+  onProvidersChange: (providers: AIProvider[]) => void
 ) => {
   if (!confirm('¿Eliminar este proveedor? Los módulos que lo usen dejarán de funcionar hasta reasignarlos.')) return
   const nuevaLista = providers.filter((p) => p.id !== id)

@@ -1,20 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Bell, Inbox, X, Check, Loader2 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/lib/store/auth-store'
-import { useNotificaciones, useMarcarNotificacionLeida, useMarcarTodasLeidas, useArchivarNotificacion, useArchivarTodas } from '@/lib/queries/useNotificaciones'
-import { supabase } from '@/lib/supabase'
-import { showError, showSuccess } from '@/lib/services/errorToast'
-import { SONIDOS_NOTIFICACION, SONIDO_DEFAULT, playNotificationSound } from '@/lib/services/sonidosNotificacion'
-import Badge from '@/components/ui/Badge'
+import { useEffect, useRef, useState } from 'react';
+import { Bell, Inbox, X, Check, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { useNotificaciones, useMarcarNotificacionLeida, useMarcarTodasLeidas, useArchivarNotificacion, useArchivarTodas } from '@/lib/queries/useNotificaciones';
+import { supabase } from '@/lib/supabase';
+import { showError, showSuccess } from '@/lib/services/errorToast';
+import { SONIDOS_NOTIFICACION, SONIDO_DEFAULT, playNotificationSound } from '@/lib/services/sonidosNotificacion';
+
 import Switch from '@/components/ui/Switch'
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
-import { notificacionesKey } from '@/lib/queries/useNotificaciones'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/DropdownMenu'
-import { ScrollArea } from '@/components/ui/ScrollArea'
-import { formatDateTime } from '@/lib/utils/format'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
+import { notificacionesKey } from '@/lib/queries/useNotificaciones';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from '@/components/ui/DropdownMenu';
+import { ScrollArea } from '@/components/ui/ScrollArea';
+import { formatDateTime } from '@/lib/utils/format';
 
 const SONIDO_DEFAULT_ID = SONIDO_DEFAULT
 
@@ -25,16 +25,14 @@ interface NotificationsDropdownProps {
 export function NotificationsDropdown({ user }: NotificationsDropdownProps) {
   const router = useRouter()
   const [menuAbierto, setMenuAbierto] = useState(false)
-  const [sonidoSeleccionado, setSonidoSeleccionado] = useState<string>(user?.notif_sonido_id || SONIDO_DEFAULT_ID)
+  const [sonidoEditado, setSonidoSeleccionado] = useState<string | null>(null)
+  const sonidoSeleccionado = sonidoEditado ?? user?.notif_sonido_id ?? SONIDO_DEFAULT_ID
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
 
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
 
-  useEffect(() => {
-    if (user?.notif_sonido_id) setSonidoSeleccionado(user.notif_sonido_id)
-  }, [user?.notif_sonido_id])
 
   const { data: notificaciones = [] } = useNotificaciones(user?.id ?? '', notifHabilitadas)
   const marcarLeida = useMarcarNotificacionLeida()

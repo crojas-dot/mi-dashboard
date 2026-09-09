@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Plus, ListChecks, Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuditorias, auditoriasKey, useHallazgos, type Auditoria } from '@/lib/queries/useAuditorias'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -16,7 +17,9 @@ import NuevaAuditoriaModal from './components/NuevaAuditoriaModal'
 const estadoVariant: Record<string, string> = { Planificada: 'blue', 'En Curso': 'amber', Completada: 'green' }
 
 export default function AuditoriasPage() {
-  const { data: lista = [], isLoading: loading } = useAuditorias()
+  const [page, setPage] = useState(0)
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useAuditorias(page)
+  const lista = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateAuditorias = () => queryClient.invalidateQueries({ queryKey: auditoriasKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
@@ -29,7 +32,7 @@ export default function AuditoriasPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nueva Auditoría</Button>
       </PageHeader>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -61,6 +64,7 @@ export default function AuditoriasPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevaAuditoriaModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateAuditorias() }} />
 

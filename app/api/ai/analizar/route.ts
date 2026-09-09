@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { esperarConSignal, tiempoDisponible } from '@/lib/server/deadline'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
 import { IA_SYSTEM_PROMPT, resolverModeloAuto, validarBaseUrl } from '@/lib/ai/aiFactory'
@@ -49,27 +50,28 @@ async function ejecutarProveedorIA(
   system: string,
   prompt: string,
   timeoutMs: number,
+  requestSignal: AbortSignal,
 ): Promise<{ text: string; tokens: number }> {
   let tokens = 0
 
-  if (esModeloAuto(modelo)) {
-    const resolved = await resolverModeloAuto(admin, provider)
-    if (!resolved) throw new Error(`No se pudo resolver "${modelo}" para ${provider.nombre} y no hay fallback disponible`)
-    modelo = resolved
-    console.log(`[api/ai] Modelo auto resuelto para ${provider.nombre}: ${modelo}`)
-  }
-
-  if (esOpenRouter(provider) && Array.isArray(provider.modelos) && provider.modelos.length > 0 && !provider.modelos.includes(modelo)) {
-    console.warn(`[api/ai] Modelo "${modelo}" no está en la lista de gratuitos de OpenRouter, usando: ${provider.modelos[0]}`)
-    modelo = provider.modelos[0]
-  }
-
-  // Crear AbortController nuevo por cada intento — nunca reutilizar señales
   const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  console.log(`[api/ai] Nueva señal para modelo ${modelo} (${timeoutMs}ms), provider: ${provider.nombre}`)
-
+  const signal = AbortSignal.any([requestSignal, controller.signal])
+  const timer = setTimeout(() => controller.abort(new DOMException('Tiempo del modelo agotado', 'TimeoutError')), timeoutMs)
   try {
+    signal.throwIfAborted()
+    if (esModeloAuto(modelo)) {
+      const resolved = await esperarConSignal(resolverModeloAuto(admin, provider), signal)
+      if (!resolved) throw new Error(`No se pudo resolver "${modelo}" para ${provider.nombre} y no hay fallback disponible`)
+      modelo = resolved
+      console.log(`[api/ai] Modelo auto resuelto para ${provider.nombre}: ${modelo}`)
+    }
+
+    if (esOpenRouter(provider) && Array.isArray(provider.modelos) && provider.modelos.length > 0 && !provider.modelos.includes(modelo)) {
+      console.warn(`[api/ai] Modelo "${modelo}" no está en la lista de gratuitos de OpenRouter, usando: ${provider.modelos[0]}`)
+      modelo = provider.modelos[0]
+    }
+
+    signal.throwIfAborted()
     if (provider.tipo === 'gemini') {
       const { GoogleGenerativeAI } = await import('@google/generative-ai')
       const genAI = new GoogleGenerativeAI(provider.api_key)
@@ -81,7 +83,7 @@ async function ejecutarProveedorIA(
       console.log(`[api/ai] Cliente Gemini creado para modelo: ${modelo}`)
       const result = await model.generateContent(
         { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
-        { signal: controller.signal },
+        { signal },
       )
       const text = result.response.text()
       if (!text) throw new Error('Respuesta vacía de Gemini')
@@ -112,7 +114,7 @@ async function ejecutarProveedorIA(
             { role: 'user', content: prompt },
           ],
         }),
-        signal: controller.signal,
+        signal,
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -141,7 +143,7 @@ async function ejecutarProveedorIA(
           system,
           messages: [{ role: 'user', content: prompt }],
         }),
-        signal: controller.signal,
+        signal,
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
@@ -211,12 +213,28 @@ function construirTextoGenerico(modulo: string, entidad: Record<string, unknown>
 }
 
 export async function POST(request: NextRequest) {
+  const inicio = Date.now()
+  const controller = new AbortController()
+  const signal = AbortSignal.any([request.signal, controller.signal])
+  const timer = setTimeout(() => controller.abort(new DOMException('Tiempo de análisis agotado', 'TimeoutError')), TIMEOUT_GLOBAL_GRANDE_MS)
+  try {
+    return await esperarConSignal(analizar(request, signal, inicio), signal)
+  } catch (error) {
+    console.error('[api/ai/analizar]', error)
+    return NextResponse.json({ error: signal.aborted ? 'El análisis excedió el tiempo disponible. Intentá de nuevo.' : 'No se pudo completar el análisis.' }, { status: signal.aborted ? 504 : 500 })
+  } finally {
+    clearTimeout(timer)
+    controller.abort()
+  }
+}
+
+async function analizar(request: NextRequest, signal: AbortSignal, inicio: number) {
   const ip = getClientIp(request)
-  if (!rateLimit(ip, 10, 60_000)) {
+  if (!rateLimit(ip, 10, 60_000, 'ai/analizar')) {
     return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, signal)
   if (!current) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
@@ -246,7 +264,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'prompt_usuario es requerido para consulta custom' }, { status: 400 })
   }
 
-  const admin = createServiceClient()
+  const admin = createServiceClient(signal)
   if (!admin) {
     return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
@@ -298,7 +316,7 @@ export async function POST(request: NextRequest) {
     }
     return p
   })
-  
+
   // Si hubo resets, persistir inmediatamente
   if (providersConReset.some((p, i) => p.tokens_usados !== providers[i].tokens_usados)) {
     await admin
@@ -353,18 +371,18 @@ export async function POST(request: NextRequest) {
         const drive = getDriveClient()
         if (drive) {
           try {
-            const subcarpetaId = await buscarOCrearSubcarpeta(drive, rootFolderId, folio)
+            const subcarpetaId = await esperarConSignal(buscarOCrearSubcarpeta(drive, rootFolderId, folio), signal)
             const listRes = await drive.files.list({
               q: `'${subcarpetaId}' in parents and name = '.contexto_qms.txt' and trashed = false`,
               fields: 'files(id, name)',
               supportsAllDrives: true,
               includeItemsFromAllDrives: true,
-            })
+            }, { signal })
             const contextoFile = listRes.data.files?.[0]
             if (contextoFile?.id) {
               const downloadRes = await drive.files.get(
                 { fileId: contextoFile.id, alt: 'media' },
-                { responseType: 'text' },
+                { responseType: 'text', signal },
               )
               contextoAdicional = String(downloadRes.data ?? '').trim()
             }
@@ -390,7 +408,7 @@ export async function POST(request: NextRequest) {
   let analisis = ''
   let totalTokens = 0
 
-  const inicio = Date.now()
+  const deadline = inicio + timeoutGlobal
   let modeloUsado = ruta.modelo_nombre
 
   const ultimoExito = await obtenerUltimoExito(admin, provider.id, tamanoPrompt)
@@ -403,7 +421,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const inicioModelo = Date.now()
-    const resultado = await ejecutarProveedorIA(admin, provider, modeloUsado, system, promptFinal, timeoutModelo)
+    const resultado = await ejecutarProveedorIA(admin, provider, modeloUsado, system, promptFinal, tiempoDisponible(deadline, timeoutModelo), signal)
     const latenciaMs = Date.now() - inicioModelo
     analisis = resultado.text
     totalTokens = resultado.tokens
@@ -422,6 +440,7 @@ export async function POST(request: NextRequest) {
       tokens_consumidos: totalTokens,
     })
   } catch (error) {
+    signal.throwIfAborted()
     const duracion = Date.now() - inicio
     const mensaje = error instanceof Error ? error.message : 'Error desconocido al consultar IA'
     console.error(`[api/ai][diag] Error tras ${duracion}ms: ${mensaje}`)
@@ -442,7 +461,7 @@ export async function POST(request: NextRequest) {
         try {
           const inicioSub = Date.now()
           console.log(`[api/ai] Intentando sub-modelo: ${modeloAlt} (${Math.round((Date.now() - inicio) / 1000)}s transcurridos)`)
-          const sub = await ejecutarProveedorIA(admin, provider, modeloAlt, system, promptFinal, timeoutModelo)
+          const sub = await ejecutarProveedorIA(admin, provider, modeloAlt, system, promptFinal, tiempoDisponible(deadline, timeoutModelo), signal)
           const latenciaSub = Date.now() - inicioSub
           analisis = sub.text
           totalTokens = sub.tokens
@@ -455,6 +474,7 @@ export async function POST(request: NextRequest) {
 
           return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
         } catch (subErr) {
+          signal.throwIfAborted()
           const subMsg = subErr instanceof Error ? subErr.message : String(subErr)
           await registrarFallo(admin, provider.id, modeloAlt, { esTimeout: /timeout|abort/i.test(subMsg), tamanoPrompt })
           await invalidarModelosCache(admin, provider.id)
@@ -477,7 +497,7 @@ export async function POST(request: NextRequest) {
               `[api/ai] Todos los modelos de ${provider.nombre} fallaron, intentando respaldo: ${fallbackProvider.nombre}/${ruta.fallback_modelo} (${Math.round((Date.now() - inicio) / 1000)}s transcurridos, timeout: ${timeoutFb / 1000}s)`,
             )
             const inicioFb = Date.now()
-            const fb = await ejecutarProveedorIA(admin, fallbackProvider, ruta.fallback_modelo, system, promptFinal, timeoutFb)
+            const fb = await ejecutarProveedorIA(admin, fallbackProvider, ruta.fallback_modelo, system, promptFinal, tiempoDisponible(deadline, timeoutFb), signal)
             const latenciaFb = Date.now() - inicioFb
             analisis = fb.text
             totalTokens = fb.tokens
@@ -489,6 +509,7 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({ analisis, tokens_consumidos: totalTokens })
           } catch (fbError) {
+            signal.throwIfAborted()
             const fbMsg = fbError instanceof Error ? fbError.message : String(fbError)
             await registrarFallo(admin, fallbackProvider.id, ruta.fallback_modelo, { esTimeout: /timeout|abort/i.test(fbMsg), tamanoPrompt })
             await invalidarModelosCache(admin, fallbackProvider.id)

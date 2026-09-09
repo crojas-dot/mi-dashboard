@@ -53,7 +53,7 @@ export function useQuejas(params: QuejasParams = {}) {
     queryKey: quejasKey(params),
     queryFn: () => fetchQuejas(params),
     placeholderData: keepPreviousData,
-    staleTime: Infinity,
+    staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
     refetchOnMount: 'always',
@@ -92,7 +92,7 @@ export function useQuejaAdjuntos(quejaId: string) {
     queryKey: quejaAdjuntosKey(quejaId),
     queryFn: () => fetchQuejaAdjuntos(quejaId),
     enabled: !!quejaId,
-    staleTime: Infinity,
+    staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
   })
 }
@@ -116,7 +116,7 @@ export async function fetchSLAConfig(proceso?: string): Promise<SLAConfig[]> {
 }
 
 export function useSLAConfig(proceso?: string) {
-  return useQuery({ queryKey: slaConfigKey, queryFn: () => fetchSLAConfig(proceso) })
+  return useQuery({ queryKey: [...slaConfigKey, proceso ?? 'todos'], queryFn: () => fetchSLAConfig(proceso) })
 }
 
 export interface QuejasEstadisticas {
@@ -152,7 +152,7 @@ export function useQuejasEstadisticas() {
   return useQuery({
     queryKey: quejasEstadisticasKey,
     queryFn: fetchQuejasEstadisticas,
-    staleTime: Infinity,
+    staleTime: 30_000,
     gcTime: 30 * 60 * 1000,
     retry: 1,
     refetchOnMount: 'always',

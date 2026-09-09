@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useSACP, accionesKey, type SACP } from '@/lib/queries/useSACP'
 import { showError, showSuccess } from '@/lib/services/errorToast'
+import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -20,7 +21,9 @@ const estadoVariant: Record<string, string> = {
 }
 
 export default function SACPage() {
-  const { data: acciones = [], isLoading: loading } = useSACP()
+  const [page, setPage] = useState(0)
+  const { data: pagina, isLoading: loading, isFetching, error, refetch } = useSACP(page)
+  const acciones = pagina?.data ?? []
   const queryClient = useQueryClient()
   const invalidateAcciones = () => queryClient.invalidateQueries({ queryKey: accionesKey })
   const [segModal, setSegModal] = useState<SACP | null>(null)
@@ -54,7 +57,7 @@ export default function SACPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nueva SACP</Button>
       </PageHeader>
 
-      {loading ? (
+      {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
         <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
@@ -102,6 +105,7 @@ export default function SACPage() {
         </tbody>
       </Table>
       )}
+      <Pagination page={page} count={pagina?.count ?? 0} busy={isFetching} onChange={setPage} />
 
       <NuevaSACPModal open={nuevoOpen} onClose={() => setNuevoOpen(false)} onCreated={() => { invalidateAcciones() }} />
 

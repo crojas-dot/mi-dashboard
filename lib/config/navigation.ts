@@ -50,12 +50,12 @@ export interface PrefetchConfig {
 export const PREFETCH_MAP: Record<string, PrefetchConfig> = {
   '/': { queryKey: ['dashboard'], queryFn: () => import('@/lib/queries/useDashboard').then(m => m.fetchDashboard()) },
   '/quejas': { queryKey: ['quejas', { page: 0, pageSize: 25 }], queryFn: () => import('@/lib/queries/useQuejas').then(m => m.fetchQuejas({ page: 0, pageSize: 25 })) },
-  '/documentos': { queryKey: ['documentos'], queryFn: () => import('@/lib/queries/useDocumentos').then(m => m.fetchDocumentos()) },
-  '/sacp': { queryKey: ['acciones'], queryFn: () => import('@/lib/queries/useSACP').then(m => m.fetchAcciones()) },
-  '/riesgos': { queryKey: ['riesgos'], queryFn: () => import('@/lib/queries/useRiesgos').then(m => m.fetchRiesgos()) },
-  '/auditorias': { queryKey: ['auditorias'], queryFn: () => import('@/lib/queries/useAuditorias').then(m => m.fetchAuditorias()) },
-  '/revision': { queryKey: ['reuniones'], queryFn: () => import('@/lib/queries/useReuniones').then(m => m.fetchReuniones()) },
-  '/procesos': { queryKey: ['procesos'], queryFn: () => import('@/lib/queries/useProcesos').then(m => m.fetchProcesos()) },
+  '/documentos': { queryKey: ['documentos', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useDocumentos').then(m => m.fetchDocumentos()) },
+  '/sacp': { queryKey: ['acciones', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useSACP').then(m => m.fetchAcciones()) },
+  '/riesgos': { queryKey: ['riesgos', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useRiesgos').then(m => m.fetchRiesgos()) },
+  '/auditorias': { queryKey: ['auditorias', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useAuditorias').then(m => m.fetchAuditorias()) },
+  '/revision': { queryKey: ['reuniones', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useReuniones').then(m => m.fetchReuniones()) },
+  '/procesos': { queryKey: ['procesos', 'pagina', 0, ''], queryFn: () => import('@/lib/queries/useProcesos').then(m => m.fetchProcesos()) },
   '/usuarios': { queryKey: ['usuarios'], queryFn: () => import('@/lib/queries/useUsuarios').then(m => m.fetchUsuarios()) },
   '/reporteria': { queryKey: ['reporteria'], queryFn: () => Promise.resolve([]) },
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { fetchPagina, paginaKey, type Pagina } from './pagination'
 import { queryKeys } from './queryKeys'
 
 export interface Proceso {
@@ -17,12 +17,10 @@ export interface Proceso {
 
 export const procesosKey = queryKeys.procesos
 
-export async function fetchProcesos(): Promise<Proceso[]> {
-  const { data, error } = await supabase.from('procesos').select('*')
-  if (error) throw error
-  return (data as Proceso[]) ?? []
+export async function fetchProcesos(page = 0, estado = ''): Promise<Pagina<Proceso>> {
+  return fetchPagina<Proceso>('procesos', 'created_at', page, estado)
 }
 
-export function useProcesos() {
-  return useQuery({ queryKey: procesosKey, queryFn: fetchProcesos })
+export function useProcesos(page = 0, estado = '') {
+  return useQuery({ queryKey: paginaKey(procesosKey, page, estado), queryFn: () => fetchProcesos(page, estado) })
 }

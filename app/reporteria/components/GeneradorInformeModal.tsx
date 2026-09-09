@@ -10,6 +10,7 @@ import Modal from '@/components/Modal'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
+import { showError } from '@/lib/services/errorToast'
 import { supabase } from '@/lib/supabase'
 
 interface Props {
@@ -36,11 +37,18 @@ const tablaPorModulo: Record<string, string> = {
   revision_direccion: 'reuniones',
 }
 
+interface FilaInforme { id: string; estado: string; [key: string]: unknown }
+
 interface CatalogoItem { valor: string; color: string }
 
-export default function GeneradorInformeModal({ open, onClose, moduloInicial }: Props) {
-  const [paso, setPaso] = useState(1)
-  const [modulo, setModulo] = useState('')
+export default function GeneradorInformeModal(props: Props) {
+  if (!props.open) return null
+  return <ContenidoInforme key={props.moduloInicial ?? 'nuevo'} {...props} />
+}
+
+function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
+  const [paso, setPaso] = useState(moduloInicial ? 2 : 1)
+  const [modulo, setModulo] = useState(moduloInicial ?? '')
   const [incluir, setIncluir] = useState({ tabla: true, resumen: true, vencidos: false, distribucion: false })
   const [fechaDesde, setFechaDesde] = useState('')
   const [fechaHasta, setFechaHasta] = useState('')
@@ -50,22 +58,8 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
   const [catalogoEstados, setCatalogoEstados] = useState<CatalogoItem[]>([])
   const [catalogoPrioridades, setCatalogoPrioridades] = useState<CatalogoItem[]>([])
   const [catalogoTipos, setCatalogoTipos] = useState<CatalogoItem[]>([])
-  const [resultados, setResultados] = useState<any[]>([])
+  const [resultados, setResultados] = useState<FilaInforme[]>([])
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (open && moduloInicial) {
-      setModulo(moduloInicial)
-      setPaso(2)
-      setIncluir({ tabla: true, resumen: true, vencidos: false, distribucion: false })
-      setFechaDesde('')
-      setFechaHasta('')
-      setFilterEstado('')
-      setFilterPrioridad('')
-      setFilterTipo('')
-      setResultados([])
-    }
-  }, [open, moduloInicial])
 
   useEffect(() => {
     if (paso !== 2) return
@@ -80,7 +74,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
       const tipoPrioridadMap: Record<string, string> = { quejas: 'prioridad' }
       const tipoCatMap: Record<string, string> = { sacp: 'tipo_sacp' }
 
-      const promises: any[] = []
+      const promises: PromiseLike<CatalogoItem[]>[] = []
       if (tipoEstadoMap[modulo]) promises.push(
         supabase.from('catalogos').select('valor,color').eq('tipo', tipoEstadoMap[modulo]).eq('modulo', modulo).or('activo.is.null,activo.eq.true').order('orden').then(r => r.data || [])
       )
@@ -100,25 +94,36 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
   }, [paso, modulo])
 
   const generarInforme = async () => {
-    setLoading(true)
     const tabla = tablaPorModulo[modulo]
     if (!tabla) return
-    let query = supabase.from(tabla).select('*')
-    if (fechaDesde) {
-      const campoFecha = modulo === 'revision_direccion' ? 'fecha_programada' : modulo === 'riesgos' ? 'fecha_identificacion' : 'fecha'
-      query = query.gte(campoFecha, fechaDesde)
-    }
-    if (fechaHasta) {
-      const campoFecha = modulo === 'revision_direccion' ? 'fecha_programada' : modulo === 'riesgos' ? 'fecha_identificacion' : 'fecha'
-      query = query.lte(campoFecha, fechaHasta)
-    }
-    if (filterEstado) query = query.eq('estado', filterEstado)
-    if (filterPrioridad && modulo === 'quejas') query = query.eq('prioridad', filterPrioridad)
-    if (filterTipo) query = query.eq('tipo', filterTipo)
-    const { data } = await query
-    setResultados(data || [])
-    setLoading(false)
-    setPaso(3)
+    setLoading(true)
+    try {
+      const fechaPorModulo: Record<string, string> = { quejas: 'fecha', sacp: 'fecha_apertura', documentos: 'created_at', riesgos: 'fecha_identificacion', auditorias: 'fecha_inicio', revision_direccion: 'fecha_programada' }
+      const filas: FilaInforme[] = []
+      const batchSize = 500
+      for (let desde = 0; ; desde += batchSize) {
+        let query = supabase.from(tabla).select('*', { count: 'exact' })
+        if (fechaDesde) query = query.gte(fechaPorModulo[modulo], fechaDesde)
+        if (fechaHasta) {
+          const siguiente = new Date(fechaHasta + 'T00:00:00Z')
+          siguiente.setUTCDate(siguiente.getUTCDate() + 1)
+          query = query.lt(fechaPorModulo[modulo], siguiente.toISOString().slice(0, 10))
+        }
+        if (filterEstado) query = query.eq('estado', filterEstado)
+        if (filterPrioridad && modulo === 'quejas') query = query.eq('prioridad', filterPrioridad)
+        if (filterTipo) query = query.eq('tipo', filterTipo)
+        const { data, error, count } = await query.order('id').range(desde, desde + batchSize - 1)
+        if (error) throw error
+        if ((count ?? 0) > 5000) throw new Error('El informe supera 5000 registros. Ajustá las fechas o filtros para generarlo.')
+        const batch = (data ?? []) as FilaInforme[]
+        filas.push(...batch)
+        if (batch.length < batchSize || filas.length >= (count ?? Infinity)) break
+      }
+      setResultados(filas)
+      setPaso(3)
+    } catch (error) {
+      showError(error instanceof Error ? error : new Error(String(error)), 'No se pudo generar el informe')
+    } finally { setLoading(false) }
   }
 
   const columnsPorModulo: Record<string, { key: string; label: string }[]> = {
@@ -176,7 +181,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
   }
 
   const campoVencido: Record<string, string> = {
-    quejas: 'fecha',
+    quejas: 'fecha_sla',
     sacp: 'fecha_limite',
     documentos: 'fecha_publicacion',
     auditorias: 'fecha_inicio',
@@ -184,18 +189,13 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
     revision_direccion: 'fecha_programada',
   }
 
-  const badgeColor = (valor?: string): string => {
-    if (!valor) return 'gray'
-    return ['red', 'amber', 'green', 'blue', 'orange', 'purple', 'gray'].includes(valor) ? valor : 'gray'
-  }
-
-  const cellValue = (row: any, key: string) => {
+  const cellValue = (row: FilaInforme, key: string) => {
     const v = row[key]
-    if (!v) return '—'
+    if (v == null || v === '') return '—'
     if (key === 'descripcion' && typeof v === 'string' && v.length > 60) return v.slice(0, 60) + '…'
     if (key === 'impacto' || key === 'probabilidad') return String(v)
     if (typeof v === 'string' && v.includes('T')) return new Date(v).toLocaleDateString('es-ES')
-    return v
+    return String(v)
   }
 
   return (
@@ -269,7 +269,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                   <label key={item.key} className="flex items-center gap-2 text-sm cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={(incluir as any)[item.key]}
+                      checked={incluir[item.key as keyof typeof incluir]}
                       onChange={(e) => setIncluir({ ...incluir, [item.key]: e.target.checked })}
                       className="rounded border-gray-300"
                     />
@@ -428,7 +428,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                         <tbody>
                           {Object.entries(
                             resultados.reduce((acc: Record<string, number>, r) => {
-                              const val = r[campoDistribucion[modulo]] || 'Sin asignar'
+                              const val = String(r[campoDistribucion[modulo]] || 'Sin asignar')
                               acc[val] = (acc[val] || 0) + 1
                               return acc
                             }, {})
@@ -462,7 +462,7 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                           {resultados.length === 0 ? (
                             <tr><td colSpan={columnsPorModulo[modulo]?.length || 1} className="px-3 py-8 text-center text-gray-500">Sin registros</td></tr>
                           ) : (
-                            resultados.map((row: any) => (
+                            resultados.map((row: FilaInforme) => (
                               <tr key={row.id} className="border-b border-gray-200">
                                 {columnsPorModulo[modulo]?.map((col) => (
                                   <td key={col.key} className="px-3 py-1.5 align-middle">
@@ -499,16 +499,16 @@ export default function GeneradorInformeModal({ open, onClose, moduloInicial }: 
                         <tbody>
                           {(() => {
                             const hoy = new Date()
-                            const vencidos = resultados.filter((r: any) => {
+                            const vencidos = resultados.filter((r: FilaInforme) => {
                               const fechaCampo = campoVencido[modulo]
                               const val = r[fechaCampo]
-                              if (!val) return false
-                              return new Date(val) < hoy
+                              if (!val || ['Cerrada', 'Finalizado', 'No Procede'].includes(r.estado)) return false
+                              return new Date(String(val)) < hoy
                             })
                             return vencidos.length === 0 ? (
                               <tr><td colSpan={columnsPorModulo[modulo]?.length || 1} className="px-3 py-8 text-center text-gray-500">Sin registros vencidos</td></tr>
                             ) : (
-                              vencidos.map((row: any) => (
+                              vencidos.map((row: FilaInforme) => (
                                 <tr key={row.id} className="border-b border-gray-200" style={{ backgroundColor: '#fef2f2' }}>
                                   {columnsPorModulo[modulo]?.map((col) => (
                                     <td key={col.key} className="px-3 py-1.5 align-middle" style={{ color: '#dc3545' }}>

@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, ChevronDown, Check, X, Link as LinkIcon, ShieldCheck, Eye, Sparkles } from 'lucide-react'
+import { Plus, Save, Trash2, RotateCcw, Loader2, Tag, Clock, Settings as SettingsIcon, Check, X, Link as LinkIcon, ShieldCheck, Eye, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useCatalogos, type CatalogoValor } from '@/lib/queries/useCatalogos'
 import { useSLAConfig, slaConfigKey, type SLAConfig } from '@/lib/queries/useQuejas'
-import { useFormulariosPublicos, useCrearFormularioPublico, useToggleFormularioPublico, useEliminarFormularioPublico, type FormularioPublico } from '@/lib/queries/useFormulariosPublicos'
+import { useFormulariosPublicos, useCrearFormularioPublico, useToggleFormularioPublico, useEliminarFormularioPublico } from '@/lib/queries/useFormulariosPublicos'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import Badge from '@/components/ui/Badge'
@@ -21,7 +21,7 @@ import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
 
 type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas' | 'ia'
 
-interface ConfigGeneral { clave: string; valor: any; descripcion: string; categoria: string }
+interface ConfigGeneral { clave: string; valor: unknown; descripcion: string; categoria: string }
 
 const modulos = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'general']
 
@@ -37,13 +37,19 @@ export default function ConfiguracionPage() {
   const invalidateSLA = () => queryClient.invalidateQueries({ queryKey: slaConfigKey })
   const invalidateConfigs = () => queryClient.invalidateQueries({ queryKey: ['configuraciones_sistema'] })
   const [tab, setTab] = useState<Tab>('catalogos')
-  const [configs, setConfigs] = useState<ConfigGeneral[]>([])
-  const [configsLoading, setConfigsLoading] = useState(true)
+  const { data: configs = [], isLoading: configsLoading, refetch: loadConfigs } = useQuery({
+    queryKey: ['configuraciones_sistema'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('configuraciones_sistema').select('*').order('categoria').order('clave')
+      if (error) throw error
+      return (data ?? []) as ConfigGeneral[]
+    },
+  })
   const [moduloSel, setModuloSel] = useState(modulos[0])
-  const [filtroTipo, setFiltroTipo] = useState('')
+  const [tipoSeleccionado, setFiltroTipo] = useState('')
   const [editCatalogo, setEditCatalogo] = useState<Partial<CatalogoValor>>({})
   const [editSLA, setEditSLA] = useState<Partial<SLAConfig>>({})
-  const [editConfig, setEditConfig] = useState<Partial<ConfigGeneral>>({})
+  const [editConfig, setEditConfig] = useState<Partial<Omit<ConfigGeneral, 'valor'> & { valor: string }>>({})
   const [nuevoFormOpen, setNuevoFormOpen] = useState(false)
   const [nuevoFormNombre, setNuevoFormNombre] = useState('')
 
@@ -52,23 +58,15 @@ export default function ConfiguracionPage() {
   const toggleFormulario = useToggleFormularioPublico()
   const eliminarFormulario = useEliminarFormularioPublico()
 
-  const loadConfigs = async () => {
-    setConfigsLoading(true)
-    const { data } = await supabase.from('configuraciones_sistema').select('*').order('categoria').order('clave')
-    if (data) setConfigs(data as ConfigGeneral[])
-    setConfigsLoading(false)
-  }
-  useEffect(() => { loadConfigs() }, [])
 
   const tiposDisponibles = useMemo(() => {
     const tipos = new Set<string>()
     for (const c of catalogos) if (c.modulo === moduloSel && (c.activo === null || c.activo === true)) tipos.add(c.tipo)
     return [...tipos].sort()
   }, [catalogos, moduloSel])
+  const filtroTipo = tiposDisponibles.includes(tipoSeleccionado) ? tipoSeleccionado : tiposDisponibles[0] ?? ''
 
-  useEffect(() => {
-    if (!tiposDisponibles.includes(filtroTipo)) setFiltroTipo(tiposDisponibles[0] || '')
-  }, [tiposDisponibles])
+
 
   const catalogosFiltrados = catalogos.filter((c) => c.modulo === moduloSel && c.tipo === filtroTipo)
 
@@ -405,7 +403,7 @@ export default function ConfiguracionPage() {
                       <td className="px-3 py-2 text-gray-600">{cfg.descripcion}</td>
                       <td className="px-3 py-2"><Badge variant="gray">{cfg.categoria}</Badge></td>
                       <td className="px-3 py-2 text-center">
-                        <button onClick={() => setEditConfig({ clave: cfg.clave, valor: cfg.valor, descripcion: cfg.descripcion, categoria: cfg.categoria })} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Editar</button>
+                        <button onClick={() => setEditConfig({ clave: cfg.clave, valor: typeof cfg.valor === 'string' ? cfg.valor : JSON.stringify(cfg.valor), descripcion: cfg.descripcion, categoria: cfg.categoria })} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Editar</button>
                       </td>
                     </tr>
                   ))}

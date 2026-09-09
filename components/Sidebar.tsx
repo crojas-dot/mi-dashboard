@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
 import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
 import { fetchQuejas, quejasKey } from '@/lib/queries/useQuejas'
+import { paginaKey } from '@/lib/queries/pagination'
 import { fetchDocumentos, documentosKey } from '@/lib/queries/useDocumentos'
 import { fetchAcciones, accionesKey } from '@/lib/queries/useSACP'
 import { fetchRiesgos, riesgosKey } from '@/lib/queries/useRiesgos'
@@ -54,12 +55,12 @@ const sections: { label: string; links: { href: string; label: string; icon: typ
 const prefetchMap: Record<string, { queryKey: readonly unknown[]; queryFn: () => PromiseLike<unknown> }> = {
   '/':           { queryKey: dashboardKey, queryFn: fetchDashboard },
   '/quejas':     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: () => fetchQuejas({ page: 0, pageSize: 25 }) },
-  '/documentos': { queryKey: documentosKey, queryFn: fetchDocumentos },
-  '/sacp':       { queryKey: accionesKey, queryFn: fetchAcciones },
-  '/riesgos':    { queryKey: riesgosKey, queryFn: fetchRiesgos },
-  '/auditorias': { queryKey: auditoriasKey, queryFn: fetchAuditorias },
-  '/revision':   { queryKey: reunionesKey, queryFn: fetchReuniones },
-  '/procesos':   { queryKey: procesosKey, queryFn: fetchProcesos },
+  '/documentos': { queryKey: paginaKey(documentosKey), queryFn: () => fetchDocumentos() },
+  '/sacp':       { queryKey: paginaKey(accionesKey), queryFn: () => fetchAcciones() },
+  '/riesgos':    { queryKey: paginaKey(riesgosKey), queryFn: () => fetchRiesgos() },
+  '/auditorias': { queryKey: paginaKey(auditoriasKey), queryFn: () => fetchAuditorias() },
+  '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: () => fetchReuniones() },
+  '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: () => fetchProcesos() },
   '/usuarios':   { queryKey: usuariosKey, queryFn: fetchUsuarios },
   '/reporteria': { queryKey: ['reporteria'], queryFn: () => Promise.resolve([]) },
 }
