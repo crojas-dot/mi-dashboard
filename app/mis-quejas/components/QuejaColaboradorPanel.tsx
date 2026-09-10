@@ -8,6 +8,8 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { estadoVariant, prioridadVariant } from '@/lib/constants/variants'
+import { formatBytes } from '@/lib/utils/format'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaAdjuntos, quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja, eliminarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
@@ -26,21 +28,8 @@ type Tab = 'detalle' | 'actividad' | 'resolucion'
 
 const ESTADOS_ENVIADOS = ['Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const estadoVariant: Record<string, string> = {
-  Recibido: 'gray', 'No Procede': 'red', 'En Investigación': 'amber',
-  'Pendiente de Revisión GC': 'purple', Resuelto: 'green', Finalizado: 'gray',
-}
-
-const prioridadVariant: Record<string, string> = { Baja: 'blue', Media: 'amber', Alta: 'orange', Crítica: 'red' }
-
 export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Props) {
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<Tab>('detalle')
   const [resolucion, setResolucion] = useState('')

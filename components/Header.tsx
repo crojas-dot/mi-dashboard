@@ -32,7 +32,9 @@ const titles: Record<string, string> = {
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, logout, setPrefs } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const setPrefs = useAuthStore((s) => s.setPrefs)
   const [cambiarPasswordOpen, setCambiarPasswordOpen] = useState(false)
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
   const [menuAbierto, setMenuAbierto] = useState<'notif' | 'user' | null>(null)

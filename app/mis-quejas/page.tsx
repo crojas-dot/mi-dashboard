@@ -13,17 +13,20 @@ import EmptyState from '@/components/ui/EmptyState'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
 export default function MisQuejasPage() {
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const [page, setPage] = useState(0)
   const pageSize = 25
   const [panelOpen, setPanelOpen] = useState<Queja | null>(null)
   const queryClient = useQueryClient()
 
-  const { data, isLoading: loading } = useQuejas({
-    page,
-    pageSize,
-    responsableId: user?.id,
-  })
+  const { data, isLoading: loading, error, refetch } = useQuejas(
+    {
+      page,
+      pageSize,
+      responsableId: user?.id,
+    },
+    !!user?.id,
+  )
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
@@ -45,6 +48,11 @@ export default function MisQuejasPage() {
       >
           {loading ? (
             <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: '300px' }}>
+              <p className="text-sm text-gray-500">No se pudieron cargar tus quejas.</p>
+              <button onClick={() => refetch()} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ backgroundColor: '#0d6efd', border: 'none' }}>Reintentar</button>
+            </div>
           ) : (
             <table className={`w-full text-left text-sm select-text ${panelOpen ? 'min-w-[calc(100%+484px)]' : 'min-w-[1200px]'}`}>
               <thead>

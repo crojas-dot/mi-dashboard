@@ -177,7 +177,6 @@ export default function FormularioQuejaPublicaPage() {
         }
         subidos++
       } catch (err) {
-        const mensaje = err instanceof Error ? err.message : String(err)
         console.error('[evidencia fallida]', f.name, err)
         fallidosNombres.push(f.name)
         // No mostramos error aquí para acumular todos los fallos; se mostrarán al final

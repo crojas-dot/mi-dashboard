@@ -17,13 +17,12 @@ function ScopedQueryProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 30_000,
+            staleTime: Infinity,
             gcTime: 30 * 60 * 1000,
             retry: 1,
-            refetchOnWindowFocus: true,
-            refetchOnReconnect: true,
-            refetchOnMount: true,
-            refetchInterval: 60_000,
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: false,
           },
           mutations: {
             retry: 0,

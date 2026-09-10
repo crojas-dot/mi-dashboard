@@ -128,7 +128,8 @@ export default function ConfiguracionPage() {
     { key: 'ia', label: 'IA', icon: Sparkles },
   ]
 
-  const { user, initialized } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const initialized = useAuthStore((s) => s.initialized)
   const router = useRouter()
   useEffect(() => {
     if (!initialized) return

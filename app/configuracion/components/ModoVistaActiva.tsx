@@ -18,7 +18,9 @@ const DESCRIPCION: Record<string, string> = {
 }
 
 export default function ModoVistaActiva() {
-  const { user, vistaActiva, setVistaActiva } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const vistaActiva = useAuthStore((s) => s.vistaActiva)
+  const setVistaActiva = useAuthStore((s) => s.setVistaActiva)
   const rolReal = user?.rol ?? 'admin'
   const activo = vistaActiva ?? rolReal
 

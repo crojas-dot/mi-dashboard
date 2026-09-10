@@ -48,7 +48,7 @@ export async function fetchQuejas(params: QuejasParams = {}): Promise<QuejasResu
   return { data: (data as Queja[]) ?? [], count: count ?? 0 }
 }
 
-export function useQuejas(params: QuejasParams = {}) {
+export function useQuejas(params: QuejasParams = {}, enabled = true) {
   return useQuery({
     queryKey: quejasKey(params),
     queryFn: () => fetchQuejas(params),
@@ -58,6 +58,7 @@ export function useQuejas(params: QuejasParams = {}) {
     retry: 1,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
+    enabled,
   })
 }
 

@@ -36,7 +36,7 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
   useEffect(() => {
 
     const channel = supabase
-      .channel(`realtime-${config.table}`)
+      .channel(`realtime-${config.table}-${config.filter ?? 'all'}`)
       .on(
         'postgres_changes',
         {

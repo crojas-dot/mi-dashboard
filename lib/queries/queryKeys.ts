@@ -13,4 +13,5 @@ export const queryKeys = {
   usuarios: ['usuarios'] as const,
   permisos: ['permisos'] as const,
   quejasActividad: ['quejas_actividad'] as const,
+  notificaciones: ['notificaciones'] as const,
 }

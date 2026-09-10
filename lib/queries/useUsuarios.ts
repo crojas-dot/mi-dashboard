@@ -43,13 +43,25 @@ export async function fetchUsuarios(params?: {
   return (await res.json()) as Usuario[]
 }
 
-export function useUsuarios(params?: {
+function normalizeUsuariosParams(params?: {
   search?: string
   rol?: string
   estado?: string
 }) {
+  return {
+    search: params?.search ?? '',
+    rol: params?.rol ?? '',
+    estado: params?.estado ?? '',
+  }
+}
+
+export function useUsuarios(
+  params?: { search?: string; rol?: string; estado?: string },
+  enabled = true,
+) {
   return useQuery({
-    queryKey: [...usuariosKey, params],
+    queryKey: [...usuariosKey, normalizeUsuariosParams(params)],
     queryFn: () => fetchUsuarios(params),
+    enabled,
   })
 }

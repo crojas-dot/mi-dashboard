@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 interface PrefetchConfig {
@@ -22,6 +22,12 @@ export function useHoverPrefetch() {
   const queryClient = useQueryClient()
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inflightRef = useRef<Set<string>>(new Set())
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current)
+    }
+  }, [])
 
   const prefetch = useCallback(
     (config: PrefetchConfig) => {

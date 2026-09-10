@@ -5,7 +5,7 @@ import { listarNotificaciones, marcarLeida, marcarTodasLeidas, archivarNotificac
 import { queryKeys } from './queryKeys';
 
 export function notificacionesKey(userId: string) {
-  return [...queryKeys.dashboard, 'notificaciones', userId] as const
+  return [...queryKeys.notificaciones, userId] as const
 }
 
 export function useNotificaciones(userId: string, enabled = true) {

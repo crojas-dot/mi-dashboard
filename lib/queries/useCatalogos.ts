@@ -31,8 +31,8 @@ export function useCatalogos() {
   return useQuery({ queryKey: catalogosKey, queryFn: fetchCatalogos })
 }
 
-export function catalogoTipoKey(tipo: string) {
-  return [...queryKeys.catalogos, 'tipo', tipo] as const
+export function catalogoTipoKey(tipo: string, modulo?: string) {
+  return [...queryKeys.catalogos, 'tipo', tipo, modulo ?? ''] as const
 }
 
 export async function fetchCatalogoTipo(
@@ -53,7 +53,7 @@ export async function fetchCatalogoTipo(
 
 export function useCatalogoTipo(tipo: string, modulo?: string) {
   return useQuery({
-    queryKey: catalogoTipoKey(tipo),
+    queryKey: catalogoTipoKey(tipo, modulo),
     queryFn: () => fetchCatalogoTipo(tipo, modulo),
   })
 }

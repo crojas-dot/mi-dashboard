@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi, RefreshCw, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import type { AIProvider, AIProviderTipo, AIRouting } from '@/lib/ai/types'
+import type { AIProvider, AIProviderTipo, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
@@ -111,42 +111,58 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     }
   }, [])
 
+  const providersRef = useRef(providers)
+  const routingRef = useRef(routing)
+  useEffect(() => { providersRef.current = providers }, [providers])
+  useEffect(() => { routingRef.current = routing }, [routing])
+
   useEffect(() => {
-    if (loading || providers.length === 0) return
+    if (loading || providersRef.current.length === 0) return
     let cancelado = false
     ;(async () => {
       const { esOpenRouter, obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
-      const openRouterProviders = providers.filter(p => esOpenRouter(p))
+      const openRouterProviders = providersRef.current.filter((p) => esOpenRouter(p))
+      if (openRouterProviders.length === 0) return
+
+      // Acumular cambios en variables locales y aplicar setState una sola vez al final,
+      // evitando el lost-update entre múltiples proveedores OpenRouter.
+      let listaLimpia: AIProvider[] | null = null
+      let routingLimpio: AIRouting | null = null
+
       for (const p of openRouterProviders) {
-        if (p.modelos.some(m => m.startsWith('~') || /:paid|:premium/i.test(m))) {
-          try {
-            const resultado = await obtenerModelosDisponibles(p)
-            if (cancelado) return
-            if (resultado.modelos.length > 0) {
-              const listaLimpia = providers.map(pr => pr.id === p.id ? { ...pr, modelos: resultado.modelos } : pr)
-              setProviders(listaLimpia)
-              await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_PROVEEDORES, valor: listaLimpia, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
-              const nuevoRouting = { ...routing }
-              let routingCambiado = false
-              for (const m of Object.keys(nuevoRouting)) {
-                if (nuevoRouting[m]?.proveedor_id === p.id && !resultado.modelos.includes(nuevoRouting[m].modelo_nombre)) {
-                  nuevoRouting[m] = { ...nuevoRouting[m], modelo_nombre: resultado.modelos[0] }
-                  routingCambiado = true
-                }
-              }
-              if (routingCambiado) {
-                setRouting(nuevoRouting)
-                await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_ROUTING, valor: nuevoRouting, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+        if (!p.modelos.some((m) => m.startsWith('~') || /:paid|:premium/i.test(m))) continue
+        try {
+          const resultado = await obtenerModelosDisponibles(p)
+          if (cancelado) return
+          if (resultado.modelos.length > 0) {
+            listaLimpia = (listaLimpia ?? providersRef.current).map((pr) => (pr.id === p.id ? { ...pr, modelos: resultado.modelos } : pr))
+            const nuevoRouting: AIRouting = { ...(routingLimpio ?? routingRef.current) }
+            let routingCambiado = false
+            for (const m of Object.keys(nuevoRouting)) {
+              if (nuevoRouting[m]?.proveedor_id === p.id && !resultado.modelos.includes(nuevoRouting[m].modelo_nombre)) {
+                nuevoRouting[m] = { ...nuevoRouting[m], modelo_nombre: resultado.modelos[0] }
+                routingCambiado = true
               }
             }
-          } catch {
-            // Silenciar errores de auto-cleanup
+            if (routingCambiado) routingLimpio = nuevoRouting
           }
+        } catch {
+          // Silenciar errores de auto-cleanup
         }
+      }
+
+      if (cancelado) return
+      if (listaLimpia) {
+        setProviders(listaLimpia)
+        await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_PROVEEDORES, valor: listaLimpia, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+      }
+      if (routingLimpio) {
+        setRouting(routingLimpio)
+        await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_ROUTING, valor: routingLimpio, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
       }
     })()
     return () => { cancelado = true }
-  }, [loading, providers, routing])
+  }, [loading])
 
   const upsertClave = async (clave: string, valor: unknown) => {
     const { error } = await supabase.from('configuraciones_sistema').upsert(
@@ -350,7 +366,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       let modelosFinales = resultado.modelos
       let excluidosPorTest = 0
       try {
-        const { modelosExcluidosPorTest } = await import('@/lib/ai/modelTesting')
+        const { modelosExcluidosPorTest } = await import('@/lib/ai/modelTestingClient')
         modelosFinales = await modelosExcluidosPorTest(supabase, providerId, resultado.modelos)
         excluidosPorTest = resultado.modelos.length - modelosFinales.length
       } catch {
@@ -365,7 +381,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
       try {
         const { limpiarMemoriaModelos } = await import('@/lib/ai/modelMemory')
-        const { limpiarResultadoTest } = await import('@/lib/ai/modelTesting')
+        const { limpiarResultadoTest } = await import('@/lib/ai/modelTestingClient')
         await limpiarMemoriaModelos(supabase, providerId, modelosFinales)
         await limpiarResultadoTest(supabase, providerId, modelosFinales)
       } catch {
@@ -451,23 +467,42 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     setTestModal(prev => ({ ...prev, enCurso: true, cancelado: false, progreso: initial, resultado: null }))
 
     try {
-      const { testearProveedor } = await import('@/lib/ai/modelTesting')
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token ?? ''
+      const { guardarResultadoTest } = await import('@/lib/ai/modelTestingClient')
 
-      const resultado = await testearProveedor(supabase, provider, {
-        maxModelos: 20,
-        signal: abortController.signal,
-        onProgress: (modelo: string, r: { ok: boolean }) => {
-          setTestModal(prev => ({
-            ...prev,
-            progreso: { ...prev.progreso, [modelo]: r.ok ? 'ok' : 'fallo' },
-          }))
-        },
-      })
+      const modelos = provider.modelos.slice(0, 20)
+      const resultados: ModeloTestResultado[] = []
 
-      const buenos = resultado.resultados.filter(r => r.ok).length
-      const malos = resultado.resultados.filter(r => !r.ok).length
+      for (const modelo of modelos) {
+        if (abortController.signal.aborted) break
+        try {
+          const res = await fetch('/api/ai/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ providerId: testModal.providerId, modelo }),
+            signal: abortController.signal,
+          })
+          const json = await res.json().catch(() => null)
+          if (!res.ok) throw new Error(json?.error || 'Error al probar el modelo')
+          const r = json as ModeloTestResultado
+          resultados.push(r)
+          setTestModal(prev => ({ ...prev, progreso: { ...prev.progreso, [modelo]: r.ok ? 'ok' : 'fallo' } }))
+        } catch (e) {
+          if (abortController.signal.aborted) break
+          resultados.push({ modelo, ok: false, latenciaMs: null, error: e instanceof Error ? e.message : String(e) })
+          setTestModal(prev => ({ ...prev, progreso: { ...prev.progreso, [modelo]: 'fallo' } }))
+        }
+      }
 
-      const modelosOk = resultado.resultados.filter(r => r.ok).map(r => r.modelo)
+      if (resultados.length > 0) {
+        await guardarResultadoTest(supabase, testModal.providerId, { timestamp: Date.now(), resultados }, provider.nombre)
+      }
+
+      const buenos = resultados.filter(r => r.ok).length
+      const malos = resultados.filter(r => !r.ok).length
+
+      const modelosOk = resultados.filter(r => r.ok).map(r => r.modelo)
       const nuevosModelos = provider.modelos.filter(m => modelosOk.includes(m))
 
       if (nuevosModelos.length > 0) {
@@ -481,7 +516,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       setTestModal(prev => ({
         ...prev,
         enCurso: false,
-        resultado: { buenos, malos, total: resultado.resultados.length },
+        resultado: { buenos, malos, total: resultados.length },
       }))
 
       const toastMsg = `${buenos} modelos buenos, ${malos} malos. Lista actualizada.`

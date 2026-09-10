@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useRef, useDeferredValue, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
 import { Plus, Search, Loader2, ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, CalendarRange, Eye } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
@@ -28,18 +28,13 @@ export default function QuejasPage() {
   const [nuevaOpen, setNuevaOpen] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState<Queja | null>(null)
   const [page, setPage] = useState(0)
-  const [ahora, setAhora] = useState(() => Date.now())
+  const [ahora] = useState(() => Date.now())
   const pageSize = 25
   const tableRef = useRef<HTMLDivElement>(null)
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const { esVista, marcarVista, marcarTodasVistas, contarNoVistas } = useQuejasVistas(user?.id)
 
-  useEffect(() => {
-    const id = setInterval(() => setAhora(Date.now()), 60000)
-    return () => clearInterval(id)
-  }, [])
-
-  const { data, isLoading: loading } = useQuejas({
+  const { data, isLoading: loading, error, refetch } = useQuejas({
     page,
     pageSize,
     search: deferredSearch,
@@ -177,6 +172,11 @@ export default function QuejasPage() {
       <div ref={tableRef} className="flex-1 overflow-auto rounded-lg border" style={{ minHeight: 0, borderColor: '#dee2e6' }}>
         {loading ? (
           <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: '300px' }}>
+            <p className="text-sm text-gray-500">No se pudieron cargar las quejas.</p>
+            <button onClick={() => refetch()} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ backgroundColor: '#0d6efd', border: 'none' }}>Reintentar</button>
+          </div>
         ) : (
           <table className="w-full select-text text-left text-sm">
             <thead>

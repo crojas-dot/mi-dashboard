@@ -30,13 +30,17 @@ export function useRiesgos(page = 0, estado = '') {
 export function useMatrizRiesgos() {
   return useQuery({
     queryKey: [...riesgosKey, 'matriz'],
-    queryFn: async () => Promise.all(
-      [1, 2, 3].flatMap((p) => [1, 2, 3].map(async (i) => {
-        const { count, error } = await supabase.from('riesgos').select('id', { count: 'exact', head: true })
-          .eq('probabilidad', p).eq('impacto', i)
-        if (error) throw error
-        return { p, i, count: count ?? 0 }
-      })),
-    ),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('riesgos').select('probabilidad, impacto')
+      if (error) throw error
+      const conteo = new Map<string, number>()
+      for (const r of (data ?? []) as { probabilidad: number; impacto: number }[]) {
+        const clave = `${r.probabilidad}:${r.impacto}`
+        conteo.set(clave, (conteo.get(clave) ?? 0) + 1)
+      }
+      return [1, 2, 3].flatMap((p) =>
+        [1, 2, 3].map((i) => ({ p, i, count: conteo.get(`${p}:${i}`) ?? 0 })),
+      )
+    },
   })
 }

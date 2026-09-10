@@ -68,7 +68,8 @@ const prefetchMap: Record<string, { queryKey: readonly unknown[]; queryFn: () =>
 export default function Sidebar() {
   const pathname = usePathname()
   const { collapsed, toggle } = useSidebarStore()
-  const { user, permisos } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const permisos = useAuthStore((s) => s.permisos)
   const prefetch = useHoverPrefetch()
 
   return (

@@ -10,7 +10,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { login, user, initialized, init } = useAuthStore()
+  const login = useAuthStore((s) => s.login)
+  const user = useAuthStore((s) => s.user)
+  const initialized = useAuthStore((s) => s.initialized)
+  const init = useAuthStore((s) => s.init)
   const router = useRouter()
 
   useEffect(() => { init() }, [init])

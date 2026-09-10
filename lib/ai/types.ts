@@ -27,3 +27,15 @@ export interface ArchivoIA {
   mime: string
   buffer: Buffer
 }
+
+export interface ModeloTestResultado {
+  modelo: string
+  ok: boolean
+  latenciaMs: number | null
+  error: string | null
+}
+
+export interface TestResultado {
+  timestamp: number
+  resultados: ModeloTestResultado[]
+}

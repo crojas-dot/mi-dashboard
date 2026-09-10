@@ -20,6 +20,8 @@ import {
   eliminarAdjuntoQueja,
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { estadoVariant } from '@/lib/constants/variants'
+import { formatBytes } from '@/lib/utils/format'
 import { Send, GitBranch, Download, Upload, FileText, RotateCcw, Eye, Trash2 } from 'lucide-react'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -38,17 +40,6 @@ const colorMap: Record<string, string> = {
 }
 
 const ESTADOS_FLUJO = ['Recibido', 'No Procede', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
-
-const estadoVariant: Record<string, string> = {
-  Recibido: 'gray', 'En Investigación': 'amber', 'Pendiente de Revisión GC': 'purple',
-  Resuelto: 'green', 'No Procede': 'red', Finalizado: 'gray',
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
 
 interface BuscadorResponsableProps {
   responsables: Usuario[]
@@ -137,7 +128,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const { data: comentarios = [] } = useQuejaComentarios(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
-  const { data: usuarios = [] } = useUsuarios({ estado: 'activo' })
+  const { data: usuarios = [] } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)
 
   const responsables = useMemo(

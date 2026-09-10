@@ -33,7 +33,8 @@ interface StatCard {
 }
 
 export default function UsuariosPage() {
-  const { user, initialized } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const initialized = useAuthStore((s) => s.initialized)
   const router = useRouter()
   const queryClient = useQueryClient()
   const invalidateUsuarios = () => queryClient.invalidateQueries({ queryKey: usuariosKey })

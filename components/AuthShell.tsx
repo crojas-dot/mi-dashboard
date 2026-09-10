@@ -17,7 +17,11 @@ function isPublicPath(pathname: string): boolean {
 export default function AuthShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, permisos, loading, initialized, init } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const permisos = useAuthStore((s) => s.permisos)
+  const loading = useAuthStore((s) => s.loading)
+  const initialized = useAuthStore((s) => s.initialized)
+  const init = useAuthStore((s) => s.init)
 
   useEffect(() => { init() }, [init])
 
