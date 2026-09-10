@@ -1,0 +1,416 @@
+===== TABLAS Y COLUMNAS =====
+
+[tareas]
+  - id: string (uuid) NOT NULL
+  - titulo: string (text)
+  - descripcion: string (text)
+  - responsable_id: string (uuid)
+  - fecha_limite: string (timestamp with time zone)
+  - estado: string (text)
+  - prioridad: string (text)
+  - origen: string (text)
+  - created_at: string (timestamp with time zone)
+
+[solicitudes_documentales]
+  - id: string (uuid) NOT NULL
+  - tipo: string (text)
+  - solicitante_id: string (uuid)
+  - descripcion: string (text)
+  - justificacion: string (text)
+  - estado: string (text)
+  - revisor_id: string (uuid)
+  - nuevo_drive_file_id: string (text)
+  - fecha: string (timestamp with time zone)
+
+[formularios_publicos]
+  - id: string (uuid) NOT NULL
+  - modulo: string (text) NOT NULL
+  - nombre: string (text) NOT NULL
+  - token: string (text) NOT NULL
+  - activo: boolean (boolean) NOT NULL
+  - creado_por: string (uuid)
+  - created_at: string (timestamp with time zone) NOT NULL
+
+[documentos]
+  - id: string (uuid) NOT NULL
+  - codigo_doc: string (text)
+  - titulo: string (text) NOT NULL
+  - version_actual: string (text)
+  - estado: string (text)
+  - drive_file_id: string (text)
+  - drive_file_id_borrador: string (text)
+  - fecha_publicacion: string (timestamp with time zone)
+  - created_at: string (timestamp with time zone)
+
+[informes_config]
+  - id: string (uuid) NOT NULL
+  - nombre: string (text) NOT NULL
+  - modulo: string (text) NOT NULL
+  - filtros: undefined (jsonb)
+  - columnas: undefined (jsonb)
+  - creado_por: string (uuid)
+  - created_at: string (timestamp with time zone)
+
+[catalogos]
+  - id: string (uuid) NOT NULL
+  - tipo: string (text) NOT NULL
+  - valor: string (text) NOT NULL
+  - color: string (text)
+  - orden: integer (integer)
+  - activo: boolean (boolean)
+  - modulo: string (text) NOT NULL
+
+[procesos]
+  - id: string (uuid) NOT NULL
+  - nombre_proceso: string (text)
+  - tipo: string (text)
+  - objetivo: string (text)
+  - responsable_id: string (uuid)
+  - documentos_vinculados: string (text)
+  - kpis: string (text)
+  - estado: string (text)
+  - created_at: string (timestamp with time zone)
+
+[sla_config]
+  - id: string (uuid) NOT NULL
+  - proceso: string (text) NOT NULL
+  - prioridad: string (text)
+  - dias_alerta: integer (integer)
+  - dias_vencimiento: integer (integer) NOT NULL
+
+[configuraciones_sistema]
+  - clave: string (text) NOT NULL
+  - valor: undefined (jsonb) NOT NULL
+  - descripcion: string (text)
+  - categoria: string (text)
+
+[versiones_documentos]
+  - id: string (uuid) NOT NULL
+  - documento_id: string (text)
+  - version: string (text)
+  - cambios: string (text)
+  - autor_id: string (uuid)
+  - fecha: string (timestamp with time zone)
+
+[queja_adjuntos]
+  - id: string (uuid) NOT NULL
+  - queja_id: string (uuid) NOT NULL
+  - nombre_archivo: string (text) NOT NULL
+  - url_archivo: string (text)
+  - tipo_archivo: string (text)
+  - tamano: integer (integer)
+  - subido_por: string (uuid)
+  - fecha_subida: string (timestamp with time zone)
+  - nombre: string (text) NOT NULL
+  - storage_path: string (text) NOT NULL
+  - tipo_mime: string (text) NOT NULL
+  - usuario_id: string (uuid)
+  - created_at: string (timestamp with time zone) NOT NULL
+
+[quejas_actividad]
+  - id: string (uuid) NOT NULL
+  - queja_id: string (uuid) NOT NULL
+  - tipo: string (text) NOT NULL
+  - descripcion: string (text) NOT NULL
+  - usuario_id: string (uuid)
+  - created_at: string (timestamp with time zone) NOT NULL
+
+[mail_queue]
+  - id: string (uuid) NOT NULL
+  - destinatario: string (text)
+  - asunto: string (text)
+  - cuerpo: string (text)
+  - estado: string (text)
+  - intentos: integer (integer)
+  - error: string (text)
+  - fecha_envio: string (timestamp with time zone)
+  - created_at: string (timestamp with time zone)
+
+[documento_versiones]
+  - id: string (uuid) NOT NULL
+  - documento_id: string (uuid)
+  - version: string (text)
+  - drive_file_id_historico: string (text)
+  - motivo_cambio: string (text)
+  - aprobado_por: string (text)
+  - fecha_version: string (timestamp with time zone)
+
+[quejas_comentarios]
+  - id: string (uuid) NOT NULL
+  - queja_id: string (uuid)
+  - usuario_id: string (uuid)
+  - comentario: string (text)
+  - tipo: string (text)
+  - visible_cliente: boolean (boolean)
+  - fecha: string (timestamp with time zone)
+
+[notificaciones]
+  - id: string (uuid) NOT NULL
+  - usuario_id: string (uuid)
+  - fecha: string (timestamp with time zone)
+  - tipo: string (text)
+  - mensaje: string (text)
+  - leida: boolean (boolean)
+  - enlace: string (text)
+  - origen_id: string (text)
+  - archivada: boolean (boolean) NOT NULL
+
+[hallazgos]
+  - id: string (uuid) NOT NULL
+  - auditoria_id: string (uuid)
+  - tipo: string (text)
+  - descripcion: string (text)
+  - evidencia: string (text)
+  - requisito: string (text)
+  - estado: string (text)
+  - responsable_id: string (uuid)
+  - derivado_sacp_id: string (uuid)
+  - created_at: string (timestamp with time zone)
+
+[permisos]
+  - rol: string (text) NOT NULL
+  - modulo: string (text) NOT NULL
+  - leer: boolean (boolean) NOT NULL
+  - escribir: boolean (boolean) NOT NULL
+
+[reuniones]
+  - id: string (uuid) NOT NULL
+  - titulo: string (text)
+  - tipo: string (text)
+  - fecha_programada: string (timestamp with time zone)
+  - hora: string (text)
+  - duracion: string (text)
+  - organizador_id: string (uuid)
+  - participantes: string (text)
+  - agenda: string (text)
+  - estado: string (text)
+  - acta_drive_id: string (text)
+  - acuerdos: string (text)
+  - created_at: string (timestamp with time zone)
+
+[auditorias]
+  - id: string (uuid) NOT NULL
+  - folio: string (text) NOT NULL
+  - tipo: string (text)
+  - proceso_area: string (text)
+  - auditor_lider_id: string (uuid)
+  - equipo_auditor: string (text)
+  - fecha_inicio: string (timestamp with time zone)
+  - fecha_fin: string (timestamp with time zone)
+  - estado: string (text)
+  - objetivo: string (text)
+  - alcance: string (text)
+  - created_at: string (timestamp with time zone)
+
+[logs]
+  - id: string (uuid) NOT NULL
+  - fecha: string (timestamp with time zone)
+  - usuario_id: string (uuid)
+  - accion: string (text)
+  - modulo: string (text)
+  - detalle: string (text)
+
+[acciones]
+  - id: string (uuid) NOT NULL
+  - folio: string (text) NOT NULL
+  - tipo: string (text)
+  - origen: string (text)
+  - origen_id: string (text)
+  - descripcion: string (text)
+  - responsable_id: string (uuid)
+  - fecha_limite: string (timestamp with time zone)
+  - estado: string (text)
+  - prioridad: string (text)
+  - seguimiento_porcentaje: integer (integer)
+  - validado_por_gc: boolean (boolean)
+  - eficacia: string (text)
+  - notas: string (text)
+  - fecha_apertura: string (timestamp with time zone)
+
+[riesgos]
+  - id: string (uuid) NOT NULL
+  - folio: string (text) NOT NULL
+  - tipo: string (text)
+  - categoria: string (text)
+  - descripcion: string (text)
+  - causa: string (text)
+  - efecto: string (text)
+  - probabilidad: integer (integer)
+  - impacto: integer (integer)
+  - nivel: string (text)
+  - responsable_id: string (uuid)
+  - estado: string (text)
+  - accion_mitigacion: string (text)
+  - fecha_identificacion: string (timestamp with time zone)
+
+[quejas]
+  - id: string (uuid) NOT NULL
+  - folio: string (text) NOT NULL
+  - cliente_nombre: string (text) NOT NULL
+  - email_cliente: string (text)
+  - telefono: string (text)
+  - categoria: string (text)
+  - descripcion: string (text)
+  - prioridad: string (text)
+  - estado: string (text)
+  - fecha_sla: string (timestamp with time zone)
+  - fecha: string (timestamp with time zone)
+  - notas: string (text)
+  - resolucion: string (text)
+  - responsable_id: string (uuid)
+  - derivado_sacp_id: string (uuid)
+  - fecha_cierre: string (timestamp with time zone)
+  - fecha_limite_investigacion: string (timestamp with time zone)
+  - reabierta: boolean (boolean)
+  - motivo_reapertura: string (text)
+
+[usuarios]
+  - id: string (uuid) NOT NULL
+  - nombre: string (text) NOT NULL
+  - email: string (text) NOT NULL
+  - rol: string (text) NOT NULL
+  - estado: string (text)
+  - departamento: string (text)
+  - telefono: string (text)
+  - avatar_url: string (text)
+  - ultimo_acceso: string (timestamp with time zone)
+  - created_at: string (timestamp with time zone)
+  - auth_id: string (uuid)
+  - notif_habilitadas: boolean (boolean) NOT NULL
+  - notif_sonido: boolean (boolean) NOT NULL
+  - notif_sonido_id: string (text) NOT NULL
+
+
+===== FUNCIONES RPC =====
+
+[transicionar_queja]
+  respuestas: 200
+  param p_justificacion_procede: string(text)
+  param p_motivo_reapertura: string(text)
+  param p_nuevo_estado: string(text)
+  param p_queja_id: string(uuid)
+  param p_resolucion: string(text)
+  param p_responsable_id: string(uuid)
+
+[generar_folio_queja]
+  respuestas: 200
+
+[app_es_colaborador]
+  respuestas: 200
+
+[generar_folio_riesgo]
+  respuestas: 200
+
+[app_es_staff]
+  respuestas: 200
+
+[app_es_admin]
+  respuestas: 200
+
+[es_admin]
+  respuestas: 200
+
+[generar_folio_documento]
+  respuestas: 200
+
+[obtener_estadisticas_quejas]
+  respuestas: 200
+
+[generar_folio_auditoria]
+  respuestas: 200
+
+[derivar_queja_a_sacp]
+  respuestas: 200
+  param p_queja_id: string(uuid)
+
+[app_mis_permisos]
+  respuestas: 200
+
+[app_tiene_permiso]
+  respuestas: 200
+  param p_modulo: string(text)
+  param p_requiere_escribir: boolean(boolean)
+
+[registrar_adjunto_queja_publica]
+  respuestas: 200
+  param p_nombre: string(text)
+  param p_queja_id: string(uuid)
+  param p_storage_path: string(text)
+  param p_tamano: integer(bigint)
+  param p_tipo_mime: string(text)
+
+[rls_auto_enable]
+  respuestas: 200
+
+[crear_queja_publica]
+  respuestas: 200
+  param p_categoria: string(text)
+  param p_cliente_nombre: string(text)
+  param p_descripcion: string(text)
+  param p_email_cliente: string(text)
+  param p_telefono: string(text)
+  param p_token: string(text)
+
+[crear_queja_interna]
+  respuestas: 200
+  param p_categoria: string(text)
+  param p_cliente_nombre: string(text)
+  param p_descripcion: string(text)
+  param p_email_cliente: string(text)
+  param p_prioridad: string(text)
+
+[current_usuario_id]
+  respuestas: 200
+
+[current_rol]
+  respuestas: 200
+
+[actualizar_detalles_queja]
+  respuestas: 200
+  param p_categoria: string(text)
+  param p_notas: string(text)
+  param p_prioridad: string(text)
+  param p_queja_id: string(uuid)
+  param p_responsable_id: string(uuid)
+
+[procesar_alertas_quejas]
+  respuestas: 200
+
+[agregar_comentario_queja]
+  respuestas: 200
+  param p_comentario: string(text)
+  param p_queja_id: string(uuid)
+  param p_tipo: string(text)
+  param p_visible_cliente: boolean(boolean)
+
+[siguiente_folio_queja]
+  respuestas: 200
+
+[app_usuario_actual_id]
+  respuestas: 200
+
+[registrar_adjunto_queja]
+  respuestas: 200
+  param p_nombre: string(text)
+  param p_queja_id: string(uuid)
+  param p_storage_path: string(text)
+  param p_tamano: integer(bigint)
+  param p_tipo_mime: string(text)
+
+[notificar_queja_publica]
+  respuestas: 200
+  param p_folio: string(text)
+
+[actualizar_mis_preferencias_notificacion]
+  respuestas: 200
+  param p_habilitadas: boolean(boolean)
+  param p_sonido: boolean(boolean)
+  param p_sonido_id: string(text)
+
+[generar_folio_sacp]
+  respuestas: 200
+
+[incrementar_tokens_proveedor]
+  respuestas: 200
+  param p_provider_id: string(text)
+  param p_tokens: integer(integer)
