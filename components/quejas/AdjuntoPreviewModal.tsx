@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Download, ExternalLink, FileText, FileQuestion, Loader2, X } from 'lucide-react'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { supabase } from '@/lib/supabase'
 import { descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { showError } from '@/lib/services/errorToast'
+import { formatBytes } from '@/lib/utils/format'
 
 interface Props {
   adjunto: QuejaAdjunto | null
@@ -14,12 +15,6 @@ interface Props {
 
 function esDrive(storagePath: string): boolean {
   return !storagePath.includes('/')
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 interface VistaLegacyProps {
@@ -57,6 +52,8 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
   const [legacyUrl, setLegacyUrl] = useState<string | null>(null)
   const [legacyError, setLegacyError] = useState(false)
   const [descargando, setDescargando] = useState(false)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   const adjuntoId = adjunto?.id ?? null
   const [prevAdjuntoId, setPrevAdjuntoId] = useState<string | null>(null)
@@ -68,11 +65,11 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     if (adjunto) document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  }, [adjunto, onClose])
+  }, [adjunto])
 
   useEffect(() => {
     if (!adjunto || esDrive(adjunto.storage_path)) return

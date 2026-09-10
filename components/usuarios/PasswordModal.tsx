@@ -1,7 +1,7 @@
 'use client'
 
 import { Key, Copy, Check } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
@@ -16,13 +16,16 @@ interface PasswordModalProps {
 
 export default function PasswordModal({ open, password, title, subtitle, onClose }: PasswordModalProps) {
   const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }, [])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(password).then(
       () => {
         setCopied(true)
         showSuccess('Contraseña copiada')
-        setTimeout(() => setCopied(false), 2000)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        timeoutRef.current = setTimeout(() => setCopied(false), 2000)
       },
       () => showError(null, 'No se pudo copiar la contraseña')
     )

@@ -56,7 +56,7 @@ components/
   ui/  Button, Select, Badge, Switch, Table(Head/HeaderCell/Row/Cell), EmptyState, PageHeader, Pagination (import directo por archivo; NO hay barrel index.ts)
   usuarios/  UsuarioFormModal, PasswordModal, ResetPasswordModal, CambiarMiPasswordModal (autoservicio), ConfirmDialog
   configuracion/  AIProvidersManager (tab IA: CRUD proveedores + barra consumo % + fallback + modal lg + presets límites + auto-selección modelo único) — ES EL COMPONENTE EN USO
-  quejas/  AdjuntoPreviewModal (Drive iframe + legacy Blob signed URL)
+  quejas/  AdjuntoPreviewModal (Drive iframe + legacy Blob signed URL), ListaAdjuntos (listado compartido de evidencias cliente/análisis, usado por QuejaDetalleModal y QuejaColaboradorPanel)
 lib/
   supabase.ts                cliente anon singleton
   auth.ts                    signIn/signOut/getAppUser (Supabase Auth; bloquea inactivos)

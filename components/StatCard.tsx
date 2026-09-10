@@ -30,7 +30,7 @@ export default function StatCard({ title, value, icon, color, subtitle, trend, o
           <p className="font-bold leading-none" style={{ color: '#212529', fontSize: '1.75rem' }}>{value}</p>
           {subtitle && <p className="mt-1.5" style={{ color: '#6c757d', fontSize: '0.75rem' }}>{subtitle}</p>}
           {trend && (
-            <p className={`mt-1 font-medium ${trend.positive ? '' : ''}`} style={{ color: trend.positive ? '#198754' : '#dc3545', fontSize: '0.75rem' }}>
+            <p className="mt-1 font-medium" style={{ color: trend.positive ? '#198754' : '#dc3545', fontSize: '0.75rem' }}>
               {trend.value}
             </p>
           )}

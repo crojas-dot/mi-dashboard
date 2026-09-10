@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RefreshCw, Eye, EyeOff, Copy, Check, X, KeyRound, Loader2 } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -20,6 +20,8 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
   const [show, setShow] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (timeoutRef.current) clearTimeout(timeoutRef.current) }, [])
 
   function generar() {
     setPassword(generatePassword(16))
@@ -39,7 +41,8 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
       () => {
         setCopied(true)
         showSuccess('Contraseña copiada')
-        setTimeout(() => setCopied(false), 2000)
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        timeoutRef.current = setTimeout(() => setCopied(false), 2000)
       },
       () => showError(null, 'No se pudo copiar la contraseña')
     )

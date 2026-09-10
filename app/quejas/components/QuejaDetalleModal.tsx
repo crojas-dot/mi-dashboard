@@ -21,9 +21,9 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { estadoVariant } from '@/lib/constants/variants'
-import { formatBytes } from '@/lib/utils/format'
-import { Send, GitBranch, Download, Upload, FileText, RotateCcw, Eye, Trash2 } from 'lucide-react'
+import { Send, GitBranch, Upload, RotateCcw } from 'lucide-react'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
+import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
 interface Props {
@@ -450,92 +450,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                 : 'Sin adjuntos todavía.'}
             </p>
           ) : (
-            <>
-              {/* Evidencias del cliente (usuario_id NULL) */}
-              {adjuntos.some((a) => !a.usuario_id) && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias del cliente</p>
-                  <ul className="space-y-1">
-                    {adjuntos.filter((a) => !a.usuario_id).map((a) => (
-                      <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
-                        <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-                        <button
-                          type="button"
-                          onClick={() => setPreviewAdjunto(a)}
-                          className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                          title="Vista previa"
-                        >
-                          {a.nombre}
-                        </button>
-                        <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                        <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
-                          {new Date(a.created_at).toLocaleDateString('es-ES')}
-                        </span>
-                        <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
-                          <Download className="h-4 w-4" />
-                        </button>
-                        {puedeEliminarAdjunto(a) && (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmarEliminacion(a.id)}
-                            className="shrink-0 text-gray-400 hover:text-red-600"
-                            title="Eliminar adjunto"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {/* Evidencias de análisis (usuario_id presente) */}
-              {adjuntos.some((a) => a.usuario_id) && (
-                <div className="mt-3">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias de análisis</p>
-                  <ul className="space-y-1">
-                    {adjuntos.filter((a) => a.usuario_id).map((a) => (
-                      <li key={a.id} className="flex select-text items-center gap-2 rounded-md border border-gray-200 bg-white px-2 py-1.5">
-                        <FileText className="h-4 w-4 shrink-0 text-blue-500" />
-                        <button
-                          type="button"
-                          onClick={() => setPreviewAdjunto(a)}
-                          className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                          title="Vista previa"
-                        >
-                          {a.nombre}
-                        </button>
-                        <Badge variant="blue">Análisis</Badge>
-                        <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Vista previa">
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <span className="whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                        <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
-                          {new Date(a.created_at).toLocaleDateString('es-ES')}
-                        </span>
-                        <button type="button" onClick={() => handleDescargarAdjunto(a)} className="shrink-0 text-gray-500 hover:text-blue-600" title="Descargar">
-                          <Download className="h-4 w-4" />
-                        </button>
-                        {puedeEliminarAdjunto(a) && (
-                          <button
-                            type="button"
-                            onClick={() => setConfirmarEliminacion(a.id)}
-                            className="shrink-0 text-gray-400 hover:text-red-600"
-                            title="Eliminar adjunto"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
+            <ListaAdjuntos
+              adjuntos={adjuntos}
+              onPreview={(a) => setPreviewAdjunto(a)}
+              onDownload={(a) => handleDescargarAdjunto(a)}
+              puedeEliminar={puedeEliminarAdjunto}
+              onEliminar={(a) => setConfirmarEliminacion(a.id)}
+            />
           )}
           {estadoActual === 'En Investigación' && (
             <div className="flex items-center gap-2 pt-1">

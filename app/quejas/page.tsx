@@ -124,7 +124,7 @@ export default function QuejasPage() {
           value={mesActual}
           icon={<CalendarRange className="h-5 w-5" />}
           color="purple"
-          subtitle={new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+          subtitle={new Date(ahora).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
         />
         <StatCard
           title="Total quejas"

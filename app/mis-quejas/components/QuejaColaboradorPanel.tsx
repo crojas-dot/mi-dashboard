@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Download, Eye, FileText, Sparkles, Edit, Eye as EyeIcon, Upload, Trash2 } from 'lucide-react'
+import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Sparkles, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
 import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { estadoVariant, prioridadVariant } from '@/lib/constants/variants'
-import { formatBytes } from '@/lib/utils/format'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaAdjuntos, quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja, eliminarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { analizarIA } from '@/lib/services/aiService'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
+import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import ReactMarkdown from 'react-markdown'
 
@@ -39,7 +39,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const [previewAdjunto, setPreviewAdjunto] = useState<QuejaAdjunto | null>(null)
   const [aiAutoLoading, setAiAutoLoading] = useState(false)
   const [aiResult, setAiResult] = useState('')
-  const [chat, setChat] = useState<{ role: 'user' | 'ia'; content: string }[]>([])
+  const [chat, setChat] = useState<{ id: string; role: 'user' | 'ia'; content: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [modoEdicion, setModoEdicion] = useState(false)
@@ -117,12 +117,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const handleEnviarIA = async () => {
     const msg = chatInput.trim()
     if (!msg) return
-    setChat((c) => [...c, { role: 'user', content: msg }])
+    setChat((c) => [...c, { id: crypto.randomUUID(), role: 'user', content: msg }])
     setChatInput('')
     setChatLoading(true)
     try {
       const txt = await analizarIA({ modulo: 'quejas', entidad_id: queja.id, tipo_consulta: 'custom', prompt_usuario: msg })
-      setChat((c) => [...c, { role: 'ia', content: txt }])
+      setChat((c) => [...c, { id: crypto.randomUUID(), role: 'ia', content: txt }])
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : 'No se pudo obtener respuesta de IA'
       showError(e as Error, errorMsg)
@@ -305,86 +305,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               {adjuntos.length === 0 ? (
                 <p className="mt-2 text-sm text-gray-400">Sin evidencias todavía.</p>
               ) : (
-                <>
-                  {/* Evidencias del cliente (usuario_id NULL) */}
-                  {adjuntos.some((a) => !a.usuario_id) && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias del cliente</p>
-                      <ul className="space-y-1">
-                        {adjuntos.filter((a) => !a.usuario_id).map((a) => (
-                          <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                            <FileText className="h-4 w-4 shrink-0 text-gray-400" />
-                            <button
-                              type="button"
-                              onClick={() => setPreviewAdjunto(a)}
-                              className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                              title="Vista previa"
-                            >
-                              {a.nombre}
-                            </button>
-                            <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                            <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
-                              className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
-                              title="Descargar"
-                            >
-                              <Download className="h-4 w-4" />
-                            </button>
-                            {puedeEliminarAdjunto(a) && (
-                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Evidencias de análisis (usuario_id presente) */}
-                  {adjuntos.some((a) => a.usuario_id) && (
-                    <div className="mt-3">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Evidencias de análisis</p>
-                      <ul className="space-y-1">
-                        {adjuntos.filter((a) => a.usuario_id).map((a) => (
-                          <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                            <FileText className="h-4 w-4 shrink-0 text-blue-500" />
-                            <button
-                              type="button"
-                              onClick={() => setPreviewAdjunto(a)}
-                              className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                              title="Vista previa"
-                            >
-                              {a.nombre}
-                            </button>
-                            <Badge variant="blue">Análisis</Badge>
-                            <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                            <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
-                              className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
-                              title="Descargar"
-                            >
-                              <Download className="h-4 w-4" />
-                            </button>
-                            {puedeEliminarAdjunto(a) && (
-                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </>
+                <ListaAdjuntos
+                  adjuntos={adjuntos}
+                  onPreview={(a) => setPreviewAdjunto(a)}
+                  onDownload={(a) => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                  puedeEliminar={puedeEliminarAdjunto}
+                  onEliminar={(a) => setConfirmarEliminacion(a.id)}
+                />
               )}
             </div>
           </div>
@@ -458,8 +385,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               )}
               {chat.length > 0 && (
                 <div className="mt-4 space-y-2">
-                  {chat.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {chat.map((m) => (
+                    <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'border border-gray-200 bg-white text-gray-800'}`}>
                         <span className="whitespace-pre-wrap">{m.content}</span>
                       </div>
@@ -516,39 +443,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               {adjuntos.filter((a) => a.usuario_id).length === 0 ? (
                 <p className="mt-2 text-sm text-gray-400">Sin evidencias de análisis todavía.</p>
               ) : (
-                <ul className="mt-3 space-y-1">
-                  {adjuntos.filter((a) => a.usuario_id).map((a) => (
-                    <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
-                      <FileText className="h-4 w-4 shrink-0 text-blue-500" />
-                      <button
-                        type="button"
-                        onClick={() => setPreviewAdjunto(a)}
-                        className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
-                        title="Vista previa"
-                      >
-                        {a.nombre}
-                      </button>
-                      <Badge variant="blue">Análisis</Badge>
-                      <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-                      <button type="button" onClick={() => setPreviewAdjunto(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
-                        className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600"
-                        title="Descargar"
-                      >
-                        <Download className="h-4 w-4" />
-                      </button>
-                            {puedeEliminarAdjunto(a) && (
-                              <button type="button" onClick={() => setConfirmarEliminacion(a.id)} className="shrink-0 text-gray-400 hover:text-red-600" title="Eliminar adjunto">
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            )}
-                    </li>
-                  ))}
-                </ul>
+                <ListaAdjuntos
+                  adjuntos={adjuntos.filter((a) => a.usuario_id)}
+                  onPreview={(a) => setPreviewAdjunto(a)}
+                  onDownload={(a) => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                  puedeEliminar={puedeEliminarAdjunto}
+                  onEliminar={(a) => setConfirmarEliminacion(a.id)}
+                />
               )}
               
               {estado === 'En Investigación' && (

@@ -18,10 +18,12 @@ const sizes: Record<string, string> = {
 
 export default function Modal({ open, onClose, title, size = 'md', children }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     if (open) {
       document.addEventListener('keydown', handleEsc)
@@ -31,7 +33,7 @@ export default function Modal({ open, onClose, title, size = 'md', children }: M
       document.removeEventListener('keydown', handleEsc)
       document.body.style.overflow = ''
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 
