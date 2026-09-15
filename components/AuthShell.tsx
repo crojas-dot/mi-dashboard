@@ -47,7 +47,7 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
 
   if (!initialized || loading) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     )

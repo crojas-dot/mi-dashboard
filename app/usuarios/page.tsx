@@ -22,14 +22,14 @@ const roles = ['admin', 'calidad', 'colaborador'] as const
 
 const rolLabel: Record<string, string> = { admin: 'Administrador', calidad: 'Calidad', colaborador: 'Colaborador' }
 const rolVariant: Record<string, string> = { admin: 'blue', calidad: 'gray', colaborador: 'green' }
-const rolColor: Record<string, string> = { admin: '#0d6efd', calidad: '#6c757d', colaborador: '#198754' }
+const rolBg: Record<string, string> = { admin: 'bg-qms-primary', calidad: 'bg-qms-muted', colaborador: 'bg-qms-success' }
 
 interface StatCard {
   label: string
   value: number
   icon: React.ReactNode
-  color: string
-  bg: string
+  colorClass: string
+  bgClass: string
 }
 
 export default function UsuariosPage() {
@@ -64,7 +64,7 @@ export default function UsuariosPage() {
   })
 
   if (!initialized || user?.rol !== 'admin') {
-    return <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+    return <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
   }
 
   const esAuto = (u: Usuario) => u.id === user?.id
@@ -75,10 +75,10 @@ export default function UsuariosPage() {
   const admins = usuarios.filter((u) => u.rol === 'admin').length
 
   const stats: StatCard[] = [
-    { label: 'Usuarios', value: total, icon: <Users className="h-5 w-5" />, color: '#0d6efd', bg: '#e7f1ff' },
-    { label: 'Activos', value: activos, icon: <UserCheck className="h-5 w-5" />, color: '#198754', bg: '#e8f5ee' },
-    { label: 'Inactivos', value: inactivos, icon: <UserX className="h-5 w-5" />, color: '#dc3545', bg: '#fdeeee' },
-    { label: 'Administradores', value: admins, icon: <ShieldCheck className="h-5 w-5" />, color: '#6f42c1', bg: '#f1ecf9' },
+    { label: 'Usuarios', value: total, icon: <Users className="h-5 w-5" />, colorClass: 'text-qms-primary', bgClass: 'bg-soft-blue-bg' },
+    { label: 'Activos', value: activos, icon: <UserCheck className="h-5 w-5" />, colorClass: 'text-qms-success', bgClass: 'bg-soft-green-bg' },
+    { label: 'Inactivos', value: inactivos, icon: <UserX className="h-5 w-5" />, colorClass: 'text-qms-danger', bgClass: 'bg-soft-red-bg' },
+    { label: 'Administradores', value: admins, icon: <ShieldCheck className="h-5 w-5" />, colorClass: 'text-qms-purple', bgClass: 'bg-soft-purple-bg' },
   ]
 
   function abrirCrear() {
@@ -161,11 +161,11 @@ export default function UsuariosPage() {
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3 rounded-lg border p-4" style={{ borderColor: '#dee2e6', backgroundColor: '#fff' }}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: s.bg, color: s.color }}>{s.icon}</div>
+          <div key={s.label} className="flex items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-4">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${s.bgClass} ${s.colorClass}`}>{s.icon}</div>
             <div>
-              <p className="m-0 text-2xl font-bold leading-none" style={{ color: '#212529' }}>{s.value}</p>
-              <p className="m-0 mt-1 text-xs" style={{ color: '#6c757d' }}>{s.label}</p>
+              <p className="m-0 text-2xl font-bold leading-none text-qms-dark">{s.value}</p>
+              <p className="m-0 mt-1 text-xs text-qms-muted">{s.label}</p>
             </div>
           </div>
         ))}
@@ -176,8 +176,7 @@ export default function UsuariosPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             placeholder="Buscar por nombre o email..."
-            className="w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            style={{ height: '38px' }}
+            className="h-[38px] w-full rounded-button border border-qms-border bg-qms-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -194,7 +193,7 @@ export default function UsuariosPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : isError ? (
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
@@ -217,23 +216,22 @@ export default function UsuariosPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div
-                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-                        style={{ backgroundColor: rolColor[u.rol] || '#6c757d' }}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${rolBg[u.rol] || 'bg-qms-muted'}`}
                       >
                         {u.nombre.charAt(0).toUpperCase()}
                       </div>
                       <div>
                         <p className="m-0 text-sm font-medium text-gray-900 dark:text-white">
                           {u.nombre}
-                          {esAuto(u) && <span className="ml-2 text-xs font-normal" style={{ color: '#6c757d' }}>(tú)</span>}
+                          {esAuto(u) && <span className="ml-2 text-xs font-normal text-qms-muted">(tú)</span>}
                         </p>
-                        <p className="m-0 text-xs" style={{ color: '#6c757d' }}>{u.email}</p>
+                        <p className="m-0 text-xs text-qms-muted">{u.email}</p>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell><Badge variant={rolVariant[u.rol] || 'gray'}>{rolLabel[u.rol] || u.rol}</Badge></TableCell>
                   <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'red'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
-                  <TableCell className="text-sm whitespace-nowrap" style={{ color: '#6c757d' }}>
+                  <TableCell className="whitespace-nowrap text-sm text-qms-muted">
                     {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                   </TableCell>
                   <TableCell>

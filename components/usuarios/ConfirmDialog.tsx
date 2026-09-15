@@ -18,7 +18,7 @@ export default function ConfirmDialog({ open, title, message, confirmLabel, dang
   return (
     <Modal open={open} onClose={onCancel} title={title} size="sm">
       <div className="space-y-4">
-        <p className="m-0 text-sm" style={{ color: '#495057' }}>{message}</p>
+        <p className="m-0 text-sm text-gray-600">{message}</p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
           <Button type="button" variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={loading}>

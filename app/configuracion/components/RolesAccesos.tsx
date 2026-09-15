@@ -32,7 +32,7 @@ export default function RolesAccesos() {
   const actualizar = useActualizarPermiso()
 
   if (isLoading) {
-    return <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+    return <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
   }
 
   const permisoDe = (rol: string, modulo: string): Permiso =>
@@ -60,10 +60,10 @@ export default function RolesAccesos() {
       <p className="text-sm text-gray-600">
         Controla qué módulos puede ver y editar cada rol. Los cambios aplican al recargar la sesión.
       </p>
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+      <div className="overflow-hidden rounded-card border border-qms-border">
         <table className="w-full select-text text-sm">
           <thead>
-            <tr style={{ backgroundColor: '#343a40' }}>
+            <tr className="bg-qms-header">
               <th className="px-3 py-2 text-left font-semibold text-white">Módulo</th>
               {ROLES.map((r) => (
                 <th key={r.key} className="px-3 py-2 text-center font-semibold text-white">

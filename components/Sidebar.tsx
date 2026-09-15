@@ -74,44 +74,35 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`flex flex-col text-white shrink-0 transition-all duration-200 ${
-        collapsed ? 'w-16' : 'w-[250px]'
-      }`}
-      style={{ backgroundColor: '#212529' }}
+      className={`flex shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-[250px]'} bg-qms-dark`}
     >
       <div className="flex items-center justify-between px-3 pt-3 pb-1">
         {!collapsed ? (
           <>
             <Link href="/" className="flex items-center gap-2.5 no-underline">
-              <div className="flex items-center justify-center rounded-lg font-bold text-white shrink-0" style={{ width: '28px', height: '28px', backgroundColor: '#0d6efd', fontSize: '12px' }}>E</div>
-              <div className="font-bold text-white" style={{ fontSize: '15px' }}>ECA-QMS</div>
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-card bg-qms-primary text-xs font-bold text-white">E</div>
+              <div className="text-[15px] font-bold text-white">ECA-QMS</div>
             </Link>
             <button
               onClick={toggle}
               title="Colapsar menú"
-              className="flex items-center justify-center rounded-lg transition-colors shrink-0"
-              style={{ width: '28px', height: '28px', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', background: 'transparent' }}
-              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
             >
-              <ChevronLeft style={{ width: '16px', height: '16px' }} />
+              <ChevronLeft className="h-4 w-4" />
             </button>
           </>
         ) : (
           <button
             onClick={toggle}
             title="Expandir menú"
-            className="flex items-center justify-center rounded-lg transition-colors mx-auto"
-            style={{ width: '28px', height: '28px', color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.12)', cursor: 'pointer', background: 'transparent', marginTop: '12px', marginBottom: '4px' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'; e.currentTarget.style.color = 'rgba(255,255,255,0.35)'; }}
+            className="mx-auto mt-3 mb-1 flex h-7 w-7 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
           >
-            <ChevronRight style={{ width: '16px', height: '16px' }} />
+            <ChevronRight className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 12px' }} />
+      <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />
 
        <nav className="flex-1 overflow-y-auto px-2">
          {sections.map((section) => {
@@ -120,7 +111,7 @@ export default function Sidebar() {
            return (
           <div key={section.label} className="mb-2">
             {!collapsed && (
-              <p className="px-3 mb-1 text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.25)' }}>
+              <p className="mb-1 px-3 text-[9px] font-semibold uppercase tracking-wider text-white/25">
                 {section.label}
               </p>
             )}
@@ -132,34 +123,13 @@ export default function Sidebar() {
                   key={link.href}
                   href={link.href}
                   title={link.label}
-                  className={`flex items-center no-underline ${
-                    collapsed ? 'justify-center' : ''
-                  }`}
-                  style={{
-                    padding: collapsed ? '10px 0' : '10px 15px',
-                    borderRadius: '5px',
-                    margin: '3px 0',
-                    fontSize: collapsed ? undefined : '0.95rem',
-                    color: isActive ? '#fff' : 'rgba(255,255,255,.75)',
-                    backgroundColor: isActive ? '#0d6efd' : 'transparent',
-                    gap: '8px',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = '#0d6efd';
-                      e.currentTarget.style.color = '#fff';
-                    }
+                  className={`my-0.5 flex items-center gap-2 rounded-button py-2.5 no-underline transition-colors ${collapsed ? 'justify-center px-0' : 'px-[15px] text-[0.95rem]'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
+                  onMouseEnter={() => {
                     const cfg = prefetchMap[link.href]
                     if (cfg) prefetch(cfg)
                   }}
-                  onMouseLeave={(e) => {
-                    if (!isActive) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'rgba(255,255,255,.75)';
-                    }
-                  }}
                 >
-                  <Icon className="shrink-0" style={{ width: collapsed ? '20px' : '16px', height: collapsed ? '20px' : '16px' }} />
+                  <Icon className={collapsed ? 'h-5 w-5 shrink-0' : 'h-4 w-4 shrink-0'} />
                   {!collapsed && <span className="truncate">{link.label}</span>}
                 </Link>
               )
@@ -169,7 +139,7 @@ export default function Sidebar() {
          })}
       </nav>
 
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '6px 12px' }} />
+      <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />
     </aside>
   )
 }

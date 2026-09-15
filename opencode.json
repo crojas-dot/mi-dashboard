@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "coreui-docs": {
+      "type": "local",
+      "command": ["npx", "-y", "@coreui/docs-mcp", "--framework", "react"],
+      "enabled": true
+    },
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp?project_ref=fykhrrpeoehwqznccmfp&features=docs%2Caccount%2Cdatabase%2Cdebugging%2Cdevelopment%2Cfunctions%2Cbranching",
+      "enabled": true
+    }
+  }
+}

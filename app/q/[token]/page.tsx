@@ -93,7 +93,7 @@ export default function FormularioQuejaPublicaPage() {
 
   if (estado.status === 'cargando') {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
+      <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     )
@@ -101,11 +101,11 @@ export default function FormularioQuejaPublicaPage() {
 
   if (estado.status === 'invalid') {
     return (
-      <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-        <div className="w-full max-w-md rounded-lg border bg-white p-8 text-center" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
-          <div className="mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#dc3545', fontSize: '20px' }}>!</div>
-          <h2 className="font-bold m-0" style={{ fontSize: '1.15rem', color: '#212529' }}>Enlace no válido</h2>
-          <p className="mt-2 text-sm" style={{ color: '#6c757d' }}>Este enlace no es válido o ya no está disponible.</p>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-card border border-qms-border bg-qms-surface p-8 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-qms-danger text-xl font-bold text-white">!</div>
+          <h2 className="m-0 text-[1.15rem] font-bold text-qms-dark">Enlace no válido</h2>
+          <p className="mt-2 text-sm text-qms-muted">Este enlace no es válido o ya no está disponible.</p>
         </div>
       </div>
     )
@@ -235,22 +235,22 @@ export default function FormularioQuejaPublicaPage() {
 
   if (folioRegistrado) {
     return (
-      <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-        <div className="w-full max-w-md rounded-lg border bg-white p-8 text-center" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
-          <div className="mx-auto mb-3 flex items-center justify-center rounded-full font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#198754', fontSize: '20px' }}>✓</div>
-          <h2 className="font-bold m-0" style={{ fontSize: '1.15rem', color: '#212529' }}>Queja registrada</h2>
-          <p className="mt-2 text-sm" style={{ color: '#6c757d' }}>
+      <div className="flex min-h-screen items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-card border border-qms-border bg-qms-surface p-8 text-center shadow-sm">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-qms-success text-xl font-bold text-white">✓</div>
+          <h2 className="m-0 text-[1.15rem] font-bold text-qms-dark">Queja registrada</h2>
+          <p className="mt-2 text-sm text-qms-muted">
             Tu queja fue registrada con el número{' '}
-            <strong className="font-mono" style={{ color: '#0d6efd' }}>{folioRegistrado}</strong>.
+            <strong className="font-mono text-qms-primary">{folioRegistrado}</strong>.
             Guardalo para dar seguimiento.
           </p>
           {resumenEvidencias && resumenEvidencias.subidos > 0 && (
-            <p className="mt-3 text-sm font-medium m-0" style={{ color: '#198754' }}>
+            <p className="m-0 mt-3 text-sm font-medium text-qms-success">
               Se adjuntaron {resumenEvidencias.subidos} de {resumenEvidencias.total} evidencia(s) correctamente.
             </p>
           )}
           {resumenEvidencias && resumenEvidencias.fallidos.length > 0 && (
-            <p className="mt-2 text-xs leading-relaxed m-0" style={{ color: '#dc3545' }}>
+            <p className="m-0 mt-2 text-xs leading-relaxed text-qms-danger">
               No se pudieron subir: {resumenEvidencias.fallidos.join(', ')}. Podés reportarlo citando tu folio.
             </p>
           )}
@@ -262,46 +262,46 @@ export default function FormularioQuejaPublicaPage() {
   const campoDeshabilitado = enviando
 
   return (
-    <div className="flex items-center justify-center p-4" style={{ minHeight: '100vh' }}>
-      <div className="w-full max-w-lg rounded-lg border bg-white p-8" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="w-full max-w-lg rounded-card border border-qms-border bg-qms-surface p-8 shadow-sm">
         <div className="mb-5 text-center">
-          <div className="mx-auto mb-3 flex items-center justify-center rounded-lg font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#0d6efd', fontSize: '20px' }}>E</div>
-          <h2 className="font-bold m-0" style={{ fontSize: '1.25rem', color: '#212529' }}>Registro de queja</h2>
-          <p className="mt-1" style={{ color: '#6c757d', fontSize: '0.85rem' }}>{estado.formulario?.nombre || 'Formulario de quejas'}</p>
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-card bg-qms-primary text-xl font-bold text-white">E</div>
+          <h2 className="m-0 text-xl font-bold text-qms-dark">Registro de queja</h2>
+          <p className="mt-1 text-[0.85rem] text-qms-muted">{estado.formulario?.nombre || 'Formulario de quejas'}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Nombre *</label>
-            <input required disabled={campoDeshabilitado} className="w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" style={{ borderColor: '#dee2e6' }} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Nombre *</label>
+            <input required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={nombre} onChange={(e) => setNombre(e.target.value)} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Correo electrónico *</label>
-              <input type="email" required disabled={campoDeshabilitado} className="w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" style={{ borderColor: '#dee2e6' }} value={email} onChange={(e) => setEmail(e.target.value)} />
+              <label className="mb-1 block text-sm font-medium text-qms-dark">Correo electrónico *</label>
+              <input type="email" required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Teléfono</label>
-              <input disabled={campoDeshabilitado} className="w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" style={{ borderColor: '#dee2e6' }} value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+              <label className="mb-1 block text-sm font-medium text-qms-dark">Teléfono</label>
+              <input disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Categoría *</label>
-            <select required disabled={campoDeshabilitado} className="w-full rounded-lg border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" style={{ borderColor: '#dee2e6', backgroundColor: '#fff' }} value={categoria} onChange={(e) => setCategoria(e.target.value)}>
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Categoría *</label>
+            <select required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
               <option value="">Seleccionar categoría</option>
               {CATEGORIAS_PUBLICAS.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Descripción *</label>
-            <textarea required rows={4} disabled={campoDeshabilitado} className="w-full rounded-lg border px-3 py-2 text-sm resize-none disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" style={{ borderColor: '#dee2e6' }} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Descripción *</label>
+            <textarea required rows={4} disabled={campoDeshabilitado} className="w-full resize-none rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Evidencias (opcional)</label>
-            <label className={`flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-3 py-2.5 text-sm transition-colors hover:bg-gray-50 ${enviando ? 'pointer-events-none opacity-60' : ''}`} style={{ borderColor: '#dee2e6' }}>
-              <Paperclip className="h-4 w-4 shrink-0" style={{ color: '#6c757d' }} />
-              <span style={{ color: '#6c757d' }}>
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Evidencias (opcional)</label>
+            <label className={`flex cursor-pointer items-center gap-2 rounded-button border border-dashed border-qms-border px-3 py-2.5 text-sm transition-colors hover:bg-gray-50 ${enviando ? 'pointer-events-none opacity-60' : ''}`}>
+              <Paperclip className="h-4 w-4 shrink-0 text-qms-muted" />
+              <span className="text-qms-muted">
                 {archivos.length > 0 ? `${archivos.length} archivo(s) seleccionado(s)` : 'Adjuntar imágenes, PDF, texto u Office (máx. 4 MB c/u)'}
               </span>
               <input
@@ -319,10 +319,10 @@ export default function FormularioQuejaPublicaPage() {
             {archivos.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {archivos.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="flex select-text items-center gap-2 rounded-md border px-2 py-1" style={{ borderColor: '#dee2e6' }}>
-                    <span className="min-w-0 flex-1 truncate text-xs" style={{ color: '#212529' }}>{f.name}</span>
-                    <span className="whitespace-nowrap text-xs" style={{ color: '#6c757d' }}>{formatBytes(f.size)}</span>
-                    <button type="button" onClick={() => quitarArchivo(i)} disabled={enviando} title="Quitar archivo" className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40" style={{ color: '#6c757d' }}>
+                  <li key={`${f.name}-${i}`} className="flex select-text items-center gap-2 rounded-md border border-qms-border px-2 py-1">
+                    <span className="min-w-0 flex-1 truncate text-xs text-qms-dark">{f.name}</span>
+                    <span className="whitespace-nowrap text-xs text-qms-muted">{formatBytes(f.size)}</span>
+                    <button type="button" onClick={() => quitarArchivo(i)} disabled={enviando} title="Quitar archivo" className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 text-qms-muted">
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </li>
@@ -334,8 +334,7 @@ export default function FormularioQuejaPublicaPage() {
           <button
             type="submit"
             disabled={enviando}
-            className="flex w-full items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-white transition-opacity disabled:cursor-wait disabled:opacity-50"
-            style={{ backgroundColor: '#0d6efd', border: 'none' }}
+            className="flex w-full items-center justify-center gap-2 rounded-button py-2 text-sm font-medium text-white bg-qms-primary hover:bg-qms-primary-hover transition-opacity disabled:cursor-wait disabled:opacity-50 border-0"
           >
             {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
             {enviando ? (etapaEnvio || 'Enviando...') : 'Enviar queja'}

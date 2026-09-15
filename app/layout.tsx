@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import "./globals.css"
 import QueryProvider from "@/lib/providers/QueryProvider"
 import ToastProvider from "@/lib/providers/ToastProvider"
@@ -9,6 +10,8 @@ export const metadata: Metadata = {
   description: "Ente Costarricense de Acreditación",
 }
 
+const inter = Inter({ subsets: ["latin"] })
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -16,7 +19,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className="select-none">
+      <body className={`${inter.className} select-none`}>
         <QueryProvider>
           <AuthShell>{children}</AuthShell>
           <ToastProvider />

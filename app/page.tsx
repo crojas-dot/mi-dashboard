@@ -12,6 +12,13 @@ const estadoBadge: Record<string, string> = {
   Publicado: 'green', Borrador: 'gray', Activo: 'green', Inactivo: 'gray',
 }
 
+const indicatorBg: Record<string, string> = {
+  '#dc3545': 'bg-qms-danger',
+  '#fd7e14': 'bg-qms-warning',
+  '#0d6efd': 'bg-qms-primary',
+  '#198754': 'bg-qms-success',
+}
+
 export default function DashboardPage() {
   const { data, isPending, error, refetch } = useDashboard()
   const actividad = useActividadReciente()
@@ -24,12 +31,12 @@ export default function DashboardPage() {
     <div>
       <PageHeader title="Dashboard" description="Panel de control general" />
 
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {indicadores.map((ind) => (
-          <Link key={ind.label} href={ind.url} className="block text-white no-underline rounded-lg" style={{ backgroundColor: ind.color }}>
+          <Link key={ind.label} href={ind.url} className={`block rounded-card text-white no-underline ${indicatorBg[ind.color] || 'bg-qms-primary'}`}>
             <div className="p-4">
-              <h6 style={{ fontSize: '1rem', fontWeight: 400, margin: 0 }}>{ind.label}</h6>
-              <h2 className="font-bold m-0" style={{ fontSize: '2rem' }}>{ind.valor}</h2>
+              <h6 className="m-0 text-base font-normal">{ind.label}</h6>
+              <h2 className="m-0 text-[2rem] font-bold">{ind.valor}</h2>
             </div>
           </Link>
         ))}
@@ -37,7 +44,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
-          <h6 className="font-bold mb-2" style={{ fontSize: '1rem', color: '#212529' }}>Expedientes Pendientes</h6>
+          <h6 className="mb-2 text-base font-bold text-qms-dark">Expedientes Pendientes</h6>
           <Table>
             <TableHead>
               <tr>
@@ -49,14 +56,14 @@ export default function DashboardPage() {
             </TableHead>
             <tbody>
               {tareas.length === 0 ? (
-                <tr><td colSpan={4} className="px-3 py-4 text-center" style={{ color: '#6c757d' }}>No hay expedientes pendientes</td></tr>
+                <tr><td colSpan={4} className="px-3 py-4 text-center text-qms-muted">No hay expedientes pendientes</td></tr>
               ) : (
                 tareas.map((t) => (
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.titulo}</TableCell>
-                    <TableCell><span style={{ color: '#6c757d' }}>{t.tipo}</span></TableCell>
+                    <TableCell><span className="text-qms-muted">{t.tipo}</span></TableCell>
                     <TableCell><Badge variant={estadoBadge[t.estado] || 'gray'}>{t.estado}</Badge></TableCell>
-                    <TableCell style={{ color: '#6c757d' }}>{t.vence ? new Date(t.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'}</TableCell>
+                    <TableCell className="text-qms-muted">{t.vence ? new Date(t.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'}</TableCell>
                   </TableRow>
                 ))
               )}
@@ -65,8 +72,8 @@ export default function DashboardPage() {
         </div>
 
         <div>
-          <h6 className="font-bold mb-2" style={{ fontSize: '1rem', color: '#212529' }}>Actividad Reciente</h6>
-          <div className="rounded-lg border divide-y" style={{ borderColor: '#dee2e6' }}>
+          <h6 className="mb-2 text-base font-bold text-qms-dark">Actividad Reciente</h6>
+          <div className="divide-y rounded-card border border-qms-border">
             {actividad.isPending ? <p className="p-3 text-sm">Cargando actividad…</p>
               : actividad.error ? <p role="alert" className="p-3 text-sm">No se pudo cargar la actividad. <button className="underline" onClick={() => void actividad.refetch()}>Reintentar</button></p>
               : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>

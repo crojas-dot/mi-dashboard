@@ -104,9 +104,9 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4" style={{ backgroundColor: 'rgba(0,0,0,0.6)' }} onClick={onClose}>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4 bg-black/60" onClick={onClose}>
       <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex shrink-0 items-center gap-2 px-4 py-2.5 text-white" style={{ backgroundColor: '#212529' }}>
+        <div className="flex shrink-0 items-center gap-2 px-4 py-2.5 text-white bg-qms-dark">
           <FileText className="h-4 w-4 shrink-0 opacity-70" />
           <span className="min-w-0 flex-1 select-text truncate text-sm font-semibold">{adjunto.nombre}</span>
           <span className="hidden whitespace-nowrap text-xs opacity-60 sm:inline">{formatBytes(adjunto.tamano)}</span>
@@ -144,7 +144,7 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto bg-qms-hover-bg">
           {drive ? (
             <iframe
               src={`https://drive.google.com/file/d/${adjunto.storage_path}/preview`}

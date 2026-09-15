@@ -47,10 +47,10 @@ export default function CambiarMiPasswordModal({ open, onClose }: Props) {
     <Modal open={open} onClose={onClose} title="Cambiar contraseña" size="sm">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex items-center gap-2">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#e7f1ff' }}>
-            <Lock className="h-5 w-5" style={{ color: '#0d6efd' }} />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-soft-blue-bg">
+            <Lock className="h-5 w-5 text-qms-primary" />
           </div>
-          <p className="m-0 text-sm" style={{ color: '#6c757d' }}>
+          <p className="m-0 text-sm text-qms-muted">
             Define una nueva contraseña para tu cuenta. Debe tener al menos 8 caracteres.
           </p>
         </div>
@@ -67,22 +67,20 @@ export default function CambiarMiPasswordModal({ open, onClose }: Props) {
           placeholder: 'Repite la nueva contraseña',
         }].map((campo) => (
           <div key={campo.label}>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>{campo.label}</label>
+            <label className="mb-1 block text-sm font-medium text-qms-dark">{campo.label}</label>
             <div className="relative">
               <input
                 required
                 type={mostrar ? 'text' : 'password'}
                 placeholder={campo.placeholder}
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                style={{ paddingRight: '2.25rem' }}
+                className="w-full rounded-button border border-qms-border bg-qms-surface px-3 py-2 pr-9 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
                 value={campo.value}
                 onChange={(e) => campo.set(e.target.value)}
               />
               <button
                 type="button"
                 onClick={() => setMostrar((v) => !v)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center"
-                style={{ border: 'none', background: 'transparent', color: '#6c757d', cursor: 'pointer' }}
+                className="absolute right-2 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent text-qms-muted"
                 title={mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {mostrar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

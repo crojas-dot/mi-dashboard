@@ -46,10 +46,10 @@ export default function ModoVistaActiva() {
         Simulá la interfaz de otro rol sin salir de tu sesión. El acceso a Configuración siempre se mantiene para el
         administrador, por lo que podés revertir la vista en cualquier momento.
       </p>
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+      <div className="overflow-hidden rounded-card border border-qms-border">
         <table className="w-full select-text text-sm">
           <thead>
-            <tr style={{ backgroundColor: '#343a40' }}>
+            <tr className="bg-qms-header">
               <th className="px-3 py-2 text-left font-semibold text-white">Rol</th>
               <th className="px-3 py-2 text-left font-semibold text-white">Descripción</th>
               <th className="px-3 py-2 text-center font-semibold text-white w-40">Vista activa</th>

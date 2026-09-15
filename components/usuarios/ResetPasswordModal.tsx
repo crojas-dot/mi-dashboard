@@ -75,25 +75,24 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
   return (
     <Modal open={open} onClose={cerrar} title="Resetear contraseña" size="sm">
       <div className="space-y-4">
-        <p className="m-0 text-sm" style={{ color: '#495057' }}>
-          Genera una nueva contraseña para <span className="font-semibold" style={{ color: '#212529' }}>{usuario?.nombre}</span>.
+        <p className="m-0 text-sm text-gray-600">
+          Genera una nueva contraseña para <span className="font-semibold text-qms-dark">{usuario?.nombre}</span>.
         </p>
 
         {password ? (
           <div className="space-y-3">
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100" style={{ borderColor: '#e9ecef', backgroundColor: '#fff' }}>
-              <KeyRound className="h-4 w-4 shrink-0" style={{ color: '#0d6efd' }} />
+            <div className="flex items-center gap-2 rounded-card border border-gray-200 bg-qms-surface px-3 py-2 transition focus-within:border-qms-primary focus-within:ring-2 focus-within:ring-blue-100">
+              <KeyRound className="h-4 w-4 shrink-0 text-qms-primary" />
               <input
                 type={show ? 'text' : 'password'}
                 readOnly
                 value={password}
-                className="min-w-0 flex-1 bg-transparent font-mono text-sm outline-none"
-                style={{ color: '#212529' }}
+                className="min-w-0 flex-1 bg-transparent font-mono text-sm text-qms-dark outline-none"
               />
-              <button type="button" onClick={() => setShow(!show)} className="shrink-0 transition-colors hover:opacity-70" style={{ color: '#6c757d', border: 'none', background: 'none', cursor: 'pointer' }} title={show ? 'Ocultar' : 'Mostrar'}>
+              <button type="button" onClick={() => setShow(!show)} className="shrink-0 cursor-pointer border-0 bg-transparent text-qms-muted transition-colors hover:opacity-70" title={show ? 'Ocultar' : 'Mostrar'}>
                 {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
-              <button type="button" onClick={limpiar} className="shrink-0 transition-colors hover:opacity-70" style={{ color: '#6c757d', border: 'none', background: 'none', cursor: 'pointer' }} title="Limpiar">
+              <button type="button" onClick={limpiar} className="shrink-0 cursor-pointer border-0 bg-transparent text-qms-muted transition-colors hover:opacity-70" title="Limpiar">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -114,8 +113,8 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between rounded-lg border border-dashed px-3 py-3" style={{ borderColor: '#d0d5dd', backgroundColor: '#fafafa' }}>
-            <span className="text-sm" style={{ color: '#6c757d' }}>No hay contraseña generada</span>
+          <div className="flex items-center justify-between rounded-card border border-dashed border-gray-300 bg-gray-50 px-3 py-3">
+            <span className="text-sm text-qms-muted">No hay contraseña generada</span>
             <Button type="button" size="sm" onClick={generar}>
               <RefreshCw className="h-3.5 w-3.5" /> Generar
             </Button>

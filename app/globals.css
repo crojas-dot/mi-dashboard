@@ -19,18 +19,26 @@
   /* Colores base */
   --color-qms-primary: #0d6efd;
   --color-qms-primary-dark: #0b5ed7;
+  --color-qms-primary-hover: #0b5ed7;
   --color-qms-dark: #212529;
   --color-qms-muted: #6c757d;
   --color-qms-border: #dee2e6;
   --color-qms-header: #343a40;
   --color-qms-surface: #ffffff;
   --color-qms-background: #f4f7f6;
+  --color-qms-danger: #dc3545;
+  --color-qms-success: #198754;
+  --color-qms-warning: #e0a800;
+  --color-qms-info: #0d6efd;
+  --color-qms-purple: #6f42c1;
+  --color-qms-hover-bg: #f8f9fa;
   --color-qms-scroll: #cbd5e1;
   --color-qms-scroll-hover: #94a3b8;
 
-  /* Token para focus (antes inexistente) */
-  --color-primary: #0d6efd;       /* alias para compatibilidad */
-  --color-border: #dee2e6;        /* alias para compatibilidad */
+  /* Radios semánticos para componentes reutilizables */
+  --radius-button: 0.25rem;
+  --radius-card: 0.375rem;
+  --radius-modal: 0.375rem;
 
   /* Fondos semánticos */
   --color-soft-blue-bg: #e7f1ff;
@@ -56,7 +64,7 @@
 body {
   background-color: var(--color-qms-background);
   color: var(--color-qms-dark);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: inherit;
   font-size: 0.875rem;
 }
 
@@ -65,7 +73,7 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-primary);
+  outline: 2px solid var(--color-qms-primary);
   outline-offset: 2px;
 }
 

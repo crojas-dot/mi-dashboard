@@ -583,22 +583,22 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4" style={{ color: '#0d6efd' }} />
-        <h3 className="text-sm font-semibold text-gray-800">Proveedores de IA</h3>
-        <span className="text-xs text-gray-400">Sin modelos fijos: cualquier endpoint compatible funciona.</span>
+        <Sparkles className="h-4 w-4 text-qms-primary" />
+        <h3 className="text-sm font-semibold text-qms-dark">Proveedores de IA</h3>
+        <span className="text-xs text-qms-muted">Sin modelos fijos: cualquier endpoint compatible funciona.</span>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
         <Button size="sm" variant="secondary" onClick={abrirNuevo}>
           <Plus className="h-3.5 w-3.5" /> Nuevo proveedor
         </Button>
-        <span className="text-xs text-gray-400">Los cambios se guardan automáticamente al agregar o eliminar.</span>
+        <span className="text-xs text-qms-muted">Los cambios se guardan automáticamente al agregar o eliminar.</span>
       </div>
 
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+      <div className="rounded-lg border border-qms-border overflow-hidden">
         <table className="w-full select-text text-sm">
           <thead>
-            <tr style={{ backgroundColor: '#343a40' }}>
+            <tr className="bg-qms-header">
               <th className="px-3 py-2 text-left font-semibold text-white">Nombre</th>
               <th className="px-3 py-2 text-left font-semibold text-white">Tipo</th>
               <th className="px-3 py-2 text-left font-semibold text-white">URL Base</th>
@@ -660,8 +660,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                         <button
                           type="button"
                           onClick={() => setMostrarKey((m) => ({ ...m, [p.id]: !m[p.id] }))}
-                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 border-0 cursor-pointer bg-transparent"
                           title={visible ? 'Ocultar' : 'Mostrar'}
                         >
                           {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -682,8 +681,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                         <button
                           type="button"
                           onClick={() => probarConexion(p.id)}
-                          className="rounded p-1 text-gray-400 hover:text-blue-600 transition-colors"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded p-1 text-gray-400 hover:text-blue-600 transition-colors border-0 cursor-pointer bg-transparent"
                           title="Probar conexión y actualizar consumo"
                         >
                           <Wifi className="h-3.5 w-3.5" />
@@ -691,8 +689,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                         <button
                           type="button"
                           onClick={() => reiniciarContador(p.id)}
-                          className="rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500 border-0 cursor-pointer bg-transparent"
                           title="Reiniciar contador"
                         >
                           <RotateCcw className="h-3 w-3" />
@@ -705,8 +702,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                           type="button"
                           onClick={() => abrirTestModal(p.id)}
                           disabled={syncingModels.has(p.id) || p.modelos.length === 0}
-                          className="rounded p-1 text-gray-400 hover:text-purple-600 transition-colors disabled:opacity-50"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded p-1 text-gray-400 hover:text-purple-600 transition-colors disabled:opacity-50 border-0 cursor-pointer bg-transparent"
                           title="Testear modelos con prompts de prueba"
                         >
                           <Play className="h-3.5 w-3.5" />
@@ -715,8 +711,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                           type="button"
                           onClick={() => sincronizarModelos(p.id)}
                           disabled={syncingModels.has(p.id) || testModal.enCurso && testModal.providerId === p.id}
-                          className="rounded p-1 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded p-1 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50 border-0 cursor-pointer bg-transparent"
                           title="Sincronizar modelos desde el proveedor"
                         >
                           {syncingModels.has(p.id) ? (
@@ -727,15 +722,13 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                         </button>
                         <button
                           onClick={() => abrirEditar(p)}
-                          className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 border-0 cursor-pointer bg-transparent"
                         >
                           Editar
                         </button>
                         <button
                           onClick={() => eliminarProveedor(p.id)}
-                          className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                          style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}
+                          className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 border-0 cursor-pointer bg-transparent"
                         >
                           <Trash2 className="h-3.5 w-3.5 inline" />
                         </button>
@@ -1061,14 +1054,11 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
             </div>
           )}
 
-          <div
-            className="rounded-lg border overflow-hidden"
-            style={{ borderColor: '#dee2e6', maxHeight: '50vh' }}
-          >
-            <div className="overflow-y-auto monday-scroll" style={{ maxHeight: 'calc(50vh - 8px)' }}>
+          <div className="rounded-lg border border-qms-border overflow-hidden max-h-[50vh]">
+            <div className="overflow-y-auto monday-scroll max-h-[calc(50vh-8px)]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
-                  <tr style={{ backgroundColor: '#343a40' }}>
+                  <tr className="bg-qms-header">
                     <th className="px-3 py-2 text-left font-semibold text-white">Modelo</th>
                     <th className="px-3 py-2 text-center font-semibold text-white w-24">Estado</th>
                   </tr>

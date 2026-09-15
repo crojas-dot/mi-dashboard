@@ -324,8 +324,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
             <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" style={{ color: '#0d6efd' }} />
-                <h2 className="text-xs font-medium uppercase tracking-wider text-blue-700">Asistente IA</h2>
+                <Sparkles className="h-4 w-4 text-qms-primary" />
+                <h2 className="text-xs font-medium uppercase tracking-wider text-qms-primary">Asistente IA</h2>
               </div>
               <p className="mt-1 text-xs text-blue-900/70">Analizá la queja con el proveedor configurado en Configuración → IA.</p>
               <div className="mt-3 flex items-center gap-2">

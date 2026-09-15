@@ -159,9 +159,9 @@ export default function ConfiguracionPage() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {loading || (tab === 'general' && configsLoading) || (tab === 'formularios' && formulariosLoading) ? (
-          <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+          <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
         ) : tab === 'catalogos' ? (
           <div className="space-y-4">
             <div className="flex items-center gap-2 flex-wrap">
@@ -173,7 +173,7 @@ export default function ConfiguracionPage() {
                 {tiposDisponibles.map((t) => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
               </Select>
               <button onClick={() => setEditCatalogo({ modulo: moduloSel, valor: '', color: 'gray', orden: 0, activo: true })}
-                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors" style={{ border: 'none', cursor: 'pointer' }}>
+                className="inline-flex items-center gap-1 rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-qms-primary-hover">
                 <Plus className="h-3.5 w-3.5" /> Agregar
               </button>
             </div>
@@ -186,15 +186,15 @@ export default function ConfiguracionPage() {
                 </Select>
                 <input className="rounded-md border border-gray-300 px-2 py-1.5 text-sm w-16" type="number" placeholder="Orden" value={editCatalogo.orden ?? 0} onChange={(e) => setEditCatalogo({ ...editCatalogo, orden: parseInt(e.target.value) || 0 })} />
                 <label className="flex items-center gap-1.5 text-sm whitespace-nowrap"><input type="checkbox" checked={editCatalogo.activo ?? true} onChange={(e) => setEditCatalogo({ ...editCatalogo, activo: e.target.checked })} /> Activo</label>
-                <button onClick={guardarCatalogo} className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700" style={{ border: 'none', cursor: 'pointer' }}><Save className="h-3.5 w-3.5 inline" /> Guardar</button>
-                <button onClick={() => setEditCatalogo({})} className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Cancelar</button>
+                <button onClick={guardarCatalogo} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover"><Save className="inline h-3.5 w-3.5" /> Guardar</button>
+                <button onClick={() => setEditCatalogo({})} className="rounded-button border-0 bg-transparent px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200">Cancelar</button>
               </div>
             )}
 
-            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+            <div className="overflow-hidden rounded-card border border-qms-border">
               <table className="w-full select-text text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#343a40' }}>
+                  <tr className="bg-qms-header">
                     <th className="px-3 py-2 text-left font-semibold text-white">Valor</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Color</th>
                     <th className="px-3 py-2 text-left font-semibold text-white w-16">Orden</th>
@@ -213,8 +213,8 @@ export default function ConfiguracionPage() {
                       <td className="px-3 py-2">{c.activo ? <Check className="h-4 w-4 text-green-600" /> : <X className="h-4 w-4 text-red-600" />}</td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => setEditCatalogo(c)} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Editar</button>
-                          <button onClick={() => eliminarCatalogo(c.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Eliminar</button>
+                          <button onClick={() => setEditCatalogo(c)} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50">Editar</button>
+                          <button onClick={() => eliminarCatalogo(c.id)} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">Eliminar</button>
                         </div>
                       </td>
                     </tr>
@@ -226,7 +226,7 @@ export default function ConfiguracionPage() {
         ) : tab === 'sla' ? (
           <div className="space-y-4">
             <button onClick={() => setEditSLA({ proceso: '', prioridad: '', dias_alerta: 0, dias_vencimiento: 0 })}
-              className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors" style={{ border: 'none', cursor: 'pointer' }}>
+              className="inline-flex items-center gap-1 rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-qms-primary-hover">
               <Plus className="h-3.5 w-3.5" /> Nueva configuración SLA
             </button>
 
@@ -239,15 +239,15 @@ export default function ConfiguracionPage() {
                 <input className="rounded-md border border-gray-300 px-2.5 py-1.5 text-sm" placeholder="Prioridad" value={editSLA.prioridad || ''} onChange={(e) => setEditSLA({ ...editSLA, prioridad: e.target.value })} />
                 <input className="rounded-md border border-gray-300 px-2 py-1.5 text-sm w-20" type="number" placeholder="Alerta (días)" value={editSLA.dias_alerta ?? 0} onChange={(e) => setEditSLA({ ...editSLA, dias_alerta: parseInt(e.target.value) || 0 })} />
                 <input className="rounded-md border border-gray-300 px-2 py-1.5 text-sm w-24" type="number" placeholder="Vencimiento (días)" value={editSLA.dias_vencimiento ?? 0} onChange={(e) => setEditSLA({ ...editSLA, dias_vencimiento: parseInt(e.target.value) || 0 })} />
-                <button onClick={guardarSLA} className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700" style={{ border: 'none', cursor: 'pointer' }}><Save className="h-3.5 w-3.5 inline" /> Guardar</button>
-                <button onClick={() => setEditSLA({})} className="rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Cancelar</button>
+                <button onClick={guardarSLA} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover"><Save className="inline h-3.5 w-3.5" /> Guardar</button>
+                <button onClick={() => setEditSLA({})} className="rounded-button border-0 bg-transparent px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-200">Cancelar</button>
               </div>
             )}
 
-            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+            <div className="overflow-hidden rounded-card border border-qms-border">
               <table className="w-full select-text text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#343a40' }}>
+                  <tr className="bg-qms-header">
                     <th className="px-3 py-2 text-left font-semibold text-white">Proceso</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Prioridad</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Alerta (días)</th>
@@ -265,7 +265,7 @@ export default function ConfiguracionPage() {
                       <td className="px-3 py-2">{s.dias_alerta}d</td>
                       <td className="px-3 py-2 font-semibold">{s.dias_vencimiento}d</td>
                       <td className="px-3 py-2 text-center">
-                        <button onClick={() => eliminarSLA(s.id)} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Eliminar</button>
+                        <button onClick={() => eliminarSLA(s.id)} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50">Eliminar</button>
                       </td>
                     </tr>
                   ))}
@@ -278,15 +278,15 @@ export default function ConfiguracionPage() {
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-600">Enlaces públicos de registro de quejas. Cualquier persona con el enlace puede enviar una queja sin iniciar sesión.</p>
               <button onClick={() => setNuevoFormOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition-colors shrink-0" style={{ backgroundColor: '#0d6efd', height: '38px', padding: '0 14px', border: 'none', cursor: 'pointer' }}>
+                className="inline-flex h-[38px] shrink-0 items-center gap-1.5 rounded-button border-0 bg-qms-primary px-3.5 text-sm font-medium text-white transition-colors hover:bg-qms-primary-hover">
                 <Plus className="h-4 w-4" /> Nuevo enlace
               </button>
             </div>
 
-            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+            <div className="overflow-hidden rounded-card border border-qms-border">
               <table className="w-full select-text text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#343a40' }}>
+                  <tr className="bg-qms-header">
                     <th className="px-3 py-2 text-left font-semibold text-white">Nombre</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Estado</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Creado</th>
@@ -314,20 +314,20 @@ export default function ConfiguracionPage() {
                             <button onClick={() => {
                               navigator.clipboard?.writeText(url)
                               showSuccess('Enlace copiado')
-                            }} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }} title="Copiar URL">
+                            }} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" title="Copiar URL">
                               <LinkIcon className="h-3.5 w-3.5 inline" /> Copiar
                             </button>
                             <button onClick={async () => {
                               try { await toggleFormulario.mutateAsync({ id: f.id, activo: !f.activo }); showSuccess(f.activo ? 'Enlace desactivado' : 'Enlace activado') }
                               catch (e) { showError(e as Error, 'No se pudo cambiar el estado') }
-                            }} className="rounded px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>
+                            }} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100">
                               {f.activo ? 'Desactivar' : 'Activar'}
                             </button>
                             <button onClick={async () => {
                               if (!confirm('¿Eliminar este enlace? Las quejas ya enviadas se conservan.')) return
                               try { await eliminarFormulario.mutateAsync(f.id); showSuccess('Enlace eliminado') }
                               catch (e) { showError(e as Error, 'No se pudo eliminar el enlace') }
-                            }} className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }} title="Eliminar">
+                            }} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50" title="Eliminar">
                               <Trash2 className="h-3.5 w-3.5 inline" />
                             </button>
                           </div>
@@ -371,10 +371,10 @@ export default function ConfiguracionPage() {
           <AIProvidersManager />
         ) : (
           <div className="space-y-4">
-            <div className="rounded-lg border overflow-hidden" style={{ borderColor: '#dee2e6' }}>
+            <div className="overflow-hidden rounded-card border border-qms-border">
               <table className="w-full select-text text-sm">
                 <thead>
-                  <tr style={{ backgroundColor: '#343a40' }}>
+                  <tr className="bg-qms-header">
                     <th className="px-3 py-2 text-left font-semibold text-white">Clave</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Valor</th>
                     <th className="px-3 py-2 text-left font-semibold text-white">Descripción</th>
@@ -404,7 +404,7 @@ export default function ConfiguracionPage() {
                       <td className="px-3 py-2 text-gray-600">{cfg.descripcion}</td>
                       <td className="px-3 py-2"><Badge variant="gray">{cfg.categoria}</Badge></td>
                       <td className="px-3 py-2 text-center">
-                        <button onClick={() => setEditConfig({ clave: cfg.clave, valor: typeof cfg.valor === 'string' ? cfg.valor : JSON.stringify(cfg.valor), descripcion: cfg.descripcion, categoria: cfg.categoria })} className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50" style={{ border: 'none', cursor: 'pointer', background: 'transparent' }}>Editar</button>
+                        <button onClick={() => setEditConfig({ clave: cfg.clave, valor: typeof cfg.valor === 'string' ? cfg.valor : JSON.stringify(cfg.valor), descripcion: cfg.descripcion, categoria: cfg.categoria })} className="rounded-button border-0 bg-transparent px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50">Editar</button>
                       </td>
                     </tr>
                   ))}

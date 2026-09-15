@@ -111,12 +111,12 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
             </Select>
           </div>
         </div>
-        <div className="flex items-center justify-between gap-2 border-t pt-4" style={{ borderColor: '#e9ecef' }}>
+        <div className="flex items-center justify-between gap-2 border-t border-gray-200 pt-4">
           <div>
             {esEditar && usuario && !esAuto && (
               confirmarEliminar ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium" style={{ color: '#dc3545' }}>¿Eliminar a {usuario.nombre}?</span>
+                  <span className="text-sm font-medium text-qms-danger">¿Eliminar a {usuario.nombre}?</span>
                   <Button type="button" size="sm" variant="secondary" onClick={() => setConfirmarEliminar(false)}>Cancelar</Button>
                   <Button type="button" size="sm" variant="danger" onClick={handleEliminar} loading={eliminando}>
                     <Trash2 className="h-3.5 w-3.5" /> Eliminar

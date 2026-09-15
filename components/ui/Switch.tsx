@@ -14,28 +14,10 @@ export default function Switch({ checked, onChange, disabled }: SwitchProps) {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="relative inline-flex shrink-0 items-center transition-colors"
-      style={{
-        width: '36px',
-        height: '20px',
-        borderRadius: '10px',
-        backgroundColor: checked ? '#0d6efd' : '#d1d5db',
-        border: 'none',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        padding: 0,
-        opacity: disabled ? 0.5 : 1,
-      }}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border-0 p-0 transition-colors ${checked ? 'bg-qms-primary' : 'bg-qms-border'} ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
     >
       <span
-        className="inline-block transition-transform"
-        style={{
-          width: '16px',
-          height: '16px',
-          borderRadius: '50%',
-          backgroundColor: '#fff',
-          transform: checked ? 'translateX(16px)' : 'translateX(2px)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-        }}
+        className={`inline-block h-4 w-4 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.2)] transition-transform ${checked ? 'translate-x-4' : 'translate-x-0.5'}`}
       />
     </button>
   )

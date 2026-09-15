@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
-import { Plus, Search, Loader2, ChevronLeft, ChevronRight, CheckCircle2, ThumbsUp, CalendarRange, Eye } from 'lucide-react'
+import { Plus, Search, Loader2, CheckCircle2, ThumbsUp, CalendarRange, Eye } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
 import { useQuejas, useSLAConfig, useQuejasEstadisticas, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
@@ -12,6 +12,7 @@ import Select from '@/components/ui/Select'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import StatCard from '@/components/StatCard'
+import Pagination from '@/components/ui/Pagination'
 import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
@@ -99,7 +100,7 @@ export default function QuejasPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="Quejas" description="Registro y seguimiento de quejas">
-        <button onClick={() => setNuevaOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg text-sm font-medium text-white hover:bg-blue-700 shrink-0" style={{ backgroundColor: '#0d6efd', height: '38px', padding: '0 14px', border: 'none', cursor: 'pointer' }}>
+        <button onClick={() => setNuevaOpen(true)} className="inline-flex h-[38px] shrink-0 items-center gap-1.5 rounded-button border-0 bg-qms-primary px-3.5 text-sm font-medium text-white hover:bg-qms-primary-hover">
           <Plus className="h-4 w-4" /> Nueva queja
         </button>
       </PageHeader>
@@ -139,13 +140,10 @@ export default function QuejasPage() {
         {noVistasCount > 0 && (
           <button
             onClick={() => marcarTodasVistas(quejaIds)}
-            className="inline-flex items-center gap-1.5 rounded-lg text-xs font-medium transition-colors shrink-0"
-            style={{ height: '34px', padding: '0 10px', border: '1px solid #dee2e6', background: '#fff', color: '#495057', cursor: 'pointer' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8f9fa' }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff' }}
+            className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-button border border-qms-border bg-qms-surface px-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-qms-hover-bg"
             title="Marcar todas las quejas visibles como vistas"
           >
-            <Eye style={{ width: '14px', height: '14px' }} />
+            <Eye className="h-3.5 w-3.5" />
             {noVistasCount} sin ver
           </button>
         )}
@@ -153,8 +151,7 @@ export default function QuejasPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             placeholder="Buscar folio o cliente..."
-            className="w-full rounded-lg border border-gray-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            style={{ height: '38px' }}
+            className="h-[38px] w-full rounded-button border border-qms-border bg-qms-surface pl-9 pr-3 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
           />
@@ -169,18 +166,18 @@ export default function QuejasPage() {
         </Select>
       </div>
 
-      <div ref={tableRef} className="flex-1 overflow-auto rounded-lg border" style={{ minHeight: 0, borderColor: '#dee2e6' }}>
+      <div ref={tableRef} className="min-h-0 flex-1 overflow-auto rounded-card border border-qms-border">
         {loading ? (
-          <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+          <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
         ) : error ? (
-          <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: '300px' }}>
+          <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
             <p className="text-sm text-gray-500">No se pudieron cargar las quejas.</p>
-            <button onClick={() => refetch()} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ backgroundColor: '#0d6efd', border: 'none' }}>Reintentar</button>
+            <button onClick={() => refetch()} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover">Reintentar</button>
           </div>
         ) : (
           <table className="w-full select-text text-left text-sm">
             <thead>
-              <tr className="sticky top-0 z-10" style={{ backgroundColor: '#343a40' }}>
+              <tr className="sticky top-0 z-10 bg-qms-header">
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
                 <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
@@ -201,18 +198,13 @@ export default function QuejasPage() {
                     <tr
                       key={q.id}
                       onClick={() => handleAbrirDetalle(q)}
-                      className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50"
-                      style={vista ? {} : { backgroundColor: 'rgba(13,110,253,0.05)' }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = vista ? '#f9fafb' : 'rgba(13,110,253,0.09)'
+                      className={`cursor-pointer border-b border-gray-200 transition-colors hover:bg-gray-50 ${vista ? '' : 'bg-blue-50/50'}`}
+                      onMouseEnter={() => {
                         prefetch({
                           queryKey: quejaAdjuntosKey(q.id),
                           queryFn: () => fetchQuejaAdjuntos(q.id),
                           staleTime: Infinity,
                         })
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = vista ? '' : 'rgba(13,110,253,0.05)'
                       }}
                     >
                       <td className="px-3 py-2.5 align-middle"><span className={`font-mono text-sm ${vista ? 'font-medium' : 'font-bold text-gray-900'}`}>{q.folio}</span></td>
@@ -231,22 +223,7 @@ export default function QuejasPage() {
         )}
       </div>
 
-      {!loading && (
-        <div className="flex items-center justify-between shrink-0 pt-2.5 pb-1 text-sm">
-          <p className="text-gray-500">{totalCount} resultados</p>
-          <div className={`flex items-center gap-1 ${totalPages <= 1 ? 'opacity-40 pointer-events-none' : ''}`}>
-            <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="flex items-center justify-center rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 hover:bg-gray-100">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            {Array.from({ length: Math.max(totalPages, 1)}, (_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${page === i ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{i + 1}</button>
-            ))}
-            <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page === totalPages - 1} className="flex items-center justify-center rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 hover:bg-gray-100">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {!loading && <Pagination page={page} count={totalCount} busy={loading} onChange={setPage} />}
 
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} prioridades={prioridades} />
       <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={() => { invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />

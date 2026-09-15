@@ -13,16 +13,13 @@ export default function PageHeader({ title, description, backHref, children }: P
     <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-3">
         {backHref && (
-          <Link href={backHref} className="rounded-lg p-1.5 transition-colors no-underline" style={{ color: '#6c757d' }}
-            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#f8f9fa'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-          >
+          <Link href={backHref} className="rounded-button p-1.5 text-qms-muted no-underline transition-colors hover:bg-qms-hover-bg">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         )}
         <div>
-          <h1 className="font-bold m-0" style={{ fontSize: '1.75rem', color: '#212529' }}>{title}</h1>
-          {description && <p className="m-0 mt-0.5" style={{ color: '#6c757d', fontSize: '0.85rem' }}>{description}</p>}
+          <h1 className="m-0 text-[1.75rem] font-bold text-qms-dark">{title}</h1>
+          {description && <p className="m-0 mt-0.5 text-[0.85rem] text-qms-muted">{description}</p>}
         </div>
       </div>
       {children && <div className="flex items-center gap-2">{children}</div>}

@@ -24,7 +24,7 @@ export default function LoginPage() {
 
   if (!initialized) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
+      <div className="flex min-h-[60vh] items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
       </div>
     )
@@ -42,31 +42,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex items-center justify-center" style={{ minHeight: '100vh' }}>
-      <div className="w-full max-w-sm rounded-lg border bg-white p-8" style={{ borderColor: '#dee2e6', boxShadow: '0 0.125rem 0.25rem rgba(0,0,0,0.075)' }}>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="w-full max-w-sm rounded-card border border-qms-border bg-qms-surface p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex items-center justify-center rounded-lg font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: '#0d6efd', fontSize: '20px' }}>E</div>
-          <h2 className="font-bold m-0" style={{ fontSize: '1.25rem', color: '#212529' }}>ECA-QMS</h2>
-          <p className="mt-1" style={{ color: '#6c757d', fontSize: '0.85rem' }}>Sistema de Gestión de Calidad</p>
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-card bg-qms-primary text-xl font-bold text-white">E</div>
+          <h2 className="m-0 text-xl font-bold text-qms-dark">ECA-QMS</h2>
+          <p className="mt-1 text-[0.85rem] text-qms-muted">Sistema de Gestión de Calidad</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Correo electrónico</label>
-            <input type="email" required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6' }} value={email} onChange={(e) => setEmail(e.target.value)} />
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Correo electrónico</label>
+            <input type="email" required className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary" value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Contraseña</label>
-            <input type="password" required className="w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: '#dee2e6' }} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <label className="mb-1 block text-sm font-medium text-qms-dark">Contraseña</label>
+            <input type="password" required className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary" value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
 
-          {error && <p className="text-sm" style={{ color: '#dc3545' }}>{error}</p>}
+          {error && <p className="text-sm text-qms-danger">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg py-2 text-sm font-medium text-white transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: '#0d6efd', border: 'none', cursor: 'pointer' }}
+            className="w-full rounded-button border-0 bg-qms-primary py-2 text-sm font-medium text-white transition-colors hover:bg-qms-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? 'Ingresando...' : 'Ingresar'}
           </button>

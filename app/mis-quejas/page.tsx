@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
 import { useQuejas } from '@/lib/queries/useQuejas'
@@ -10,6 +10,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
+import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
 export default function MisQuejasPage() {
@@ -47,11 +48,11 @@ export default function MisQuejasPage() {
         className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-lg border border-qms-border pb-4 ${panelOpen ? 'mr-[calc(500px-16px)]' : 'monday-scroll-no-x'}`}
       >
           {loading ? (
-            <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+            <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center gap-3" style={{ minHeight: '300px' }}>
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <p className="text-sm text-gray-500">No se pudieron cargar tus quejas.</p>
-              <button onClick={() => refetch()} className="rounded-md px-3 py-1.5 text-sm font-medium text-white" style={{ backgroundColor: '#0d6efd', border: 'none' }}>Reintentar</button>
+              <button onClick={() => refetch()} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover">Reintentar</button>
             </div>
           ) : (
             <table className={`w-full text-left text-sm select-text ${panelOpen ? 'min-w-[calc(100%+484px)]' : 'min-w-[1200px]'}`}>
@@ -92,20 +93,7 @@ export default function MisQuejasPage() {
       <QuejaColaboradorPanel queja={panelOpen} onClose={() => setPanelOpen(null)} onUpdated={invalidate} />
 
       {!loading && (
-        <div className="flex items-center justify-between shrink-0 pt-2.5 pb-1 text-sm">
-          <p className="text-gray-500">{totalCount} resultados</p>
-          <div className={`flex items-center gap-1 ${totalPages <= 1 ? 'opacity-40 pointer-events-none' : ''}`}>
-            <button onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0} className="flex items-center justify-center rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 hover:bg-gray-100">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            {Array.from({ length: Math.max(totalPages, 1) }, (_, i) => (
-              <button key={i} onClick={() => setPage(i)} className={`rounded-md px-2.5 py-1.5 text-sm font-medium transition ${page === i ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>{i + 1}</button>
-            ))}
-            <button onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page === totalPages - 1} className="flex items-center justify-center rounded-md px-2 py-1.5 text-sm font-medium transition disabled:opacity-30 disabled:cursor-not-allowed text-gray-600 hover:bg-gray-100">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
+        <Pagination page={page} count={totalCount} busy={loading} onChange={setPage} />
       )}
     </div>
   )

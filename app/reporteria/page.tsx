@@ -24,7 +24,7 @@ export default function ReporteriaPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader title="Reportería" description="Informes imprimibles por módulo" />
-      <p className="text-sm mb-4" style={{ color: '#6c757d' }}>
+      <p className="mb-4 text-sm text-qms-muted">
         Seleccione un módulo para generar un informe
       </p>
 
@@ -36,20 +36,18 @@ export default function ReporteriaPage() {
             <button
               key={m.value}
               onClick={() => { setModuloSeleccionado(m.value); setMostrarGenerador(true) }}
-              className="flex items-center gap-3 rounded-lg border bg-white p-4 text-left transition-colors hover:bg-gray-50"
-              style={{ borderColor: selected ? '#0d6efd' : '#dee2e6', cursor: 'pointer' }}
+              className={`flex cursor-pointer items-center gap-3 rounded-card border bg-qms-surface p-4 text-left transition-colors hover:bg-gray-50 ${selected ? 'border-qms-primary' : 'border-qms-border'}`}
             >
               <div
-                className="flex items-center justify-center rounded-lg shrink-0"
-                style={{ width: '40px', height: '40px', backgroundColor: selected ? '#0d6efd' : '#e7f1ff' }}
+                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-card ${selected ? 'bg-qms-primary' : 'bg-soft-blue-bg'}`}
               >
-                <Icon style={{ width: '20px', height: '20px', color: selected ? '#fff' : '#0d6efd' }} />
+                <Icon className={`h-5 w-5 ${selected ? 'text-white' : 'text-qms-primary'}`} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold m-0 truncate" style={{ color: '#212529', fontSize: '0.95rem' }}>{m.label}</p>
-                <p className="m-0 mt-0.5 text-sm" style={{ color: '#6c757d' }}>Generar informe</p>
+                <p className="m-0 truncate text-[0.95rem] font-semibold text-qms-dark">{m.label}</p>
+                <p className="m-0 mt-0.5 text-sm text-qms-muted">Generar informe</p>
               </div>
-              <ChevronRight className="h-4 w-4 shrink-0" style={{ color: '#6c757d' }} />
+              <ChevronRight className="h-4 w-4 shrink-0 text-qms-muted" />
             </button>
           )
         })}

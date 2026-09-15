@@ -15,6 +15,13 @@ import NuevoRiesgoModal from './components/NuevoRiesgoModal'
 
 const nivelColor: Record<string, string> = { Bajo: 'green', Medio: 'amber', Alto: 'red', Critico: 'red' }
 
+const matrizCellClass: Record<string, string> = {
+  Bajo: 'bg-soft-green-bg text-soft-green-text',
+  Medio: 'bg-soft-amber-bg text-soft-amber-text',
+  Alto: 'bg-soft-red-bg text-soft-red-text',
+  Critico: 'bg-soft-red-bg text-soft-red-text',
+}
+
 export default function RiesgosPage() {
   const [page, setPage] = useState(0)
   const { data: pagina, isLoading: loading, isFetching, error, refetch } = useRiesgos(page)
@@ -34,11 +41,11 @@ export default function RiesgosPage() {
   const matrizQuery = useMatrizRiesgos()
   const matriz = matrizQuery.data ?? []
 
-  const colorCelda = (p: number, i: number) => {
+  const getCellLevel = (p: number, i: number): string => {
     const m = p * i
-    if (m <= 2) return { bg: '#d1e7dd', color: '#0f5132' }
-    if (m <= 4) return { bg: '#fff3cd', color: '#664d03' }
-    return { bg: '#f8d7da', color: '#842029' }
+    if (m <= 2) return 'Bajo'
+    if (m <= 4) return 'Medio'
+    return 'Alto'
   }
 
   return (
@@ -47,8 +54,8 @@ export default function RiesgosPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nuevo Riesgo</Button>
       </PageHeader>
 
-      <div className="rounded-lg border bg-white p-4" style={{ borderColor: '#dee2e6' }}>
-        <h3 className="mb-4 text-sm font-semibold" style={{ color: '#212529' }}>Matriz de Riesgos 3x3</h3>
+      <div className="rounded-card border border-qms-border bg-qms-surface p-4">
+        <h3 className="mb-4 text-sm font-semibold text-qms-dark">Matriz de Riesgos 3x3</h3>
         {matrizQuery.error && <p role="alert">No se pudo cargar la matriz. <button onClick={() => void matrizQuery.refetch()}>Reintentar</button></p>}
         <div className="grid grid-cols-4 gap-2 text-center text-xs font-medium">
           <div className="text-gray-500">Prob \ Imp</div>
@@ -58,9 +65,9 @@ export default function RiesgosPage() {
               <div className="text-gray-500">Prob. {p}</div>
               {[1, 2, 3].map((i) => {
                 const cell = matriz.find((m) => m.p === p && m.i === i)
-                const c = colorCelda(p, i)
+                const level = getCellLevel(p, i)
                 return (
-                  <div key={`${p}-${i}`} className="flex flex-col items-center justify-center rounded p-3" style={{ backgroundColor: c.bg, color: c.color }}>
+                  <div key={`${p}-${i}`} className={`flex flex-col items-center justify-center rounded p-3 ${matrizCellClass[level]}`}>
                     <span className="text-lg font-bold">{matrizQuery.isPending || matrizQuery.error ? '—' : cell?.count ?? 0}</span>
                     <span className="text-[10px]">riesgos</span>
                   </div>
@@ -72,7 +79,7 @@ export default function RiesgosPage() {
       </div>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex items-center justify-center" style={{ minHeight: '300px' }}><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
       ) : (
       <Table>
         <TableHead>

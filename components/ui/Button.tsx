@@ -11,48 +11,27 @@ interface ButtonProps {
   children: React.ReactNode
 }
 
-const base = 'inline-flex items-center justify-center gap-2 font-medium transition-all focus:outline-none disabled:opacity-50 disabled:pointer-events-none'
+const base = 'inline-flex items-center justify-center gap-2 rounded-button border font-medium transition-colors focus:outline-none disabled:opacity-50 disabled:pointer-events-none'
 
-const variantStyles: Record<string, React.CSSProperties> = {
-  primary: { backgroundColor: '#0d6efd', color: '#fff', border: 'none', borderRadius: '4px' },
-  secondary: { backgroundColor: '#fff', color: '#6c757d', border: '1px solid #dee2e6', borderRadius: '4px' },
-  danger: { backgroundColor: '#fff', color: '#dc3545', border: '1px solid #dc3545', borderRadius: '4px' },
-  ghost: { backgroundColor: 'transparent', color: '#6c757d', border: 'none', borderRadius: '4px' },
+const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
+  primary: 'border-transparent bg-qms-primary text-white hover:bg-qms-primary-hover',
+  secondary: 'border-qms-border bg-qms-surface text-qms-muted hover:bg-qms-hover-bg',
+  danger: 'border-qms-danger bg-qms-surface text-qms-danger hover:bg-qms-danger hover:text-white',
+  ghost: 'border-transparent bg-transparent text-qms-muted hover:bg-qms-hover-bg',
 }
 
-const hoverStyles: Record<string, React.CSSProperties> = {
-  primary: { backgroundColor: '#0b5ed7' },
-  secondary: { backgroundColor: '#f8f9fa' },
-  danger: { backgroundColor: '#dc3545', color: '#fff' },
-  ghost: { backgroundColor: '#f8f9fa' },
-}
-
-const sizeStyles: Record<string, React.CSSProperties> = {
-  sm: { padding: '0.25rem 0.5rem', fontSize: '0.875rem' },
-  md: { padding: '0.375rem 0.75rem', fontSize: '0.875rem' },
+const sizeStyles: Record<NonNullable<ButtonProps['size']>, string> = {
+  sm: 'px-2 py-1 text-sm',
+  md: 'px-3 py-1.5 text-sm',
 }
 
 export default function Button({ variant = 'primary', size = 'md', loading, disabled, onClick, type = 'button', className = '', children }: ButtonProps) {
-  const style = { ...variantStyles[variant], ...sizeStyles[size] }
-
   return (
     <button
       type={type}
-      className={`${base} ${className}`}
-      style={style}
+      className={`${base} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || loading}
       onClick={onClick}
-      onMouseEnter={(e) => {
-        if (!disabled) {
-          const h = hoverStyles[variant]
-          if (h) Object.assign(e.currentTarget.style, h)
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled) {
-          Object.assign(e.currentTarget.style, variantStyles[variant])
-        }
-      }}
     >
       {loading && (
         <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">

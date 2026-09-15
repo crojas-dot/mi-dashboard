@@ -206,18 +206,14 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             {[1, 2].map((p) => (
               <div key={p} className="flex items-center gap-1.5">
                 <div
-                  className="flex items-center justify-center text-xs font-semibold text-white"
-                  style={{
-                    width: '22px', height: '22px', borderRadius: '4px',
-                    backgroundColor: paso >= p ? '#0d6efd' : '#ced4da',
-                  }}
+                  className={`flex h-[22px] w-[22px] items-center justify-center rounded-button text-xs font-semibold text-white ${paso >= p ? 'bg-qms-primary' : 'bg-gray-300'}`}
                 >
                   {p}
                 </div>
-                <span className="text-sm" style={{ color: paso >= p ? '#212529' : '#adb5bd' }}>
+                <span className={`text-sm ${paso >= p ? 'text-qms-dark' : 'text-gray-400'}`}>
                   {p === 1 ? 'Selección' : 'Filtros'}
                 </span>
-                {p < 2 && <span className="mx-1" style={{ color: '#ced4da' }}><ChevronRight className="h-3 w-3 inline" /></span>}
+                {p < 2 && <span className="mx-1 text-gray-300"><ChevronRight className="inline h-3 w-3" /></span>}
               </div>
             ))}
           </div>
@@ -226,7 +222,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
         {paso === 1 && (
           <div className="space-y-4">
             <div>
-              <p className="mb-2 text-sm font-medium" style={{ color: '#212529' }}>Módulo</p>
+              <p className="mb-2 text-sm font-medium text-qms-dark">Módulo</p>
               <div className="grid grid-cols-2 gap-2">
                 {modulos.map((m) => {
                   const Icon = m.icon
@@ -235,30 +231,22 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                     <button
                       key={m.value}
                       onClick={() => setModulo(m.value)}
-                      className={`flex items-center gap-2.5 rounded-lg border p-3 text-left text-sm transition-all ${
-                        selected ? 'border-2' : 'hover:bg-gray-50'
-                      }`}
-                      style={{
-                        backgroundColor: selected ? '#0d6efd' : '#fff',
-                        borderColor: selected ? '#0d6efd' : '#dee2e6',
-                        cursor: 'pointer',
-                      }}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-card border p-3 text-left text-sm transition-all ${selected ? 'border-2 border-qms-primary bg-qms-primary' : 'border-qms-border bg-qms-surface hover:bg-gray-50'}`}
                     >
                       <div
-                        className="flex items-center justify-center rounded-lg shrink-0"
-                        style={{ width: '34px', height: '34px', backgroundColor: selected ? 'rgba(255,255,255,0.2)' : '#e7f1ff' }}
+                        className={`flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-card ${selected ? 'bg-white/20' : 'bg-soft-blue-bg'}`}
                       >
-                        <Icon style={{ width: '16px', height: '16px', color: selected ? '#fff' : '#0d6efd' }} />
+                        <Icon className={`h-4 w-4 ${selected ? 'text-white' : 'text-qms-primary'}`} />
                       </div>
-                      <span className="font-medium" style={{ color: selected ? '#fff' : '#212529' }}>{m.label}</span>
-                      {selected && <span className="ml-auto text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.8)' }}><Check className="h-3 w-3 inline" /></span>}
+                      <span className={`font-medium ${selected ? 'text-white' : 'text-qms-dark'}`}>{m.label}</span>
+                      {selected && <span className="ml-auto text-xs font-semibold text-white/80"><Check className="inline h-3 w-3" /></span>}
                     </button>
                   )
                 })}
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>¿Qué incluir en el informe?</label>
+              <label className="mb-1 block text-sm font-medium text-qms-dark">¿Qué incluir en el informe?</label>
               <div className="space-y-2">
                 {[
                   { key: 'tabla', label: 'Tabla de registros' },
@@ -290,7 +278,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Desde</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Desde</label>
                 <input
                   type="date"
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
@@ -299,7 +287,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Hasta</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Hasta</label>
                 <input
                   type="date"
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
@@ -310,7 +298,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             </div>
             {modulo === 'quejas' && catalogoEstados.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Estado</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
                 <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
                   <option value="">Todos</option>
                   {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
@@ -319,7 +307,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             )}
             {modulo === 'quejas' && catalogoPrioridades.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Prioridad</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Prioridad</label>
                 <Select className="w-full" value={filterPrioridad} onChange={(e) => setFilterPrioridad(e.target.value)}>
                   <option value="">Todas</option>
                   {catalogoPrioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
@@ -328,7 +316,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             )}
             {modulo === 'sacp' && catalogoEstados.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Estado</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
                 <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
                   <option value="">Todos</option>
                   {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
@@ -337,7 +325,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             )}
             {modulo === 'sacp' && catalogoTipos.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Tipo</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Tipo</label>
                 <Select className="w-full" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)}>
                   <option value="">Todos</option>
                   {catalogoTipos.map((t) => <option key={t.valor} value={t.valor}>{t.valor}</option>)}
@@ -346,7 +334,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             )}
             {modulo === 'auditorias' && catalogoEstados.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Estado</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
                 <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
                   <option value="">Todos</option>
                   {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
@@ -355,7 +343,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
             )}
             {modulo === 'documentos' && catalogoEstados.length > 0 && (
               <div>
-                <label className="mb-1 block text-sm font-medium" style={{ color: '#212529' }}>Estado</label>
+                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
                 <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
                   <option value="">Todos</option>
                   {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
@@ -373,15 +361,15 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
         {paso === 3 && (
           <div>
             {loading ? (
-              <div className="flex items-center justify-center" style={{ minHeight: '200px' }}>
-                <Loader2 className="h-8 w-8 animate-spin" style={{ color: '#0d6efd' }} />
+              <div className="flex min-h-[200px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-qms-primary" />
               </div>
             ) : (
               <div className="space-y-5">
                 <div className="text-center pb-3 border-b border-gray-200">
-                  <h2 className="text-xl font-bold m-0" style={{ color: '#212529' }}>Informe de {modulos.find(m => m.value === modulo)?.label}</h2>
-                  <p className="m-0 mt-1 text-sm" style={{ color: '#6c757d' }}>Ente Costarricense de Acreditación</p>
-                  <p className="m-0 text-xs" style={{ color: '#adb5bd' }}>
+                  <h2 className="m-0 text-xl font-bold text-qms-dark">Informe de {modulos.find(m => m.value === modulo)?.label}</h2>
+                  <p className="m-0 mt-1 text-sm text-qms-muted">Ente Costarricense de Acreditación</p>
+                  <p className="m-0 text-xs text-gray-400">
                     Generado: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     {fechaDesde && ` · Período: ${new Date(fechaDesde).toLocaleDateString('es-ES')} - ${new Date(fechaHasta).toLocaleDateString('es-ES')}`}
                   </p>
@@ -389,11 +377,11 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
 
                 {incluir.resumen && resultados.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>Resumen por Estado</h3>
+                    <h3 className="mb-2 text-sm font-semibold text-qms-dark">Resumen por Estado</h3>
                     <div className="flex gap-3 flex-wrap">
-                      <div className="rounded-lg border px-4 py-2 text-center bg-white" style={{ borderColor: '#dee2e6', minWidth: '80px' }}>
-                        <p className="text-2xl font-bold m-0" style={{ color: '#0d6efd' }}>{resultados.length}</p>
-                        <p className="text-xs m-0" style={{ color: '#6c757d' }}>Total</p>
+                      <div className="min-w-20 rounded-card border border-qms-border bg-qms-surface px-4 py-2 text-center">
+                        <p className="m-0 text-2xl font-bold text-qms-primary">{resultados.length}</p>
+                        <p className="m-0 text-xs text-qms-muted">Total</p>
                       </div>
                       {Object.entries(
                         resultados.reduce((acc: Record<string, number>, r) => {
@@ -401,9 +389,9 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                           return acc
                         }, {})
                       ).map(([estado, count]) => (
-                        <div key={estado} className="rounded-lg border px-4 py-2 text-center bg-white" style={{ borderColor: '#dee2e6', minWidth: '80px' }}>
-                          <p className="text-2xl font-bold m-0" style={{ color: '#212529' }}>{count}</p>
-                          <p className="text-xs m-0" style={{ color: '#6c757d' }}>{estado}</p>
+                        <div key={estado} className="rounded-card border border-qms-border bg-qms-surface px-4 py-2 text-center min-w-[80px]">
+                          <p className="text-2xl font-bold m-0 text-qms-dark">{count}</p>
+                          <p className="text-xs m-0 text-qms-muted">{estado}</p>
                         </div>
                       ))}
                     </div>
@@ -412,13 +400,13 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
 
                 {incluir.distribucion && resultados.length > 0 && campoDistribucion[modulo] && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>
+                    <h3 className="text-sm font-semibold mb-2 text-qms-dark">
                       Distribución por {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                     </h3>
-                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
+                    <div className="rounded-lg border border-qms-border bg-white">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#343a40' }}>
+                          <tr className="bg-qms-header">
                             <th className="px-3 py-2 text-left font-semibold text-white">
                               {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                             </th>
@@ -446,11 +434,11 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
 
                 {incluir.tabla && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2" style={{ color: '#212529' }}>Registros</h3>
-                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dee2e6' }}>
+                    <h3 className="text-sm font-semibold mb-2 text-qms-dark">Registros</h3>
+                    <div className="rounded-lg border border-qms-border bg-white">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#343a40' }}>
+                          <tr className="bg-qms-header">
                             {columnsPorModulo[modulo]?.map((col) => (
                               <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
                                 {col.label}
@@ -484,11 +472,11 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
 
                 {incluir.vencidos && resultados.length > 0 && campoVencido[modulo] && (
                   <div>
-                    <h3 className="text-sm font-semibold mb-2" style={{ color: '#dc3545' }}>Registros Vencidos / Por Vencer</h3>
-                    <div className="rounded-lg border overflow-hidden bg-white" style={{ borderColor: '#dc3545' }}>
+                    <h3 className="text-sm font-semibold mb-2 text-qms-danger">Registros Vencidos / Por Vencer</h3>
+                    <div className="rounded-lg border bg-white border-qms-danger">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr style={{ backgroundColor: '#343a40' }}>
+                          <tr className="bg-qms-header">
                             {columnsPorModulo[modulo]?.map((col) => (
                               <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
                                 {col.label}
@@ -509,9 +497,9 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                               <tr><td colSpan={columnsPorModulo[modulo]?.length || 1} className="px-3 py-8 text-center text-gray-500">Sin registros vencidos</td></tr>
                             ) : (
                               vencidos.map((row: FilaInforme) => (
-                                <tr key={row.id} className="border-b border-gray-200" style={{ backgroundColor: '#fef2f2' }}>
+                                <tr key={row.id} className="border-b border-gray-200 bg-soft-red-bg">
                                   {columnsPorModulo[modulo]?.map((col) => (
-                                    <td key={col.key} className="px-3 py-1.5 align-middle" style={{ color: '#dc3545' }}>
+                                    <td key={col.key} className="px-3 py-1.5 align-middle text-qms-danger">
                                       {cellValue(row, col.key)}
                                     </td>
                                   ))}
