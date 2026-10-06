@@ -1,8 +1,23 @@
 <!-- BEGIN:nextjs-agent-rules -->
+
 # This is NOT the Next.js you know
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
 <!-- END:nextjs-agent-rules -->
+
+## Capa visual vigente — octubre 2026
+
+- Tailwind v4 **sin prefijo**: `app/globals.css` es la entrada real y define el azul `#024796`.
+- Recetas compartidas `@utility ui-*`: `app/styles/components.css`. Focus ring global: `@utility focus-ring`.
+- Kit activo: imports directos de `components/ui/Button`, `Input`, `Textarea`, `Select`, `Field`, `Badge`, `Switch`, `Table`, `ErrorState`; modales en `components/Modal` con `<dialog>` nativo.
+- `components/ui/tailwind/` y archivos `*.styles.ts` con `tw:` son un prototipo anterior; no importarlos para nuevas vistas ni tomar su paleta como la del runtime.
+- Configuración: `app/configuracion/page.tsx` solo organiza navegación, guard admin y montaje. Cada sección vive en `app/configuracion/components/*Settings.tsx`; consultas/mutaciones en hooks y `lib/services/configuracionService.ts`.
+- Leer `docs/visual-patterns.md` antes de modificar apariencia. Conservar el tamaño de las filas y los pesos suaves de folios de Quejas.
+- No añadir dependencias visuales, duplicar tokens ni mezclar datos/permisos con componentes de presentación.
+- RLS y autenticación siguen siendo la autoridad; una simulación visual de rol nunca amplía permisos de la base de datos.
 
 # ECA-QMS — Arquitectura Completa del Sistema
 

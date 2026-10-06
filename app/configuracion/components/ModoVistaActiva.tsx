@@ -1,78 +1,45 @@
 'use client'
 
+import { useRef, useState } from 'react'
 import { useAuthStore } from '@/lib/store/auth-store'
-import Switch from '@/components/ui/Switch'
 import Badge from '@/components/ui/Badge'
+import Switch from '@/components/ui/Switch'
+import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 
 const ROLES = [
-  { key: 'admin', label: 'Administrador' },
-  { key: 'calidad', label: 'Calidad' },
-  { key: 'colaborador', label: 'Colaborador' },
+  { key: 'admin', label: 'Administrador', description: 'Configuración y acceso completo al sistema.' },
+  { key: 'calidad', label: 'Calidad', description: 'Quejas, documentos, acciones y seguimiento.' },
+  { key: 'colaborador', label: 'Colaborador', description: 'Gestión de las quejas que tiene asignadas.' },
 ]
 
-const DESCRIPCION: Record<string, string> = {
-  admin: 'Vista real. Acceso completo al sistema.',
-  calidad: 'Gestiona quejas, documentos, SACP y seguimiento.',
-  colaborador: 'Solo ve y procesa sus quejas asignadas.',
-}
-
 export default function ModoVistaActiva() {
-  const user = useAuthStore((s) => s.user)
-  const vistaActiva = useAuthStore((s) => s.vistaActiva)
-  const setVistaActiva = useAuthStore((s) => s.setVistaActiva)
+  const user = useAuthStore(state => state.user)
+  const vistaActiva = useAuthStore(state => state.vistaActiva)
+  const setVistaActiva = useAuthStore(state => state.setVistaActiva)
   const rolReal = user?.rol ?? 'admin'
   const activo = vistaActiva ?? rolReal
+  const [saving, setSaving] = useState(false)
+  const savingRef = useRef(false)
 
-  const activar = async (rol: string, ahoraOn: boolean) => {
+  const activar = async (rol: string | null) => {
+    if (savingRef.current) return
+    savingRef.current = true; setSaving(true)
     try {
-      if (!ahoraOn) {
-        await setVistaActiva(null)
-        showSuccess('Vista real restaurada')
-        return
-      }
-      const objetivo = rol === rolReal ? null : rol
-      await setVistaActiva(objetivo)
-      const label = ROLES.find((r) => r.key === rol)?.label ?? rol
-      showSuccess(objetivo === null ? `Vista de ${label} restaurada` : `Vista de ${label} activada`)
-    } catch (error) {
-      showError(error as Error, 'No se pudo cambiar la vista')
-    }
+      await setVistaActiva(rol === rolReal ? null : rol)
+      showSuccess(!rol || rol === rolReal ? 'Vista real restaurada' : 'Vista de rol activada')
+    } catch (error) { showError(error as Error, 'No se pudo cambiar la vista') }
+    finally { savingRef.current = false; setSaving(false) }
   }
 
-  return (
-    <div className="space-y-4">
-      <p className="text-sm text-gray-600">
-        Simulá la interfaz de otro rol sin salir de tu sesión. El acceso a Configuración siempre se mantiene para el
-        administrador, por lo que podés revertir la vista en cualquier momento.
-      </p>
-      <div className="overflow-hidden rounded-card border border-qms-border">
-        <table className="w-full select-text text-sm">
-          <thead>
-            <tr className="bg-qms-header">
-              <th className="px-3 py-2 text-left font-semibold text-white">Rol</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">Descripción</th>
-              <th className="px-3 py-2 text-center font-semibold text-white w-40">Vista activa</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ROLES.map((r) => (
-              <tr key={r.key} className="border-b border-gray-200 hover:bg-gray-50">
-                <td className="px-3 py-2">
-                  <span className="flex items-center gap-2 font-medium text-gray-900">
-                    {r.label}
-                    {r.key === rolReal && <Badge variant="blue">Rol real</Badge>}
-                  </span>
-                </td>
-                <td className="px-3 py-2 text-gray-500 text-xs">{DESCRIPCION[r.key]}</td>
-                <td className="px-3 py-2 text-center">
-                  <Switch checked={activo === r.key} onChange={(on) => activar(r.key, on)} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+  return <div className="space-y-5">
+    <p className="rounded-card border border-qms-border bg-qms-hover-bg p-4 text-sm text-qms-muted">Revisá la navegación disponible para otro rol. Esta vista no cambia tu rol real ni los accesos de la base de datos. Configuración sigue disponible para volver a tu vista.</p>
+    <div className="grid gap-4 xl:grid-cols-3">{ROLES.map(rol => <section key={rol.key}
+      className={`ui-panel p-5 ${activo === rol.key ? 'border-qms-primary/30 bg-qms-primary-soft' : ''}`}>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-base font-medium">{rol.label}</h3><Switch aria-label={`Usar vista de ${rol.label}`} checked={activo === rol.key} disabled={saving} onChange={on => void activar(on ? rol.key : null)} /></div>
+      <p className="mt-3 text-sm text-qms-muted">{rol.description}</p>
+      <div className="mt-4 flex flex-wrap gap-2">{rol.key === rolReal && <Badge variant="gray">Rol real</Badge>}{activo === rol.key && <Badge variant="blue">En uso</Badge>}</div>
+    </section>)}</div>
+    {vistaActiva && <Button variant="secondary" loading={saving} onClick={() => void activar(null)}>Restaurar vista real</Button>}
+  </div>
 }

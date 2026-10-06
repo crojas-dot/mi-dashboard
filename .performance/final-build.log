@@ -1,0 +1,49 @@
+
+> mi-dashboard@0.1.0 build
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 96ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 21.2s
+  Running TypeScript ...
+  Finished TypeScript in 39.3s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/24) ...
+  Generating static pages using 15 workers (6/24) 
+  Generating static pages using 15 workers (12/24) 
+  Generating static pages using 15 workers (18/24) 
+✓ Generating static pages using 15 workers (24/24) in 4.6s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/ai/analizar
+├ ƒ /api/ai/test
+├ ƒ /api/configuracion/zona-horaria
+├ ƒ /api/drive/delete
+├ ƒ /api/drive/download
+├ ƒ /api/drive/upload
+├ ƒ /api/drive/upload-public
+├ ƒ /api/usuarios
+├ ○ /auditorias
+├ ○ /configuracion
+├ ○ /documentos
+├ ○ /login
+├ ○ /mis-quejas
+├ ○ /procesos
+├ ƒ /q/[token]
+├ ○ /quejas
+├ ○ /reporteria
+├ ○ /revision
+├ ○ /riesgos
+├ ○ /sacp
+└ ○ /usuarios
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

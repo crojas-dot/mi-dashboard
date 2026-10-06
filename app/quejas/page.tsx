@@ -1,17 +1,16 @@
 'use client'
 
 import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
-import { Plus, Search, Loader2, CheckCircle2, ThumbsUp, CalendarRange, Eye } from 'lucide-react'
+import { Plus, Search, Loader2, Eye } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
-import { useQuejas, useSLAConfig, useQuejasEstadisticas, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
+import { useQuejas, useSLAConfig, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
-import StatCard from '@/components/StatCard'
 import Pagination from '@/components/ui/Pagination'
 import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
@@ -35,7 +34,7 @@ export default function QuejasPage() {
   const user = useAuthStore((s) => s.user)
   const { esVista, marcarVista, marcarTodasVistas, contarNoVistas } = useQuejasVistas(user?.id)
 
-  const { data, isLoading: loading, error, refetch } = useQuejas({
+  const { data, isLoading: loading, isFetching, error, refetch } = useQuejas({
     page,
     pageSize,
     search: deferredSearch,
@@ -53,7 +52,6 @@ export default function QuejasPage() {
   const { data: estados = [] } = useCatalogoTipo('estado_queja')
   const { data: prioridades = [] } = useCatalogoTipo('prioridad')
   const { data: slaConfigs = [] } = useSLAConfig('quejas')
-  const { data: estadisticas } = useQuejasEstadisticas()
 
   useRealtimeSubscription({
     table: 'quejas',
@@ -64,7 +62,6 @@ export default function QuejasPage() {
     ],
   })
 
-  const mesActual = estadisticas?.mesActual ?? 0
   const slaMap = useMemo(() => {
     const m: Record<string, { dias_alerta: number; dias_vencimiento: number }> = {}
     for (const s of slaConfigs) m[s.prioridad] = s
@@ -74,18 +71,19 @@ export default function QuejasPage() {
   function calcularSLA(fecha: string, prioridad: string, estado: string): { label: string; variant: string } {
     if (estadoVariant[estado] === 'green') return { label: 'Completado', variant: 'green' }
     const dias = Math.floor((ahora - new Date(fecha).getTime()) / 86400000)
+    // El indicador actual cuenta días transcurridos desde la recepción.
+    const label = `${dias} ${dias === 1 ? 'día' : 'días'}`
     const sla = slaMap[prioridad]
     if (sla) {
-      if (dias <= sla.dias_alerta) return { label: `${dias}d`, variant: 'green' }
-      if (dias <= sla.dias_vencimiento) return { label: `${dias}d`, variant: 'amber' }
-      return { label: `${dias}d`, variant: 'red' }
+      if (dias <= sla.dias_alerta) return { label, variant: 'green' }
+      if (dias <= sla.dias_vencimiento) return { label, variant: 'amber' }
+      return { label, variant: 'red' }
     }
-    if (dias <= 3) return { label: `${dias}d`, variant: 'green' }
-    if (dias <= 7) return { label: `${dias}d`, variant: 'amber' }
-    return { label: `${dias}d`, variant: 'red' }
+    if (dias <= 3) return { label, variant: 'green' }
+    if (dias <= 7) return { label, variant: 'amber' }
+    return { label, variant: 'red' }
   }
 
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
   const quejaIds = useMemo(() => quejas.map((q) => q.id), [quejas])
   const noVistasCount = contarNoVistas(quejaIds)
 
@@ -99,131 +97,110 @@ export default function QuejasPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Quejas" description="Registro y seguimiento de quejas">
-        <button onClick={() => setNuevaOpen(true)} className="inline-flex h-[38px] shrink-0 items-center gap-1.5 rounded-button border-0 bg-qms-primary px-3.5 text-sm font-medium text-white hover:bg-qms-primary-hover">
-          <Plus className="h-4 w-4" /> Nueva queja
-        </button>
-      </PageHeader>
+      <PageHeader title="Quejas" />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4 shrink-0">
-        <StatCard
-          title="Resueltas a tiempo"
-          value={`${estadisticas?.pctATiempo ?? 0}%`}
-          icon={<CheckCircle2 className="h-5 w-5" />}
-          color="green"
-          subtitle={`vs fecha_sla de las resueltas/finalizadas (${estadisticas?.resueltasTotal ?? 0} evaluadas)`}
-        />
-        <StatCard
-          title="Procedencia"
-          value={`${estadisticas?.pctProcedencia ?? 0}%`}
-          icon={<ThumbsUp className="h-5 w-5" />}
-          color="blue"
-          subtitle={`de quejas decididas no son "No Procede" (${estadisticas?.totalConDecision ?? 0} decididas, ${estadisticas ? (estadisticas.totalConDecision - estadisticas.procedentes) : 0} no proceden)`}
-        />
-        <StatCard
-          title="Quejas este mes"
-          value={mesActual}
-          icon={<CalendarRange className="h-5 w-5" />}
-          color="purple"
-          subtitle={new Date(ahora).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-        />
-        <StatCard
-          title="Total quejas"
-          value={totalCount}
-          icon={<Search className="h-5 w-5" />}
-          color="red"
-          subtitle={`${totalCount} registradas`}
-        />
-      </div>
-
-      <div className="flex items-center gap-2 mb-3 shrink-0">
+      {/* Una fila en escritorio; en pantallas pequeñas los controles pasan de línea sin superponerse. */}
+      <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3" role="group" aria-label="Buscar y filtrar quejas">
         {noVistasCount > 0 && (
           <button
             onClick={() => marcarTodasVistas(quejaIds)}
-            className="inline-flex h-[34px] shrink-0 items-center gap-1.5 rounded-button border border-qms-border bg-qms-surface px-2.5 text-xs font-medium text-gray-600 transition-colors hover:bg-qms-hover-bg"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-card border border-qms-border bg-qms-surface px-3 text-xs font-medium text-qms-muted transition-colors hover:bg-qms-hover-bg"
             title="Marcar todas las quejas visibles como vistas"
           >
             <Eye className="h-3.5 w-3.5" />
             {noVistasCount} sin ver
           </button>
         )}
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <div className="relative min-w-[180px] flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-qms-muted" aria-hidden="true" />
           <input
             placeholder="Buscar folio o cliente..."
-            className="h-[38px] w-full rounded-button border border-qms-border bg-qms-surface pl-9 pr-3 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
+            aria-label="Buscar folio o cliente"
+            className="ui-field h-10 w-full pl-10 pr-4 text-sm placeholder:text-qms-muted"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(0) }}
           />
         </div>
-        <Select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setPage(0) }}>
-          <option value="">Estados</option>
-          {estados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-        </Select>
-        <Select value={filtroPrioridad} onChange={(e) => { setFiltroPrioridad(e.target.value); setPage(0) }}>
-          <option value="">Prioridad</option>
-          {prioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
-        </Select>
+        <div className="w-[160px] shrink-0">
+          <Select aria-label="Estado" className="h-10 rounded-card text-gray-700" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setPage(0) }}>
+            <option value="">Estados</option>
+            {estados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
+          </Select>
+        </div>
+        <div className="w-[140px] shrink-0">
+          <Select aria-label="Prioridad" className="h-10 rounded-card text-gray-700" value={filtroPrioridad} onChange={(e) => { setFiltroPrioridad(e.target.value); setPage(0) }}>
+            <option value="">Prioridad</option>
+            {prioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
+          </Select>
+        </div>
+        <button onClick={() => setNuevaOpen(true)} className="ui-button ui-button-primary inline-flex h-10 shrink-0 items-center gap-2">
+          <Plus className="h-4 w-4" aria-hidden="true" /> Nueva queja
+        </button>
       </div>
 
-      <div ref={tableRef} className="min-h-0 flex-1 overflow-auto rounded-card border border-qms-border">
-        {loading ? (
-          <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
-        ) : error ? (
-          <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
-            <p className="text-sm text-gray-500">No se pudieron cargar las quejas.</p>
-            <button onClick={() => refetch()} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover">Reintentar</button>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface">
+        <div ref={tableRef} className="min-h-0 flex-1 overflow-auto overscroll-contain">
+          {loading ? (
+            <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+          ) : error ? (
+            <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
+              <p className="text-sm text-gray-500">No se pudieron cargar las quejas.</p>
+              <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
+            </div>
+          ) : (
+            <table className="w-full select-text border-separate border-spacing-0 text-left text-base text-gray-700">
+              <thead>
+                <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
+                  <th scope="col" className="pl-6!">Folio</th>
+                  <th scope="col" className="min-w-[160px]">Cliente</th>
+                  <th scope="col" className="min-w-[140px]">Categoría</th>
+                  <th scope="col">Prioridad</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">SLA</th>
+                  <th scope="col" className="pr-6!">Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quejas.length === 0 ? (
+                  <EmptyState message="No se encontraron quejas" />
+                ) : (
+                  quejas.map((q) => {
+                    const sla = calcularSLA(q.fecha, q.prioridad, q.estado)
+                    const vista = esVista(q.id)
+                    return (
+                      <tr
+                        key={q.id}
+                        onClick={() => handleAbrirDetalle(q)}
+                        className={`cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}
+                        onMouseEnter={() => {
+                          prefetch({
+                            queryKey: quejaAdjuntosKey(q.id),
+                            queryFn: () => fetchQuejaAdjuntos(q.id),
+                            staleTime: Infinity,
+                          })
+                        }}
+                      >
+                        <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
+                        <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
+                        <td>{q.categoria}</td>
+                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap">{q.prioridad ? <Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge> : <span className="text-qms-muted">—</span>}</td>
+                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
+                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={sla.variant}>{sla.label}</Badge></td>
+                        <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {!loading && !error && (
+          <div className="shrink-0 border-t border-qms-border bg-qms-surface px-6 py-3 [&>nav]:flex-wrap [&>nav]:py-0 [&_button]:min-h-9 [&_button]:min-w-9 [&_button]:rounded-card [&_nav>div]:flex-wrap [&_nav>div]:gap-1.5">
+            {totalCount <= pageSize ? <p className="text-sm text-qms-muted">{totalCount} resultados</p> : <Pagination page={page} count={totalCount} busy={isFetching} onChange={nextPage => { setPage(nextPage); if (tableRef.current) tableRef.current.scrollTop = 0 }} />}
           </div>
-        ) : (
-          <table className="w-full select-text text-left text-sm">
-            <thead>
-              <tr className="sticky top-0 z-10 bg-qms-header">
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Prioridad</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Estado</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">SLA</th>
-                <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Fecha</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quejas.length === 0 ? (
-                <EmptyState message="No se encontraron quejas" />
-              ) : (
-                quejas.map((q) => {
-                  const sla = calcularSLA(q.fecha, q.prioridad, q.estado)
-                  const vista = esVista(q.id)
-                  return (
-                    <tr
-                      key={q.id}
-                      onClick={() => handleAbrirDetalle(q)}
-                      className={`cursor-pointer border-b border-gray-200 transition-colors hover:bg-gray-50 ${vista ? '' : 'bg-blue-50/50'}`}
-                      onMouseEnter={() => {
-                        prefetch({
-                          queryKey: quejaAdjuntosKey(q.id),
-                          queryFn: () => fetchQuejaAdjuntos(q.id),
-                          staleTime: Infinity,
-                        })
-                      }}
-                    >
-                      <td className="px-3 py-2.5 align-middle"><span className={`font-mono text-sm ${vista ? 'font-medium' : 'font-bold text-gray-900'}`}>{q.folio}</span></td>
-                      <td className={`px-3 py-2.5 align-middle ${vista ? 'font-medium text-gray-900' : 'font-bold text-gray-900'}`}>{q.cliente_nombre}</td>
-                      <td className={`px-3 py-2.5 align-middle ${vista ? 'text-gray-600' : 'font-medium text-gray-800'}`}>{q.categoria}</td>
-                      <td className="px-3 py-2.5 align-middle"><Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle"><Badge variant={sla.variant}>{sla.label}</Badge></td>
-                      <td className={`px-3 py-2.5 align-middle whitespace-nowrap ${vista ? 'text-gray-500' : 'font-medium text-gray-700'}`}>{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
         )}
       </div>
-
-      {!loading && <Pagination page={page} count={totalCount} busy={loading} onChange={setPage} />}
 
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} prioridades={prioridades} />
       <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={() => { invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />

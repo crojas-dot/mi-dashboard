@@ -67,7 +67,7 @@ export default function NuevoRiesgoModal({ open, onClose, onCreated }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Folio</label>
-            <input className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.folio} onChange={(e) => setForm({ ...form, folio: e.target.value })} placeholder="Auto-generado" />
+            <input className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.folio} onChange={(e) => setForm({ ...form, folio: e.target.value })} placeholder="Auto-generado" />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
@@ -81,21 +81,21 @@ export default function NuevoRiesgoModal({ open, onClose, onCreated }: Props) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
-            <input className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
+            <input className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
           </div>
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-          <textarea rows={2} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
+          <textarea rows={2} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Causa</label>
-            <input className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.causa} onChange={(e) => setForm({ ...form, causa: e.target.value })} />
+            <input className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.causa} onChange={(e) => setForm({ ...form, causa: e.target.value })} />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Efecto</label>
-            <input className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.efecto} onChange={(e) => setForm({ ...form, efecto: e.target.value })} />
+            <input className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.efecto} onChange={(e) => setForm({ ...form, efecto: e.target.value })} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -118,7 +118,7 @@ export default function NuevoRiesgoModal({ open, onClose, onCreated }: Props) {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Acción de Mitigación</label>
-          <textarea rows={2} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.accion_mitigacion} onChange={(e) => setForm({ ...form, accion_mitigacion: e.target.value })} />
+          <textarea rows={2} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.accion_mitigacion} onChange={(e) => setForm({ ...form, accion_mitigacion: e.target.value })} />
         </div>
         <p className="text-sm text-gray-500">
           Nivel calculado: <Badge variant={nivelColor[calcularNivel(form.probabilidad, form.impacto)] || 'gray'}>{calcularNivel(form.probabilidad, form.impacto)}</Badge>

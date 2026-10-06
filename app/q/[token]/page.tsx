@@ -273,16 +273,16 @@ export default function FormularioQuejaPublicaPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium text-qms-dark">Nombre *</label>
-            <input required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+            <input required disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={nombre} onChange={(e) => setNombre(e.target.value)} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-sm font-medium text-qms-dark">Correo electrónico *</label>
-              <input type="email" required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <input type="email" required disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium text-qms-dark">Teléfono</label>
-              <input disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
+              <input disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
             </div>
           </div>
           <div>
@@ -294,7 +294,7 @@ export default function FormularioQuejaPublicaPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-qms-dark">Descripción *</label>
-            <textarea required rows={4} disabled={campoDeshabilitado} className="w-full resize-none rounded-button border border-qms-border px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
+            <textarea required rows={4} disabled={campoDeshabilitado} className="ui-textarea w-full resize-none px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
           </div>
 
           <div>
@@ -334,7 +334,7 @@ export default function FormularioQuejaPublicaPage() {
           <button
             type="submit"
             disabled={enviando}
-            className="flex w-full items-center justify-center gap-2 rounded-button py-2 text-sm font-medium text-white bg-qms-primary hover:bg-qms-primary-hover transition-opacity disabled:cursor-wait disabled:opacity-50 border-0"
+            className="ui-button ui-button-primary ui-button-sm flex w-full items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-50"
           >
             {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
             {enviando ? (etapaEnvio || 'Enviando...') : 'Enviar queja'}

@@ -5,6 +5,7 @@ import { useDashboard, useActividadReciente } from '@/lib/queries/useDashboard'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
+import QuejasSummary from '@/components/dashboard/QuejasSummary'
 
 const estadoBadge: Record<string, string> = {
   Abierta: 'red', Alta: 'red', 'En Proceso': 'amber', Planificada: 'blue',
@@ -20,27 +21,41 @@ const indicatorBg: Record<string, string> = {
 }
 
 export default function DashboardPage() {
+  return (
+    <div>
+      <PageHeader title="Dashboard" description="Panel de control general" compact={false} />
+      <QuejasSummary />
+      <DashboardOverview />
+    </div>
+  )
+}
+
+// La carga de los indicadores de Quejas no depende de las consultas de otros módulos.
+function DashboardOverview() {
   const { data, isPending, error, refetch } = useDashboard()
   const actividad = useActividadReciente()
   if (error) return <div role="alert" className="p-4">No se pudo cargar el dashboard. <button onClick={() => void refetch()} className="underline">Reintentar</button></div>
   if (isPending) return <p role="status" className="p-4">Cargando dashboard…</p>
   const indicadores = data?.indicadores ?? []
+  const maxIndicador = Math.max(1, ...indicadores.map((ind) => ind.valor))
   const tareas = data?.tareas ?? []
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Panel de control general" />
-
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section aria-labelledby="dashboard-modulos-title" className="mb-5 rounded-card border border-qms-border bg-qms-surface p-5">
+        <h2 id="dashboard-modulos-title" className="mb-4 text-lg font-semibold text-qms-dark">Seguimiento por módulo</h2>
+        <div className="space-y-4">
         {indicadores.map((ind) => (
-          <Link key={ind.label} href={ind.url} className={`block rounded-card text-white no-underline ${indicatorBg[ind.color] || 'bg-qms-primary'}`}>
-            <div className="p-4">
-              <h6 className="m-0 text-base font-normal">{ind.label}</h6>
-              <h2 className="m-0 text-[2rem] font-bold">{ind.valor}</h2>
+          <Link key={ind.label} href={ind.url} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-sm text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[190px_minmax(0,1fr)_48px]">
+            <span>{ind.label}</span>
+            <div aria-hidden="true" className="order-3 col-span-2 h-5 overflow-hidden rounded-sm bg-gray-100 sm:order-none sm:col-span-1">
+              <div className={`h-full ${indicatorBg[ind.color] || 'bg-qms-primary'}`} style={{ width: `${Math.max(0, ind.valor) / maxIndicador * 100}%` }} />
             </div>
+            <strong className="text-right tabular-nums">{ind.valor}</strong>
           </Link>
         ))}
-      </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>

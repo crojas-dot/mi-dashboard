@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState, type MouseEvent } from 'react'
 import { Download, ExternalLink, FileText, FileQuestion, Loader2, X } from 'lucide-react'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { supabase } from '@/lib/supabase'
@@ -49,11 +49,12 @@ function VistaLegacy({ url, mime, nombre }: VistaLegacyProps) {
 }
 
 export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
+  const titleId = useId()
+  const dialogRef = useRef<HTMLDialogElement>(null)
+  const backdropDown = useRef(false)
   const [legacyUrl, setLegacyUrl] = useState<string | null>(null)
   const [legacyError, setLegacyError] = useState(false)
   const [descargando, setDescargando] = useState(false)
-  const onCloseRef = useRef(onClose)
-  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   const adjuntoId = adjunto?.id ?? null
   const [prevAdjuntoId, setPrevAdjuntoId] = useState<string | null>(null)
@@ -63,13 +64,18 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
     setLegacyError(false)
   }
 
+  const open = !!adjunto
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current()
+    const dialog = dialogRef.current
+    if (!open || !dialog) return
+    const origin = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    // showModal coloca el visor en la misma capa superior que el formulario, por encima de este.
+    dialog.showModal()
+    return () => {
+      dialog.close()
+      if (document.activeElement === document.body && origin?.isConnected) origin.focus()
     }
-    if (adjunto) document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [adjunto])
+  }, [open])
 
   useEffect(() => {
     if (!adjunto || esDrive(adjunto.storage_path)) return
@@ -91,6 +97,11 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
   if (!adjunto) return null
 
   const drive = esDrive(adjunto.storage_path)
+  const outside = (event: MouseEvent<HTMLDialogElement>) => {
+    if (event.target !== event.currentTarget) return false
+    const rect = event.currentTarget.getBoundingClientRect()
+    return event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom
+  }
 
   const handleDescargar = async () => {
     setDescargando(true)
@@ -104,11 +115,21 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4 bg-black/60" onClick={onClose}>
-      <div className="flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      aria-modal="true"
+      className="fixed inset-0 m-auto max-h-[95dvh] w-[calc(100%-2rem)] max-w-5xl flex-col overflow-hidden rounded-xl border-0 bg-white p-0 shadow-2xl backdrop:bg-black/60 open:flex"
+      onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose() }}
+      onMouseDown={event => { backdropDown.current = outside(event) }}
+      onClick={event => {
+        if (backdropDown.current && outside(event)) onClose()
+        backdropDown.current = false
+      }}
+    >
         <div className="flex shrink-0 items-center gap-2 px-4 py-2.5 text-white bg-qms-dark">
           <FileText className="h-4 w-4 shrink-0 opacity-70" />
-          <span className="min-w-0 flex-1 select-text truncate text-sm font-semibold">{adjunto.nombre}</span>
+          <span id={titleId} className="min-w-0 flex-1 select-text truncate text-sm font-semibold">{adjunto.nombre}</span>
           <span className="hidden whitespace-nowrap text-xs opacity-60 sm:inline">{formatBytes(adjunto.tamano)}</span>
           <span className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wide opacity-80">
             {drive ? 'Google Drive' : 'Interno'}
@@ -130,6 +151,7 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
               rel="noreferrer"
               className="hidden shrink-0 rounded-lg border border-white/40 p-1.5 transition-colors hover:bg-white/10 sm:block"
               title="Abrir en Google Drive"
+              aria-label="Abrir en Google Drive"
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -139,6 +161,7 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
             onClick={onClose}
             className="shrink-0 cursor-pointer rounded-lg p-1.5 opacity-60 transition-colors hover:bg-white/10 hover:opacity-100"
             title="Cerrar"
+            aria-label="Cerrar visor de documentos"
           >
             <X className="h-4 w-4" />
           </button>
@@ -149,7 +172,7 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
             <iframe
               src={`https://drive.google.com/file/d/${adjunto.storage_path}/preview`}
               title={adjunto.nombre}
-              className="h-[80vh] w-full rounded-b-xl border-0"
+              className="h-[80dvh] w-full rounded-b-xl border-0"
               allow="autoplay"
             />
           ) : legacyUrl ? (
@@ -165,7 +188,6 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
           )}
         </div>
-      </div>
-    </div>
+    </dialog>
   )
 }

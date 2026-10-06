@@ -1,0 +1,13 @@
+
+> mi-dashboard@0.1.0 lint
+> eslint
+
+
+C:\Users\Soporte\Documents\Open Code\PruebaVercel\mi-dashboard\app\mis-quejas\page.tsx
+  33:9  warning  'totalPages' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\Soporte\Documents\Open Code\PruebaVercel\mi-dashboard\app\quejas\page.tsx
+  88:9  warning  'totalPages' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 2 problems (0 errors, 2 warnings)
+

@@ -54,11 +54,11 @@ export default function NuevaQuejaModal({ open, onClose, onCreated, categorias, 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
-          <input required className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.cliente_nombre} onChange={(e) => setForm({ ...form, cliente_nombre: e.target.value })} />
+          <input required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.cliente_nombre} onChange={(e) => setForm({ ...form, cliente_nombre: e.target.value })} />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-          <input type="email" className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.email_cliente} onChange={(e) => setForm({ ...form, email_cliente: e.target.value })} />
+          <input type="email" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.email_cliente} onChange={(e) => setForm({ ...form, email_cliente: e.target.value })} />
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Categoría</label>
@@ -68,10 +68,10 @@ export default function NuevaQuejaModal({ open, onClose, onCreated, categorias, 
               {categorias.map((c) => <option key={c.valor} value={c.valor}>{c.valor}</option>)}
             </Select>
           ) : (
-            <input required className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Escribir categoría" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
+            <input required className="ui-field w-full px-3 py-2 text-sm" placeholder="Escribir categoría" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
           )}
         </div>
-        <p className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+        <p className="rounded-lg border border-blue-100 bg-qms-primary-soft px-3 py-2 text-sm text-qms-primary-dark">
           La queja se registrar? inicialmente con el estado <strong>Recibido</strong>.
         </p>
         <div>
@@ -81,12 +81,12 @@ export default function NuevaQuejaModal({ open, onClose, onCreated, categorias, 
               {prioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
             </Select>
           ) : (
-            <input required className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Escribir prioridad" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })} />
+            <input required className="ui-field w-full px-3 py-2 text-sm" placeholder="Escribir prioridad" value={form.prioridad} onChange={(e) => setForm({ ...form, prioridad: e.target.value })} />
           )}
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-          <textarea rows={3} className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
+          <textarea rows={3} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" onClick={handleClose}>Cancelar</Button>

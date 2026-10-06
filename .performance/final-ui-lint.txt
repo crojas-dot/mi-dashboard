@@ -1,0 +1,14 @@
+
+> mi-dashboard@0.1.0 lint
+> eslint
+
+
+C:\Users\Soporte\Documents\Open Code\PruebaVercel\mi-dashboard\.experiments\src\_nav.tsx
+  13:3  warning  'cilFolder' is defined but never used  @typescript-eslint/no-unused-vars
+  16:3  warning  'cilUser' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\Users\Soporte\Documents\Open Code\PruebaVercel\mi-dashboard\app\mis-quejas\page.tsx
+  33:9  warning  'totalPages' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 3 problems (0 errors, 3 warnings)
+

@@ -73,14 +73,14 @@ export default function CambiarMiPasswordModal({ open, onClose }: Props) {
                 required
                 type={mostrar ? 'text' : 'password'}
                 placeholder={campo.placeholder}
-                className="w-full rounded-button border border-qms-border bg-qms-surface px-3 py-2 pr-9 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
+                className="ui-field w-full px-3 py-2 pr-9 text-sm"
                 value={campo.value}
                 onChange={(e) => campo.set(e.target.value)}
               />
               <button
                 type="button"
                 onClick={() => setMostrar((v) => !v)}
-                className="absolute right-2 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center border-0 bg-transparent text-qms-muted"
+                className="ui-button ui-button-ghost ui-button-sm absolute right-2 top-1/2 flex -translate-y-1/2 cursor-pointer items-center justify-center"
                 title={mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña'}
               >
                 {mostrar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

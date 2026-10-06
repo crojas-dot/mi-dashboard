@@ -67,7 +67,7 @@ function BuscadorResponsable({ responsables, value, onChange }: BuscadorResponsa
     <div ref={ref} className="relative w-full">
       <input
         type="text"
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+        className="ui-field w-full px-3 py-2 text-sm"
         placeholder="Buscar responsable..."
         value={texto}
         onChange={(e) => {
@@ -485,7 +485,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
             <textarea
               placeholder="Escribe el oficio o la resolución requerida para la siguiente transición..."
               rows={3}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="ui-textarea w-full px-3 py-2 text-sm"
               value={resolucion}
               onChange={(e) => setResolucion(e.target.value)}
             />
@@ -507,7 +507,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
               esStaff ? (
                 decisionProcedencia === null ? (
                   <>
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <div className="rounded-lg border border-blue-200 bg-qms-primary-soft p-3">
                       <p className="text-sm font-semibold text-blue-900 leading-relaxed">¿La queja procede?</p>
                       <p className="text-xs text-blue-900 leading-relaxed mt-0.5">Elegí si la queja procede y pasa a investigación, o no procede y se cierra.</p>
                     </div>
@@ -525,7 +525,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                     <textarea
                       placeholder="Justificación / Resolución (Obligatorio)"
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="ui-textarea w-full px-3 py-2 text-sm"
                       value={justificacion}
                       onChange={(e) => setJustificacion(e.target.value)}
                     />
@@ -536,14 +536,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                   </>
                 ) : (
                   <>
-                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <div className="rounded-lg border border-blue-200 bg-qms-primary-soft p-3">
                       <p className="text-sm font-semibold text-blue-900 leading-relaxed">Asignar responsable</p>
                       <p className="text-xs text-blue-900 leading-relaxed mt-0.5">La justificación es obligatoria. Seleccioná quién investigará la queja; al guardar inicia el plazo de 15 días.</p>
                     </div>
                     <textarea
                       placeholder="Justificación (Obligatorio)"
                       rows={3}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="ui-textarea w-full px-3 py-2 text-sm"
                       value={justificacion}
                       onChange={(e) => setJustificacion(e.target.value)}
                     />
@@ -588,7 +588,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                     <textarea
                       placeholder="Análisis / Resolución Final (Obligatorio)"
                       rows={4}
-                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      className="ui-textarea w-full px-3 py-2 text-sm"
                       value={resolucion}
                       onChange={(e) => setResolucion(e.target.value)}
                     />
@@ -672,7 +672,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                 <textarea
                   placeholder="Motivo de la reapertura..."
                   rows={2}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="ui-textarea w-full px-3 py-2 text-sm"
                   value={motivoReapertura}
                   onChange={(e) => setMotivoReapertura(e.target.value)}
                 />
@@ -708,7 +708,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
             <textarea
               placeholder="Nuevo comentario..."
               rows={2}
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="ui-textarea w-full px-3 py-2 text-sm"
               value={nuevoComentario}
               onChange={(e) => setNuevoComentario(e.target.value)}
             />

@@ -81,7 +81,7 @@ export default function SACPage() {
                 <TableCell>
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-20 rounded-full bg-gray-200 dark:bg-gray-700">
-                      <div className="h-2 rounded-full bg-blue-600" style={{ width: `${a.seguimiento_porcentaje || 0}%` }} />
+                      <div className="h-2 rounded-full bg-qms-primary" style={{ width: `${a.seguimiento_porcentaje || 0}%` }} />
                     </div>
                     <span className="text-xs text-gray-500">{a.seguimiento_porcentaje || 0}%</span>
                   </div>

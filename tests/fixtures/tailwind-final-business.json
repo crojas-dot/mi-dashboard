@@ -1,0 +1,234 @@
+{
+  "app/auditorias/components/NuevaAuditoriaModal.tsx": {
+    "hooks": "fe3e1004bc6b7e7c4743c3803c7e8757b7b33e0658e90dce647e3b937c0cd7fd",
+    "events": "52bb2b9e97896def7fcd1e5cf9c4ff9f4c7b6c61eab9d9140af01dd70caaec6c"
+  },
+  "app/auditorias/page.tsx": {
+    "hooks": "c47323deea1c3e1041b478c728629a7ada4b1a81ccde8bf1a48e874feab29729",
+    "events": "325f61f5bc80765e42fba7bf3405d6f4218670191b5b35c9af1e3bdc2bd5193d"
+  },
+  "app/configuracion/components/ModoVistaActiva.tsx": {
+    "hooks": "1f8f41c66eb62f565cbcd586195489e911abb903c5561df041125817c32e3760",
+    "events": "d3b648542028df4da243f31d04d76bfe031dc5d736cab689d81660adc8b31e80"
+  },
+  "app/configuracion/components/RolesAccesos.tsx": {
+    "hooks": "1b7f6d87295fae51794012e11f929120cf767b3447d134633103104ef70c6046",
+    "events": "ca5bcac4f7c473f287611ed8222767516ddbe53520e3a5f062862d7fb8d4e94d"
+  },
+  "app/configuracion/components/ZonaHorariaEditor.tsx": {
+    "hooks": "cb9b91391a0690cd8f21be9966cf84bbcf2b4997e92c054c290041461081097a",
+    "events": "0a342b5e7e5fa276a442a04708d721c8bbf472cf317a4a59247f98a4cdc62715"
+  },
+  "app/configuracion/page.tsx": {
+    "hooks": "c86a8152daaeee3bf86fef280248092765651b1d9c712038ecf425500ff01b6b",
+    "events": "5288dcb7db30bf5eb4d4d225c2b3858be61b6e1f45fd871c7d4ed746f80e8ffe"
+  },
+  "app/documentos/components/NuevoDocumentoModal.tsx": {
+    "hooks": "edb8c2caf6e73a733ac9d124ab00f4abf528ea4ad23773a18b64c042c2c30cc3",
+    "events": "29071a00d9f70a09435c199894bdd09d326ab17de9a72839a0c287c4ecbfaa97"
+  },
+  "app/documentos/error.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e37cac883bd8063a7010a3482f7cb6753c8ab3e831b024e818813f04803d5273"
+  },
+  "app/documentos/page.tsx": {
+    "hooks": "885c8568c33215f0941d9be5864212ba18a06f7b19a485d5bbdc51c3f7db1af0",
+    "events": "882403ab6cc8e1b8df83ff88f9064a5b29cfa5a4e7cab9f3dba804c0f6d128ab"
+  },
+  "app/error.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e37cac883bd8063a7010a3482f7cb6753c8ab3e831b024e818813f04803d5273"
+  },
+  "app/global-error.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "183ea9d4c27e3cadcd464b05a351b0f9281304ffc659c9e266470d6f80cb0db2"
+  },
+  "app/layout.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "app/login/page.tsx": {
+    "hooks": "897fd504ae3a806a2cdaae097105e50844854dbc99179d25ab85c0935da5f46f",
+    "events": "443dcca60687ce4f20c7d6b15dc4458d9a10be53a3d3a7c20acbfbba716edad2"
+  },
+  "app/mis-quejas/components/QuejaColaboradorPanel.tsx": {
+    "hooks": "26f0a4461a18e02553185f7f2919ec18da3ae11a470cb03001df07a8273199f0",
+    "events": "9edc1697ddc2785777abeaa2b85dfddc4a2204113420d462c3c7960b81cd72ee"
+  },
+  "app/mis-quejas/page.tsx": {
+    "hooks": "8eec72e203c4496c6898c13b35ff3aba16f20fc6e3635cb5c0c0788d00644e08",
+    "events": "6fe2e63b6a7624b54eefb7bf70771a4bd0e3376014f025a96bfced75cece5aab"
+  },
+  "app/page.tsx": {
+    "hooks": "19c13cdd5c848130de432605ecad2b1f201e855d1bc53b25fb5bce359a0d9c66",
+    "events": "bcb57ef3c4796ca804037238fc48d6fe7dc58f5afb8b2f96acb6980cba6f3778"
+  },
+  "app/procesos/components/NuevoProcesoModal.tsx": {
+    "hooks": "bfc4dc562dcec98ecf464b17305f448f98d5a84e7a5cd7dd1954db54e3184492",
+    "events": "5d6217684405911a5cb3c87e22faff0375bccb81095a5cb66b4e6bb22956ddf0"
+  },
+  "app/procesos/page.tsx": {
+    "hooks": "6fc29bfa13ed5ddd23b3a8a01d362d6f8925913f13909f19cc93411ec7ca2819",
+    "events": "f08b9ea0109b3adae3d01ab3db120cf87b4411182d9c499c91b0db8131c78cd7"
+  },
+  "app/q/[token]/page.tsx": {
+    "hooks": "602dca89cfaa4b3daf26a78153239d1c105556c0c42a95c75e78c61f37c6d81d",
+    "events": "d27a63607029b9a6dee08264269ccdcc01bc4a496e90ff84e08cf137ac806ff3"
+  },
+  "app/quejas/components/NuevaQuejaModal.tsx": {
+    "hooks": "e411bc67bc328fe246fb0b4efb9315007cb969181a87d1777612db9f65f54f08",
+    "events": "a4763dffece4d9c5ea05d337c9c0a6d58083ccf472d1dcc6e46b13093820f7b9"
+  },
+  "app/quejas/components/QuejaDetalleModal.tsx": {
+    "hooks": "ad647351275976edf8a13463635a97b192ab9e0a28e8f7d2b93e2ca0b4e0c15f",
+    "events": "1c2c6e676f61d253dd9759b15ae3d884254daa2538437e0ce817f1d9215c1157"
+  },
+  "app/quejas/error.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e37cac883bd8063a7010a3482f7cb6753c8ab3e831b024e818813f04803d5273"
+  },
+  "app/quejas/page.tsx": {
+    "hooks": "d73ca635952e165e09b3ba1506cee2a3502c23556dd5e37d8ff3dd41f36b54ff",
+    "events": "fc47b2e022c49a7ab4729a458edf7d00ff8f07836f36c813f257bddb86edf205"
+  },
+  "app/reporteria/components/GeneradorInformeModal.tsx": {
+    "hooks": "2aa4f3d43f6db4d642698dd92b0cd85d8718cdfc58b02e3ac097e548d1a0783e",
+    "events": "374e359a0c233002a3a1534ab11fc5061335261f767ce96f32cfacf98d7454fb"
+  },
+  "app/reporteria/page.tsx": {
+    "hooks": "c356be2f666c1926f48154303b697cd56a9ef09c19c8308037c373d3a9e38cc2",
+    "events": "60e325157075eb752e5fd8630ed7849b485a4ad5b4c75ec72edcc04dcecac210"
+  },
+  "app/revision/components/NuevaReunionModal.tsx": {
+    "hooks": "6af55e79db2c42ae25ffa479c9d1b1b99473bb503b8ad0f916fcc8154686d67a",
+    "events": "820dac9d79a4ee1efcc13fccf0b3cc90ab4343ccf93a38b2b63cbb92ca011ac2"
+  },
+  "app/revision/page.tsx": {
+    "hooks": "8e67992d21e6ff01c6fa592d8535755033bea2d95409bc3da380edb0b0461ebd",
+    "events": "0b95e72e359daf43162aaa751ed43346fbd608110b77dcfc51ff090aeb97e242"
+  },
+  "app/riesgos/components/NuevoRiesgoModal.tsx": {
+    "hooks": "395c56f2daab55fc3f24f154003dff978b5fddaeeef642e8749d987e12cce13d",
+    "events": "efadfd500255119d3e87973a1e82e9cee04f9413a4594123e4a9a09d312da845"
+  },
+  "app/riesgos/page.tsx": {
+    "hooks": "a3cf69764e18daf6d1a2b5ea3723c8c14e764e37eb4a63314c4f4db70b0436ff",
+    "events": "23308e08ed5f79efdfbaa3213b8dd95a48435558c6ca70d0659aec38978ec92b"
+  },
+  "app/sacp/components/NuevaSACPModal.tsx": {
+    "hooks": "3e60fdce8ac747bf781bd14e11d45e24db371e366fe0361d7aa67b09ea1b8b71",
+    "events": "490c8907aa6345881a43ebd6325f91f85f0ac20dadfde5866d6c63bc793bc5f0"
+  },
+  "app/sacp/page.tsx": {
+    "hooks": "39927867b0f5e47566a8ab61c72121785e7985e1e3bc96544fc52bc6e28e5802",
+    "events": "45c23096a203e6c7f7557d590de9d9a1731b819d84dbc785d7655cdb0e9f9217"
+  },
+  "app/usuarios/page.tsx": {
+    "hooks": "8059dde537a5db6c41f921c03d9cb44c5da6a064e14f97cf3b49933ecd1d278c",
+    "events": "d18f2abc7b52b2b6f26b190b1020a25074d05075ad10be655cca34e590423273"
+  },
+  "components/AuthenticatedLayout.tsx": {
+    "hooks": "ee739760d412d588b30d9f509d756c19bf3782efbbde174a142aaf9643a7ac0d",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "components/AuthShell.tsx": {
+    "hooks": "fc0c588a8cbc8ec20d84ac82c135bd0e254571ea6b3b1c63b3845b3a4b2fa1cd",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "components/configuracion/AIProvidersManager.tsx": {
+    "hooks": "fc1cbe6b8664c56837f0ee3f01ebe65bb59ae5e599cfd78055b603d9652456f4",
+    "events": "7945a6a19dd965ba0ecd6ad08bc4fc856644c5c87bc71ff9428324a5cb5a014c"
+  },
+  "components/dashboard/BreakdownChart.tsx": {
+    "hooks": "42bb7d9e37e85dd4f50a600d8b43e4e698326ae3f57c60579ac2e31d6ff00a1d",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "components/dashboard/chartKit.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "components/dashboard/DocumentosTab.tsx": {
+    "hooks": "18418e08356d104ef8e6e712975ad7782feb4698e66f54a36e4712c9c10d76d4",
+    "events": "e2c5f63a8bbdcd843c39a7cf399d82145b1bf84a7609b8a8d147da0799ad929b"
+  },
+  "components/dashboard/GeneralTab.tsx": {
+    "hooks": "cd07a8e99972104cd2e4833d214d00825c67fcbf62c14fb02bbbce3b5f46eaed",
+    "events": "300f669fff3237d280e791ab19558b517cefaf6d27ead4624e8ed94ed4087f36"
+  },
+  "components/dashboard/ModuleTabs.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "4ce8b207f8333650eb77b06654d6ab2a8056c860b572d4769b9ebe8b2c08838a"
+  },
+  "components/dashboard/QuejasTab.tsx": {
+    "hooks": "6568338ac081cd74560766d1d08c05c584f8cdfb9d519c3284e71930d5c09a0e",
+    "events": "584510118752e2356f9af402906fea89d929457893409c7c58a1cec2d47c2f2f"
+  },
+  "components/dashboard/QuejasTrend.tsx": {
+    "hooks": "4c47f461ab77cd78cdcc4f94de84b7a0febe9397ffdefa3d34d864741059fb08",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "components/dashboard/RiesgosTab.tsx": {
+    "hooks": "5a6e08d813ce53a81029d83a7d37cfea93dd214318b4409b17b34e6bdd6b06eb",
+    "events": "0d9694b021423a033841d935ab8bd8a89eff5e52faf0bb56302ea2fa97329148"
+  },
+  "components/dashboard/SacpTab.tsx": {
+    "hooks": "0bdd56578822f13470d2d7a09f6d31e8a214bf5992ee2fb04f2b65400d5d7b95",
+    "events": "0d9694b021423a033841d935ab8bd8a89eff5e52faf0bb56302ea2fa97329148"
+  },
+  "components/header/NotificationDropdown.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "0580de002176c8c02ffe3e31627177d1ea6cada5636f1b76cc5e82e8a37cc069"
+  },
+  "components/header/UserMenuDropdown.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "d847e175011068b34780db586c502e6e0d6800e1f9073922e090bf352893a5e9"
+  },
+  "components/Header.tsx": {
+    "hooks": "9c024194a3fd4f4b14b10724725250f2d7c70dac046facc9255b0c786f9b700c",
+    "events": "1aae7c34e83bc2f671e851375a798d143834571c19b1abc620bcfa9457a89b91"
+  },
+  "components/quejas/AdjuntoPreviewModal.tsx": {
+    "hooks": "daca591386425346a88b46401cbf20d0e79e64ba31bd4f355e251fd75435d51e",
+    "events": "c199587b7c612334309f642485003d5bdd3400ab64351e87ea6e28740632f623"
+  },
+  "components/quejas/ListaAdjuntos.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "d59614de46fd34e0713ec2c9a4566699051f82d0e97781b248afc2f1dbf7c022"
+  },
+  "components/Sidebar.tsx": {
+    "hooks": "c167ed9bafd9f31ee4e420b0fda3bba3dc9029e028ca1bc3638c50e543130f78",
+    "events": "0d679a3de3ed44f004f6150d9aa210652deb526ecb8c8303f109996d01ae51b5"
+  },
+  "components/StatCard.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "4bc3c4adb5dd7cd741afaf2e4ff5072d8e50f8e643997182e38b98b7f9f62a5e"
+  },
+  "components/usuarios/CambiarMiPasswordModal.tsx": {
+    "hooks": "caca83c0d6514f468be67d3ed742f57ed6ba8ad5bda43f73601884bf9d9f2ec3",
+    "events": "e51c677e85bde740efc9de101f3f5c0553ad13098a7504f032bf472ce31e8094"
+  },
+  "components/usuarios/ConfirmDialog.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "399aeae496b13962c376991664bef0510f4cf8b557e84154e3b1683867da0bdd"
+  },
+  "components/usuarios/PasswordModal.tsx": {
+    "hooks": "b84e42370af4340287b285d37c8b4d5480c7e297d25ad97dcf1e67ad1477bfa9",
+    "events": "6685569227091cb89bc3900c90048ce7a77d68ceca4cc6598004215ca09c4f18"
+  },
+  "components/usuarios/ResetPasswordModal.tsx": {
+    "hooks": "bc8e60718cbb9279fcbcdda6c5c8e07a3ce8eed948d005c60a2a7d34210b4fab",
+    "events": "e926a2e287a244b9ddf8dadaff45caa33001ac752697d94b384da2229f56be5e"
+  },
+  "components/usuarios/UsuarioFormModal.tsx": {
+    "hooks": "e7c47d19b3b39d62e76951148e8db34fd6aeaddab31df02a87d2c154a8bc5130",
+    "events": "ccca0bc33576bd6c1172047ae3347282de75ccfea5aba4797b61ae0b5dd7a1c8"
+  },
+  "lib/providers/QueryProvider.tsx": {
+    "hooks": "37cfb82dcd6713339cc0e65419a40409f5edb3810ae19f11af76457d1f3c58bf",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "lib/providers/ToastProvider.tsx": {
+    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

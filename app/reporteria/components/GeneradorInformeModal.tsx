@@ -281,7 +281,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                 <label className="mb-1 block text-sm font-medium text-qms-dark">Desde</label>
                 <input
                   type="date"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                  className="ui-field w-full px-3 py-2 text-sm"
                   value={fechaDesde}
                   onChange={(e) => setFechaDesde(e.target.value)}
                 />
@@ -290,7 +290,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                 <label className="mb-1 block text-sm font-medium text-qms-dark">Hasta</label>
                 <input
                   type="date"
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                  className="ui-field w-full px-3 py-2 text-sm"
                   value={fechaHasta}
                   onChange={(e) => setFechaHasta(e.target.value)}
                 />
@@ -406,11 +406,11 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                     <div className="rounded-lg border border-qms-border bg-white">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr className="bg-qms-header">
-                            <th className="px-3 py-2 text-left font-semibold text-white">
+                          <tr className="bg-qms-table-head">
+                            <th className="px-3 py-2 text-left font-semibold text-qms-dark">
                               {modulo === 'quejas' ? 'Categoría' : 'Tipo'}
                             </th>
-                            <th className="px-3 py-2 text-right font-semibold text-white">Cantidad</th>
+                            <th className="px-3 py-2 text-right font-semibold text-qms-dark">Cantidad</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -438,9 +438,9 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                     <div className="rounded-lg border border-qms-border bg-white">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr className="bg-qms-header">
+                          <tr className="bg-qms-table-head">
                             {columnsPorModulo[modulo]?.map((col) => (
-                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
+                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-qms-dark whitespace-nowrap">
                                 {col.label}
                               </th>
                             ))}
@@ -476,9 +476,9 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
                     <div className="rounded-lg border bg-white border-qms-danger">
                       <table className="w-full select-text text-sm">
                         <thead>
-                          <tr className="bg-qms-header">
+                          <tr className="bg-qms-table-head">
                             {columnsPorModulo[modulo]?.map((col) => (
-                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-white whitespace-nowrap">
+                              <th key={col.key} className="px-3 py-2 text-left font-semibold text-qms-dark whitespace-nowrap">
                                 {col.label}
                               </th>
                             ))}

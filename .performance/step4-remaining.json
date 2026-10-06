@@ -1,0 +1,530 @@
+[
+  {
+    "file": "app/auditorias/components/NuevaAuditoriaModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/auditorias/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/configuracion/components/ModoVistaActiva.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/configuracion/components/RolesAccesos.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/configuracion/components/ZonaHorariaEditor.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/configuracion/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/documentos/components/NuevoDocumentoModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/documentos/error.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/documentos/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/error.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/global-error.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/layout.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/login/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/mis-quejas/components/QuejaColaboradorPanel.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/mis-quejas/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/procesos/components/NuevoProcesoModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/procesos/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/q/[token]/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/quejas/components/NuevaQuejaModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/quejas/components/QuejaDetalleModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/quejas/error.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/quejas/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/reporteria/components/GeneradorInformeModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/reporteria/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/revision/components/NuevaReunionModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/revision/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/riesgos/components/NuevoRiesgoModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/riesgos/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/sacp/components/NuevaSACPModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/sacp/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "app/usuarios/page.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/AuthenticatedLayout.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/AuthShell.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/configuracion/AIProvidersManager.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/BreakdownChart.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/Chart.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/ChartCanvas.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/chartKit.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/DocumentosTab.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/GeneralTab.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/ModuleTabs.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/QuejasTab.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/QuejasTrend.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/RiesgosTab.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/dashboard/SacpTab.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/header/NotificationDropdown.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/header/UserMenuDropdown.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/Header.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/quejas/AdjuntoPreviewModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/quejas/ListaAdjuntos.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/Sidebar.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/StatCard.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/DeferredMount.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/icons.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Alert.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/AttachmentList.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Badge.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Button.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Card.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Checkbox.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/DataTable.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/EmptyState.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/ErrorState.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Grid.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Input.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/InputGroup.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Label.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/MetricCard.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Modal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/PageHeader.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Pagination.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Popover.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Progress.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Range.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Select.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Spinner.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Switch.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Table.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Tabs.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/ui/tailwind/Textarea.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/usuarios/CambiarMiPasswordModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/usuarios/ConfirmDialog.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/usuarios/PasswordModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/usuarios/ResetPasswordModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "components/usuarios/UsuarioFormModal.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "lib/providers/QueryProvider.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  },
+  {
+    "file": "lib/providers/ToastProvider.tsx",
+    "coreui": [],
+    "unprefixedClasses": [],
+    "cssModules": []
+  }
+]

@@ -20,7 +20,7 @@ interface UsuarioFormModalProps {
 }
 
 const inputClass =
-  'w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-600 dark:bg-gray-800 dark:text-white'
+  'ui-field dark:border-gray-600 dark:bg-gray-800 dark:text-white'
 const labelClass = 'mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300'
 
 export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose, onSuccess, onDelete }: UsuarioFormModalProps) {

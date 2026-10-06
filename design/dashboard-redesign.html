@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECA QMS — Dashboard Rediseñado (Prototipo)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          primary: '#321fdb',
+          success: '#2eb85c',
+          danger: '#e55353',
+          warning: '#f9b115',
+          info: '#3399ff',
+          secondary: '#6c757d',
+          sidebar: '#3c4b64',
+          canvas: '#f1f4f7',
+        },
+      },
+    },
+  }
+</script>
+
+<style>
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif; background: #f1f4f7; }
+
+  .card { background:#ffffff; border:1px solid #e7ebf1; border-radius:.5rem; box-shadow:0 1px 2px rgba(16,24,40,.04); }
+  .sec-label { font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; font-weight:700; color:#98a2b3; }
+
+  /* Soft badges CoreUI 5: fondo translúcido 10%, texto a color puro */
+  .badge { display:inline-flex; align-items:center; gap:.4rem; padding:.28rem .6rem; border-radius:.375rem;
+           font-size:.73rem; font-weight:600; line-height:1; white-space:nowrap; }
+  .badge::before { content:''; width:.38rem; height:.38rem; border-radius:9999px; background:currentColor; }
+  .b-primary{ background:rgba(50,31,219,.10); color:#321fdb; }
+  .b-success{ background:rgba(46,184,92,.10); color:#2eb85c; }
+  .b-danger { background:rgba(229,83,83,.10); color:#e55353; }
+  .b-warning{ background:rgba(249,177,21,.10); color:#c47f00; }
+  .b-info   { background:rgba(51,153,255,.10); color:#0d6ec9; }
+  .b-secondary{ background:rgba(108,117,125,.10); color:#6c757d; }
+
+  .dot { width:.5rem; height:.5rem; border-radius:9999px; flex:none; }
+  .table-scroll { overflow-x:auto; }
+
+  /* Thin scrollbar sutil */
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:#d3d9e0; border-radius:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+</style>
+</head>
+
+<body class="text-slate-800 select-none">
+<div class="flex min-h-screen">
+
+  <!-- ============ SIDEBAR (oscuro #3c4b64) ============ -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transition-transform lg:translate-x-0 lg:static flex flex-col bg-sidebar text-white/85">
+    <!-- Logo -->
+    <div class="flex items-center gap-3 px-5 h-16 border-b border-white/10">
+      <div class="h-9 w-9 rounded-lg bg-primary grid place-items-center text-white font-extrabold text-sm shadow-lg shadow-primary/30">Q</div>
+      <div>
+        <p class="text-[.95rem] font-bold leading-tight text-white">ECA · QMS</p>
+        <p class="text-[.68rem] text-white/45 font-medium tracking-wide">Sistema de gestión de calidad</p>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <div>
+        <p class="px-3 mb-2 sec-label text-white/35">Panel</p>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] font-medium bg-white/10 text-white shadow-sm">
+          <i class="ph ph-gauge text-base"></i> Vista general
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 hover:text-white transition-colors">
+          <i class="ph ph-chat-circle text-base"></i> Quejas
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors">
+          <i class="ph ph-check-circle text-base"></i> SACP
+        </a>
+      </div>
+
+      <div>
+        <p class="px-3 mb-2 sec-label text-white/35">Gestión</p>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-file-text text-base"></i> Documentos</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-binoculars text-base"></i> Auditorías</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-warning-circle text-base"></i> Riesgos</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-calendar-blank text-base"></i> Reuniones</a>
+      </div>
+
+      <div>
+        <p class="px-3 mb-2 sec-label text-white/35">Sistema</p>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-gear text-base"></i> Configuración</a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-md text-[.84rem] hover:bg-white/5 transition-colors"><i class="ph ph-users text-base"></i> Usuarios</a>
+      </div>
+    </nav>
+
+    <div class="px-3 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3 px-3">
+        <div class="h-9 w-9 rounded-full bg-primary/70 grid place-items-center text-white text-xs font-bold">AN</div>
+        <div class="min-w-0">
+          <p class="text-[.82rem] font-semibold text-white truncate">Ana Navarro</p>
+          <p class="text-[.68rem] text-white/45">Administrador</p>
+        </div>
+        <i class="ph ph-caret-down ml-auto text-white/40 text-sm"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay móvil -->
+  <div id="overlay" class="fixed inset-0 z-30 bg-slate-900/40 hidden lg:hidden" onclick="toggleSidebar(false)"></div>
+
+  <!-- ============ MAIN ============ -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- Header -->
+    <header class="h-16 bg-white border-b border-slate-200 flex items-center gap-4 px-4 lg:px-6 shrink-0">
+      <button onclick="toggleSidebar(true)" class="lg:hidden h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 -ml-1" aria-label="Abrir menú">
+        <i class="ph ph-list text-xl text-slate-600"></i>
+      </button>
+
+      <nav class="text-sm text-slate-400 hidden sm:flex items-center gap-2">
+        <a href="#" class="hover:text-primary">Dashboard</a>
+        <i class="ph ph-caret-right text-xs text-slate-300"></i>
+        <span id="breadcrumb" class="text-slate-700 font-medium">Vista general</span>
+      </nav>
+
+      <div class="ml-auto flex items-center gap-3">
+        <label class="hidden md:flex items-center gap-2 bg-slate-100/80 rounded-lg px-3 py-2 text-slate-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/30 transition-all">
+          <i class="ph ph-magnifying-glass text-sm"></i>
+          <input type="text" placeholder="Buscar folio, cliente…" class="bg-transparent text-sm text-slate-700 outline-none w-56 placeholder:text-slate-400">
+        </label>
+        <button class="relative h-9 w-9 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-500" aria-label="Notificaciones">
+          <i class="ph ph-bell text-lg"></i>
+          <span class="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-danger ring-2 ring-white"></span>
+        </button>
+        <div class="h-9 w-9 rounded-full bg-sidebar grid place-items-center text-white text-xs font-bold hidden sm:grid">AN</div>
+      </div>
+    </header>
+
+    <!-- Contenido -->
+    <main class="flex-1 p-4 lg:p-6 min-w-0">
+
+      <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Panel de control</h1>
+          <p class="text-sm text-slate-500 mt-1">Resumen operativo del sistema de gestión de calidad</p>
+        </div>
+
+        <!-- Segmented tabs -->
+        <div id="tabs" class="flex bg-white border border-slate-200 rounded-lg p-1 shadow-sm">
+          <button data-tab="general" class="px-4 py-2 text-sm font-semibold rounded-md transition-all tab-btn bg-primary text-white shadow-sm">Vista general</button>
+          <button data-tab="quejas" class="px-4 py-2 text-sm font-semibold rounded-md transition-all tab-btn text-slate-500 hover:text-slate-800">Quejas</button>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           VISTA 1 · DASHBOARD GENERAL
+           ============================================================ -->
+      <section id="view-general" class="space-y-6">
+
+        <!-- Fila 60/40: Hero de urgencia + Doughnut -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+          <!-- Hero 60% -->
+          <div class="lg:col-span-3 card p-6">
+            <div class="flex items-start justify-between mb-6">
+              <div>
+                <p class="sec-label">Urgencia</p>
+                <h3 class="text-lg font-semibold text-slate-800 mt-1">Plazos vencidos</h3>
+              </div>
+              <a href="#" class="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                Ver todos <i class="ph ph-arrow-right text-xs"></i>
+              </a>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center gap-8">
+              <!-- Anillo SVG rojo -->
+              <div class="shrink-0 mx-auto md:mx-0">
+                <div class="relative h-40 w-40">
+                  <svg viewBox="0 0 160 160" class="h-40 w-40 -rotate-90">
+                    <defs>
+                      <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#ff8b8b"/>
+                        <stop offset="100%" stop-color="#e55353"/>
+                      </linearGradient>
+                    </defs>
+                    <circle cx="80" cy="80" r="68" fill="none" stroke="#f1e7e7" stroke-width="11"/>
+                    <circle cx="80" cy="80" r="68" fill="none" stroke="url(#ringGrad)" stroke-width="11"
+                            stroke-linecap="round" stroke-dasharray="427.3" stroke-dashoffset="296" style="transition:stroke-dashoffset 1s ease"/>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <span class="text-4xl font-extrabold text-danger tabular-nums leading-none">12</span>
+                    <span class="text-[.7rem] font-semibold text-slate-500 mt-1.5">plazos vencidos</span>
+                    <span class="text-[.65rem] text-slate-400 mt-0.5">31 % de los pendientes</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Plazos restantes con barras ultra finas -->
+              <div class="flex-1 w-full space-y-5">
+                <div>
+                  <div class="flex items-baseline justify-between mb-1.5">
+                    <span class="flex items-center gap-2 text-sm font-medium text-slate-600"><span class="dot bg-danger"></span>Hoy</span>
+                    <span class="text-sm font-bold text-slate-800 tabular-nums">8</span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-danger" style="width:21%"></div></div>
+                  <p class="text-xs text-slate-400 mt-1">vencen hoy · atención inmediata</p>
+                </div>
+
+                <div>
+                  <div class="flex items-baseline justify-between mb-1.5">
+                    <span class="flex items-center gap-2 text-sm font-medium text-slate-600"><span class="dot bg-warning"></span>Por vencer</span>
+                    <span class="text-sm font-bold text-slate-800 tabular-nums">15</span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-warning" style="width:38%"></div></div>
+                  <p class="text-xs text-slate-400 mt-1">próximos 7 días</p>
+                </div>
+
+                <div>
+                  <div class="flex items-baseline justify-between mb-1.5">
+                    <span class="flex items-center gap-2 text-sm font-medium text-slate-600"><span class="dot bg-slate-400"></span>Sin fecha</span>
+                    <span class="text-sm font-bold text-slate-800 tabular-nums">4</span>
+                  </div>
+                  <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-slate-400" style="width:10%"></div></div>
+                  <p class="text-xs text-slate-400 mt-1 mb-0">sin plazo registrado</p>
+                </div>
+
+                <div class="flex items-center gap-3 pt-1 border-t border-slate-100">
+                  <span class="text-xs text-slate-400">Total pendientes</span>
+                  <span class="text-lg font-bold text-slate-800 tabular-nums">39</span>
+                  <span class="mx-1 h-4 w-px bg-slate-200"></span>
+                  <span class="text-xs text-slate-400">A tiempo</span>
+                  <span class="text-lg font-bold text-success tabular-nums">12</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Doughnut 40% -->
+          <div class="lg:col-span-2 card p-6 flex flex-col">
+            <div class="flex items-start justify-between mb-2">
+              <div>
+                <p class="sec-label">Distribución</p>
+                <h3 class="text-lg font-semibold text-slate-800 mt-1">Pendientes por módulo</h3>
+              </div>
+              <span class="badge b-secondary">SLA activo</span>
+            </div>
+
+            <div class="relative mx-auto h-52 w-52 my-4">
+              <canvas id="chartDonut"></canvas>
+              <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span class="text-3xl font-extrabold text-slate-800 tabular-nums leading-none">79</span>
+                <span class="text-[.7rem] font-semibold text-slate-500 mt-1">pendientes</span>
+              </div>
+            </div>
+
+            <div id="donutLegend" class="space-y-1.5"></div>
+          </div>
+        </div>
+
+        <!-- Gráfico de área: evolución -->
+        <div class="card p-6">
+          <div class="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p class="sec-label">Evolución</p>
+              <h3 class="text-lg font-semibold text-slate-800 mt-1">Quejas recibidas vs resueltas</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Últimos 12 meses</p>
+            </div>
+            <div class="flex items-center gap-5">
+              <span class="flex items-center gap-2 text-xs font-medium text-slate-500"><span class="dot bg-primary"></span>Recibidas</span>
+              <span class="flex items-center gap-2 text-xs font-medium text-slate-500"><span class="dot bg-success"></span>Resueltas</span>
+            </div>
+          </div>
+          <div class="h-72 relative mt-4"><canvas id="chartGeneral" aria-label="Evolución de quejas recibidas y resueltas" role="img"></canvas></div>
+        </div>
+
+        <!-- Fila inferior: tabla expedientes + timeline actividad -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <!-- Tabla -->
+          <div class="lg:col-span-3 card">
+            <div class="flex items-center justify-between px-6 pt-6 pb-4">
+              <div>
+                <p class="sec-label">Atención</p>
+                <h3 class="text-lg font-semibold text-slate-800 mt-1">Expedientes que requieren atención</h3>
+              </div>
+              <a href="#" class="text-xs font-semibold text-primary hover:underline shrink-0">Ver todos</a>
+            </div>
+            <div class="table-scroll px-2 pb-2">
+              <table class="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr class="text-left text-[.68rem] uppercase tracking-wider text-slate-400 font-bold">
+                    <th class="px-4 py-2.5">Expediente</th>
+                    <th class="px-4 py-2.5">Módulo</th>
+                    <th class="px-4 py-2.5">Estado</th>
+                    <th class="px-4 py-2.5">Prioridad</th>
+                    <th class="px-4 py-2.5 text-right">Retraso</th>
+                    <th class="px-4 py-2.5 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">QUEJA-2026-0112</p><p class="text-xs text-slate-400">Laura Méndez</p></td>
+                    <td class="px-4 py-3 text-slate-500">Quejas</td>
+                    <td class="px-4 py-3"><span class="badge b-info">En investigación</span></td>
+                    <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-danger tabular-nums">3 d</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">SACP-2026-0083</p><p class="text-xs text-slate-400">Correctiva · Laboratorio</p></td>
+                    <td class="px-4 py-3 text-slate-500">SACP</td>
+                    <td class="px-4 py-3"><span class="badge b-warning">En proceso</span></td>
+                    <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-warning tabular-nums">hoy</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">DOC-2026-0041</p><p class="text-xs text-slate-400">Manual de calidad</p></td>
+                    <td class="px-4 py-3 text-slate-500">Documentos</td>
+                    <td class="px-4 py-3"><span class="badge b-info">En revisión</span></td>
+                    <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-slate-500 tabular-nums">1 d</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">RIESGO-2026-0017</p><p class="text-xs text-slate-400">Fuga de datos</p></td>
+                    <td class="px-4 py-3 text-slate-500">Riesgos</td>
+                    <td class="px-4 py-3"><span class="badge b-warning">En mitigación</span></td>
+                    <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-slate-500 tabular-nums">2 d</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">QUEJA-2026-0119</p><p class="text-xs text-slate-400">Carlos Rojas</p></td>
+                    <td class="px-4 py-3 text-slate-500">Quejas</td>
+                    <td class="px-4 py-3"><span class="badge b-secondary">Recibido</span></td>
+                    <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-warning tabular-nums">hoy</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                  <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                    <td class="px-4 py-3"><p class="font-semibold text-slate-800">QUEJA-2026-0108</p><p class="text-xs text-slate-400">Ana Quirós</p></td>
+                    <td class="px-4 py-3 text-slate-500">Quejas</td>
+                    <td class="px-4 py-3"><span class="badge b-warning">Pendiente GC</span></td>
+                    <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                    <td class="px-4 py-3 text-right"><span class="font-semibold text-danger tabular-nums">5 d</span></td>
+                    <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="px-6 py-3 border-t border-slate-100 text-xs text-slate-400">Se muestran 6 de 17 casos · ordenados por severidad</div>
+          </div>
+
+          <!-- Timeline actividad reciente -->
+          <div class="lg:col-span-2 card p-6 h-fit">
+            <div class="flex items-center justify-between mb-5">
+              <div>
+                <p class="sec-label">Actividad</p>
+                <h3 class="text-lg font-semibold text-slate-800 mt-1">Reciente</h3>
+              </div>
+              <i class="ph ph-clock text-lg text-slate-300"></i>
+            </div>
+            <ol class="relative ml-2 border-l border-slate-200">
+              <li class="relative pl-6 pb-5">
+                <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-primary" style="box-shadow:0 0 0 4px rgba(50,31,219,.12)"></span>
+                <p class="text-sm text-slate-700"><span class="font-semibold">QUEJA-2026-0112</span> recibida</p>
+                <p class="text-xs text-slate-400 mt-0.5">hace 12 min · M. Vargas</p>
+              </li>
+              <li class="relative pl-6 pb-5">
+                <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-info" style="box-shadow:0 0 0 4px rgba(51,153,255,.12)"></span>
+                <p class="text-sm text-slate-700"><span class="font-semibold">SACP-2026-0083</span> avanzó a “En proceso”</p>
+                <p class="text-xs text-slate-400 mt-0.5">hace 25 min · A. Martínez</p>
+              </li>
+              <li class="relative pl-6 pb-5">
+                <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-success" style="box-shadow:0 0 0 4px rgba(46,184,92,.12)"></span>
+                <p class="text-sm text-slate-700"><span class="font-semibold">QUEJA-2026-0087</span> cerrada</p>
+                <p class="text-xs text-slate-400 mt-0.5">hace 1 h · L. Fuentes</p>
+              </li>
+              <li class="relative pl-6 pb-5">
+                <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-warning" style="box-shadow:0 0 0 4px rgba(249,177,21,.12)"></span>
+                <p class="text-sm text-slate-700"><span class="font-semibold">DOC-2026-0038</span> publicado</p>
+                <p class="text-xs text-slate-400 mt-0.5">hace 2 h · S. Mora</p>
+              </li>
+              <li class="relative pl-6">
+                <span class="absolute -left-[5px] top-1 h-2.5 w-2.5 rounded-full bg-danger" style="box-shadow:0 0 0 4px rgba(229,83,83,.12)"></span>
+                <p class="text-sm text-slate-700">Recordatorio de vencimiento · <span class="font-semibold">RIESGO-2026-0012</span></p>
+                <p class="text-xs text-slate-400 mt-0.5">hace 3 h · automático</p>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================================
+           VISTA 2 · DASHBOARD QUEJAS
+           ============================================================ -->
+      <section id="view-quejas" class="space-y-6 hidden">
+
+        <!-- Gráfico principal con KPIs en la cabecera -->
+        <div class="card p-6">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p class="sec-label">Análisis</p>
+              <h3 class="text-lg font-semibold text-slate-800 mt-1">Quejas recibidas vs resueltas</h3>
+            </div>
+            <div class="flex items-center divide-x divide-slate-200">
+              <div class="px-4 first:pl-0">
+                <p class="flex items-center gap-1.5 text-[.68rem] uppercase tracking-wide font-bold text-slate-400"><span class="dot bg-primary"></span>Recibidas este mes</p>
+                <p class="text-2xl font-extrabold text-slate-800 tabular-nums mt-0.5">51</p>
+              </div>
+              <div class="px-4">
+                <p class="flex items-center gap-1.5 text-[.68rem] uppercase tracking-wide font-bold text-slate-400"><span class="dot bg-success"></span>Cierres</p>
+                <p class="text-2xl font-extrabold text-slate-800 tabular-nums mt-0.5">13</p>
+              </div>
+              <div class="px-4">
+                <p class="flex items-center gap-1.5 text-[.68rem] uppercase tracking-wide font-bold text-slate-400"><span class="dot bg-info"></span>Tasa de resolución</p>
+                <p class="text-2xl font-extrabold text-slate-800 tabular-nums mt-0.5">25 %</p>
+              </div>
+            </div>
+          </div>
+          <div class="h-72 relative mt-4"><canvas id="chartQuejas" aria-label="Quejas recibidas y resueltas por mes" role="img"></canvas></div>
+        </div>
+
+        <!-- Paneles: estado (dots) + categoría (barras) + plazos (barras) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+          <!-- Quejas por estado: lista minimalista con dots -->
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-semibold text-slate-800">Quejas por estado</h3>
+              <span class="text-xs font-bold text-slate-400 tabular-nums">51</span>
+            </div>
+            <ul class="divide-y divide-slate-100">
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-info"></span>Recibido</span>
+                <span class="font-bold text-slate-800 tabular-nums">12</span>
+              </li>
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-primary"></span>En investigación</span>
+                <span class="font-bold text-slate-800 tabular-nums">18</span>
+              </li>
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-warning"></span>Pendiente de Revisión GC</span>
+                <span class="font-bold text-slate-800 tabular-nums">9</span>
+              </li>
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-success"></span>Resuelto</span>
+                <span class="font-bold text-slate-800 tabular-nums">6</span>
+              </li>
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-success"></span>Finalizado</span>
+                <span class="font-bold text-slate-800 tabular-nums">1</span>
+              </li>
+              <li class="flex items-center justify-between py-2.5">
+                <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot bg-slate-400"></span>No procede</span>
+                <span class="font-bold text-slate-800 tabular-nums">5</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Quejas por categoría: barras ultra finas -->
+          <div class="card p-6">
+            <h3 class="text-base font-semibold text-slate-800 mb-3">Quejas por categoría</h3>
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Queja técnica</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">22</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-primary" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Retraso de servicio</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">14</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-info" style="width:64%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Atención al cliente</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">9</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-warning" style="width:41%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Documentación</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">3</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-secondary" style="width:14%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Otros</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">3</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-slate-400" style="width:14%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Plazos: barras ultra finas -->
+          <div class="card p-6">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-semibold text-slate-800">Cumplimiento de plazos</h3>
+              <span class="badge b-info">SLA</span>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Vencidas</span>
+                  <span class="text-sm font-bold text-danger tabular-nums">12</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-danger" style="width:80%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Vencen hoy</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">8</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-warning" style="width:53%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Por vencer</span>
+                  <span class="text-sm font-bold text-slate-800 tabular-nums">15</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-info" style="width:100%"></div></div>
+              </div>
+              <div>
+                <div class="flex items-baseline justify-between mb-1.5">
+                  <span class="text-sm text-slate-600">Dentro del plazo</span>
+                  <span class="text-sm font-bold text-success tabular-nums">4</span>
+                </div>
+                <div class="h-1.5 rounded-full bg-slate-100 overflow-hidden"><div class="h-full rounded-full bg-success" style="width:27%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla quejas que requieren atención -->
+        <div class="card">
+          <div class="flex items-center justify-between px-6 pt-6 pb-4">
+            <div>
+              <p class="sec-label">Atención</p>
+              <h3 class="text-lg font-semibold text-slate-800 mt-1">Quejas que requieren atención</h3>
+            </div>
+            <a href="/quejas" class="text-xs font-semibold text-primary hover:underline shrink-0">Ver todas las quejas</a>
+          </div>
+          <div class="table-scroll px-2 pb-2">
+            <table class="w-full text-sm min-w-[680px]">
+              <thead>
+                <tr class="text-left text-[.68rem] uppercase tracking-wider text-slate-400 font-bold">
+                  <th class="px-4 py-2.5">Folio</th>
+                  <th class="px-4 py-2.5">Cliente</th>
+                  <th class="px-4 py-2.5">Estado</th>
+                  <th class="px-4 py-2.5">Prioridad</th>
+                  <th class="px-4 py-2.5">Plazo registrado</th>
+                  <th class="px-4 py-2.5 text-right">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0112</td>
+                  <td class="px-4 py-3">Laura Méndez</td>
+                  <td class="px-4 py-3"><span class="badge b-info">En investigación</span></td>
+                  <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                  <td class="px-4 py-3"><span class="badge b-danger">Vencido · 3 d</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0119</td>
+                  <td class="px-4 py-3">Carlos Rojas</td>
+                  <td class="px-4 py-3"><span class="badge b-secondary">Recibido</span></td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Vence hoy</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0108</td>
+                  <td class="px-4 py-3">Ana Quirós</td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Pendiente GC</span></td>
+                  <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                  <td class="px-4 py-3"><span class="badge b-danger">Vencido · 1 d</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0103</td>
+                  <td class="px-4 py-3">Beatriz Campos</td>
+                  <td class="px-4 py-3"><span class="badge b-info">En investigación</span></td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                  <td class="px-4 py-3"><span class="badge b-info">Por vencer · 4 d</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0098</td>
+                  <td class="px-4 py-3">Diego Mora</td>
+                  <td class="px-4 py-3"><span class="badge b-info">En investigación</span></td>
+                  <td class="px-4 py-3"><span class="badge b-danger">Alta</span></td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Vence hoy</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+                <tr class="border-t border-slate-100 hover:bg-slate-50/70 transition-colors">
+                  <td class="px-4 py-3 font-semibold text-primary">QUEJA-2026-0091</td>
+                  <td class="px-4 py-3">Fernanda Solís</td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Pendiente GC</span></td>
+                  <td class="px-4 py-3"><span class="badge b-warning">Media</span></td>
+                  <td class="px-4 py-3"><span class="badge b-info">Por vencer · 2 d</span></td>
+                  <td class="px-4 py-3 text-right"><a href="#" class="text-xs font-semibold text-primary hover:underline">Revisar</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="px-6 py-3 border-t border-slate-100 text-xs text-slate-400">Se muestran 6 de 18 casos · ordenados por severidad de plazo</div>
+        </div>
+      </section>
+
+      <p id="updated" class="text-xs text-slate-400 pt-4"></p>
+    </main>
+  </div>
+</div>
+
+<script>
+  /* ---------- Sidebar móvil ---------- */
+  function toggleSidebar(open) {
+    document.getElementById('sidebar').classList.toggle('-translate-x-full', !open);
+    document.getElementById('overlay').classList.toggle('hidden', !open);
+  }
+
+  /* ---------- Pestañas ---------- */
+  const tabs = document.querySelectorAll('.tab-btn');
+  const views = { general: document.getElementById('view-general'), quejas: document.getElementById('view-quejas') };
+  const breadcrumb = document.getElementById('breadcrumb');
+  const labels = { general: 'Vista general', quejas: 'Quejas' };
+  const charts = { general: null, quejas: null };
+
+  /* ---------- Helpers Chart.js ---------- */
+  const PAL = { primary:'#321fdb', success:'#2eb85c', danger:'#e55353', warning:'#f9b115', info:'#3399ff', secondary:'#6c757d' };
+
+  function areaGradient(ctx, rgb, a, b) {
+    const g = ctx.createLinearGradient(0, 0, 0, 300);
+    g.addColorStop(0, `rgba(${rgb},${a})`);
+    g.addColorStop(1, `rgba(${rgb},${b})`);
+    return g;
+  }
+
+  const lineOpts = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: {
+      legend: { display:false },
+      tooltip: {
+        backgroundColor:'#3c4b64', padding:10, cornerRadius:8, boxPadding:4,
+        titleFont:{ family:'Inter', weight:'600' },
+        bodyFont:{ family:'Inter' },
+      },
+    },
+    scales: {
+      x: { grid:{ display:false }, border:{ display:false }, ticks:{ color:'#98a2b3', font:{ family:'Inter', size:11 } } },
+      y: { beginAtZero:true, grid:{ color:'#eef1f5' }, border:{ display:false }, ticks:{ color:'#98a2b3', font:{ family:'Inter', size:11 }, precision:0 } },
+    },
+  };
+
+  function buildMeses() {
+    const out = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push(d.toLocaleDateString('es', { month:'short' }).replace(/\.$/, ''));
+    }
+    return out;
+  }
+  const MESES = buildMeses();
+  const RECIBIDAS = [33, 41, 38, 46, 44, 52, 49, 55, 58, 51, 60, 51];
+  const RESUELTAS = [21, 26, 30, 34, 31, 38, 41, 39, 44, 48, 42, 13];
+
+  /* ---------- Inicialización por vista (lazy) ---------- */
+  function initGeneral() {
+    const ctx = document.getElementById('chartGeneral');
+    if (!ctx || charts.general) return;
+    charts.general = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:MESES,
+        datasets:[
+          { label:'Recibidas', data:RECIBIDAS, borderColor:PAL.primary, backgroundColor:areaGradient(ctx,'50,31,219',.22,.02),
+            borderWidth:2, tension:.4, fill:true, pointRadius:0, pointHoverRadius:4, pointBackgroundColor:PAL.primary },
+          { label:'Resueltas', data:RESUELTAS, borderColor:PAL.success, backgroundColor:areaGradient(ctx,'46,184,92',.18,.02),
+            borderWidth:2, tension:.4, fill:true, pointRadius:0, pointHoverRadius:4, pointBackgroundColor:PAL.success },
+        ],
+      },
+      options:lineOpts,
+    });
+
+    const dctx = document.getElementById('chartDonut');
+    const donut = new Chart(dctx, {
+      type:'doughnut',
+      data:{
+        labels:['Quejas','SACP','Documentos','Riesgos'],
+        datasets:[{ data:[51,14,8,6], backgroundColor:[PAL.primary,PAL.info,PAL.warning,PAL.secondary],
+                    borderColor:'#ffffff', borderWidth:3, hoverOffset:6 }],
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'78%',
+        plugins:{ legend:{ display:false },
+          tooltip:{ backgroundColor:'#3c4b64', padding:10, cornerRadius:8, boxPadding:6, bodyFont:{ family:'Inter' } } },
+      },
+    });
+    const legend = document.getElementById('donutLegend');
+    const items = [['Quejas',51,'#321fdb'],['SACP',14,'#3399ff'],['Documentos',8,'#f9b115'],['Riesgos',6,'#6c757d']];
+    const total = items.reduce((s,i)=>s+i[1],0);
+    legend.innerHTML = items.map(([label,val,color]) => `
+      <div class="flex items-center justify-between py-1.5">
+        <span class="flex items-center gap-2.5 text-sm text-slate-600"><span class="dot" style="background:${color}"></span>${label}</span>
+        <span class="flex items-center gap-4">
+          <span class="font-semibold text-slate-800 tabular-nums">${val}</span>
+          <span class="w-10 text-right text-xs text-slate-400 tabular-nums">${Math.round(val/total*100)}%</span>
+        </span>
+      </div>`).join('');
+    void donut;
+  }
+
+  function initQuejas() {
+    const ctx = document.getElementById('chartQuejas');
+    if (!ctx || charts.quejas) return;
+    charts.quejas = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:MESES,
+        datasets:[
+          { label:'Recibidas', data:RECIBIDAS, borderColor:PAL.primary, backgroundColor:areaGradient(ctx,'50,31,219',.22,.02),
+            borderWidth:2, tension:.4, fill:true, pointRadius:0, pointHoverRadius:4, pointBackgroundColor:PAL.primary },
+          { label:'Resueltas', data:RESUELTAS, borderColor:PAL.success, backgroundColor:areaGradient(ctx,'46,184,92',.18,.02),
+            borderWidth:2, tension:.4, fill:true, pointRadius:0, pointHoverRadius:4, pointBackgroundColor:PAL.success },
+        ],
+      },
+      options:lineOpts,
+    });
+  }
+
+  function switchTab(tab) {
+    Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== tab));
+    breadcrumb.textContent = labels[tab];
+    tabs.forEach((b) => {
+      const active = b.dataset.tab === tab;
+      b.classList.toggle('bg-primary', active);
+      b.classList.toggle('text-white', active);
+      b.classList.toggle('shadow-sm', active);
+      if (!active) { b.classList.add('text-slate-500'); b.classList.add('hover:text-slate-800'); }
+      else { b.classList.remove('text-slate-500','hover:text-slate-800'); }
+    });
+    if (tab === 'general') { initGeneral(); charts.general.resize(); }
+    else { initQuejas(); charts.quejas.resize(); }
+  }
+
+  tabs.forEach((b) => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+  /* ---------- Arranque ---------- */
+  initGeneral();
+  document.getElementById('updated').textContent =
+    'Datos de demostración · Última actualización: ' + new Date().toLocaleString('es-CR', { timeZone:'America/Costa_Rica' });
+</script>
+</body>
+</html>

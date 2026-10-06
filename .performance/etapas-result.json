@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "checks": [
+    "legacy intacto",
+    "calendario y feriados",
+    "regla y calendario inmutables",
+    "reapertura con nueva versión",
+    "renombrado independiente del flujo",
+    "RLS y autorización",
+    "20 transiciones: 1 éxito/19 conflictos",
+    "20 ediciones: 1 éxito/19 conflictos",
+    "validación SQL",
+    "10 workers sin duplicar alertas",
+    "agregados de dashboard"
+  ],
+  "load": {
+    "concurrency": 50,
+    "requests": 500,
+    "syntheticCases": 1000,
+    "elapsedMs": 9686,
+    "p50Ms": 238,
+    "p95Ms": 3624,
+    "p99Ms": 6763,
+    "scope": "PostgreSQL local, datos sintéticos; no mide capacidad de Vercel/Supabase"
+  }
+}

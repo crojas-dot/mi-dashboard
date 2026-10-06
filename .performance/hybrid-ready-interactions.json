@@ -1,0 +1,151 @@
+{
+  "label": "hybrid-ready-interactions",
+  "generatedAt": "2026-09-18T01:46:17.496Z",
+  "metric": "unique production entry files; gzip estimated per file; excludes deferred JS from initial JS",
+  "routes": [
+    {
+      "route": "/",
+      "initialJs": {
+        "files": 13,
+        "bytes": 905909,
+        "gzipBytes": 257437
+      },
+      "initialCss": {
+        "files": 3,
+        "bytes": 450939,
+        "gzipBytes": 54319
+      },
+      "deferredJs": {
+        "files": 6,
+        "bytes": 345465,
+        "gzipBytes": 114954
+      }
+    },
+    {
+      "route": "/login",
+      "initialJs": {
+        "files": 13,
+        "bytes": 893181,
+        "gzipBytes": 253625
+      },
+      "initialCss": {
+        "files": 2,
+        "bytes": 447234,
+        "gzipBytes": 53328
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/quejas",
+      "initialJs": {
+        "files": 16,
+        "bytes": 969336,
+        "gzipBytes": 276228
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456935,
+        "gzipBytes": 55645
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/mis-quejas",
+      "initialJs": {
+        "files": 15,
+        "bytes": 1067961,
+        "gzipBytes": 306410
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 459264,
+        "gzipBytes": 56091
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/configuracion",
+      "initialJs": {
+        "files": 15,
+        "bytes": 980043,
+        "gzipBytes": 275580
+      },
+      "initialCss": {
+        "files": 3,
+        "bytes": 453927,
+        "gzipBytes": 54826
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/documentos",
+      "initialJs": {
+        "files": 15,
+        "bytes": 924720,
+        "gzipBytes": 263203
+      },
+      "initialCss": {
+        "files": 3,
+        "bytes": 453927,
+        "gzipBytes": 54826
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/sacp",
+      "initialJs": {
+        "files": 14,
+        "bytes": 926781,
+        "gzipBytes": 262761
+      },
+      "initialCss": {
+        "files": 3,
+        "bytes": 453927,
+        "gzipBytes": 54826
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    },
+    {
+      "route": "/usuarios",
+      "initialJs": {
+        "files": 14,
+        "bytes": 935373,
+        "gzipBytes": 265069
+      },
+      "initialCss": {
+        "files": 3,
+        "bytes": 453927,
+        "gzipBytes": 54826
+      },
+      "deferredJs": {
+        "files": 5,
+        "bytes": 119020,
+        "gzipBytes": 37815
+      }
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+/* One CSS pipeline, Tailwind v4 with tw: and one Preflight reset. */
+@import "tailwindcss" prefix(tw) source(none);
+@import "./tokens.css";
+@source "../../components";
+@source "../../app";
+@source "../../lib";
+
+@theme inline {
+  --font-sans: var(--font-qms-inter, ui-sans-serif), system-ui, sans-serif;
+  
+  /* Tipografía más grande y legible */
+  --text-base: 1rem;           /* 16px */
+  --text-base--line-height: 1.6;
+  --text-lg: 1.125rem;         /* 18px */
+  --text-lg--line-height: 1.6;
+  --text-xl: 1.25rem;          /* 20px */
+  --text-xl--line-height: 1.5;
+  --text-2xl: 1.5rem;          /* 24px */
+  --text-2xl--line-height: 1.4;
+  --text-3xl: 1.875rem;        /* 30px */
+  --text-3xl--line-height: 1.3;
+  --text-4xl: 2.25rem;         /* 36px */
+
+  --color-primary: var(--color-qms-primary);
+  --color-primary-hover: var(--color-qms-primary-hover);
+  --color-primary-subtle: var(--color-qms-primary-subtle);
+  --color-foreground: var(--color-qms-foreground);
+  --color-muted: var(--color-qms-muted-foreground);
+  --color-border: var(--color-qms-border);
+  --color-surface: var(--color-qms-surface);
+  --color-background: var(--color-qms-background);
+  --color-hover: var(--color-qms-hover-bg);
+  --color-sidebar: var(--color-qms-dark);
+  --color-danger: var(--color-qms-danger-strong);
+  --color-danger-hover: var(--color-qms-danger-hover);
+  --radius-md: var(--radius-qms-control);
+  --radius-lg: var(--radius-qms-panel);
+  --radius-button: var(--radius-qms-control);
+  --radius-card: var(--radius-qms-panel);
+  --radius-modal: var(--radius-qms-panel);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  /* Tokens QMS completos */
+  --color-qms-primary: var(--color-qms-primary);
+  --color-qms-primary-dark: var(--color-qms-primary-dark);
+  --color-qms-primary-hover: var(--color-qms-primary-hover);
+  --color-qms-primary-subtle: var(--color-qms-primary-subtle);
+  --color-qms-foreground: var(--color-qms-foreground);
+  --color-qms-muted-foreground: var(--color-qms-muted-foreground);
+  --color-qms-danger-strong: var(--color-qms-danger-strong);
+  --color-qms-danger-hover: var(--color-qms-danger-hover);
+  --color-qms-dark: var(--color-qms-dark);
+  --color-qms-muted: var(--color-qms-muted);
+  --color-qms-border: var(--color-qms-border);
+  --color-qms-header: var(--color-qms-header);
+  --color-qms-surface: var(--color-qms-surface);
+  --color-qms-background: var(--color-qms-background);
+  --color-qms-danger: var(--color-qms-danger);
+  --color-qms-success: var(--color-qms-success);
+  --color-qms-warning: var(--color-qms-warning);
+  --color-qms-info: var(--color-qms-info);
+  --color-qms-purple: var(--color-qms-purple);
+  --color-qms-hover-bg: var(--color-qms-hover-bg);
+  --color-qms-grid: var(--color-qms-grid);
+  --color-qms-scroll: var(--color-qms-scroll);
+  --color-qms-scroll-hover: var(--color-qms-scroll-hover);
+
+  /* Fondos suaves vibrantes */
+  --color-soft-blue-bg: var(--color-soft-blue-bg);
+  --color-soft-blue-text: var(--color-soft-blue-text);
+  --color-soft-green-bg: var(--color-soft-green-bg);
+  --color-soft-green-text: var(--color-soft-green-text);
+  --color-soft-red-bg: var(--color-soft-red-bg);
+  --color-soft-red-text: var(--color-soft-red-text);
+  --color-soft-amber-bg: var(--color-soft-amber-bg);
+  --color-soft-amber-text: var(--color-soft-amber-text);
+  --color-soft-purple-bg: var(--color-soft-purple-bg);
+  --color-soft-purple-text: var(--color-soft-purple-text);
+  --color-soft-cyan-bg: var(--color-soft-cyan-bg);
+  --color-soft-cyan-text: var(--color-soft-cyan-text);
+  --color-soft-pink-bg: var(--color-soft-pink-bg);
+  --color-soft-pink-text: var(--color-soft-pink-text);
+  --color-soft-indigo-bg: var(--color-soft-indigo-bg);
+  --color-soft-indigo-text: var(--color-soft-indigo-text);
+  --color-soft-gray-bg: var(--color-soft-gray-bg);
+  --color-soft-gray-text: var(--color-soft-gray-text);
+}

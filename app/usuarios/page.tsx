@@ -1,7 +1,7 @@
 'use client'
 
 import { useDeferredValue, useEffect, useState } from 'react'
-import { Users, UserCheck, UserX, ShieldCheck, Plus, Search, Loader2, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
+import { Plus, Search, Loader2, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useUsuarios, usuariosKey, apiFetch, type Usuario } from '@/lib/queries/useUsuarios'
@@ -23,14 +23,6 @@ const roles = ['admin', 'calidad', 'colaborador'] as const
 const rolLabel: Record<string, string> = { admin: 'Administrador', calidad: 'Calidad', colaborador: 'Colaborador' }
 const rolVariant: Record<string, string> = { admin: 'blue', calidad: 'gray', colaborador: 'green' }
 const rolBg: Record<string, string> = { admin: 'bg-qms-primary', calidad: 'bg-qms-muted', colaborador: 'bg-qms-success' }
-
-interface StatCard {
-  label: string
-  value: number
-  icon: React.ReactNode
-  colorClass: string
-  bgClass: string
-}
 
 export default function UsuariosPage() {
   const user = useAuthStore((s) => s.user)
@@ -68,18 +60,6 @@ export default function UsuariosPage() {
   }
 
   const esAuto = (u: Usuario) => u.id === user?.id
-
-  const total = usuarios.length
-  const activos = usuarios.filter((u) => u.estado === 'activo').length
-  const inactivos = total - activos
-  const admins = usuarios.filter((u) => u.rol === 'admin').length
-
-  const stats: StatCard[] = [
-    { label: 'Usuarios', value: total, icon: <Users className="h-5 w-5" />, colorClass: 'text-qms-primary', bgClass: 'bg-soft-blue-bg' },
-    { label: 'Activos', value: activos, icon: <UserCheck className="h-5 w-5" />, colorClass: 'text-qms-success', bgClass: 'bg-soft-green-bg' },
-    { label: 'Inactivos', value: inactivos, icon: <UserX className="h-5 w-5" />, colorClass: 'text-qms-danger', bgClass: 'bg-soft-red-bg' },
-    { label: 'Administradores', value: admins, icon: <ShieldCheck className="h-5 w-5" />, colorClass: 'text-qms-purple', bgClass: 'bg-soft-purple-bg' },
-  ]
 
   function abrirCrear() {
     setFormMode('crear')
@@ -159,24 +139,12 @@ export default function UsuariosPage() {
         <Button onClick={abrirCrear}><Plus className="h-4 w-4" /> Nuevo usuario</Button>
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-4">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${s.bgClass} ${s.colorClass}`}>{s.icon}</div>
-            <div>
-              <p className="m-0 text-2xl font-bold leading-none text-qms-dark">{s.value}</p>
-              <p className="m-0 mt-1 text-xs text-qms-muted">{s.label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
       <div className="flex items-center gap-2">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             placeholder="Buscar por nombre o email..."
-            className="h-[38px] w-full rounded-button border border-qms-border bg-qms-surface py-2 pl-9 pr-3 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary"
+            className="ui-field h-[38px] w-full py-2 pl-9 pr-3 text-sm"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />

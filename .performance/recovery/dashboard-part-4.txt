@@ -1,0 +1,38 @@
+'use client'
+import dynamic from 'next/dynamic'
+
+function ChartLoading() {
+  return <span className="visually-hidden" role="status">Cargando gráfico…</span>
+}
+
+// Chart.js se importa bajo demanda al montarse; los contenedores del dashboard
+// reservan su tamaño. No hacer imports estáticos de estos componentes en las vistas.
+const CChart = dynamic(
+  () => import('@coreui/react-chartjs').then((module) => module.CChart),
+  { ssr: false, loading: ChartLoading },
+)
+
+export default CChart
+27:type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas' | 'ia'
+35:const descripciones: Record<Tab, string> = {"catalogos":"Organiza los valores disponibles en los formularios de cada módulo.","sla":"Define los tiempos de alerta y vencimiento de cada proceso.","general":"Administra los parámetros generales del sistema de calidad.","formularios":"Gestiona los enlaces públicos para recibir nuevas quejas.","roles":"Configura los permisos de lectura y edición por rol.","vistas":"Revisa la experiencia disponible para cada rol del sistema.","ia":"Administra proveedores, modelos y asignaciones del asistente."}
+67:  const { data: catalogos = [], isLoading: loading, error: catalogosError, refetch: retryCatalogos } = useCatalogos()
+70:  const invalidateCatalogos = () => queryClient.invalidateQueries({ queryKey: ['catalogos'] })
+72:  const [tab, setTab] = useState<Tab>('catalogos')
+74:    queryKey: ['configuraciones_sistema'],
+76:      const { data, error } = await supabase.from('configuraciones_sistema').select('*').order('categoria').order('clave')
+98:    for (const c of catalogos) if (c.modulo === moduloSel && (c.activo === null || c.activo === true)) tipos.add(c.tipo)
+100:  }, [catalogos, moduloSel])
+105:  const catalogosFiltrados = catalogos.filter((c) => c.modulo === moduloSel && c.tipo === filtroTipo)
+111:      ? await supabase.from('catalogos').update(payload).eq('id', editCatalogo.id)
+112:      : await supabase.from('catalogos').insert([payload])
+120:    const { error } = await supabase.from('catalogos').delete().eq('id', id)
+130:      ? await supabase.from('sla_config').update(payload).eq('id', editSLA.id)
+131:      : await supabase.from('sla_config').insert([payload])
+139:    const { error } = await supabase.from('sla_config').delete().eq('id', id)
+148:    const { error } = await supabase.from('configuraciones_sistema').update(payload).eq('clave', editConfig.clave)
+156:    { key: 'catalogos', label: 'Catálogos', icon: Tag },
+191:        {tab === 'catalogos' && catalogosError ? <ErrorState error={catalogosError} title="No se pudieron cargar los catálogos" onRetry={() => void retryCatalogos()} />
+195:        : (tab === 'catalogos' && loading) || (tab === 'sla' && slasLoading) || (tab === 'general' && configsLoading) || (tab === 'formularios' && formulariosLoading) ? (
+197:        ) : tab === 'catalogos' ? (
+242:                  {catalogosFiltrados.length === 0 ? (
+244:                  ) : catalogosFiltrados.map((c) => (

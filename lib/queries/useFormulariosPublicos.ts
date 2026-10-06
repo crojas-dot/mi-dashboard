@@ -25,8 +25,8 @@ export async function fetchFormulariosPublicos(): Promise<FormularioPublico[]> {
   return (data as FormularioPublico[]) ?? []
 }
 
-export function useFormulariosPublicos() {
-  return useQuery({ queryKey: formulariosKey, queryFn: fetchFormulariosPublicos })
+export function useFormulariosPublicos(enabled = true) {
+  return useQuery({ queryKey: formulariosKey, queryFn: fetchFormulariosPublicos, enabled })
 }
 
 export function useCrearFormularioPublico() {

@@ -35,20 +35,20 @@ export default function ListaAdjuntos({
               <button
                 type="button"
                 onClick={() => onPreview(a)}
-                className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-blue-700 hover:underline"
+                className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-qms-primary-hover hover:underline"
                 title="Vista previa"
               >
                 {a.nombre}
               </button>
               {esAnalisis && <Badge variant="blue">Análisis</Badge>}
               <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-              <button type="button" onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Vista previa">
+              <button type="button" onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Vista previa">
                 <Eye className="h-4 w-4" />
               </button>
               <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
                 {new Date(a.created_at).toLocaleDateString('es-ES')}
               </span>
-              <button type="button" onClick={() => onDownload(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-blue-600" title="Descargar">
+              <button type="button" onClick={() => onDownload(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Descargar">
                 <Download className="h-4 w-4" />
               </button>
               {onEliminar && puedeEliminar?.(a) && (

@@ -89,10 +89,10 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
                 value={password}
                 className="min-w-0 flex-1 bg-transparent font-mono text-sm text-qms-dark outline-none"
               />
-              <button type="button" onClick={() => setShow(!show)} className="shrink-0 cursor-pointer border-0 bg-transparent text-qms-muted transition-colors hover:opacity-70" title={show ? 'Ocultar' : 'Mostrar'}>
+              <button type="button" onClick={() => setShow(!show)} className="ui-button ui-button-ghost ui-button-sm shrink-0 cursor-pointer hover:opacity-70" title={show ? 'Ocultar' : 'Mostrar'}>
                 {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
-              <button type="button" onClick={limpiar} className="shrink-0 cursor-pointer border-0 bg-transparent text-qms-muted transition-colors hover:opacity-70" title="Limpiar">
+              <button type="button" onClick={limpiar} className="ui-button ui-button-ghost ui-button-sm shrink-0 cursor-pointer hover:opacity-70" title="Limpiar">
                 <X className="h-4 w-4" />
               </button>
             </div>

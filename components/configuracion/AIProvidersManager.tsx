@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Plus, Trash2, Save, Eye, EyeOff, Loader2, Sparkles, KeyRound, Brain, Check, RotateCcw, ChevronRight, Wifi, RefreshCw, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
+import { Plus, Save, Loader2, Sparkles, KeyRound, Brain, Check, ChevronRight, Wifi, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIProviderTipo, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
-import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
+import ErrorState from '@/components/ui/ErrorState'
+import AIProviderList from '@/components/configuracion/AIProviderList'
 
 const MODULOS_QMS: { id: string; label: string }[] = [
   { id: 'quejas', label: 'Quejas' },
@@ -35,19 +36,20 @@ const LIMITE_POR_TIPO: Record<AIProviderTipo, number> = {
 const CLAVE_PROVEEDORES = 'ai_providers'
 const CLAVE_ROUTING = 'ai_routing'
 
-const fmtNum = new Intl.NumberFormat('es-ES')
-
 export default function AIProvidersManager() {
   const [providers, setProviders] = useState<AIProvider[]>([])
   const [routing, setRouting] = useState<AIRouting>({})
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [loadVersion, setLoadVersion] = useState(0)
   const [guardandoRut, setGuardandoRut] = useState(false)
+  const [guardandoProveedor, setGuardandoProveedor] = useState(false)
+  const guardandoProveedorRef = useRef(false)
 
   interface EditingProvider extends Omit<AIProvider, 'modelos'> {
   modelos: string | string[]
 }
 const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(null)
-  const [mostrarKey, setMostrarKey] = useState<Record<string, boolean>>({})
   const [modalModulo, setModalModulo] = useState<string | null>(null)
   const [sysPrompt, setSysPrompt] = useState('')
   const [reseteados, setReseteados] = useState<Set<string>>(new Set())
@@ -79,11 +81,13 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   useEffect(() => {
     let activo = true
     ;(async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('configuraciones_sistema')
         .select('clave, valor')
         .in('clave', [CLAVE_PROVEEDORES, CLAVE_ROUTING, 'ai_cache_ttl_minutes'])
       if (!activo) return
+      if (error) { setLoadError(true); setLoading(false); return }
+      setLoadError(false)
       const porClave = new Map((data ?? []).map((r) => [r.clave, r.valor]))
       const provs = Array.isArray(porClave.get(CLAVE_PROVEEDORES)) ? (porClave.get(CLAVE_PROVEEDORES) as AIProvider[]) : []
       const rut = porClave.get(CLAVE_ROUTING)
@@ -105,11 +109,11 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       setCacheTtlValue(value)
       setCacheTtlUnit(unit)
       setLoading(false)
-    })()
+    })().catch(() => { if (activo) { setLoadError(true); setLoading(false) } })
     return () => {
       activo = false
     }
-  }, [])
+  }, [loadVersion])
 
   const providersRef = useRef(providers)
   const routingRef = useRef(routing)
@@ -179,11 +183,12 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
   const persistirProveedores = async (lista: AIProvider[]) => {
     try {
-      const { data: actual } = await supabase
+      const { data: actual, error } = await supabase
         .from('configuraciones_sistema')
         .select('valor')
         .eq('clave', CLAVE_PROVEEDORES)
         .maybeSingle()
+      if (error) throw error
       const dbProviders = Array.isArray(actual?.valor) ? (actual.valor as AIProvider[]) : []
       const dbPorId = new Map(dbProviders.map((p) => [p.id, p]))
       const aGuardar = lista.map((p) => {
@@ -194,8 +199,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       await upsertClave(CLAVE_PROVEEDORES, aGuardar)
       setReseteados(new Set())
       showSuccess('Proveedor de IA guardado')
+      return true
     } catch (e) {
       showError(e as Error, 'No se pudo guardar el proveedor')
+      return false
     }
   }
 
@@ -232,8 +239,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   const abrirEditar = (p: AIProvider) =>
     setEditingProvider(p)
 
-  const cerrarEditor = () =>
-    setEditingProvider(null)
+  const cerrarEditor = () => { if (!guardandoProveedorRef.current) setEditingProvider(null) }
 
   const probarConexion = async (providerId?: string) => {
     const targetProvider = providerId ? providers.find(p => p.id === providerId) : editingProvider
@@ -258,11 +264,6 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       const res = await fetch(testUrl, { method: 'GET', headers, signal: AbortSignal.timeout(10000) })
       
       if (res.ok) {
-        // Actualizar tokens_usados localmente (simulado - en producción usar headers de rate limit)
-        setProviders(prev => prev.map(p => 
-          p.id === targetProvider.id ? { ...p, tokens_usados: 0 } : p
-        ))
-        
         showSuccess('Conexión exitosa ✓')
       } else {
         const err = await res.json().catch(() => ({}))
@@ -274,13 +275,13 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   }
 
   const aplicarForm = async () => {
-    if (!editingProvider) return
+    if (!editingProvider || guardandoProveedorRef.current) return
     const p = editingProvider
     if (!p.nombre.trim() || !p.api_key.trim()) {
       showError(null, 'Nombre y API Key son obligatorios')
       return
     }
-    const modelosArray = (p.modelos as string[]).filter(Boolean).map(m => m.trim())
+    const modelosArray = (Array.isArray(p.modelos) ? p.modelos : p.modelos.split(',')).map(m => m.trim()).filter(Boolean)
     const base = {
       nombre: p.nombre.trim(),
       tipo: p.tipo,
@@ -292,28 +293,33 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     const nuevaLista: AIProvider[] = p.id && p.id !== ''
       ? providers.map((prov) => (prov.id === p.id ? { ...prov, ...base } : prov))
       : [...providers, { id: crypto.randomUUID(), tokens_usados: 0, ...base }]
-    setProviders(nuevaLista)
-    await persistirProveedores(nuevaLista)
-    cerrarEditor()
+    guardandoProveedorRef.current = true
+    setGuardandoProveedor(true)
+    try {
+      if (!await persistirProveedores(nuevaLista)) return
+      setProviders(nuevaLista)
+      setEditingProvider(null)
 
-    const savedId = p.id && p.id !== '' ? p.id : nuevaLista[nuevaLista.length - 1].id
-    const savedProvider = nuevaLista.find(pr => pr.id === savedId)
-    if (savedProvider && savedProvider.modelos.length === 0) {
-      try {
-        const { obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
-        const resultado = await obtenerModelosDisponibles(savedProvider)
-        if (resultado.modelos.length > 0) {
-          const listaFinal = nuevaLista.map(pr =>
-            pr.id === savedId ? { ...pr, modelos: resultado.modelos } : pr
-          )
-          setProviders(listaFinal)
-          await persistirProveedores(listaFinal)
-          showSuccess(`${resultado.modelos.length} modelos sincronizados automáticamente para ${savedProvider.nombre}`)
+      const savedId = p.id && p.id !== '' ? p.id : nuevaLista[nuevaLista.length - 1].id
+      const savedProvider = nuevaLista.find(pr => pr.id === savedId)
+      if (savedProvider && savedProvider.modelos.length === 0) {
+        try {
+          const { obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
+          const resultado = await obtenerModelosDisponibles(savedProvider)
+          if (resultado.modelos.length > 0) {
+            const listaFinal = nuevaLista.map(pr =>
+              pr.id === savedId ? { ...pr, modelos: resultado.modelos } : pr
+            )
+            if (await persistirProveedores(listaFinal)) {
+              setProviders(listaFinal)
+              showSuccess(`${resultado.modelos.length} modelos sincronizados automáticamente para ${savedProvider.nombre}`)
+            }
+          }
+        } catch {
+          // Silenciar errores de auto-sync
         }
-      } catch {
-        // Silenciar errores de auto-sync
       }
-    }
+    } finally { guardandoProveedorRef.current = false; setGuardandoProveedor(false) }
   }
 
   const eliminarProveedor = async (id: string) => {
@@ -579,173 +585,41 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       </div>
     )
   }
+  if (loadError) return <ErrorState message="No se pudo cargar la configuración de IA." onRetry={() => { setLoading(true); setLoadVersion(version => version + 1) }} />
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Sparkles className="h-4 w-4 text-qms-primary" />
         <h3 className="text-sm font-semibold text-qms-dark">Proveedores de IA</h3>
-        <span className="text-xs text-qms-muted">Sin modelos fijos: cualquier endpoint compatible funciona.</span>
+        <span className="text-sm text-qms-muted">Conectá un proveedor, seleccioná un modelo y definí un respaldo para cada módulo.</span>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <Button size="sm" variant="secondary" onClick={abrirNuevo}>
+        <Button disabled={guardandoProveedor} onClick={abrirNuevo}>
           <Plus className="h-3.5 w-3.5" /> Nuevo proveedor
         </Button>
         <span className="text-xs text-qms-muted">Los cambios se guardan automáticamente al agregar o eliminar.</span>
       </div>
 
-      <div className="rounded-lg border border-qms-border overflow-hidden">
-        <table className="w-full select-text text-sm">
-          <thead>
-            <tr className="bg-qms-header">
-              <th className="px-3 py-2 text-left font-semibold text-white">Nombre</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">Tipo</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">URL Base</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">Modelos</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">API Key</th>
-              <th className="px-3 py-2 text-left font-semibold text-white">Consumo / Límite</th>
-              <th className="px-3 py-2 text-center font-semibold text-white w-24">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {providers.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-gray-500">
-                  No hay proveedores configurados todavía.
-                </td>
-              </tr>
-            ) : (
-              providers.map((p) => {
-                const visible = mostrarKey[p.id]
-                const usados = p.tokens_usados ?? 0
-                const limite = p.limite_tokens ?? 100000
-                const pct = limite > 0 ? Math.min(100, Math.round((usados / limite) * 100)) : 0
-                const colorBarra = pct > 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-green-500'
-                const colorTexto = pct > 90 ? 'text-red-600' : pct >= 70 ? 'text-amber-600' : 'text-green-600'
-                return (
-                  <tr key={p.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium text-gray-900">{p.nombre}</td>
-                    <td className="px-3 py-2">
-                      <Badge variant="blue">{p.tipo}</Badge>
-                    </td>
-                    <td className="px-3 py-2 text-gray-600">{p.base_url || '—'}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex flex-col gap-0.5">
-                        {(p.modelos ?? []).length > 0 ? (
-                          (p.modelos as string[]).slice(0, 5).map((modelo) => {
-                            const testStatus = testModal.providerId === p.id ? testModal.progreso[modelo] : undefined
-                            return (
-                              <span key={modelo} className="font-mono text-xs text-gray-600 flex items-center gap-1">
-                                {testStatus === 'probando' && <Loader2 className="h-2.5 w-2.5 animate-spin text-blue-500" />}
-                                {testStatus === 'ok' && <CheckCircle className="h-2.5 w-2.5 text-green-500" />}
-                                {testStatus === 'fallo' && <XCircle className="h-2.5 w-2.5 text-red-500" />}
-                                {modelo}
-                              </span>
-                            )
-                          })
-                        ) : (
-                          <span className="text-xs text-gray-400">—</span>
-                        )}
-                        {(p.modelos ?? []).length > 5 && (
-                          <span className="text-xs text-gray-400">+{(p.modelos as string[]).length - 5} más</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-xs text-gray-500">
-                          {visible ? p.api_key : '••••••••••••'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setMostrarKey((m) => ({ ...m, [p.id]: !m[p.id] }))}
-                          className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 border-0 cursor-pointer bg-transparent"
-                          title={visible ? 'Ocultar' : 'Mostrar'}
-                        >
-                          {visible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-36 h-2 rounded-full bg-gray-200 overflow-hidden">
-                          <div
-                            className={`${colorBarra} h-full transition-all duration-300`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                        <span className={`text-xs font-mono ${colorTexto} whitespace-nowrap`}>
-                          {fmtNum.format(usados)} / {fmtNum.format(limite)} ({pct}%)
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => probarConexion(p.id)}
-                          className="rounded p-1 text-gray-400 hover:text-blue-600 transition-colors border-0 cursor-pointer bg-transparent"
-                          title="Probar conexión y actualizar consumo"
-                        >
-                          <Wifi className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => reiniciarContador(p.id)}
-                          className="rounded p-0.5 text-gray-300 transition-colors hover:text-gray-500 border-0 cursor-pointer bg-transparent"
-                          title="Reiniciar contador"
-                        >
-                          <RotateCcw className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => abrirTestModal(p.id)}
-                          disabled={syncingModels.has(p.id) || p.modelos.length === 0}
-                          className="rounded p-1 text-gray-400 hover:text-purple-600 transition-colors disabled:opacity-50 border-0 cursor-pointer bg-transparent"
-                          title="Testear modelos con prompts de prueba"
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => sincronizarModelos(p.id)}
-                          disabled={syncingModels.has(p.id) || testModal.enCurso && testModal.providerId === p.id}
-                          className="rounded p-1 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50 border-0 cursor-pointer bg-transparent"
-                          title="Sincronizar modelos desde el proveedor"
-                        >
-                          {syncingModels.has(p.id) ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => abrirEditar(p)}
-                          className="rounded px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 border-0 cursor-pointer bg-transparent"
-                        >
-                          Editar
-                        </button>
-                        <button
-                          onClick={() => eliminarProveedor(p.id)}
-                          className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 border-0 cursor-pointer bg-transparent"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 inline" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <AIProviderList
+        providers={providers}
+        syncingModels={syncingModels}
+        testProviderId={testModal.providerId}
+        testInProgress={testModal.enCurso}
+        testProgress={testModal.progreso}
+        onTest={abrirTestModal}
+        onSync={sincronizarModelos}
+        onEdit={abrirEditar}
+        onDelete={eliminarProveedor}
+        onConnect={probarConexion}
+        onReset={reiniciarContador}
+      />
 
       <div className="mt-8">
-        <h3 className="text-sm font-semibold text-gray-800">Enrutamiento por módulo</h3>
+        <h3 className="text-base font-medium text-qms-dark">Modelo por módulo</h3>
         <p className="mt-1 text-xs text-gray-500">
-          Asigná qué proveedor y qué modelo exacto se usa en cada módulo del QMS.
+          Elegí el proveedor y modelo principal. El respaldo se usa cuando el principal no responde.
         </p>
 
         <div className="mt-3 space-y-2">
@@ -769,7 +643,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                   </Select>
                   {!prov ? (
                     <input
-                      className="w-56 rounded-md border border-gray-300 bg-gray-100 px-2.5 py-1.5 text-sm text-gray-400"
+                      className="ui-field w-56 bg-gray-100 px-2.5 py-1.5 text-sm"
                       placeholder="Elegí un proveedor primero"
                       disabled
                     />
@@ -792,7 +666,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                     className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
                       ruta?.system_prompt?.trim()
                         ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
-                        : 'border-blue-600 text-blue-600 hover:bg-blue-50'
+                        : 'border-qms-primary text-qms-primary hover:bg-qms-primary-soft'
                     }`}
                     title="Definir el rol / system prompt de la IA para este módulo"
                   >
@@ -891,7 +765,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           <input
             type="number"
             min="1"
-            className="w-20 rounded-md border border-gray-300 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="ui-field w-20 px-2.5 py-1.5 text-sm"
             value={cacheTtlValue}
             onChange={(e) => setCacheTtlValue(Math.max(1, parseInt(e.target.value) || 1))}
           />
@@ -920,7 +794,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           <label className="block text-sm font-medium text-gray-700">Rol de la IA (System Prompt)</label>
           <textarea
             rows={10}
-            className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-400"
+            className="ui-textarea w-full resize-y px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
             placeholder="Eres un auditor de calidad del ECA. Analizás quejas identificando riesgos ISO 9001, causas raíz y recomendaciones…"
             value={sysPrompt}
             onChange={(e) => setSysPrompt(e.target.value)}
@@ -948,7 +822,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
               <div className="sm:col-span-2 min-w-0">
                 <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
                 <input
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="ui-field w-full px-3 py-2 text-sm"
                   placeholder="Ej: Grok xAI"
                   value={editingProvider?.nombre ?? ''}
                   onChange={(e) => setEditingProvider({ ...editingProvider!, nombre: e.target.value })}
@@ -972,7 +846,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 <input
                   type="number"
                   min="1"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  className="ui-field w-full px-3 py-2 text-sm"
                   value={editingProvider?.limite_tokens ?? 100000}
                   onChange={(e) => setEditingProvider({ ...editingProvider!, limite_tokens: parseInt(e.target.value) || 100000 })}
                 />
@@ -981,7 +855,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-medium text-gray-600 mb-1">URL Base (opcional)</label>
                   <input
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    className="ui-field w-full px-3 py-2 text-sm"
                     placeholder="https://api.x.ai/v1"
                     value={editingProvider?.base_url ?? ''}
                     onChange={(e) => setEditingProvider({ ...editingProvider!, base_url: e.target.value })}
@@ -989,22 +863,24 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 </div>
               )}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Modelos Soportados *</label>
+                <label htmlFor="ai-provider-models" className="block text-sm font-medium text-gray-600 mb-1">Modelos disponibles (opcional)</label>
                 <input
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                  placeholder="ej. modelo-1, modelo-2"
+                  className="ui-field w-full px-3 py-2 text-sm"
+                  id="ai-provider-models" placeholder="ej. modelo-1, modelo-2"
                   value={(editingProvider?.modelos as string[] | undefined)?.join(', ') || ''}
                   onChange={(e) => setEditingProvider({ ...editingProvider!, modelos: e.target.value.split(',').map(m => m.trimStart()) })}
                 />
-                <p className="mt-1 text-xs text-gray-500">Separados por coma: modelo-1, modelo-2</p>
+                <p className="mt-1 text-xs text-gray-500">Separados por comas. Si queda vacío, se intentan sincronizar al guardar.</p>
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-xs font-medium text-gray-600 mb-1">API Key *</label>
                 <div className="relative">
                   <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
-                    type={(editingProvider?.id && editingProvider?.id !== '') ? 'password' : 'text'}
-                    className="w-full rounded-md border border-gray-300 pl-10 pr-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                    type="password"
+                    autoComplete="off"
+                    aria-label="Clave de API del proveedor"
+                    className="ui-field w-full pl-10 pr-3 py-2 text-sm"
                     placeholder="sk-..."
                     value={editingProvider?.api_key ?? ''}
                     onChange={(e) => setEditingProvider({ ...editingProvider!, api_key: e.target.value })}
@@ -1014,13 +890,13 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           </div>
 
           <div className="flex items-end justify-end gap-2 pt-4 border-t border-gray-200">
-            <Button size="sm" variant="secondary" onClick={cerrarEditor}>
+            <Button size="sm" variant="secondary" disabled={guardandoProveedor} onClick={cerrarEditor}>
               Cancelar
             </Button>
             <Button size="sm" variant="secondary" onClick={() => editingProvider?.id && probarConexion(editingProvider.id)}>
               <Wifi className="h-3.5 w-3.5 mr-1" /> Probar Conexión
             </Button>
-            <Button size="sm" onClick={aplicarForm}>
+            <Button size="sm" loading={guardandoProveedor} onClick={aplicarForm}>
               <Save className="h-3.5 w-3.5 mr-1" /> {editingProvider?.id && editingProvider?.id !== '' ? 'Guardar Cambios' : 'Crear Proveedor'}
             </Button>
           </div>
@@ -1058,9 +934,9 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
             <div className="overflow-y-auto monday-scroll max-h-[calc(50vh-8px)]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
-                  <tr className="bg-qms-header">
-                    <th className="px-3 py-2 text-left font-semibold text-white">Modelo</th>
-                    <th className="px-3 py-2 text-center font-semibold text-white w-24">Estado</th>
+                  <tr className="bg-qms-table-head">
+                    <th className="px-3 py-2 text-left font-semibold text-qms-dark">Modelo</th>
+                    <th className="px-3 py-2 text-center font-semibold text-qms-dark w-24">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1072,7 +948,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                         <td className="px-3 py-1.5 text-center">
                           {status === 'pendiente' && <span className="text-xs text-gray-400">—</span>}
                           {status === 'probando' && (
-                            <span className="inline-flex items-center gap-1 text-xs text-blue-600">
+                            <span className="inline-flex items-center gap-1 text-xs text-qms-primary">
                               <Loader2 className="h-3 w-3 animate-spin" /> Probando
                             </span>
                           )}

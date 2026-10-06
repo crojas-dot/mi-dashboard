@@ -203,7 +203,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
             title={isExpanded ? 'Reducir panel' : 'Expandir panel'}
-            className={`cursor-pointer rounded p-1 transition-colors hover:bg-gray-100 ${isExpanded ? 'text-blue-600' : 'text-gray-400 hover:text-gray-700'}`}
+            className={`cursor-pointer rounded p-1 transition-colors hover:bg-gray-100 ${isExpanded ? 'text-qms-primary' : 'text-gray-400 hover:text-gray-700'}`}
           >
             <Maximize className="h-4 w-4" />
           </button>
@@ -229,7 +229,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               onClick={() => setActiveTab(t.key)}
               className={`-mb-px flex cursor-pointer items-center gap-1.5 border-b-2 px-1 py-2.5 text-sm font-medium transition-colors ${
                 isActive
-                  ? 'border-blue-600 text-blue-600'
+                  ? 'border-qms-primary text-qms-primary'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -322,7 +322,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Análisis</h1>
             <p className="mt-1 text-sm text-gray-500">Registrá avances y comentarios de tu investigación.</p>
 
-            <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-5">
+            <div className="mb-6 rounded-xl border border-blue-200 bg-qms-primary-soft p-5">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-qms-primary" />
                 <h2 className="text-xs font-medium uppercase tracking-wider text-qms-primary">Asistente IA</h2>
@@ -334,7 +334,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 </Button>
               </div>
               {aiAutoLoading && (
-                <p className="mt-2 flex items-center gap-1.5 text-xs text-blue-700">
+                <p className="mt-2 flex items-center gap-1.5 text-xs text-qms-primary-hover">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" /> Obteniendo contexto y consultando a la IA…
                 </p>
               )}
@@ -363,7 +363,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                   </div>
                   {modoEdicion ? (
                     <textarea
-                      className="w-full min-h-[500px] p-6 border border-gray-300 rounded-lg bg-white text-gray-800 focus:ring-2 focus:ring-blue-600 outline-none resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap"
+                      className="ui-textarea w-full min-h-[500px] p-6 resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap"
                       value={aiResult}
                       onChange={(e) => setAiResult(e.target.value)}
                       placeholder="El análisis de la IA aparecerá aquí..."
@@ -387,7 +387,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 <div className="mt-4 space-y-2">
                   {chat.map((m) => (
                     <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-blue-600 text-white' : 'border border-gray-200 bg-white text-gray-800'}`}>
+                      <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-qms-primary text-white' : 'border border-gray-200 bg-white text-gray-800'}`}>
                         <span className="whitespace-pre-wrap">{m.content}</span>
                       </div>
                     </div>
@@ -406,7 +406,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 <textarea
                   rows={2}
                   placeholder="Hacé una pregunta sobre esta queja..."
-                  className="flex-1 resize-none rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-blue-400"
+                  className="ui-textarea flex-1 resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   disabled={chatLoading}
@@ -422,7 +422,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               <textarea
                 rows={2}
                 placeholder="Registrá un avance o comentario de tu investigación..."
-                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-400"
+                className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
               />
@@ -512,7 +512,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               <textarea
                 rows={7}
                 placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
-                className="mt-2 w-full resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
+                className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
                 value={resolucion}
                 onChange={(e) => setResolucion(e.target.value)}
                 disabled={estado === 'Recibido' || resolucionEnviada}

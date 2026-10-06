@@ -108,7 +108,7 @@ export default function DocumentosPage() {
           <p className="text-sm text-gray-500 dark:text-gray-400">Versión actual: v{historialOpen?.version_actual}</p>
           <div className="flex items-center gap-3">
             <input
-              className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+              className="ui-field flex-1 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
               placeholder="Nueva versión (ej: 2.1)"
               value={editVersion}
               onChange={(e) => setEditVersion(e.target.value)}

@@ -43,6 +43,7 @@ export async function fetchQuejas(params: QuejasParams = {}): Promise<QuejasResu
   if (responsableId) query = query.eq('responsable_id', responsableId)
   const { data, error, count } = await query
     .order('fecha', { ascending: false })
+    .order('id', { ascending: true })
     .range(page * pageSize, (page + 1) * pageSize - 1)
   if (error) throw error
   return { data: (data as Queja[]) ?? [], count: count ?? 0 }
@@ -116,8 +117,8 @@ export async function fetchSLAConfig(proceso?: string): Promise<SLAConfig[]> {
   return (data as SLAConfig[]) ?? []
 }
 
-export function useSLAConfig(proceso?: string) {
-  return useQuery({ queryKey: [...slaConfigKey, proceso ?? 'todos'], queryFn: () => fetchSLAConfig(proceso) })
+export function useSLAConfig(proceso?: string, enabled = true) {
+  return useQuery({ queryKey: [...slaConfigKey, proceso ?? 'todos'], queryFn: () => fetchSLAConfig(proceso), enabled })
 }
 
 export interface QuejasEstadisticas {

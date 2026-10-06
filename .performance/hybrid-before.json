@@ -1,0 +1,151 @@
+{
+  "label": "hybrid-before",
+  "generatedAt": "2026-09-16T23:26:41.970Z",
+  "metric": "unique production entry files; gzip estimated per file; excludes deferred JS from initial JS",
+  "routes": [
+    {
+      "route": "/",
+      "initialJs": {
+        "files": 14,
+        "bytes": 999611,
+        "gzipBytes": 286196
+      },
+      "initialCss": {
+        "files": 5,
+        "bytes": 459745,
+        "gzipBytes": 56523
+      },
+      "deferredJs": {
+        "files": 1,
+        "bytes": 226445,
+        "gzipBytes": 77139
+      }
+    },
+    {
+      "route": "/login",
+      "initialJs": {
+        "files": 14,
+        "bytes": 982749,
+        "gzipBytes": 282067
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456040,
+        "gzipBytes": 55532
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/quejas",
+      "initialJs": {
+        "files": 16,
+        "bytes": 1032748,
+        "gzipBytes": 296248
+      },
+      "initialCss": {
+        "files": 5,
+        "bytes": 459048,
+        "gzipBytes": 56351
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/mis-quejas",
+      "initialJs": {
+        "files": 15,
+        "bytes": 1132074,
+        "gzipBytes": 326263
+      },
+      "initialCss": {
+        "files": 5,
+        "bytes": 461377,
+        "gzipBytes": 56797
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/configuracion",
+      "initialJs": {
+        "files": 15,
+        "bytes": 1049546,
+        "gzipBytes": 297923
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456040,
+        "gzipBytes": 55532
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/documentos",
+      "initialJs": {
+        "files": 15,
+        "bytes": 996936,
+        "gzipBytes": 285887
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456040,
+        "gzipBytes": 55532
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/sacp",
+      "initialJs": {
+        "files": 14,
+        "bytes": 999637,
+        "gzipBytes": 286014
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456040,
+        "gzipBytes": 55532
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    },
+    {
+      "route": "/usuarios",
+      "initialJs": {
+        "files": 14,
+        "bytes": 1007790,
+        "gzipBytes": 287976
+      },
+      "initialCss": {
+        "files": 4,
+        "bytes": 456040,
+        "gzipBytes": 55532
+      },
+      "deferredJs": {
+        "files": 0,
+        "bytes": 0,
+        "gzipBytes": 0
+      }
+    }
+  ]
+}

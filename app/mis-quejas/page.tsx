@@ -13,14 +13,16 @@ import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
+import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 export default function MisQuejasPage() {
   const user = useAuthStore((s) => s.user)
+  const { esVista, marcarVista } = useQuejasVistas(user?.id)
   const [page, setPage] = useState(0)
   const pageSize = 25
   const [panelOpen, setPanelOpen] = useState<Queja | null>(null)
   const queryClient = useQueryClient()
 
-  const { data, isLoading: loading, error, refetch } = useQuejas(
+  const { data, isLoading: loading, isFetching, error, refetch } = useQuejas(
     {
       page,
       pageSize,
@@ -30,7 +32,6 @@ export default function MisQuejasPage() {
   )
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
@@ -45,45 +46,51 @@ export default function MisQuejasPage() {
           Con el panel abierto se recorta 500px a la derecha (las columnas quedan bajo el panel)
           y aparece el scrollbar horizontal único para desplazarlas. */}
       <div
-        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-lg border border-qms-border pb-4 ${panelOpen ? 'mr-[calc(500px-16px)]' : 'monday-scroll-no-x'}`}
+        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-card border border-qms-border bg-qms-surface pb-4 ${panelOpen ? 'mr-[calc(500px-16px)]' : 'monday-scroll-no-x'}`}
       >
           {loading ? (
             <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
           ) : error ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <p className="text-sm text-gray-500">No se pudieron cargar tus quejas.</p>
-              <button onClick={() => refetch()} className="rounded-button border-0 bg-qms-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-qms-primary-hover">Reintentar</button>
+              <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
             </div>
           ) : (
-            <table className={`w-full text-left text-sm select-text ${panelOpen ? 'min-w-[calc(100%+484px)]' : 'min-w-[1200px]'}`}>
+            <table className={`w-full select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${panelOpen ? 'min-w-[calc(100%+484px)]' : 'min-w-[1200px]'}`}>
               <thead>
-                <tr className="sticky top-0 z-10 bg-qms-header">
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Folio</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[160px]">Cliente</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap min-w-[140px]">Categoría</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Prioridad</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Estado</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Límite investigación</th>
-                  <th className="px-3 py-2.5 text-left font-semibold text-white whitespace-nowrap">Fecha</th>
+                <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
+                  <th scope="col" className="pl-6!">Folio</th>
+                  <th scope="col" className="min-w-[160px]">Cliente</th>
+                  <th scope="col" className="min-w-[140px]">Categoría</th>
+                  <th scope="col">Prioridad</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Límite investigación</th>
+                  <th scope="col" className="pr-6!">Fecha</th>
                 </tr>
               </thead>
               <tbody>
                 {quejas.length === 0 ? (
                   <EmptyState message="No tienes quejas asignadas" />
                 ) : (
-                  quejas.map((q) => (
-                    <tr key={q.id} onClick={() => setPanelOpen(q)} className="transition-colors cursor-pointer border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><span className="font-mono text-sm font-medium">{q.folio}</span></td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap font-medium text-gray-900">{q.cliente_nombre}</td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap text-gray-600">{q.categoria}</td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle whitespace-nowrap"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
-                      <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">
+                  quejas.map((q) => {
+                    const vista = esVista(q.id)
+                    return (
+                    <tr key={q.id} onClick={() => {
+                      setPanelOpen(q)
+                      requestAnimationFrame(() => marcarVista(q.id))
+                    }} className={`cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
+                      <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
+                      <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
+                      <td>{q.categoria}</td>
+                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap">{q.prioridad ? <Badge variant={prioridadVariant[q.prioridad] || 'gray'}>{q.prioridad}</Badge> : <span className="text-qms-muted">—</span>}</td>
+                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={estadoVariant[q.estado] || 'gray'}>{q.estado}</Badge></td>
+                      <td className="whitespace-nowrap text-qms-muted">
                         {q.fecha_limite_investigacion ? new Date(q.fecha_limite_investigacion).toLocaleDateString('es-ES') : '—'}
                       </td>
-                      <td className="px-3 py-2.5 align-middle text-gray-500 whitespace-nowrap">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                      <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
                     </tr>
-                  ))
+                    )
+                  })
                 )}
               </tbody>
             </table>
@@ -93,7 +100,7 @@ export default function MisQuejasPage() {
       <QuejaColaboradorPanel queja={panelOpen} onClose={() => setPanelOpen(null)} onUpdated={invalidate} />
 
       {!loading && (
-        <Pagination page={page} count={totalCount} busy={loading} onChange={setPage} />
+        <Pagination page={page} count={totalCount} busy={isFetching} onChange={setPage} />
       )}
     </div>
   )

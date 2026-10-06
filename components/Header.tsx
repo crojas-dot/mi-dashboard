@@ -12,6 +12,7 @@ import NotificationDropdown from '@/components/header/NotificationDropdown'
 import UserMenuDropdown from '@/components/header/UserMenuDropdown'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { notificacionesKey } from '@/lib/queries/useNotificaciones'
+import { Menu } from 'lucide-react'
 
 const titles: Record<string, string> = {
   '/': 'Dashboard',
@@ -28,7 +29,7 @@ const titles: Record<string, string> = {
   '/reporteria': 'Reportería',
 }
 
-export default function Header() {
+export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => void } = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
@@ -149,14 +150,15 @@ export default function Header() {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-qms-border bg-qms-surface px-5">
-      <div className="flex items-center gap-2">
+    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-3 sm:px-5">
+      <div className="flex min-w-0 items-center gap-2">
+        {onOpenNavigation && <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="ui-button ui-button-ghost ui-button-icon lg:hidden"><Menu className="h-5 w-5" aria-hidden="true" /></button>}
         <div className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-button bg-qms-primary text-[11px] font-bold text-white">E</div>
-        <span className="text-[0.95rem] font-semibold text-qms-header">ECA-QMS</span>
-        <span className="hidden text-sm font-normal text-qms-muted md:inline">/ {title}</span>
+        <span className="hidden shrink-0 text-[0.95rem] font-semibold text-qms-header sm:inline">ECA-QMS</span>
+        <span className="truncate text-sm font-normal text-qms-muted">/ {title}</span>
       </div>
 
-      <div ref={rootRef} className="flex items-center gap-2">
+      <div ref={rootRef} className="flex shrink-0 items-center gap-2">
         <NotificationDropdown
           open={menuAbierto === 'notif'}
           onToggle={() => setMenuAbierto(menuAbierto === 'notif' ? null : 'notif')}

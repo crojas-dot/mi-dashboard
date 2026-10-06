@@ -1,40 +1,29 @@
-export function Table({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="overflow-x-auto rounded-card border border-qms-border">
-      <table className="w-full text-left text-[0.85rem]">{children}</table>
-    </div>
-  )
+import type { ComponentPropsWithRef } from 'react'
+
+export function Table({ children, className = '', ...props }: ComponentPropsWithRef<'table'>) {
+  return <div className="ui-panel overflow-x-auto overscroll-contain">
+    <table {...props} className={`w-full select-text text-left text-base text-gray-700 ${className}`}>{children}</table>
+  </div>
 }
 
-export function TableHead({ children }: { children: React.ReactNode }) {
-  return <thead>{children}</thead>
+export function TableHead(props: ComponentPropsWithRef<'thead'>) {
+  return <thead {...props} />
 }
 
-export function TableHeaderCell({ children, className = '' }: { children?: React.ReactNode; className?: string }) {
-  return (
-    <th
-      className={`whitespace-nowrap bg-qms-header px-3 py-2 text-left text-[0.8125rem] font-semibold text-white ${className}`}
-    >
-      {children}
-    </th>
-  )
+export function TableHeaderCell({ className = '', ...props }: ComponentPropsWithRef<'th'>) {
+  return <th scope="col" {...props} className={`whitespace-nowrap border-b border-qms-border bg-qms-table-head px-3 py-3.5 text-left text-sm font-semibold text-gray-700 ${className}`} />
 }
 
-export function TableRow({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
-  return (
-    <tr
-      className={`border-b border-qms-border transition-colors hover:bg-black/[0.03] ${onClick ? 'cursor-pointer' : ''}`}
-      onClick={onClick}
-    >
-      {children}
-    </tr>
-  )
+export function TableRow({ children, onClick, onKeyDown, tabIndex, className = '', ...props }: ComponentPropsWithRef<'tr'>) {
+  return <tr {...props} tabIndex={tabIndex ?? (onClick ? 0 : undefined)} onClick={onClick}
+    onKeyDown={event => {
+      onKeyDown?.(event)
+      if (event.defaultPrevented || event.target !== event.currentTarget || !onClick) return
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.currentTarget.click() }
+    }}
+    className={`border-b border-qms-border hover:bg-qms-hover-bg ${onClick ? 'cursor-pointer' : ''} ${className}`}>{children}</tr>
 }
 
-export function TableCell({ children, className = '', style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
-  return (
-    <td className={`px-3 py-2 align-middle text-qms-dark ${className}`} style={style}>
-      {children}
-    </td>
-  )
+export function TableCell({ className = '', ...props }: ComponentPropsWithRef<'td'>) {
+  return <td {...props} className={`px-3 py-4 align-middle ${className}`} />
 }

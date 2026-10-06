@@ -1,0 +1,69 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
+import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+
+type TableName =
+  | 'quejas'
+  | 'notificaciones'
+  | 'acciones'
+  | 'auditorias'
+  | 'documentos'
+  | 'procesos'
+  | 'reuniones'
+  | 'riesgos'
+
+interface SubscriptionConfig {
+  table: TableName
+  filter?: string
+  invalidateKeys: readonly (readonly unknown[])[]
+  /** Only listen for these events. Default: ['INSERT', 'UPDATE'] */
+  events?: ('INSERT' | 'UPDATE' | 'DELETE')[]
+}
+
+/**
+ * Subscribes to Supabase Realtime changes and invalidates React Query cache.
+ * Debounces invalidations by 750ms to prevent cascading refetches.
+ */
+export function useRealtimeSubscription(config: SubscriptionConfig) {
+  const queryClient = useQueryClient()
+  const configRef = useRef(config)
+  useEffect(() => { configRef.current = config }, [config])
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+
+    const channel = supabase
+      .channel(`realtime-${config.table}-${config.filter ?? 'all'}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: config.table,
+          ...(config.filter ? { filter: config.filter } : {}),
+        },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
+          const eventType = payload.eventType.toUpperCase() as 'INSERT' | 'UPDATE' | 'DELETE'
+          if (!(configRef.current.events ?? ['INSERT', 'UPDATE', 'DELETE']).includes(eventType)) return
+
+          // Debounce invalidations to prevent rapid-fire refetches
+          if (debounceRef.current) clearTimeout(debounceRef.current)
+          debounceRef.current = setTimeout(() => {
+            const keys = configRef.current.invalidateKeys
+            for (const key of keys) {
+              queryClient.invalidateQueries({ queryKey: [...key] })
+            }
+          }, 750)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      supabase.removeChannel(channel)
+    }
+  }, [queryClient, config.table, config.filter])
+}

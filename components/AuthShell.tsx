@@ -2,8 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import Sidebar from '@/components/Sidebar'
-import Header from '@/components/Header'
+import AuthenticatedLayout from '@/components/AuthenticatedLayout'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
 import { Loader2 } from 'lucide-react'
@@ -59,13 +58,5 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
     return <main>{children}</main>
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-1 flex-col min-w-0">
-        <Header />
-        <main className="flex-1 overflow-y-auto p-4">{children}</main>
-      </div>
-    </div>
-  )
+  return <AuthenticatedLayout>{children}</AuthenticatedLayout>
 }

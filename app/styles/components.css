@@ -1,0 +1,78 @@
+/* Tailwind v4: recetas compartidas, sin Bootstrap ni plugins de runtime. */
+@utility ui-button {
+  @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-card border text-sm font-medium no-underline select-none;
+  min-height: 2.5rem;
+  padding: .5rem 1rem;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: .65;
+  }
+}
+
+@utility ui-button-primary {
+  @apply border-qms-primary bg-qms-primary text-white;
+  &:not(:disabled):hover { @apply border-qms-primary-hover bg-qms-primary-hover; }
+}
+
+@utility ui-button-secondary {
+  @apply border-qms-border bg-qms-surface text-qms-dark;
+  &:not(:disabled):hover { @apply bg-qms-hover-bg; }
+}
+
+@utility ui-button-danger {
+  @apply border-qms-danger bg-qms-surface text-qms-danger;
+  &:not(:disabled):hover { @apply bg-qms-danger text-white; }
+}
+
+@utility ui-button-ghost {
+  @apply border-transparent bg-transparent text-qms-muted;
+  &:not(:disabled):hover { @apply bg-qms-hover-bg text-qms-dark; }
+}
+
+@utility ui-button-link {
+  @apply border-transparent bg-transparent text-qms-primary;
+  &:not(:disabled):hover { @apply bg-qms-primary-soft; }
+}
+
+@utility ui-button-sm {
+  min-height: 2rem;
+  padding: .375rem .625rem;
+}
+
+@utility ui-button-lg {
+  min-height: 2.75rem;
+  padding: .625rem 1.25rem;
+}
+
+@utility ui-button-icon {
+  width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+@utility ui-field {
+  @apply block w-full min-w-0 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm text-qms-dark;
+  min-height: 2.5rem;
+  &::placeholder { @apply text-qms-muted; }
+  &:disabled { @apply cursor-not-allowed bg-qms-hover-bg opacity-65; }
+  &[aria-invalid="true"] { @apply border-qms-danger; }
+}
+
+@utility ui-textarea {
+  @apply ui-field resize-y;
+  min-height: 6rem;
+}
+
+@utility ui-panel {
+  @apply min-w-0 rounded-card border border-qms-border bg-qms-surface;
+}
+
+@utility ui-table {
+  @apply w-full select-text text-left text-sm;
+  & th { @apply whitespace-nowrap border-b border-qms-border bg-qms-table-head px-4 py-3 text-left font-semibold text-qms-dark; }
+  & td { @apply border-b border-qms-border px-4 py-3 align-middle; }
+  & tbody tr:last-child td { border-bottom: 0; }
+  & tbody tr:hover { @apply bg-qms-hover-bg; }
+}

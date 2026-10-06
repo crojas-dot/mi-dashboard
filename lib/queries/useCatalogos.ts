@@ -27,8 +27,8 @@ export async function fetchCatalogos(): Promise<CatalogoValor[]> {
   return (data as CatalogoValor[]) ?? []
 }
 
-export function useCatalogos() {
-  return useQuery({ queryKey: catalogosKey, queryFn: fetchCatalogos })
+export function useCatalogos(enabled = true) {
+  return useQuery({ queryKey: catalogosKey, queryFn: fetchCatalogos, enabled })
 }
 
 export function catalogoTipoKey(tipo: string, modulo?: string) {

@@ -49,7 +49,7 @@ export default function NotificationDropdown({
         <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2">
           <p className="text-sm font-medium text-gray-900">Notificaciones</p>
           <div className="flex items-center gap-1.5">
-            {notifications.length > 0 && unreadCount > 0 && <button type="button" onClick={onMarkAll} className="cursor-pointer border-0 bg-transparent text-xs text-blue-600 hover:underline">Leer todas</button>}
+            {notifications.length > 0 && unreadCount > 0 && <button type="button" onClick={onMarkAll} className="cursor-pointer border-0 bg-transparent text-xs text-qms-primary hover:underline">Leer todas</button>}
             {notifications.length > 0 && <button type="button" onClick={onArchiveAll} className="cursor-pointer border-0 bg-transparent text-xs text-gray-500 hover:text-red-600 hover:underline">Vaciar</button>}
           </div>
         </div>

@@ -27,13 +27,14 @@ export async function fetchPermisosByRol(rol: string): Promise<Permiso[]> {
   return (data as Permiso[]) ?? []
 }
 
-export function usePermisos() {
+export function usePermisos(enabled = true) {
   return useQuery({
     queryKey: permisosKey,
     queryFn: fetchPermisos,
     staleTime: Infinity,
     gcTime: 30 * 60 * 1000,
     retry: 1,
+    enabled,
   })
 }
 

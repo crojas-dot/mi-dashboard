@@ -1,0 +1,490 @@
+Warning: truncated output (original token count: 8824)
+Total output lines: 693
+
+| `CProgress` | Barra/progreso de alto nivel. | 27 | `views/components/progress/Progress.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CProgressBar` | Segmento de barra de progreso. | 23 | `views/components/progress/Progress.jsx` |
+| `CSpinner` | Indicador de carga. | 26 | `App.jsx`, `components/AppContent.jsx`, `views/components/spinners/Spinners.jsx` |
+| `CToast` | Notificación toast. | 8 | `views/components/toasts/Toasts.jsx` |
+| `CToastHeader` | Cabecera de toast. | 5 | `views/components/toasts/Toasts.jsx` |
+| `CToastBody` | Cuerpo de toast. | 8 | `views/components/toasts/Toasts.jsx` |
+| `CToastClose` | Cierre de toast. | 3 | `views/components/toasts/Toasts.jsx` |
+| `CToaster` | Contenedor de toasts. | 2 | `views/components/toasts/Toasts.jsx` |
+
+## 11. Tablas
+
+| Componente | Uso visual | Apariciones JSX | Ejemplos de archivos |
+|---|---|---:|---|
+| `CTable` | Tabla CoreUI. | 24 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableHead` | Encabezado de tabla. | 25 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableBody` | Cuerpo de tabla. | 24 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableRow` | Fila de tabla. | 101 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableHeaderCell` | Celda de encabezado. | 168 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableDataCell` | Celda de datos. | 206 | `views/components/tables/Tables.jsx`, `views/dashboard/Dashboard.jsx` |
+| `CTableCaption` | Leyenda/caption de tabla. | 2 | `views/components/tables/Tables.jsx` |
+
+## 12. Formularios
+
+| Componente | Uso visual | Apariciones JSX | Ejemplos de archivos |
+|---|---|---:|---|
+| `CForm` | Formulario. | 16 | `views/authentication/change-password/ChangePassword.jsx`, `views/authentication/login/Login.jsx`, `views/authentication/register/Register.jsx`, … |
+| `CFormInput` | Input de texto/fecha/etc. | 109 | `components/AppHeader.jsx`, `views/authentication/change-password/ChangePassword.jsx`, `views/authentication/login/Login.jsx`, … |
+| `CFormLabel` | Etiqueta de campo. | 81 | `views/authentication/change-password/ChangePassword.jsx`, `views/authentication/login/Login.jsx`, `views/authentication/register/Register.jsx`, … |
+| `CFormCheck` | Checkbox/radio. | 64 | `views/authentication/login/Login.jsx`, `views/authentication/register/Register.jsx`, `views/components/button-group/ButtonGroup.jsx`, … |
+| `CFormSwitch` | Switch. | 7 | `views/forms/checks-radios/ChecksRadios.jsx` |
+| `CFormSelect` | Select. | 21 | `views/forms/floating-labels/FloatingLabels.jsx`, `views/forms/input-group/InputGroup.jsx`, `views/forms/layout/Layout.jsx`, … |
+| `CFormRange` | Control range. | 4 | `views/forms/range/Range.jsx` |
+| `CFormTextarea` | Área de texto. | 5 | `views/forms/floating-labels/FloatingLabels.jsx`, `views/forms/form-control/FormControl.jsx`, `views/forms/input-group/InputGroup.jsx`, … |
+| `CFormText` | Texto de ayuda. | 2 | `views/forms/chip-input/ChipInput.jsx` |
+| `CFormFeedback` | Feedback de validación. | 32 | `views/forms/validation/Validation.jsx` |
+| `CFormFloating` | Floating label wrapper. | 8 | `views/forms/floating-labels/FloatingLabels.jsx` |
+| `CInputGroup` | Grupo de input + addons. | 45 | `views/authentication/login/Login.jsx`, `views/authentication/register/Register.jsx`, `views/components/button-group/ButtonGroup.jsx`, … |
+| `CInputGroupText` | Addon textual/icono de input. | 35 | `views/authentication/login/Login.jsx`, `views/authentication/register/Register.jsx`, `views/components/button-group/ButtonGroup.jsx`, … |
+| `CChipInput` | Entrada de chips. | 11 | `views/forms/chip-input/ChipInput.jsx` |
+
+## 13. Carrusel
+
+| Componente | Uso visual | Apariciones JSX | Ejemplos de archivos |
+|---|---|---:|---|
+| `CCarousel` | Carrusel. | 6 | `views/components/carousel/Carousel.jsx` |
+| `CCarouselItem` | Slide de carrusel. | 18 | `views/components/carousel/Carousel.jsx` |
+| `CCarouselCaption` | Texto superpuesto del carrusel. | 6 | `views/components/carousel/Carousel.jsx` |
+
+## 14. Widgets estadísticos
+
+| Componente | Uso visual | Apariciones JSX | Ejemplos de archivos |
+|---|---|---:|---|
+| `CWidgetStatsA` | Widget estadístico tipo A con soporte de gráfico/acción. | 4 | `views/widgets/WidgetsDropdown.jsx` |
+| `CWidgetStatsB` | Widget estadístico tipo B. | 8 | `views/widgets/Widgets.jsx` |
+| `CWidgetStatsC` | Widget estadístico tipo C. | 17 | `views/widgets/Widgets.jsx` |
+| `CWidgetStatsD` | Widget estadístico tipo D, frecuente para marcas/gráficos. | 7 | `views/dashboard/DashboardBrand.jsx`, `views/widgets/WidgetsBrand.jsx` |
+| `CWidgetStatsE` | Widget estadístico tipo E. | 6 | `views/widgets/Widgets.jsx` |
+| `CWidgetStatsF` | Widget estadístico tipo F. | 12 | `views/widgets/Widgets.jsx` |
+
+## Componentes/utilidades CoreUI adicionales detectados
+
+- `useColorModes`: hook de CoreUI usado para alternar modo claro/oscuro/automático en el header.
+
+## 15. Gráficos disponibles y realmente usados
+
+| Componente | Tipo | Apariciones JSX | Archivos principales |
+|---|---|---:|---|
+| `CChart` | Wrapper genérico de Chart.js; recibe `type`. | 4 | `views/widgets/WidgetsBrand.jsx` |
+| `CChartBar` | Gráfico de barras. | 5 | `views/charts/Charts.jsx`, `views/widgets/Widgets.jsx`, `views/widgets/WidgetsDropdown.jsx` |
+| `CChartDoughnut` | Gráfico de dona. | 1 | `views/charts/Charts.jsx` |
+| `CChartLine` | Gráfico de líneas. | 8 | `views/charts/Charts.jsx`, `views/dashboard/MainChart.jsx`, `views/widgets/Widgets.jsx`, `views/widgets/WidgetsDropdown.jsx` |
+| `CChartPie` | Gráfico circular. | 1 | `views/charts/Charts.jsx` |
+| `CChartPolarArea` | Área polar. | 1 | `views/charts/Charts.jsx` |
+| `CChartRadar` | Gráfico radar. | 1 | `views/charts/Charts.jsx` |
+
+### Patrones de Chart.js vistos en el template
+
+- Mini charts dentro de widgets (`CWidgetStatsA`/`D`).
+- Línea principal del dashboard mediante `MainChart`.
+- Barras, doughnut, pie, polar y radar en la página de ejemplos de charts.
+- `maintainAspectRatio: false` cuando el contenedor controla la altura.
+- Leyendas desactivables cuando el contexto ya identifica la serie.
+- Uso de `getStyle(--cui-...)` para tomar colores del tema de CoreUI.
+- Líneas con `tension` y puntos configurables.
+- Grid/ejes simplificados para mini charts.
+
+## 16. Iconografía
+
+El renderer es `CIcon` (`@coreui/icons-react`). El template importa los siguientes recursos de `@coreui/icons`:
+
+### CoreUI line icons
+
+`cilArrowBottom`, `cilArrowRight`, `cilArrowTop`, `cilBasket`, `cilBell`, `cilBug`, `cilCalculator`, `cilCalendar`, `cilChartPie`, `cilCloudDownload`, `cilCode`, `cilCommentSquare`, `cilContrast`, `cilCreditCard`, `cilDescription`, `cilEnvelopeOpen`, `cilExternalLink`, `cilFile`, `cilLaptop`, `cilList`, `cilLockLocked`, `cilMagnifyingGlass`, `cilMediaPlay`, `cilMenu`, `cilMoon`, `cilNotes`, `cilOptions`, `cilPeople`, `cilPuzzle`, `cilSettings`, `cilSpeech`, `cilSpeedometer`, `cilStar`, `cilSun`, `cilTask`, `cilUser`, `cilUserFemale`, `cilUserFollow`
+
+### Brand icons
+
+`cibCcAmex`, `cibCcApplePay`, `cibCcMastercard`, `cibCcPaypal`, `cibCcStripe`, `cibCcVisa`, `cibFacebook`, `cibLinkedin`, `cibTwitter`, `cibYoutube`
+
+### Flags
+
+`cifBr`, `cifEs`, `cifFr`, `cifIn`, `cifPl`, `cifUs`
+
+### Sets completos importados
+
+`brandSet`, `flagSet`, `freeSet`
+
+También existen iconos/marcas SVG propios en `src/assets/brand/` y `src/assets/icons/`.
+
+## 17. Patrones visuales y utilidades de CoreUI presentes
+
+Estos patrones aparecen repetidamente en el código y forman parte del lenguaje visual real del template:
+
+| Patrón | Clases/estructura | Uso recomendado |
+|---|---|---|
+| Espaciado vertical | `mb-4`, `mb-3`, `mt-3`, `py-3`, `px-4` | Separación consistente de cards y secciones. |
+| Texto secundario | `text-body-secondary`, `small` | Subtítulos, contexto, fechas y metadatos. |
+| Énfasis numérico | `fs-5 fw-semibold` | Pequeñas métricas dentro de un panel. |
+| Métrica lateral | `border-start border-start-4 border-start-{color} py-1 px-3` | Métrica compacta sin crear una KPI card independiente. |
+| Layout flexible | `d-flex`, `align-items-center`, `justify-content-between`, `ms-auto`, `me-2` | Cabeceras, acciones y filas compactas. |
+| Fondo secundario | `bg-body-tertiary` | Áreas de contraste suave y fondos del shell. |
+| Responsive | `d-none d-md-block`, grid `CRow/CCol` | Ocultar o reacomodar contenido por breakpoint. |
+| Truncado | `text-truncate`, `text-nowrap` | Evitar desbordamientos de labels largos. |
+| Cards | `CCard` + `CCardHeader` + `CCardBody` (+ `CCardFooter`) | Unidad visual principal para dashboards. |
+| Progress groups | `.progress-group`, `.progress-group-header`, `.progress-group-bars` + `CProgress thin` | Comparaciones compactas y muy legibles. |
+| Tema | variables CSS `--cui-*` + `color-mode(dark)` | No hardcodear colores cuando CoreUI ya expone token. |
+
+## 18. Páginas de demostración visual incluidas
+
+El template incluye rutas/vistas específicas que sirven como catálogo práctico de cada familia visual:
+
+- **Components:** Accordion, Alerts, Badge, Breadcrumb, Buttons, Button Group, Cards, Carousel, Chip, Chip Set, Collapse, Dropdowns, List Group, Modals, Navs & Tabs, Pagination, Placeholders, Popovers, Progress, Search Button, Spinners, Tabs, Tables, Toasts, Tooltips.
+- **Forms:** Form Control, Select, Checks & Radios, Chip Input, Range, Input Group, Floating Labels, Layout, Validation.
+- **Charts:** página con `CChartBar`, `CChartLine`, `CChartDoughnut`, `CChartPie`, `CChartPolarArea`, `CChartRadar`.
+- **Icons:** CoreUI Icons, Flags, Brands.
+- **Widgets:** variantes Stats A–F, widgets de marca y widgets con mini charts.
+- **Authentication:** Login, Register, Change Password, Reset Password, Check Email, Password Changed.
+- **Error pages:** 404 y 500.
+
+## 19. Vocabulario visual recomendado para ECA QMS
+
+Para que otra IA no improvise estilos, conviene limitarla a este subconjunto del template para las pantallas productivas:
+
+### Shell
+- `CSidebar`, `CSidebarNav`, `CHeader`, `CHeaderNav`, `CContainer`, `CBreadcrumb`.
+
+### Estructura
+- `CRow`, `CCol`, `CCard`, `CCardHeader`, `CCardBody`, `CCardFooter`.
+
+### Navegación interna
+- `CNav`, `CNavItem`, `CNavLink` o `CTabs` cuando corresponda.
+
+### Datos
+- `CTable` y subcomponentes, `CBadge`, `CProgress`, `CProgressBar`.
+
+### Gráficos
+- `CChartBar`, `CChartLine`, `CChartDoughnut`; `CChartPie` solo cuando una parte-del-total sea realmente clara.
+
+### Acciones y filtros
+- `CButton`, `CButtonGroup`, `CDropdown`, `CFormInput`, `CFormSelect`, `CInputGroup`, `CSearchButton`.
+
+### Feedback
+- `CAlert`, `CSpinner`, `CToast`, `CTooltip`, `CModal`.
+
+### Métricas compactas
+- Reutilizar el patrón real del template: `border-start border-start-4 ...` + `text-body-secondary small` + `fs-5 fw-semibold` + `CProgress thin`.
+- Evitar crear cuatro cards KPI si la información se entiende mejor dentro de un gráfico o grupo de progreso.
+
+## 20. Reglas estrictas para una IA que modifique ECA QMS
+
+```text
+1. Antes de crear un componente visual nuevo, buscar un equivalente CoreUI de este inventario.
+2. No crear un design system paralelo.
+3. No reemplazar CCard/CRow/CCol por divs con CSS custom sin necesidad.
+4. No crear .modern-card, .analytics-card, .kpi-card-v2, etc. si CoreUI ya resuelve el patrón.
+5. Reutilizar variables --cui-* y getStyle() para colores de charts.
+6. Usar CBadge para estados, CProgress para cumplimiento/progreso y CTable para listados.
+7. Donut/Pie solo para pocas categorías que formen un total comprensible.
+8. Barras horizontales para muchas categorías o rankings.
+9. Líneas únicamente cuando el eje temporal y la tendencia aporten significado.
+10. Mantener spacing, densidad, tipografía y responsive del template.
+11. No inventar datos para llenar gráficos.
+12. Mantener sidebar/header/breadcrumbs como componentes del shell, no rediseñarlos por módulo.
+```
+
+## 21. Resumen de inventario
+
+- Componentes/API importados desde `@coreui/react`: **115** (incluye `useColorModes`; el resto son componentes visuales).
+- Componentes de charts importados desde `@coreui/react-chartjs`: **7**.
+- Renderer de iconos: **`CIcon`**.
+- Recursos importados desde `@coreui/icons`: **57**.
+- Scroll personalizado: **`SimpleBar`**.
+- SCSS visual principal: CoreUI + CoreUI Chart.js + SimpleBar.
+
+Este documento puede usarse como **contrato visual** para que un agente de código reutilice la apariencia de CoreUI en lugar de improvisar componentes nuevos.
+'use client'
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import {
+  CSpinner,
+  CRow,
+  CCol,
+  CCard,
+  CCardHeader,
+  CCardBody,
+  CTable,
+  CTableHead,
+  CTableHeaderCell,
+  CTableBody,
+  CTableRow,
+  CTableDataCell,
+} from '@coreui/react'
+import ErrorState from '@/components/ui/ErrorState'
+import Badge from '@/components/ui/Badge'
+import { History } from '@/components/ui/icons'
+import { prioridadVariant } from '@/lib/constan…2224 tokens truncated… from '@/app/dashboard.module.css'
+
+const ORDEN_SITUACION = ['Recibidas', 'En gestión', 'Pendientes de revisión', 'Cerradas/Resueltas', 'No procede', 'Otros']
+
+function macroSituacion(estado: string): string {
+  switch (estado) {
+    case 'Recibido': return 'Recibidas'
+    case 'En Investigación': return 'En gestión'
+    case 'Pendiente de Revisión GC': return 'Pendientes de revisión'
+    case 'Resuelto':
+    case 'Finalizado':
+    case 'Cerrada': return 'Cerradas/Resueltas'
+    case 'No Procede': return 'No procede'
+    default: return 'Otros'
+  }
+}
+
+export default function QuejasTab() {
+  const estadisticas = useQuejasEstadisticas()
+  const slaConfig = useSLAConfig('quejas')
+  const { data: analisis, isPending, isFetching, error, refetch } = useQuejasAnalisis()
+  const [ahora] = useState(() => Date.now())
+  const c = uiColors()
+
+  useRealtimeSubscription({
+    table: 'quejas',
+    invalidateKeys: [quejasEstadisticasKey, quejasAnalisisKey, [...queryKeys.dashboard]],
+  })
+
+  const slaMap = useMemo(() => {
+    const m: Record<string, { dias_alerta: number; dias_vencimiento: number }> = {}
+    for (const s of slaConfig.data ?? []) m[s.prioridad] = s
+    return m
+  }, [slaConfig.data])
+
+  const slaPorPrioridad = useMemo(() => {
+    const res: Record<string, { aTiempo: number; alerta: number; vencidas: number }> = {}
+    for (const f of analisis?.activas ?? []) {
+      if (!f.fecha_sla) continue
+      const p = f.prioridad || 'Media'
+      const cfg = slaMap[p] ?? { dias_alerta: 3, dias_vencimiento: 7 }
+      const dias = Math.floor((ahora - new Date(f.fecha_sla).getTime()) / 86400000)
+      const row = res[p] ?? (res[p] = { aTiempo: 0, alerta: 0, vencidas: 0 })
+      if (dias <= cfg.dias_alerta) row.aTiempo += 1
+      else if (dias <= cfg.dias_vencimiento) row.alerta += 1
+      else row.vencidas += 1
+    }
+    return res
+  }, [analisis?.activas, slaMap, ahora])
+
+  const ordenPrioridad = useMemo(() => ['Baja', 'Media', 'Alta', 'Crítica'].filter((p) => slaPorPrioridad[p]), [slaPorPrioridad])
+  const totalSla = useMemo(() => {
+    let aTiempo = 0
+    let alerta = 0
+    let vencidas = 0
+    const porSeries = { aTiempo: [] as number[], alerta: [] as number[], vencidas: [] as number[] }
+    for (const p of ordenPrioridad) {
+      const v = slaPorPrioridad[p]
+      porSeries.aTiempo.push(v.aTiempo)
+      porSeries.alerta.push(v.alerta)
+      porSeries.vencidas.push(v.vencidas)
+      aTiempo += v.aTiempo
+      alerta += v.alerta
+      vencidas += v.vencidas
+    }
+    return { aTiempo, alerta, vencidas, porSeries }
+  }, [ordenPrioridad, slaPorPrioridad])
+
+  const serieData = useMemo(() => ({
+    labels: analisis?.series.map((s) => s.mes) ?? [],
+    datasets: [
+      { label: 'Recibidas', data: analisis?.series.map((s) => s.recibidas) ?? [], borderColor: c.info, backgroundColor: c.info, tension: 0.3, fill: false, pointRadius: 3, borderWidth: 2 },
+      { label: 'Resueltas', data: analisis?.series.map((s) => s.resueltas) ?? [], borderColor: c.success, backgroundColor: c.success, tension: 0.3, fill: false, pointRadius: 3, borderWidth: 2 },
+    ],
+  }), [analisis?.series, c])
+  const recibidasMes = analisis?.series.at(-1)?.recibidas
+  const resueltasMes = analisis?.series.at(-1)?.resueltas
+
+  const situacion = useMemo(() => {
+    const grupos = new Map<string, number>()
+    for (const e of analisis?.porEstado ?? []) {
+      const clave = macroSituacion(e.etiqueta)
+      grupos.set(clave, (grupos.get(clave) ?? 0) + e.total)
+    }
+    return [...grupos.entries()]
+      .map(([etiqueta, total]) => ({ etiqueta, total }))
+      .sort((a, b) => ORDEN_SITUACION.indexOf(a.etiqueta) - ORDEN_SITUACION.indexOf(b.etiqueta))
+  }, [analisis?.porEstado])
+  const estadoTotal = useMemo(() => situacion.reduce((sum, s) => sum + s.total, 0), [situacion])
+  const colorSituacion = useMemo(() => ({
+    'Recibidas': c.info,
+    'En gestión': c.primary,
+    'Pendientes de revisión': c.warning,
+    'Cerradas/Resueltas': c.success,
+    'No procede': c.secondary,
+    'Otros': c.muted,
+  } as Record<string, string>), [c])
+  const donutData = useMemo(() => ({
+    labels: situacion.map((s) => s.etiqueta),
+    datasets: [{ data: situacion.map((s) => s.total), backgroundColor: situacion.map((s) => colorSituacion[s.etiqueta] ?? c.muted), borderWidth: 0 }],
+  }), [situacion, colorSituacion, c])
+  const situacionEsDonut = situacion.length > 0 && situacion.length <= 5
+  const situacionBar = useMemo(() => ({
+    labels: situacion.map((s) => s.etiqueta),
+    datasets: [{ label: 'Quejas', data: situacion.map((s) => s.total), backgroundColor: situacion.map((s) => colorSituacion[s.etiqueta] ?? c.muted), borderRadius: 3, maxBarThickness: 16 }],
+  }), [situacion, colorSituacion, c])
+
+  const slaData = useMemo(() => ({
+    labels: ordenPrioridad,
+    datasets: [
+      { label: 'A tiempo', data: totalSla.porSeries.aTiempo, backgroundColor: c.success, borderRadius: 2, maxBarThickness: 18 },
+      { label: 'En alerta', data: totalSla.porSeries.alerta, backgroundColor: c.warning, borderRadius: 2, maxBarThickness: 18 },
+      { label: 'Vencidas', data: totalSla.porSeries.vencidas, backgroundColor: c.danger, borderRadius: 2, maxBarThickness: 18 },
+    ],
+  }), [ordenPrioridad, totalSla, c])
+
+  const catData = useMemo(() => ({
+    labels: analisis?.porCategoria.map((cat) => cat.etiqueta) ?? [],
+    datasets: [{ label: 'Quejas', data: analisis?.porCategoria.map((cat) => cat.total) ?? [], backgroundColor: c.primary, borderRadius: 3, maxBarThickness: 16 }],
+  }), [analisis?.porCategoria, c])
+
+  const calcularSLA = (fechaSla: string, prioridad: string, estado: string) => {
+    if (estadoVariant[estado] === 'green') return { label: 'Completado', variant: 'green' }
+    const dias = Math.max(0, Math.floor((new Date(fechaSla).getTime() - ahora) / 86400000))
+    const sla = slaMap[prioridad]
+    if (sla) {
+      if (dias <= sla.dias_alerta) return { label: `${dias}d`, variant: 'green' }
+      if (dias <= sla.dias_vencimiento) return { label: `${dias}d`, variant: 'amber' }
+      return { label: `${dias}d`, variant: 'red' }
+    }
+    if (dias <= 3) return { label: `${dias}d`, variant: 'green' }
+    if (dias <= 7) return { label: `${dias}d`, variant: 'amber' }
+    return { label: `${dias}d`, variant: 'red' }
+  }
+
+  if (estadisticas.error) {
+    return <ErrorState error={estadisticas.error} title="No se pudieron cargar los indicadores de quejas" onRetry={() => void estadisticas.refetch()} retrying={estadisticas.isFetching} />
+  }
+  if (error) {
+    return <ErrorState error={error} title="No se pudieron cargar los datos del módulo de quejas" onRetry={() => void refetch()} retrying={isFetching} />
+  }
+  if (!estadisticas.data || (isPending && !analisis)) {
+    return <div role="status" className={styles.empty}><CSpinner color="primary" /></div>
+  }
+
+  const d = estadisticas.data
+  const noProceden = Math.max(0, d.totalConDecision - d.procedentes)
+  const atencion = analisis?.atencion ?? []
+
+  return (
+    <div role="tabpanel">
+      <CRow className="g-3 mb-4">
+        <CCol xs={12} lg={8}>
+          <CCard className="h-100">
+            <CCardHeader className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <h2 className="m-0 fs-5">Quejas recibidas vs resueltas</h2>
+              <div className="d-flex gap-2 flex-wrap">
+                <PanelMetric color="info" etiqueta="Recibidas este mes" valor={recibidasMes ?? d.mesActual} />
+                <PanelMetric color="success" etiqueta="Resueltas este mes" valor={resueltasMes ?? 0} />
+              </div>
+            </CCardHeader>
+            <CCardBody>
+              {serieData.labels.length ? (
+                <div className={styles.chartLarge}>
+                  <CChart
+                    type="line"
+                    wrapper={false}
+                    customTooltips={false}
+                    role="img"
+                    aria-label="Quejas recibidas y resueltas por mes"
+                    data={serieData}
+                    options={opcionesLinea(c) as never}
+                  />
+'use client'
+import { getStyle } from '@coreui/utils'
+
+export interface CuiColors {
+  primary: string
+  success: string
+  info: string
+  warning: string
+  danger: string
+  secondary: string
+  body: string
+  muted: string
+  grid: string
+}
+
+// Fallbacks documentados de ECA-QMS (app/styles/tokens.css + coreui-bridge.css).
+const FALLBACK: CuiColors = {
+  primary: '#4257be',
+  success: '#1b9e3e',
+  info: '#3399ff',
+  warning: '#f9b115',
+  danger: '#e55353',
+  secondary: '#6c757d',
+  body: 'rgba(37, 42.92, 54.02, 0.95)',
+  muted: 'rgba(37, 42.92, 54.02, 0.681)',
+  grid: 'rgba(49, 72, 112, 0.175)',
+}
+
+const VARIABLES: Record<keyof CuiColors, string> = {
+  primary: '--color-qms-primary',
+  success: '--color-qms-success',
+  info: '--color-qms-info',
+  warning: '--color-qms-warning',
+  danger: '--color-qms-danger',
+  secondary: '--color-qms-muted',
+  body: '--cui-body-color',
+  muted: '--cui-secondary-color',
+  grid: '--cui-border-color-translucent',
+}
+
+let cache: CuiColors | null = null
+
+/** Paleta semántica CoreUI leída del scope real (getStyle de @coreui/utils). */
+export function cuiColors(): CuiColors {
+  if (typeof window === 'undefined') return FALLBACK
+  if (cache) return cache
+  const root = document.querySelector<HTMLElement>('.coreui-scope') ?? document.documentElement
+  const leer = (prop: string, fallback: string) => getStyle(prop, root) || fallback
+  cache = {
+    primary: leer(VARIABLES.primary, FALLBACK.primary),
+    success: leer(VARIABLES.success, FALLBACK.success),
+    info: leer(VARIABLES.info, FALLBACK.info),
+    warning: leer(VARIABLES.warning, FALLBACK.warning),
+    danger: leer(VARIABLES.danger, FALLBACK.danger),
+    secondary: leer(VARIABLES.secondary, FALLBACK.secondary),
+    body: leer(VARIABLES.body, FALLBACK.body),
+    muted: leer(VARIABLES.muted, FALLBACK.muted),
+    grid: leer(VARIABLES.grid, FALLBACK.grid),
+  }
+  return cache
+}
+'use client'
+import dynamic from 'next/dynamic'
+
+function ChartLoading() {
+  return <span className="visually-hidden" role="status">Cargando gráfico…</span>
+}
+
+// Chart.js se importa bajo demanda al montarse; los contenedores del dashboard
+// reservan su tamaño. No hacer imports estáticos de estos componentes en las vistas.
+const CChart = dynamic(
+  () => import('@coreui/react-chartjs').then((module) => module.CChart),
+  { ssr: false, loading: ChartLoading },
+)
+
+export default CChart
+27:type Tab = 'catalogos' | 'sla' | 'general' | 'formularios' | 'roles' | 'vistas' | 'ia'
+35:const descripciones: Record<Tab, string> = {"catalogos":"Organiza los valores disponibles en los formularios de cada módulo.","sla":"Define los tiempos de alerta y vencimiento de cada proceso.","general":"Administra los parámetros generales del sistema de calidad.","formularios":"Gestiona los enlaces públicos para recibir nuevas quejas.","roles":"Configura los permisos de lectura y edición por rol.","vistas":"Revisa la experiencia disponible para cada rol del sistema.","ia":"Administra proveedores, modelos y asignaciones del asistente."}
+67:  const { data: catalogos = [], isLoading: loading, error: catalogosError, refetch: retryCatalogos } = useCatalogos()
+70:  const invalidateCatalogos = () => queryClient.invalidateQueries({ queryKey: ['catalogos'] })
+72:  const [tab, setTab] = useState<Tab>('catalogos')
+74:    queryKey: ['configuraciones_sistema'],
+76:      const { data, error } = await supabase.from('configuraciones_sistema').select('*').order('categoria').order('clave')
+98:    for (const c of catalogos) if (c.modulo === moduloSel && (c.activo === null || c.activo === true)) tipos.add(c.tipo)
+100:  }, [catalogos, moduloSel])
+105:  const catalogosFiltrados = catalogos.filter((c) => c.modulo === moduloSel && c.tipo === filtroTipo)
+111:      ? await supabase.from('catalogos').update(payload).eq('id', editCatalogo.id)
+112:      : await supabase.from('catalogos').insert([payload])
+120:    const { error } = await supabase.from('catalogos').delete().eq('id', id)
+130:      ? await supabase.from('sla_config').update(payload).eq('id', editSLA.id)
+131:      : await supabase.from('sla_config').insert([payload])
+139:    const { error } = await supabase.from('sla_config').delete().eq('id', id)
+148:    const { error } = await supabase.from('configuraciones_sistema').update(payload).eq('clave', editConfig.clave)
+156:    { key: 'catalogos', label: 'Catálogos', icon: Tag },
+191:        {tab === 'catalogos' && catalogosError ? <ErrorState error={catalogosError} title="No se pudieron cargar los catálogos" onRetry={() => void retryCatalogos()} />
+195:        : (tab === 'catalogos' && loading) || (tab === 'sla' && slasLoading) || (tab === 'general' && configsLoading) || (tab === 'formularios' && formulariosLoading) ? (
+197:        ) : tab === 'catalogos' ? (
+242:                  {catalogosFiltrados.length === 0 ? (
+244:                  ) : catalogosFiltrados.map((c) => (

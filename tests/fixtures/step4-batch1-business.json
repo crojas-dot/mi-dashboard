@@ -1,0 +1,52 @@
+{
+  "app/procesos/page.tsx": {
+    "hooks": "6fc29bfa13ed5ddd23b3a8a01d362d6f8925913f13909f19cc93411ec7ca2819",
+    "events": "f08b9ea0109b3adae3d01ab3db120cf87b4411182d9c499c91b0db8131c78cd7",
+    "business": "05f671f9cc35856aa751b9e9f1acd0d0f9625a50b886f2f5935da9fa89012b71"
+  },
+  "app/procesos/components/NuevoProcesoModal.tsx": {
+    "hooks": "bfc4dc562dcec98ecf464b17305f448f98d5a84e7a5cd7dd1954db54e3184492",
+    "events": "5d6217684405911a5cb3c87e22faff0375bccb81095a5cb66b4e6bb22956ddf0",
+    "business": "a41be4d18330ee88867ba531cc6f0de0ab552bec0d0815ccbd856b5dbe4969d1"
+  },
+  "app/auditorias/page.tsx": {
+    "hooks": "c47323deea1c3e1041b478c728629a7ada4b1a81ccde8bf1a48e874feab29729",
+    "events": "325f61f5bc80765e42fba7bf3405d6f4218670191b5b35c9af1e3bdc2bd5193d",
+    "business": "79cf5b54c0f7ca157fc2a9eb5cd85bc071f5d15aef3a61f49b9c36092d04e442"
+  },
+  "app/auditorias/components/NuevaAuditoriaModal.tsx": {
+    "hooks": "fe3e1004bc6b7e7c4743c3803c7e8757b7b33e0658e90dce647e3b937c0cd7fd",
+    "events": "52bb2b9e97896def7fcd1e5cf9c4ff9f4c7b6c61eab9d9140af01dd70caaec6c",
+    "business": "c5211a425437ed40bc2768280f62d637966a34b57ac1ae767d80e4d95f328cd0"
+  },
+  "app/riesgos/page.tsx": {
+    "hooks": "a3cf69764e18daf6d1a2b5ea3723c8c14e764e37eb4a63314c4f4db70b0436ff",
+    "events": "23308e08ed5f79efdfbaa3213b8dd95a48435558c6ca70d0659aec38978ec92b",
+    "business": "61faf88819aab95d8a0c22e9d228fcf8f628fff1854732c8146fad363ed9f24f"
+  },
+  "app/riesgos/components/NuevoRiesgoModal.tsx": {
+    "hooks": "395c56f2daab55fc3f24f154003dff978b5fddaeeef642e8749d987e12cce13d",
+    "events": "efadfd500255119d3e87973a1e82e9cee04f9413a4594123e4a9a09d312da845",
+    "business": "a53e47c44d0e7a519f3911f2fd9fc0bd0f8873b90780803833ba0d840c86025b"
+  },
+  "app/revision/page.tsx": {
+    "hooks": "8e67992d21e6ff01c6fa592d8535755033bea2d95409bc3da380edb0b0461ebd",
+    "events": "0b95e72e359daf43162aaa751ed43346fbd608110b77dcfc51ff090aeb97e242",
+    "business": "4eca1af8b5f05957d8e13f47153020521a7b5ebd2ad6c03a49b0cbada2d6b64d"
+  },
+  "app/revision/components/NuevaReunionModal.tsx": {
+    "hooks": "6af55e79db2c42ae25ffa479c9d1b1b99473bb503b8ad0f916fcc8154686d67a",
+    "events": "820dac9d79a4ee1efcc13fccf0b3cc90ab4343ccf93a38b2b63cbb92ca011ac2",
+    "business": "55033585318ded4254a92350722ab585ebf186a20eebd5607fc7a95e7caf8d76"
+  },
+  "app/documentos/page.tsx": {
+    "hooks": "885c8568c33215f0941d9be5864212ba18a06f7b19a485d5bbdc51c3f7db1af0",
+    "events": "882403ab6cc8e1b8df83ff88f9064a5b29cfa5a4e7cab9f3dba804c0f6d128ab",
+    "business": "381d92a88bc10d839f26a01068d56b7a2acc7a37042c4fa69a6f24708ee2ad05"
+  },
+  "app/documentos/components/NuevoDocumentoModal.tsx": {
+    "hooks": "edb8c2caf6e73a733ac9d124ab00f4abf528ea4ad23773a18b64c042c2c30cc3",
+    "events": "29071a00d9f70a09435c199894bdd09d326ab17de9a72839a0c287c4ecbfaa97",
+    "business": "7f19593b18e2f86473b3fe7fb1c130b6448d92ee1bfed1893e85a572f36bf251"
+  }
+}

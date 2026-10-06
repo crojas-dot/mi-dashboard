@@ -1,0 +1,157 @@
+[
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Badge.tsx",
+    "consumers": [
+      "app/configuracion/components/ModoVistaActiva.tsx",
+      "app/configuracion/page.tsx",
+      "app/mis-quejas/components/QuejaColaboradorPanel.tsx",
+      "app/mis-quejas/page.tsx",
+      "app/quejas/components/QuejaDetalleModal.tsx",
+      "app/quejas/page.tsx",
+      "app/reporteria/components/GeneradorInformeModal.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx",
+      "components/configuracion/AIProvidersManager.tsx",
+      "components/dashboard/DocumentosTab.tsx",
+      "components/dashboard/GeneralTab.tsx",
+      "components/dashboard/QuejasTab.tsx",
+      "components/dashboard/RiesgosTab.tsx",
+      "components/dashboard/SacpTab.tsx",
+      "components/quejas/ListaAdjuntos.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Button.tsx",
+    "consumers": [
+      "app/configuracion/page.tsx",
+      "app/mis-quejas/components/QuejaColaboradorPanel.tsx",
+      "app/quejas/components/NuevaQuejaModal.tsx",
+      "app/quejas/components/QuejaDetalleModal.tsx",
+      "app/reporteria/components/GeneradorInformeModal.tsx",
+      "app/sacp/components/NuevaSACPModal.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx",
+      "components/configuracion/AIProvidersManager.tsx",
+      "components/ui/ErrorState.tsx",
+      "components/usuarios/CambiarMiPasswordModal.tsx",
+      "components/usuarios/ConfirmDialog.tsx",
+      "components/usuarios/PasswordModal.tsx",
+      "components/usuarios/ResetPasswordModal.tsx",
+      "components/usuarios/UsuarioFormModal.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/DeferredMount.tsx",
+    "consumers": [
+      "app/auditorias/page.tsx",
+      "app/documentos/page.tsx",
+      "app/procesos/page.tsx",
+      "app/quejas/page.tsx",
+      "app/reporteria/page.tsx",
+      "app/revision/page.tsx",
+      "app/riesgos/page.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx",
+      "components/Header.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/EmptyState.tsx",
+    "consumers": [
+      "app/mis-quejas/page.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/ErrorState.tsx",
+    "consumers": [
+      "app/configuracion/components/RolesAccesos.tsx",
+      "app/configuracion/components/ZonaHorariaEditor.tsx",
+      "app/configuracion/page.tsx",
+      "app/documentos/error.tsx",
+      "app/error.tsx",
+      "app/mis-quejas/components/QuejaColaboradorPanel.tsx",
+      "app/mis-quejas/page.tsx",
+      "app/quejas/components/QuejaDetalleModal.tsx",
+      "app/quejas/error.tsx",
+      "app/quejas/page.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx",
+      "components/configuracion/AIProvidersManager.tsx",
+      "components/dashboard/DocumentosTab.tsx",
+      "components/dashboard/GeneralTab.tsx",
+      "components/dashboard/QuejasTab.tsx",
+      "components/dashboard/RiesgosTab.tsx",
+      "components/dashboard/SacpTab.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/icons.tsx",
+    "consumers": [
+      "app/configuracion/components/RolesAccesos.tsx",
+      "app/configuracion/page.tsx",
+      "app/login/page.tsx",
+      "app/mis-quejas/components/QuejaColaboradorPanel.tsx",
+      "app/q/[token]/page.tsx",
+      "app/quejas/components/QuejaDetalleModal.tsx",
+      "app/reporteria/components/GeneradorInformeModal.tsx",
+      "app/reporteria/page.tsx",
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx",
+      "components/AuthShell.tsx",
+      "components/configuracion/AIProvidersManager.tsx",
+      "components/dashboard/ModuleTabs.tsx",
+      "components/quejas/AdjuntoPreviewModal.tsx",
+      "components/quejas/ListaAdjuntos.tsx",
+      "components/ui/PageHeader.tsx",
+      "components/usuarios/CambiarMiPasswordModal.tsx",
+      "components/usuarios/PasswordModal.tsx",
+      "components/usuarios/ResetPasswordModal.tsx",
+      "components/usuarios/UsuarioFormModal.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/PageHeader.tsx",
+    "consumers": [
+      "app/mis-quejas/page.tsx",
+      "app/reporteria/page.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Pagination.tsx",
+    "consumers": [
+      "app/mis-quejas/page.tsx",
+      "app/quejas/page.tsx",
+      "app/sacp/page.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Select.tsx",
+    "consumers": [
+      "app/configuracion/page.tsx",
+      "app/quejas/components/NuevaQuejaModal.tsx",
+      "app/quejas/components/QuejaDetalleModal.tsx",
+      "app/quejas/page.tsx",
+      "app/reporteria/components/GeneradorInformeModal.tsx",
+      "app/sacp/components/NuevaSACPModal.tsx",
+      "app/usuarios/page.tsx",
+      "components/configuracion/AIProvidersManager.tsx",
+      "components/usuarios/UsuarioFormModal.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Switch.tsx",
+    "consumers": [
+      "app/configuracion/components/ModoVistaActiva.tsx",
+      "app/configuracion/components/RolesAccesos.tsx"
+    ]
+  },
+  {
+    "file": "C:/Users/Soporte/Documents/Open Code/PruebaVercel/mi-dashboard/components/ui/Table.tsx",
+    "consumers": [
+      "app/sacp/page.tsx",
+      "app/usuarios/page.tsx"
+    ]
+  }
+]

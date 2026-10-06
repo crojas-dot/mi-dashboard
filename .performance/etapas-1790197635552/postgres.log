@@ -1,0 +1,128 @@
+2026-09-23 15:07:20.984 CST [20272] LOG:  starting PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35228, 64-bit
+2026-09-23 15:07:20.985 CST [20272] LOG:  listening on IPv4 address "127.0.0.1", port 55439
+2026-09-23 15:07:21.406 CST [12396] LOG:  database system was shut down at 2026-09-23 15:07:19 CST
+2026-09-23 15:07:21.431 CST [20272] LOG:  database system is ready to accept connections
+2026-09-23 15:07:22.056 CST [19660] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.056 CST [19660] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.056 CST [19660] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.095 CST [13372] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.095 CST [13372] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.095 CST [13372] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.135 CST [10628] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.135 CST [10628] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.135 CST [10628] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.160 CST [1908] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.160 CST [1908] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.160 CST [1908] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.238 CST [19816] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.238 CST [19816] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.238 CST [19816] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.272 CST [13320] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.272 CST [13320] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.272 CST [13320] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.282 CST [19236] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.282 CST [19236] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.282 CST [19236] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.437 CST [29544] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.437 CST [29544] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.437 CST [29544] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.484 CST [25956] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.484 CST [25956] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.484 CST [25956] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.487 CST [12316] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.487 CST [12316] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.487 CST [12316] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.556 CST [5860] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.556 CST [5860] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.556 CST [5860] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.619 CST [19636] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.619 CST [19636] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.619 CST [19636] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.620 CST [3208] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.620 CST [3208] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.620 CST [3208] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.673 CST [22636] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.673 CST [22636] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.673 CST [22636] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.674 CST [4648] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.674 CST [4648] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.674 CST [4648] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.709 CST [24420] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.709 CST [24420] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.709 CST [24420] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.812 CST [3220] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.812 CST [3220] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.812 CST [3220] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.862 CST [27112] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.862 CST [27112] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.862 CST [27112] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.889 CST [6288] ERROR:  Otra persona modificó la queja. Actualiza el expediente antes de guardar.
+2026-09-23 15:07:22.889 CST [6288] CONTEXT:  PL/pgSQL function qms_transition(uuid,bigint,text,text,text,uuid,text) line 7 at RAISE
+2026-09-23 15:07:22.889 CST [6288] STATEMENT:  SELECT * FROM qms_transition($1,$2,'investigation',NULL,'Procede',$3,NULL)
+2026-09-23 15:07:22.901 CST [6288] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.901 CST [6288] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.901 CST [6288] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.901 CST [3220] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.901 CST [3220] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.901 CST [3220] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.901 CST [4648] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.901 CST [4648] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.901 CST [4648] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.902 CST [24420] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.902 CST [24420] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.902 CST [24420] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.902 CST [3208] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.902 CST [3208] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.902 CST [3208] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.902 CST [22636] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.902 CST [22636] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.902 CST [22636] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.902 CST [5860] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.902 CST [5860] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.902 CST [5860] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.902 CST [19636] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.902 CST [19636] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.902 CST [19636] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.903 CST [12316] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.903 CST [12316] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.903 CST [12316] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.903 CST [25956] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.903 CST [25956] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.903 CST [25956] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.903 CST [29544] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.903 CST [29544] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.903 CST [29544] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.903 CST [13320] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.903 CST [13320] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.903 CST [13320] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.904 CST [19236] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.904 CST [19236] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.904 CST [19236] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.904 CST [19816] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.904 CST [19816] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.904 CST [19816] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.904 CST [10628] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.904 CST [10628] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.904 CST [10628] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.904 CST [1908] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.904 CST [1908] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.904 CST [1908] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.904 CST [31368] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.904 CST [31368] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.904 CST [31368] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.905 CST [13372] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.905 CST [13372] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.905 CST [13372] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.905 CST [19660] ERROR:  Otra persona modificó la queja. Actualiza antes de guardar.
+2026-09-23 15:07:22.905 CST [19660] CONTEXT:  PL/pgSQL function qms_update_details(uuid,bigint,text,text,uuid,text) line 6 at RAISE
+2026-09-23 15:07:22.905 CST [19660] STATEMENT:  SELECT * FROM qms_update_details($1,$2,NULL,NULL,NULL,$3)
+2026-09-23 15:07:22.907 CST [19660] ERROR:  Revisa duración, tipo de días, acción y alertas: positivas, únicas y dentro del plazo.
+2026-09-23 15:07:22.907 CST [19660] CONTEXT:  PL/pgSQL function qms_publish_stage(text,bigint,integer,text,integer[],text,text) line 12 at RAISE
+2026-09-23 15:07:22.907 CST [19660] STATEMENT:  SELECT qms_publish_stage('quejas.investigation',3,0,'business_days',ARRAY[1],'notify_quality')
+2026-09-23 15:07:23.061 CST [20272] LOG:  received fast shutdown request
+2026-09-23 15:07:23.063 CST [20272] LOG:  aborting any active transactions
+2026-09-23 15:07:23.090 CST [20272] LOG:  background worker "logical replication launcher" (PID 20976) exited with exit code 1
+2026-09-23 15:07:23.090 CST [21800] LOG:  shutting down
+2026-09-23 15:07:23.091 CST [21800] LOG:  checkpoint starting: shutdown immediate
+2026-09-23 15:07:23.225 CST [21800] LOG:  checkpoint complete: wrote 221 buffers (1.3%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.010 s, sync=0.119 s, total=0.135 s; sync files=149, longest=0.002 s, average=0.001 s; distance=1195 kB, estimate=1195 kB; lsn=0/19137D8, redo lsn=0/19137D8
+2026-09-23 15:07:23.285 CST [20272] LOG:  database system is shut down
