@@ -14,4 +14,12 @@ export const queryKeys = {
   permisos: ['permisos'] as const,
   quejasActividad: ['quejas_actividad'] as const,
   notificaciones: ['notificaciones'] as const,
+} as const
+
+/**
+ * Helper to create scoped query keys for pagination and filtering
+ * Usage: queryKeys.quejas, [queryKeys.quejas, { page: 1, status: 'open' }]
+ */
+export function createQueryKey(base: readonly string[], params?: Record<string, any>) {
+  return params ? [...base, params] as const : base
 }
