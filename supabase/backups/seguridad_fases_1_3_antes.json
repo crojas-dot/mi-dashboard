@@ -1,0 +1,654 @@
+{
+  "projectRef": "fykhrrpeoehwqznccmfp",
+  "description": "Metadatos previos a seguridad_fases_1_3. No contiene filas de usuarios, quejas ni claves.",
+  "policies": [
+    {
+      "tablename": "auditorias",
+      "policyname": "authenticated_all_auditorias",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": "(auth.role() = 'authenticated'::text)"
+    },
+    {
+      "tablename": "documentos",
+      "policyname": "authenticated_all_documentos",
+      "roles": "{public}",
+      "cmd": "ALL",
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": "(auth.role() = 'authenticated'::text)"
+    },
+    {
+      "tablename": "informes_config",
+      "policyname": "informes_config_delete_admin",
+      "roles": "{authenticated}",
+      "cmd": "DELETE",
+      "qual": "es_admin()",
+      "with_check": null
+    },
+    {
+      "tablename": "informes_config",
+      "policyname": "informes_config_insert",
+      "roles": "{authenticated}",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "tablename": "informes_config",
+      "policyname": "informes_config_select",
+      "roles": "{authenticated}",
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "tablename": "informes_config",
+      "policyname": "informes_config_update",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "true",
+      "with_check": "true"
+    },
+    {
+      "tablename": "usuarios",
+      "policyname": "authenticated_select_usuarios",
+      "roles": "{public}",
+      "cmd": "SELECT",
+      "qual": "(auth.role() = 'authenticated'::text)",
+      "with_check": null
+    },
+    {
+      "tablename": "usuarios",
+      "policyname": "authenticated_update_own_usuario_auth",
+      "roles": "{authenticated}",
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = auth_id)",
+      "with_check": "(auth.uid() = auth_id)"
+    }
+  ],
+  "tableGrants": [
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "auditorias",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "auditorias",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "auditorias",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "documentos",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "documentos",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "documentos",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "informes_config",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "informes_config",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "informes_config",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "anon",
+      "table_name": "usuarios",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "authenticated",
+      "table_name": "usuarios",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "table_name": "usuarios",
+      "privilege_type": "UPDATE"
+    }
+  ],
+  "functions": [
+    {
+      "signature": "actualizar_detalles_queja(uuid,text,text,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.actualizar_detalles_queja(p_queja_id uuid, p_categoria text DEFAULT NULL::text, p_prioridad text DEFAULT NULL::text, p_responsable_id uuid DEFAULT NULL::uuid, p_notas text DEFAULT NULL::text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja public.quejas;\n  v_dias integer;\nBEGIN\n  IF NOT public.app_es_staff() THEN RAISE EXCEPTION 'No autorizado'; END IF;\n\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n\n  IF p_prioridad IS NOT NULL THEN\n    SELECT dias_vencimiento INTO v_dias\n    FROM public.sla_config WHERE proceso = 'quejas' AND prioridad = btrim(p_prioridad) LIMIT 1;\n  END IF;\n\n  UPDATE public.quejas\n  SET categoria = COALESCE(nullif(btrim(p_categoria), ''), categoria),\n      prioridad = COALESCE(nullif(btrim(p_prioridad), ''), prioridad),\n      responsable_id = COALESCE(p_responsable_id, responsable_id),\n      notas = COALESCE(p_notas, notas),\n      fecha_sla = CASE WHEN p_prioridad IS NULL THEN fecha_sla\n        ELSE COALESCE(fecha, now()) + make_interval(days => COALESCE(v_dias, 7)) END\n  WHERE id = p_queja_id\n  RETURNING * INTO v_queja;\n\n  RETURN v_queja;\nEND;\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "actualizar_mis_preferencias_notificacion(boolean,boolean,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.actualizar_mis_preferencias_notificacion(p_habilitadas boolean DEFAULT true, p_sonido boolean DEFAULT true, p_sonido_id text DEFAULT 'notification/info'::text)\n RETURNS usuarios\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_auth_id uuid;\r\n  v_usuario public.usuarios;\r\nBEGIN\r\n  v_auth_id := auth.uid();\r\n  IF v_auth_id IS NULL THEN\r\n    RAISE EXCEPTION 'No hay sesión autenticada';\r\n  END IF;\r\n\r\n  UPDATE public.usuarios\r\n  SET notif_habilitadas = p_habilitadas,\r\n      notif_sonido = p_sonido,\r\n      notif_sonido_id = p_sonido_id\r\n  WHERE auth_id = v_auth_id\r\n  RETURNING * INTO v_usuario;\r\n\r\n  IF v_usuario.id IS NULL THEN\r\n    RAISE EXCEPTION 'No se encontró tu perfil de usuario';\r\n  END IF;\r\n\r\n  RETURN v_usuario;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "agregar_comentario_queja(uuid,text,text,boolean)",
+      "definition": "CREATE OR REPLACE FUNCTION public.agregar_comentario_queja(p_queja_id uuid, p_comentario text, p_tipo text DEFAULT 'interno'::text, p_visible_cliente boolean DEFAULT false)\n RETURNS quejas_comentarios\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_comentario public.quejas_comentarios;\r\n  v_queja public.quejas;\r\n  v_usuario_id uuid;\r\n  v_destino record;\r\nBEGIN\r\n  IF NOT public.app_es_staff() THEN RAISE EXCEPTION 'No autorizado'; END IF;\r\n  IF btrim(COALESCE(p_comentario, '')) = '' THEN RAISE EXCEPTION 'El comentario es obligatorio'; END IF;\r\n  IF p_tipo NOT IN ('interno', 'cliente') THEN RAISE EXCEPTION 'Tipo de comentario inválido'; END IF;\r\n  v_usuario_id := public.app_usuario_actual_id();\r\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\r\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\r\n\r\n  INSERT INTO public.quejas_comentarios (queja_id, usuario_id, comentario, tipo, visible_cliente, fecha)\r\n  VALUES (p_queja_id, v_usuario_id, btrim(p_comentario), p_tipo, p_visible_cliente, now())\r\n  RETURNING * INTO v_comentario;\r\n\r\n  FOR v_destino IN\r\n    SELECT id FROM public.usuarios\r\n    WHERE (id = v_queja.responsable_id OR rol IN ('admin', 'calidad'))\r\n      AND estado = 'activo'\r\n      AND id IS DISTINCT FROM v_usuario_id\r\n  LOOP\r\n    INSERT INTO public.notificaciones (usuario_id, fecha, tipo, mensaje, enlace, origen_id)\r\n    VALUES (v_destino.id, now(), 'queja_comentario', 'Nuevo comentario en la queja ' || v_queja.folio || '.', '/quejas', v_queja.id);\r\n  END LOOP;\r\n\r\n  RETURN v_comentario;\r\nEND;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "app_usuario_actual_id()",
+      "definition": "CREATE OR REPLACE FUNCTION public.app_usuario_actual_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT id FROM public.usuarios WHERE auth_id = auth.uid() LIMIT 1;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "crear_queja_interna(text,text,text,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.crear_queja_interna(p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja public.quejas;\n  v_dias integer;\nBEGIN\n  IF NOT public.app_es_staff() THEN\n    RAISE EXCEPTION 'No autorizado';\n  END IF;\n  IF btrim(COALESCE(p_cliente_nombre, '')) = '' OR btrim(COALESCE(p_categoria, '')) = '' OR btrim(COALESCE(p_prioridad, '')) = '' THEN\n    RAISE EXCEPTION 'Cliente, categoría y prioridad son obligatorios';\n  END IF;\n\n  SELECT dias_vencimiento INTO v_dias\n  FROM public.sla_config\n  WHERE proceso = 'quejas' AND prioridad = btrim(p_prioridad)\n  LIMIT 1;\n\n  INSERT INTO public.quejas (\n    folio, cliente_nombre, email_cliente, categoria, descripcion,\n    prioridad, estado, fecha, fecha_sla\n  ) VALUES (\n    public.generar_folio_queja(), btrim(p_cliente_nombre), nullif(btrim(p_email_cliente), ''),\n    btrim(p_categoria), nullif(btrim(p_descripcion), ''), btrim(p_prioridad),\n    'Recibido', now(), now() + make_interval(days => COALESCE(v_dias, 7))\n  ) RETURNING * INTO v_queja;\n\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n  VALUES (now(), public.app_usuario_actual_id(), 'crear', 'quejas', 'Queja interna ' || v_queja.folio || ' creada');\n\n  RETURN v_queja;\nEND;\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "current_rol()",
+      "definition": "CREATE OR REPLACE FUNCTION public.current_rol()\n RETURNS text\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'public'\nAS $function$\r\n  select rol from public.usuarios where auth_id = auth.uid();\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "current_usuario_id()",
+      "definition": "CREATE OR REPLACE FUNCTION public.current_usuario_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'public'\nAS $function$\r\n  select id from public.usuarios where auth_id = auth.uid();\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "derivar_queja_a_sacp(uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.derivar_queja_a_sacp(p_queja_id uuid)\n RETURNS acciones\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_queja public.quejas;\r\n  v_accion public.acciones;\r\nBEGIN\r\n  IF NOT public.app_es_staff() THEN RAISE EXCEPTION 'No autorizado'; END IF;\r\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\r\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\r\n  IF v_queja.estado NOT IN ('En Investigación', 'Resuelto') THEN\r\n    RAISE EXCEPTION 'Sólo se puede derivar una queja en investigación o resuelta';\r\n  END IF;\r\n  IF v_queja.derivado_sacp_id IS NOT NULL THEN\r\n    SELECT * INTO v_accion FROM public.acciones WHERE id = v_queja.derivado_sacp_id;\r\n    RETURN v_accion;\r\n  END IF;\r\n\r\n  INSERT INTO public.acciones (\r\n    folio, tipo, origen, origen_id, descripcion, estado,\r\n    seguimiento_porcentaje, fecha_apertura\r\n  ) VALUES (\r\n    public.generar_folio_sacp(), 'Correctiva', 'queja', v_queja.id,\r\n    COALESCE(v_queja.descripcion, v_queja.cliente_nombre), 'Abierta', 0, now()\r\n  ) RETURNING * INTO v_accion;\r\n\r\n  UPDATE public.quejas SET derivado_sacp_id = v_accion.id WHERE id = v_queja.id;\r\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\r\n  VALUES (now(), public.app_usuario_actual_id(), 'derivar', 'quejas', 'Queja ' || v_queja.folio || ' derivada a ' || v_accion.folio);\r\n  RETURN v_accion;\r\nEND;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "es_admin()",
+      "definition": "CREATE OR REPLACE FUNCTION public.es_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public', 'public'\nAS $function$\r\n  select coalesce(public.current_rol() = 'admin', false);\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "generar_folio_auditoria()",
+      "definition": "CREATE OR REPLACE FUNCTION public.generar_folio_auditoria()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  year TEXT := to_char(CURRENT_DATE, 'YYYY');\r\n  seq_val BIGINT;\r\n  folio  TEXT;\r\nBEGIN\r\n  seq_val := nextval('seq_folio_auditorias');\r\n  folio := 'AUD-' || year || '-' || LPAD(seq_val::TEXT, 4, '0');\r\n  RETURN folio;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "generar_folio_documento()",
+      "definition": "CREATE OR REPLACE FUNCTION public.generar_folio_documento()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  year TEXT := to_char(CURRENT_DATE, 'YYYY');\r\n  seq_val BIGINT;\r\n  folio  TEXT;\r\nBEGIN\r\n  seq_val := nextval('seq_folio_documentos');\r\n  folio := 'DOC-' || year || '-' || LPAD(seq_val::TEXT, 4, '0');\r\n  RETURN folio;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "generar_folio_riesgo()",
+      "definition": "CREATE OR REPLACE FUNCTION public.generar_folio_riesgo()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  year TEXT := to_char(CURRENT_DATE, 'YYYY');\r\n  seq_val BIGINT;\r\n  folio  TEXT;\r\nBEGIN\r\n  seq_val := nextval('seq_folio_riesgos');\r\n  folio := 'RIESGO-' || year || '-' || LPAD(seq_val::TEXT, 4, '0');\r\n  RETURN folio;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "generar_folio_sacp()",
+      "definition": "CREATE OR REPLACE FUNCTION public.generar_folio_sacp()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  year TEXT := to_char(CURRENT_DATE, 'YYYY');\r\n  seq_val BIGINT;\r\n  folio  TEXT;\r\nBEGIN\r\n  seq_val := nextval('seq_folio_sacp');\r\n  folio := 'SACP-' || year || '-' || LPAD(seq_val::TEXT, 4, '0');\r\n  RETURN folio;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "incrementar_tokens_proveedor(text,integer)",
+      "definition": "CREATE OR REPLACE FUNCTION public.incrementar_tokens_proveedor(p_provider_id text, p_tokens integer)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nDECLARE\r\n  v_providers jsonb;\r\n  v_actualizado jsonb := '[]'::jsonb;\r\n  v_item jsonb;\r\nBEGIN\r\n  -- Leer el array actual\r\n  SELECT valor INTO v_providers\r\n  FROM configuraciones_sistema\r\n  WHERE clave = 'ai_providers';\r\n\r\n  IF v_providers IS NULL OR NOT jsonb_typeof(v_providers, 'array') THEN\r\n    RETURN;\r\n  END IF;\r\n\r\n  -- Recorrer y actualizar el provider matching\r\n  FOR v_item IN SELECT jsonb_array_elements(v_providers)\r\n  LOOP\r\n    IF v_item->>'id' = p_provider_id THEN\r\n      v_actualizado := v_actualizado || jsonb_build_array(\r\n        jsonb_set(\r\n          jsonb_set(v_item, '{tokens_usados}', to_jsonb(\r\n            COALESCE((v_item->>'tokens_usados')::integer, 0) + p_tokens\r\n          )),\r\n          '{tokens_updated_at}', to_jsonb(now()::text)\r\n        )\r\n      );\r\n    ELSE\r\n      v_actualizado := v_actualizado || jsonb_build_array(v_item);\r\n    END IF;\r\n  END LOOP;\r\n\r\n  -- Actualizar el array completo\r\n  UPDATE configuraciones_sistema\r\n  SET valor = v_actualizado\r\n  WHERE clave = 'ai_providers';\r\nEND;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "obtener_estadisticas_quejas()",
+      "definition": "CREATE OR REPLACE FUNCTION public.obtener_estadisticas_quejas()\n RETURNS json\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nDECLARE\r\n  resultado JSON;\r\n  v_total BIGINT;\r\n  v_mes_actual BIGINT;\r\n  v_resueltas_a_tiempo BIGINT;\r\n  v_resueltas_total BIGINT;\r\n  v_procedentes BIGINT;\r\n  v_total_con_decision BIGINT;\r\nBEGIN\r\n  -- Total de quejas\r\n  SELECT COUNT(*) INTO v_total FROM quejas;\r\n\r\n  -- Quejas del mes actual\r\n  SELECT COUNT(*) INTO v_mes_actual\r\n  FROM quejas\r\n  WHERE date_trunc('month', fecha) = date_trunc('month', CURRENT_DATE);\r\n\r\n  -- Resueltas a tiempo (fecha_cierre <= fecha_sla)\r\n  SELECT\r\n    COUNT(*) FILTER (WHERE fecha_cierre IS NOT NULL AND fecha_sla IS NOT NULL AND fecha_cierre <= fecha_sla),\r\n    COUNT(*) FILTER (WHERE fecha_cierre IS NOT NULL)\r\n  INTO v_resueltas_a_tiempo, v_resueltas_total\r\n  FROM quejas\r\n  WHERE estado IN ('Resuelto', 'Finalizado');\r\n\r\n  -- Tasa de procedencia\r\n  SELECT\r\n    COUNT(*) FILTER (WHERE estado NOT IN ('No Procede', 'Recibido')),\r\n    COUNT(*) FILTER (WHERE estado != 'Recibido')\r\n  INTO v_procedentes, v_total_con_decision\r\n  FROM quejas;\r\n\r\n  resultado := json_build_object(\r\n    'total', v_total,\r\n    'mes_actual', v_mes_actual,\r\n    'resueltas_a_tiempo', v_resueltas_a_tiempo,\r\n    'resueltas_total', v_resueltas_total,\r\n    'pct_a_tiempo', CASE WHEN v_resueltas_total > 0 THEN ROUND((v_resueltas_a_tiempo::NUMERIC / v_resueltas_total) * 100, 1) ELSE 0 END,\r\n    'procedentes', v_procedentes,\r\n    'total_con_decision', v_total_con_decision,\r\n    'pct_procedencia', CASE WHEN v_total_con_decision > 0 THEN ROUND((v_procedentes::NUMERIC / v_total_con_decision) * 100, 1) ELSE 0 END\r\n  );\r\n\r\n  RETURN resultado;\r\nEND;\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "qms_classify(timestamp with time zone,timestamp with time zone,timestamp with time zone)",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_classify(p_due timestamp with time zone, p_attention timestamp with time zone, p_now timestamp with time zone DEFAULT now())\n RETURNS text\n LANGUAGE sql\n STABLE\nAS $function$\n SELECT CASE WHEN p_due IS NULL THEN 'unconfigured' WHEN p_due<p_now THEN 'overdue'\n WHEN (p_due AT TIME ZONE 'America/Costa_Rica')::date=(p_now AT TIME ZONE 'America/Costa_Rica')::date THEN 'today'\n WHEN p_attention IS NOT NULL AND p_now>=p_attention THEN 'soon' ELSE 'within' END;\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "qms_publish_calendar(bigint,integer[],jsonb,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_publish_calendar(p_expected bigint, p_weekdays integer[], p_holidays jsonb, p_reason text DEFAULT NULL::text)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE previous qms_calendars; result bigint; h jsonb;\nBEGIN\n IF auth.uid() IS NULL OR NOT app_es_admin() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n PERFORM pg_advisory_xact_lock(hashtextextended('qms.config',0));\n SELECT * INTO previous FROM qms_calendars ORDER BY id DESC LIMIT 1;\n IF previous.id IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'El calendario cambió. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n IF p_weekdays IS NULL OR cardinality(p_weekdays) NOT BETWEEN 1 AND 7 OR NOT p_weekdays<@ARRAY[1,2,3,4,5,6,7]\n OR array_position(p_weekdays,NULL) IS NOT NULL OR cardinality(p_weekdays)<>(SELECT count(DISTINCT d) FROM unnest(p_weekdays) d)\n OR p_holidays IS NULL OR jsonb_typeof(p_holidays)<>'array' OR jsonb_array_length(p_holidays)>1000\n THEN RAISE EXCEPTION 'Calendario inválido' USING ERRCODE='22023'; END IF;\n FOR h IN SELECT * FROM jsonb_array_elements(p_holidays) LOOP\n   IF coalesce(h->>'date','')!~'^\\d{4}-\\d{2}-\\d{2}$' OR nullif(btrim(h->>'description'),'') IS NULL THEN RAISE EXCEPTION 'Cada feriado necesita fecha y descripción'; END IF;\n   PERFORM (h->>'date')::date;\n END LOOP;\n IF (SELECT count(DISTINCT item->>'date') FROM jsonb_array_elements(p_holidays) item)<>jsonb_array_length(p_holidays) THEN RAISE EXCEPTION 'Hay feriados duplicados'; END IF;\n INSERT INTO qms_calendars(weekdays,holidays,created_by) VALUES(p_weekdays,p_holidays,app_usuario_actual_id()) RETURNING id INTO result;\n INSERT INTO qms_config_audit(entity,old_value,new_value,reason,actor_id)\n SELECT 'calendar',to_jsonb(previous),to_jsonb(c),p_reason,app_usuario_actual_id() FROM qms_calendars c WHERE id=result;\n RETURN result;\nEND; $function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "qms_publish_stage(text,bigint,integer,text,integer[],text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_publish_stage(p_stage text, p_expected bigint, p_duration integer, p_type text, p_alerts integer[], p_action text, p_reason text DEFAULT NULL::text)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE previous qms_stage_versions; result bigint;\nBEGIN\n IF auth.uid() IS NULL OR NOT app_es_admin() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n PERFORM pg_advisory_xact_lock(hashtextextended('qms.config',0));\n SELECT * INTO previous FROM qms_stage_versions WHERE stage_id=p_stage ORDER BY id DESC LIMIT 1;\n IF previous.id IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'La configuración cambió. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n IF p_duration IS NULL OR p_duration NOT BETWEEN 1 AND 3660 OR p_type IS NULL OR p_type NOT IN ('business_days','calendar_days')\n OR p_action IS NULL OR p_action NOT IN ('notify_quality','mark_only') OR p_alerts IS NULL\n OR EXISTS(SELECT 1 FROM unnest(p_alerts) a WHERE a IS NULL OR a<1 OR a>p_duration)\n OR cardinality(p_alerts)<>(SELECT count(DISTINCT a) FROM unnest(p_alerts) a)\n THEN RAISE EXCEPTION 'Revisa duración, tipo de días, acción y alertas: positivas, únicas y dentro del plazo.' USING ERRCODE='22023'; END IF;\n INSERT INTO qms_stage_versions(stage_id,duration,day_type,alerts,expiration_action,created_by)\n VALUES(p_stage,p_duration,p_type,p_alerts,p_action,app_usuario_actual_id()) RETURNING id INTO result;\n INSERT INTO qms_config_audit(entity,old_value,new_value,reason,actor_id)\n SELECT p_stage,to_jsonb(previous),to_jsonb(v),p_reason,app_usuario_actual_id() FROM qms_stage_versions v WHERE id=result;\n RETURN result;\nEND; $function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "qms_transition(uuid,bigint,text,text,text,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_transition(p_id uuid, p_expected bigint, p_state text, p_resolution text DEFAULT NULL::text, p_justification text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_reopen text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE q quejas; target text;\nBEGIN\n SELECT * INTO q FROM quejas WHERE id=p_id FOR UPDATE;\n IF auth.uid() IS NULL OR NOT (coalesce(app_es_staff(),false) OR (coalesce(app_es_colaborador(),false) AND coalesce(q.responsable_id=app_usuario_actual_id(),false))) THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n IF q.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n IF p_expected IS NULL OR q.revision<>p_expected THEN RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza el expediente antes de guardar.' USING ERRCODE='40001'; END IF;\n SELECT valor_interno INTO target FROM catalogos WHERE modulo='quejas' AND tipo='estado_queja' AND codigo=p_state LIMIT 1;\n IF target IS NULL THEN RAISE EXCEPTION 'Estado no reconocido'; END IF;\n IF q.estado='Recibido' AND target='En Investigación' AND\n (nullif(btrim(p_justification),'') IS NULL OR coalesce(p_owner,q.responsable_id) IS NULL) THEN RAISE EXCEPTION 'Selecciona un responsable y escribe la justificación'; END IF;\n PERFORM public.transicionar_queja(p_id,target,p_resolution,p_justification,p_owner,p_reopen);\n RETURN (SELECT to_jsonb(v) FROM qms_quejas v WHERE id=p_id);\nEND; $function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "qms_update_details(uuid,bigint,text,text,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_update_details(p_id uuid, p_expected bigint, p_categoria text DEFAULT NULL::text, p_prioridad text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_notes text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE q quejas;\nBEGIN\n IF auth.uid() IS NULL OR NOT app_es_staff() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n SELECT * INTO q FROM quejas WHERE id=p_id FOR UPDATE;\n IF p_expected IS NULL OR q.revision IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n PERFORM public.actualizar_detalles_queja(p_id,p_categoria,p_prioridad,p_owner,p_notes);\n RETURN (SELECT to_jsonb(v) FROM qms_quejas v WHERE id=p_id);\nEND; $function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "registrar_adjunto_queja(uuid,text,text,bigint,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.registrar_adjunto_queja(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint DEFAULT 0, p_tipo_mime text DEFAULT 'application/octet-stream'::text)\n RETURNS queja_adjuntos\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_adjunto   public.queja_adjuntos;\r\n  v_usuario_id uuid;\r\nBEGIN\r\n  v_usuario_id := public.app_usuario_actual_id();\r\n  IF v_usuario_id IS NULL THEN RAISE EXCEPTION 'No autorizado'; END IF;\r\n\r\n  IF NOT public.app_es_staff() AND NOT (\r\n    public.app_es_colaborador()\r\n    AND EXISTS (\r\n      SELECT 1 FROM public.quejas q\r\n      WHERE q.id = p_queja_id AND q.responsable_id = v_usuario_id\r\n    )\r\n  ) THEN\r\n    RAISE EXCEPTION 'No autorizado';\r\n  END IF;\r\n\r\n  IF btrim(COALESCE(p_nombre, '')) = '' OR btrim(COALESCE(p_storage_path, '')) = '' THEN\r\n    RAISE EXCEPTION 'Nombre y ruta del adjunto son obligatorios';\r\n  END IF;\r\n\r\n  INSERT INTO public.queja_adjuntos (\r\n    queja_id,\r\n    nombre,\r\n    nombre_archivo,\r\n    storage_path,\r\n    url_archivo,\r\n    tamano,\r\n    tipo_mime,\r\n    usuario_id,\r\n    created_at\r\n  ) VALUES (\r\n    p_queja_id,\r\n    btrim(p_nombre),\r\n    btrim(p_nombre),\r\n    btrim(p_storage_path),\r\n    btrim(p_storage_path),\r\n    COALESCE(p_tamano, 0),\r\n    COALESCE(nullif(btrim(COALESCE(p_tipo_mime, '')), ''), 'application/octet-stream'),\r\n    v_usuario_id,\r\n    now()\r\n  )\r\n  RETURNING * INTO v_adjunto;\r\n\r\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\r\n  VALUES (now(), v_usuario_id, 'adjunto', 'quejas',\r\n    'Adjunto \"' || v_adjunto.nombre || '\" agregado a la queja ' || p_queja_id);\r\n\r\n  RETURN v_adjunto;\r\nEND;\r\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "siguiente_folio_queja()",
+      "definition": "CREATE OR REPLACE FUNCTION public.siguiente_folio_queja()\n RETURNS text\n LANGUAGE sql\nAS $function$\r\n  select 'Q-' || extract(year from now())::text || '-' ||\r\n         lpad(nextval('public.quejas_folio_seq')::text, 5, '0');\r\n$function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "transicionar_queja(uuid,text,text,text,uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.transicionar_queja(p_queja_id uuid, p_nuevo_estado text, p_resolucion text DEFAULT NULL::text, p_justificacion_procede text DEFAULT NULL::text, p_responsable_id uuid DEFAULT NULL::uuid, p_motivo_reapertura text DEFAULT NULL::text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja          public.quejas;\n  v_usuario_id     uuid;\n  v_es_staff       boolean;\n  v_es_responsable boolean;\n  v_destino        record;\n  v_mensaje        text;\nBEGIN\n  v_usuario_id := public.app_usuario_actual_id();\n  IF v_usuario_id IS NULL THEN RAISE EXCEPTION 'No autorizado'; END IF;\n\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n\n  v_es_staff := public.app_es_staff();\n  v_es_responsable := (v_queja.responsable_id = v_usuario_id);\n  IF NOT (v_es_staff OR (public.app_es_colaborador() AND v_es_responsable)) THEN\n    RAISE EXCEPTION 'No autorizado';\n  END IF;\n\n  IF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'En Investigación' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede iniciar la investigación'; END IF;\n    UPDATE public.quejas\n    SET estado = p_nuevo_estado,\n        fecha_limite_investigacion = now() + interval '15 days',\n        responsable_id = COALESCE(p_responsable_id, responsable_id),\n        notas = CASE WHEN btrim(COALESCE(p_justificacion_procede, '')) <> ''\n          THEN COALESCE(notas, '') || E'\\n[Procede] ' || btrim(p_justificacion_procede)\n          ELSE notas END\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'No Procede' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede marcar como No Procede'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion), fecha_cierre = now()\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Pendiente de Revisión GC' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Resuelto' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede resolver directamente'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'Resuelto' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede aprobar la resolución'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'En Investigación' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede devolver la queja'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = NULL\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Resuelto' AND p_nuevo_estado = 'Finalizado' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede finalizar la queja'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado IN ('Resuelto', 'Finalizado') AND p_nuevo_estado = 'En Investigación' AND btrim(COALESCE(p_motivo_reapertura, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede reabrir la queja'; END IF;\n    UPDATE public.quejas\n    SET estado = 'En Investigación',\n        fecha_limite_investigacion = now() + interval '15 days',\n        resolucion = NULL,\n        notas = COALESCE(notas, '') || E'\\n[Reapertura] ' || btrim(p_motivo_reapertura)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSE\n    RAISE EXCEPTION 'Transición no permitida: % → %', v_queja.estado, p_nuevo_estado;\n  END IF;\n\n  v_mensaje := 'La queja ' || v_queja.folio || ' cambió a ' || v_queja.estado || '.';\n  FOR v_destino IN\n    SELECT id FROM public.usuarios\n    WHERE (id = v_queja.responsable_id OR rol IN ('admin', 'calidad'))\n      AND estado = 'activo'\n      AND id IS DISTINCT FROM v_usuario_id\n  LOOP\n    INSERT INTO public.notificaciones (usuario_id, fecha, tipo, mensaje, enlace, origen_id)\n    VALUES (v_destino.id, now(), 'queja_estado', v_mensaje, '/quejas', v_queja.id);\n  END LOOP;\n\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n  VALUES (now(), v_usuario_id, 'transición', 'quejas', v_mensaje);\n  RETURN v_queja;\nEND;\n$function$\n",
+      "acl": "{postgres=X/postgres,anon=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "rls": [
+    {
+      "tablename": "auditorias",
+      "rowsecurity": true,
+      "policy_count": 1
+    },
+    {
+      "tablename": "documentos",
+      "rowsecurity": true,
+      "policy_count": 1
+    },
+    {
+      "tablename": "informes_config",
+      "rowsecurity": false,
+      "policy_count": 4
+    },
+    {
+      "tablename": "usuarios",
+      "rowsecurity": true,
+      "policy_count": 2
+    }
+  ]
+}

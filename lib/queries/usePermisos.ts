@@ -31,9 +31,6 @@ export function usePermisos(enabled = true) {
   return useQuery({
     queryKey: permisosKey,
     queryFn: fetchPermisos,
-    staleTime: Infinity,
-    gcTime: 30 * 60 * 1000,
-    retry: 1,
     enabled,
   })
 }

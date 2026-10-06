@@ -1,11 +1,12 @@
 'use client'
 
 import { useRef, useCallback, useEffect } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryFunction, type QueryKey } from '@tanstack/react-query'
+import { getCacheConfig } from '@/lib/queries/cacheConfig'
 
-interface PrefetchConfig {
-  queryKey: readonly unknown[]
-  queryFn: () => PromiseLike<unknown>
+export interface PrefetchConfig {
+  queryKey: QueryKey
+  queryFn: QueryFunction<unknown>
   staleTime?: number
 }
 
@@ -30,24 +31,24 @@ export function useHoverPrefetch() {
   }, [])
 
   const prefetch = useCallback(
-    (config: PrefetchConfig) => {
-      const key = JSON.stringify(config.queryKey)
-      if (inflightRef.current.has(key)) return
-
+    (config: PrefetchConfig | PrefetchConfig[]) => {
+      const configs = Array.isArray(config) ? config : [config]
       if (timerRef.current) clearTimeout(timerRef.current)
 
       timerRef.current = setTimeout(() => {
-        const cached = queryClient.getQueryData(config.queryKey)
-        if (cached !== undefined) return
-
-        inflightRef.current.add(key)
-        queryClient.prefetchQuery({
-          queryKey: config.queryKey,
-          queryFn: config.queryFn,
-          staleTime: config.staleTime ?? 30 * 1000,
-        }).finally(() => {
-          inflightRef.current.delete(key)
-        })
+        timerRef.current = null
+        for (const entry of configs) {
+          const key = JSON.stringify(entry.queryKey)
+          if (inflightRef.current.has(key)) continue
+          inflightRef.current.add(key)
+          void queryClient.prefetchQuery({
+            queryKey: entry.queryKey,
+            queryFn: entry.queryFn,
+            staleTime: entry.staleTime ?? getCacheConfig(entry.queryKey).staleTime,
+          }).finally(() => {
+            inflightRef.current.delete(key)
+          })
+        }
       }, 80)
     },
     [queryClient],

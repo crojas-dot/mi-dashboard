@@ -55,8 +55,6 @@ export function useQuejas(params: QuejasParams = {}, enabled = true) {
     queryFn: () => fetchQuejas(params),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
-    gcTime: 30 * 60 * 1000,
-    retry: 1,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     enabled,
@@ -95,7 +93,6 @@ export function useQuejaAdjuntos(quejaId: string) {
     queryFn: () => fetchQuejaAdjuntos(quejaId),
     enabled: !!quejaId,
     staleTime: 30_000,
-    gcTime: 30 * 60 * 1000,
   })
 }
 
@@ -155,8 +152,6 @@ export function useQuejasEstadisticas() {
     queryKey: quejasEstadisticasKey,
     queryFn: fetchQuejasEstadisticas,
     staleTime: 30_000,
-    gcTime: 30 * 60 * 1000,
-    retry: 1,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
   })

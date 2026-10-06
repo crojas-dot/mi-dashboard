@@ -1,34 +1,48 @@
 'use client'
 
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/store/auth-store'
+import { logger } from '@/lib/utils/logger'
+import { retryRead } from '@/lib/errors/userError'
+import { CACHE_CONFIG, getCacheConfig } from '@/lib/queries/cacheConfig'
+import { queryKeys } from '@/lib/queries/queryKeys'
 
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const scope = useAuthStore((state) =>
     `${state.user?.id ?? 'public'}:${state.user?.rol ?? ''}:${state.vistaActiva ?? ''}`,
   )
-  return <ScopedQueryProvider key={scope}>{children}</ScopedQueryProvider>
+  return <ScopedQueryProvider key={scope} userId={scope.split(':')[0]}>{children}</ScopedQueryProvider>
 }
 
-function ScopedQueryProvider({ children }: { children: React.ReactNode }) {
+function ScopedQueryProvider({ children, userId }: { children: React.ReactNode; userId?: string }) {
   const [queryClient] = useState(
-    () =>
-      new QueryClient({
+    () => {
+      const client = new QueryClient({
+        queryCache: new QueryCache({
+          onError: (error, query) => logger.error('Falló una consulta de caché', {
+            module: String(query.queryKey[0]), action: 'query', userId,
+          }, error),
+        }),
+        mutationCache: new MutationCache({
+          onError: (error) => logger.error('Falló una mutación', { action: 'mutation', userId }, error),
+        }),
         defaultOptions: {
           queries: {
-            staleTime: Infinity,
-            gcTime: 30 * 60 * 1000,
-            retry: 1,
+            ...CACHE_CONFIG.default,
+            retry: retryRead,
             refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            refetchOnMount: false,
+            refetchOnReconnect: true,
+            refetchOnMount: true,
           },
           mutations: {
             retry: 0,
           },
         },
-      }),
+      })
+      for (const key of Object.values(queryKeys)) client.setQueryDefaults(key, getCacheConfig(key))
+      return client
+    },
   )
 
   useEffect(() => () => { queryClient.clear() }, [queryClient])

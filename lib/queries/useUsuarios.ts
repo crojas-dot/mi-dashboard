@@ -55,12 +55,16 @@ function normalizeUsuariosParams(params?: {
   }
 }
 
+export function usuariosQueryKey(params?: Parameters<typeof normalizeUsuariosParams>[0]) {
+  return [...usuariosKey, normalizeUsuariosParams(params)] as const
+}
+
 export function useUsuarios(
   params?: { search?: string; rol?: string; estado?: string },
   enabled = true,
 ) {
   return useQuery({
-    queryKey: [...usuariosKey, normalizeUsuariosParams(params)],
+    queryKey: usuariosQueryKey(params),
     queryFn: () => fetchUsuarios(params),
     enabled,
   })

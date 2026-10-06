@@ -11,7 +11,7 @@ import {
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
-import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
+import { useHoverPrefetch, type PrefetchConfig } from '@/hooks/useHoverPrefetch'
 import { fetchQuejas, quejasKey } from '@/lib/queries/useQuejas'
 import { paginaKey } from '@/lib/queries/pagination'
 import { fetchDocumentos, documentosKey } from '@/lib/queries/useDocumentos'
@@ -20,8 +20,8 @@ import { fetchRiesgos, riesgosKey } from '@/lib/queries/useRiesgos'
 import { fetchAuditorias, auditoriasKey } from '@/lib/queries/useAuditorias'
 import { fetchReuniones, reunionesKey } from '@/lib/queries/useReuniones'
 import { fetchProcesos, procesosKey } from '@/lib/queries/useProcesos'
-import { fetchUsuarios, usuariosKey } from '@/lib/queries/useUsuarios'
-import { fetchDashboard, dashboardKey } from '@/lib/queries/useDashboard'
+import { fetchUsuarios, usuariosQueryKey } from '@/lib/queries/useUsuarios'
+import { dashboardPrefetchOptions } from '@/lib/queries/useDashboard'
 
 // Iconos del menú: misma familia Lucide, tamaño y grosor definidos en el render.
 const sections: { label: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
@@ -54,8 +54,8 @@ const sections: { label: string; links: { href: string; label: string; icon: Luc
   },
 ]
 
-const prefetchMap: Record<string, { queryKey: readonly unknown[]; queryFn: () => PromiseLike<unknown> }> = {
-  '/':           { queryKey: dashboardKey, queryFn: fetchDashboard },
+const prefetchMap: Record<string, PrefetchConfig | PrefetchConfig[]> = {
+  '/':           dashboardPrefetchOptions(),
   '/quejas':     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: () => fetchQuejas({ page: 0, pageSize: 25 }) },
   '/documentos': { queryKey: paginaKey(documentosKey), queryFn: () => fetchDocumentos() },
   '/sacp':       { queryKey: paginaKey(accionesKey), queryFn: () => fetchAcciones() },
@@ -63,7 +63,7 @@ const prefetchMap: Record<string, { queryKey: readonly unknown[]; queryFn: () =>
   '/auditorias': { queryKey: paginaKey(auditoriasKey), queryFn: () => fetchAuditorias() },
   '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: () => fetchReuniones() },
   '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: () => fetchProcesos() },
-  '/usuarios':   { queryKey: usuariosKey, queryFn: fetchUsuarios },
+  '/usuarios':   { queryKey: usuariosQueryKey(), queryFn: () => fetchUsuarios() },
   '/reporteria': { queryKey: ['reporteria'], queryFn: () => Promise.resolve([]) },
 }
 

@@ -1,0 +1,199 @@
+{
+  "projectRef": "fykhrrpeoehwqznccmfp",
+  "migration": "20261006232152_seguridad_fases_1_3",
+  "verification": {
+    "rls": [
+      {
+        "tablename": "auditorias",
+        "rowsecurity": true
+      },
+      {
+        "tablename": "documentos",
+        "rowsecurity": true
+      },
+      {
+        "tablename": "informes_config",
+        "rowsecurity": true
+      },
+      {
+        "tablename": "permisos",
+        "rowsecurity": true
+      },
+      {
+        "tablename": "quejas",
+        "rowsecurity": true
+      },
+      {
+        "tablename": "usuarios",
+        "rowsecurity": true
+      }
+    ],
+    "functions": [
+      {
+        "signature": "actualizar_mis_preferencias_notificacion(boolean,boolean,text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "crear_queja_publica(text,text,text,text,text,text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=public"
+        ],
+        "anon_exec": true,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "incrementar_tokens_proveedor(text,integer)",
+        "prosecdef": false,
+        "proconfig": [
+          "search_path=\"\""
+        ],
+        "anon_exec": false,
+        "authenticated_exec": false,
+        "service_exec": true
+      },
+      {
+        "signature": "notificar_queja_publica(text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=public"
+        ],
+        "anon_exec": true,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "obtener_estadisticas_quejas()",
+        "prosecdef": false,
+        "proconfig": [
+          "search_path=public, pg_temp"
+        ],
+        "anon_exec": false,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "qms_transition(uuid,bigint,text,text,text,uuid,text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=public"
+        ],
+        "anon_exec": false,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "registrar_adjunto_queja_publica(uuid,text,text,bigint,text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=public"
+        ],
+        "anon_exec": true,
+        "authenticated_exec": true,
+        "service_exec": true
+      },
+      {
+        "signature": "transicionar_queja(uuid,text,text,text,uuid,text)",
+        "prosecdef": true,
+        "proconfig": [
+          "search_path=public"
+        ],
+        "anon_exec": false,
+        "authenticated_exec": false,
+        "service_exec": true
+      }
+    ],
+    "protectedColumns": [
+      {
+        "column_name": "id",
+        "client_update": false
+      },
+      {
+        "column_name": "nombre",
+        "client_update": true
+      },
+      {
+        "column_name": "email",
+        "client_update": false
+      },
+      {
+        "column_name": "rol",
+        "client_update": false
+      },
+      {
+        "column_name": "estado",
+        "client_update": false
+      },
+      {
+        "column_name": "departamento",
+        "client_update": false
+      },
+      {
+        "column_name": "telefono",
+        "client_update": true
+      },
+      {
+        "column_name": "avatar_url",
+        "client_update": true
+      },
+      {
+        "column_name": "ultimo_acceso",
+        "client_update": true
+      },
+      {
+        "column_name": "created_at",
+        "client_update": false
+      },
+      {
+        "column_name": "auth_id",
+        "client_update": false
+      },
+      {
+        "column_name": "notif_habilitadas",
+        "client_update": true
+      },
+      {
+        "column_name": "notif_sonido",
+        "client_update": true
+      },
+      {
+        "column_name": "notif_sonido_id",
+        "client_update": true
+      }
+    ]
+  },
+  "advisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "level": "INFO",
+      "count": 2
+    },
+    {
+      "name": "extension_in_public",
+      "level": "WARN",
+      "count": 1
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "level": "WARN",
+      "count": 17
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "level": "WARN",
+      "count": 33
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "level": "WARN",
+      "count": 1
+    }
+  ]
+}

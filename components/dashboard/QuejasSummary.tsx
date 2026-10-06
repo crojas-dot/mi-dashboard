@@ -5,6 +5,7 @@ import { useQuejasEstadisticas, quejasEstadisticasKey } from '@/lib/queries/useQ
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso } from '@/lib/permisos'
+import { IndicadorSkeleton } from './DashboardSkeletons'
 
 const number = new Intl.NumberFormat('es-CR')
 
@@ -70,7 +71,7 @@ function QuejasIndicators() {
           <button onClick={() => void refetch()} className="ui-button ui-button-link ui-button-sm underline">Reintentar</button>
         </div>
       ) : isPending || !data ? (
-        <p role="status" className="p-5 text-sm text-qms-muted">Cargando indicadores de Quejas…</p>
+        <IndicadorSkeleton label="Cargando indicadores de Quejas…" />
       ) : (
         <div className="grid grid-cols-1 divide-y divide-qms-border lg:grid-cols-3 lg:divide-x lg:divide-y-0">
           <Donut title="Resolución dentro del plazo" value={data.resueltasATiempo} total={data.resueltasTotal}

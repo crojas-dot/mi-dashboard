@@ -1,11 +1,21 @@
 'use client'
 
 import Link from 'next/link'
-import { useDashboard, useActividadReciente } from '@/lib/queries/useDashboard'
+import { lazy, Suspense, useEffect } from 'react'
+import { useDashboardIndicadores, useDashboardTareas, useActividadReciente } from '@/lib/queries/useDashboard'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
-import QuejasSummary from '@/components/dashboard/QuejasSummary'
+import { IndicadorSkeleton, TablaSkeleton } from '@/components/dashboard/DashboardSkeletons'
+import { logger } from '@/lib/utils/logger'
+
+const QuejasSummary = lazy(() => import('@/components/dashboard/QuejasSummary'))
+
+function useDashboardError(error: unknown, action: string) {
+  useEffect(() => {
+    if (error) logger.error('No se pudo cargar un bloque del dashboard', { module: 'dashboard', action }, error)
+  }, [error, action])
+}
 
 const estadoBadge: Record<string, string> = {
   Abierta: 'red', Alta: 'red', 'En Proceso': 'amber', Planificada: 'blue',
@@ -24,24 +34,28 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader title="Dashboard" description="Panel de control general" compact={false} />
-      <QuejasSummary />
-      <DashboardOverview />
+      <Suspense fallback={<IndicadorSkeleton label="Cargando indicadores de Quejas…" />}>
+        <QuejasSummary />
+      </Suspense>
+      <IndicadoresBlock />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TareasPendientesBlock />
+        <ActividadRecienteBlock />
+      </div>
     </div>
   )
 }
 
 // La carga de los indicadores de Quejas no depende de las consultas de otros módulos.
-function DashboardOverview() {
-  const { data, isPending, error, refetch } = useDashboard()
-  const actividad = useActividadReciente()
+function IndicadoresBlock() {
+  const { data, isPending, error, refetch } = useDashboardIndicadores()
+  useDashboardError(error, 'indicadores')
   if (error) return <div role="alert" className="p-4">No se pudo cargar el dashboard. <button onClick={() => void refetch()} className="underline">Reintentar</button></div>
-  if (isPending) return <p role="status" className="p-4">Cargando dashboard…</p>
-  const indicadores = data?.indicadores ?? []
+  if (isPending) return <IndicadorSkeleton />
+  const indicadores = data ?? []
   const maxIndicador = Math.max(1, ...indicadores.map((ind) => ind.valor))
-  const tareas = data?.tareas ?? []
 
   return (
-    <div>
       <section aria-labelledby="dashboard-modulos-title" className="mb-5 rounded-card border border-qms-border bg-qms-surface p-5">
         <h2 id="dashboard-modulos-title" className="mb-4 text-lg font-semibold text-qms-dark">Seguimiento por módulo</h2>
         <div className="space-y-4">
@@ -56,11 +70,16 @@ function DashboardOverview() {
         ))}
         </div>
       </section>
+  )
+}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+function TareasPendientesBlock() {
+  const { data: tareas = [], isPending, error, refetch } = useDashboardTareas()
+  useDashboardError(error, 'tareas')
+  return (
         <div>
           <h6 className="mb-2 text-base font-bold text-qms-dark">Expedientes Pendientes</h6>
-          <Table>
+          {isPending ? <TablaSkeleton /> : error ? <p role="alert" className="p-3 text-sm">No se pudieron cargar los expedientes. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : <Table>
             <TableHead>
               <tr>
                 <TableHeaderCell>Expediente</TableHeaderCell>
@@ -83,9 +102,15 @@ function DashboardOverview() {
                 ))
               )}
             </tbody>
-          </Table>
+          </Table>}
         </div>
+  )
+}
 
+function ActividadRecienteBlock() {
+  const actividad = useActividadReciente()
+  useDashboardError(actividad.error, 'actividad')
+  return (
         <div>
           <h6 className="mb-2 text-base font-bold text-qms-dark">Actividad Reciente</h6>
           <div className="divide-y rounded-card border border-qms-border">
@@ -98,7 +123,5 @@ function DashboardOverview() {
               </div>)}
           </div>
         </div>
-      </div>
-    </div>
   )
 }

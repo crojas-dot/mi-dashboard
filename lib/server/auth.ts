@@ -11,7 +11,7 @@ export function getAuthToken(request: NextRequest): string | null {
   return header.slice('Bearer '.length)
 }
 
-export async function getCurrentUser(request: NextRequest, signal?: AbortSignal): Promise<{ auth_id: string; rol: string; email: string } | null> {
+export async function getCurrentUser(request: NextRequest, signal?: AbortSignal): Promise<{ id: string; auth_id: string; rol: string; email: string } | null> {
   const token = getAuthToken(request)
   if (!token) return null
 
@@ -34,11 +34,11 @@ export async function getCurrentUser(request: NextRequest, signal?: AbortSignal)
 
   const { data: perfil, error: perfilError } = await client
     .from('usuarios')
-    .select('id, rol, email')
+    .select('id, rol, email, estado')
     .eq('auth_id', data.user.id)
     .maybeSingle()
 
-  if (perfilError || !perfil) return null
+  if (perfilError || !perfil || perfil.estado !== 'activo') return null
 
-  return { auth_id: data.user.id, rol: perfil.rol, email: perfil.email }
+  return { id: perfil.id, auth_id: data.user.id, rol: perfil.rol, email: perfil.email }
 }
