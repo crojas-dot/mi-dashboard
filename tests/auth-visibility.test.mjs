@@ -51,6 +51,50 @@ test('el guard real no monta componentes privados ni dispara sus lecturas antes 
   }
 })
 
+test('el primer HTML y la restauración pendiente muestran login, sin anticipar el dashboard', () => {
+  for (const pathname of ['/', '/quejas', '/usuarios', '/configuracion', '/login']) {
+    for (const state of [
+      { ...ready, initialized: false, loading: true },
+      { ...ready, loading: true },
+      { ...ready, initialized: false, user },
+      { ...ready, loading: true, user },
+      { ...ready, loading: true, signingOut: true },
+    ]) {
+      let privateReads = 0
+      const Shell = loadModule('components/AuthShell.tsx', {
+        'next/navigation': { usePathname: () => pathname, useRouter: () => ({ replace() {} }) },
+        '@/lib/store/auth-store': { useAuthStore: selector => selector({ ...state, init() {}, logout() {} }) },
+        '@/components/AuthenticatedLayout': { default: 'div' },
+      }).default
+      function ProtectedData() { privateReads++; return createElement('p', null, 'DATOS-PRIVADOS') }
+      const html = renderToStaticMarkup(createElement(Shell, null, createElement(ProtectedData)))
+      assert.equal(html.includes('data-session-layout="login"'), true)
+      assert.equal(html.includes('data-session-layout="workspace"'), false)
+      assert.equal(html.includes('w-[250px]'), false)
+      assert.equal(html.includes('DATOS-PRIVADOS'), false)
+      assert.equal(privateReads, 0)
+    }
+  }
+})
+
+test('workspace solo aparece al redirigir con identidad resuelta; SessionScreen por defecto es login', () => {
+  const Screen = loadModule('components/SessionScreen.tsx').default
+  assert.match(renderToStaticMarkup(createElement(Screen)), /data-session-layout="login"/)
+  for (const [state, expected] of [
+    [ready, 'login'],
+    [{ ...ready, user, permisos: permissions }, 'workspace'],
+    [{ ...ready, user, permisos: permissions, signingOut: true }, 'login'],
+  ]) {
+    const Shell = loadModule('components/AuthShell.tsx', {
+      'next/navigation': { usePathname: () => state.user ? '/login' : '/', useRouter: () => ({ replace() {} }) },
+      '@/lib/store/auth-store': { useAuthStore: selector => selector({ ...state, init() {}, logout() {} }) },
+      '@/components/AuthenticatedLayout': { default: 'div' },
+    }).default
+    const html = renderToStaticMarkup(createElement(Shell))
+    assert.equal(html.includes(`data-session-layout="${expected}"`), true)
+  }
+})
+
 function deferred() {
   let resolve, reject
   const promise = new Promise((yes, no) => { resolve = yes; reject = no })

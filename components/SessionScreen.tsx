@@ -22,7 +22,7 @@ export default function SessionScreen({
   denied = false,
   onRetry,
   onExit,
-  layout = 'workspace',
+  layout = 'login',
 }: SessionScreenProps) {
   const titleId = useId()
   const [slow, setSlow] = useState(false)
@@ -32,7 +32,7 @@ export default function SessionScreen({
     return () => clearTimeout(timer)
   }, [denied, onRetry])
 
-  if (!denied) return <main className="relative min-h-dvh bg-qms-background">
+  if (!denied) return <main data-session-layout={layout} className="relative min-h-dvh bg-qms-background">
     <span role="status" className="sr-only">{label}</span>
     <div aria-hidden="true" aria-busy="true">
       {layout === 'login' ? <LoginSkeleton /> : <WorkspaceSkeleton />}

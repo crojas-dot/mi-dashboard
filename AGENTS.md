@@ -109,7 +109,7 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 
 | Estado | Qué se monta |
 | --- | --- |
-| No inicializado / loading | Solo SessionScreen, también en HTML inicial de producción |
+| No inicializado / loading | Solo SessionScreen de login, también en HTML inicial de producción; no anticipar skeleton de dashboard |
 | Ruta privada sin usuario | Skeleton de login mientras redirige a `/login` |
 | Login con usuario validado | Skeleton de workspace mientras redirige a `/` |
 | Ruta con permiso de lectura | AuthenticatedLayout y después los hijos privados |
@@ -517,7 +517,7 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 - `ui-login-field` conserva texto/placeholder de 16px, fuente heredada y estilo de primera línea. Ambos campos empiezan readonly y se habilitan con foco o pointerdown capturado por el formulario: evita la vista previa interna de Chromium que mostraba el correo pequeño antes de enfocar.
 - Conservar `autoComplete="username"` y `current-password`, labels asociados, required, navegación por Tab y error inline con role=alert. No desactivar el gestor de contraseñas para arreglar apariencia ni guardar credenciales en preferencias/caché de negocio.
 - El botón Ingresar usa el Spinner compartido solo mientras ejecuta login. La transición global/restauración/cierre usa skeleton; no reintroducir la tarjeta central «Verificando sesión» ni mostrar el dashboard anterior mientras se comprueba Auth.
-- `SessionScreen` selecciona login al cerrar, en login sin usuario o al redirigir a login; workspace durante preparación de acceso privado. Una espera de más de 10 s ofrece recuperación con recarga, sin bypass del guard. Acceso denegado tiene icono estático y salida.
+- `SessionScreen` tiene login por defecto. AuthShell solo permite workspace cuando `user && initialized && !loading && !signingOut`; antes de confirmar identidad/permisos siempre muestra login, independientemente de la URL. Esto evita que el HTML prerenderizado de Vercel anticipe el dashboard antes del acceso. `data-session-layout` identifica la variante para regresión/inspección. Una espera de más de 10 s ofrece recuperación con recarga, sin bypass del guard. Acceso denegado tiene icono estático y salida.
 
 ### Contrato único de carga
 
@@ -617,11 +617,11 @@ node scripts/check-visual-layer.mjs
 - Pruebas por cambio: configuración/visuales/errores/datos/runtime/seguridad según alcance. `tests/load-module.mjs` transpila módulos reales con mocks y transporte controlado; las pruebas JS no usan credenciales reales.
 - La ejecución global documentada en la auditoría anterior fue **88/125, con 37 fallos históricos**. Es una referencia de aquella revisión, no el conteo ni el resultado global del checkout después de añadir pruebas nuevas. La suite completa no se volvió a ejecutar en las últimas correcciones visuales/sesión. No regenerar fixtures ni instalar dependencias de prototipos para ocultar fallos; comparar cada fallo con la referencia.
 
-Última selección de regresión ejecutada al terminar las cargas compartidas: **49/49**, con este alcance:
+Última selección de regresión ejecutada al corregir la entrada prerenderizada de Vercel: **51/51**, con este alcance:
 
 | Archivo / selección | Casos | Qué se verificó |
 | --- | --- | --- |
-| `tests/auth-visibility.test.mjs` | 18 | Montaje privado, redirecciones, permisos vacíos, identidad remota, cambio de usuario, logout inmediato/recarga/fallo, respuestas tardías, recuperación y consultas paralelas sin publicación parcial |
+| `tests/auth-visibility.test.mjs` | 20 | Montaje privado, redirecciones, skeleton de login antes de validar sesión, identidad remota, cambio de usuario, logout inmediato/recarga/fallo, respuestas tardías, recuperación y consultas paralelas sin publicación parcial |
 | `tests/optimization-phases.test.mjs` | 12 | Errores seguros/logger, cuenta activa, permisos, guard API, caché y cargas independientes/cancelación del dashboard |
 | `tests/usuarios-acceso-workflow.test.mjs` | 7 | Último acceso Auth paginado, autorización/error API, privacidad de metadatos, revisión esperada y wrappers de quejas |
 | `tests/error-security.test.mjs` | 7 | Mensajes/reintentos, atributos y límites de API/identidad |
@@ -637,6 +637,7 @@ node --test --test-name-pattern="hover reutiliza|QueryProvider recupera|Quejas p
 - Último build de código: Next.js producción y TypeScript correctos. Lint sin errores, con dos advertencias históricas por cilFolder/cilUser sin usar en `.experiments/src/_nav.tsx`. No declarar «lint sin advertencias».
 - Verificación de cargas: las diez páginas principales se renderizaron con queries pendientes simuladas usando los componentes reales; todas con skeleton y sin spinner inicial. Los diez HTML prerenderizados del build conservan presentación neutra y no incluyen el shell privado antes de Auth.
 - En producción local se comprobó redirección al login en navegador, y el HTML inicial de `/`, `/quejas`, `/usuarios`, `/login`. Skeletons table/form/cards/list revisados en escritorio y móviles 320/375px sin desbordamiento horizontal; círculos de botones/operaciones centrados. Previews temporales eliminados, viewport restaurado y pestañas de prueba cerradas.
+- Corrección de entrada Vercel: el HTML público anterior incluía WorkspaceSkeleton mientras Auth todavía no estaba inicializado, sin datos privados. La prerenderización hacía visible esa silueta antes de login; local reducía el intervalo. El build corregido usa `data-session-layout="login"` y excluye workspace en el primer HTML de `/`, `/quejas`, `/usuarios`, `/configuracion` y `/login`, sin consultas adicionales ni demoras. Confirmar el mismo marcador en la URL pública después de desplegar.
 - Comprobaciones remotas previas: consultas anónimas sin datos del dashboard y pruebas transaccionales de wrappers bajo admin/rol no autorizado, conflicto 40001 y denegación legacy con ROLLBACK. No equivalen a un recorrido autenticado de toda la aplicación ni a una auditoría completa nueva de RLS.
 - Después de cambios de código cliente, Ctrl+F5 descarta chunks/timers antiguos. No borrar .next/node_modules o reiniciar servicios del usuario como primera respuesta a un error.
 - Cambio solo de Markdown: verificar enlaces/rutas, consistencia con código/DB y `git diff --check`; no requiere otro build de la aplicación.

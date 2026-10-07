@@ -29,7 +29,9 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
 
   if (route.view === 'pending') return <SessionScreen
     label={signingOut ? 'Cerrando tu sesión' : route.redirect && user ? 'Abriendo tu espacio' : undefined}
-    layout={signingOut || route.redirect === '/login' || pathname === '/login' && !user ? 'login' : 'workspace'}
+    // El HTML prerenderizado aún no conoce la sesión. Reservar workspace
+    // para una identidad ya validada, también durante redirecciones.
+    layout={user && initialized && !loading && !signingOut ? 'workspace' : 'login'}
     onRetry={reloadSession}
   />
   if (route.view === 'denied') {

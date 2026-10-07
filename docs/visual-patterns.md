@@ -113,6 +113,10 @@ import Field from '@/components/ui/Field'
   nunca el dashboard sin su shell. Son formas decorativas sin datos, nombres,
   cifras, enlaces ni controles activos. Durante logout usa el skeleton de login.
   Acceso denegado conserva una tarjeta estática con explicación y salida.
+- Antes de confirmar sesión/perfil/permisos, incluida la prerenderización de una
+  URL privada en Vercel, usar siempre la variante login. Workspace se reserva para
+  usuario validado, inicialización completa y ninguna carga/cierre en curso.
+  No elegir el skeleton según una URL privada mientras Auth sigue sin resolver.
 - La misma regla se aplica al HTML inicial de producción y a rutas sin permiso.
   La autorización de datos sigue siendo responsabilidad de API y RLS.
 - La pulsación suave es CSS, respeta movimiento reducido y usa un número fijo de
