@@ -16,10 +16,10 @@ export interface Documento {
 
 export const documentosKey = queryKeys.documentos
 
-export async function fetchDocumentos(page = 0, estado = ''): Promise<Pagina<Documento>> {
-  return fetchPagina<Documento>('documentos', 'created_at', page, estado)
+export async function fetchDocumentos(page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<Documento>> {
+  return fetchPagina<Documento>('documentos', 'created_at', page, estado, signal)
 }
 
 export function useDocumentos(page = 0, estado = '') {
-  return useQuery({ queryKey: paginaKey(documentosKey, page, estado), queryFn: () => fetchDocumentos(page, estado) })
+  return useQuery({ queryKey: paginaKey(documentosKey, page, estado), queryFn: ({ signal }) => fetchDocumentos(page, estado, signal) })
 }

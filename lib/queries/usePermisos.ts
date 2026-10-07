@@ -7,22 +7,24 @@ import type { Permiso } from '@/lib/permisos'
 
 export const permisosKey = queryKeys.permisos
 
-export async function fetchPermisos(): Promise<Permiso[]> {
-  const { data, error } = await supabase
+export async function fetchPermisos(signal?: AbortSignal): Promise<Permiso[]> {
+  const query = supabase
     .from('permisos')
     .select('rol, modulo, leer, escribir')
     .order('modulo')
     .order('rol')
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as Permiso[]) ?? []
 }
 
-export async function fetchPermisosByRol(rol: string): Promise<Permiso[]> {
-  const { data, error } = await supabase
+export async function fetchPermisosByRol(rol: string, signal?: AbortSignal): Promise<Permiso[]> {
+  const query = supabase
     .from('permisos')
     .select('rol, modulo, leer, escribir')
     .eq('rol', rol)
     .order('modulo')
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as Permiso[]) ?? []
 }
@@ -30,7 +32,7 @@ export async function fetchPermisosByRol(rol: string): Promise<Permiso[]> {
 export function usePermisos(enabled = true) {
   return useQuery({
     queryKey: permisosKey,
-    queryFn: fetchPermisos,
+    queryFn: ({ signal }) => fetchPermisos(signal),
     enabled,
   })
 }

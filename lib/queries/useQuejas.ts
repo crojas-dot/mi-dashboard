@@ -4,6 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Queja } from '@/lib/types'
 import { queryKeys } from './queryKeys'
+import { containsPattern } from '@/lib/utils/postgrest'
 
 export interface QuejasParams {
   page?: number
@@ -34,17 +35,21 @@ export interface QuejasResult {
   count: number
 }
 
-export async function fetchQuejas(params: QuejasParams = {}): Promise<QuejasResult> {
+export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSignal): Promise<QuejasResult> {
   const { page, pageSize, search, estado, prioridad, responsableId } = normalizeQuejasParams(params)
   let query = supabase.from('quejas').select('*', { count: 'exact' })
-  if (search) query = query.or(`folio.ilike.%${search}%,cliente_nombre.ilike.%${search}%`)
+  if (search) {
+    const pattern = containsPattern(search)
+    query = query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+  }
   if (estado) query = query.eq('estado', estado)
   if (prioridad) query = query.eq('prioridad', prioridad)
   if (responsableId) query = query.eq('responsable_id', responsableId)
-  const { data, error, count } = await query
+  query = query
     .order('fecha', { ascending: false })
     .order('id', { ascending: true })
     .range(page * pageSize, (page + 1) * pageSize - 1)
+  const { data, error, count } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return { data: (data as Queja[]) ?? [], count: count ?? 0 }
 }
@@ -52,7 +57,7 @@ export async function fetchQuejas(params: QuejasParams = {}): Promise<QuejasResu
 export function useQuejas(params: QuejasParams = {}, enabled = true) {
   return useQuery({
     queryKey: quejasKey(params),
-    queryFn: () => fetchQuejas(params),
+    queryFn: ({ signal }) => fetchQuejas(params, signal),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
     refetchOnMount: 'always',
@@ -76,13 +81,14 @@ export function quejaAdjuntosKey(quejaId: string) {
   return [...queryKeys.quejas, 'adjuntos', quejaId] as const
 }
 
-export async function fetchQuejaAdjuntos(quejaId: string): Promise<QuejaAdjunto[]> {
+export async function fetchQuejaAdjuntos(quejaId: string, signal?: AbortSignal): Promise<QuejaAdjunto[]> {
   if (!quejaId) return []
-  const { data, error } = await supabase
+  const query = supabase
     .from('queja_adjuntos')
     .select('*')
     .eq('queja_id', quejaId)
     .order('created_at', { ascending: false })
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as QuejaAdjunto[]) ?? []
 }
@@ -90,7 +96,7 @@ export async function fetchQuejaAdjuntos(quejaId: string): Promise<QuejaAdjunto[
 export function useQuejaAdjuntos(quejaId: string) {
   return useQuery({
     queryKey: quejaAdjuntosKey(quejaId),
-    queryFn: () => fetchQuejaAdjuntos(quejaId),
+    queryFn: ({ signal }) => fetchQuejaAdjuntos(quejaId, signal),
     enabled: !!quejaId,
     staleTime: 30_000,
   })
@@ -106,16 +112,16 @@ export interface SLAConfig {
 
 export const slaConfigKey = queryKeys.slaConfig
 
-export async function fetchSLAConfig(proceso?: string): Promise<SLAConfig[]> {
+export async function fetchSLAConfig(proceso?: string, signal?: AbortSignal): Promise<SLAConfig[]> {
   let query = supabase.from('sla_config').select('*')
   if (proceso) query = query.eq('proceso', proceso)
-  const { data, error } = await query
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as SLAConfig[]) ?? []
 }
 
 export function useSLAConfig(proceso?: string, enabled = true) {
-  return useQuery({ queryKey: [...slaConfigKey, proceso ?? 'todos'], queryFn: () => fetchSLAConfig(proceso), enabled })
+  return useQuery({ queryKey: [...slaConfigKey, proceso ?? 'todos'], queryFn: ({ signal }) => fetchSLAConfig(proceso, signal), enabled })
 }
 
 export interface QuejasEstadisticas {
@@ -131,8 +137,9 @@ export interface QuejasEstadisticas {
 
 export const quejasEstadisticasKey = [...queryKeys.quejas, 'estadisticas'] as const
 
-export async function fetchQuejasEstadisticas(): Promise<QuejasEstadisticas> {
-  const { data, error } = await supabase.rpc('obtener_estadisticas_quejas')
+export async function fetchQuejasEstadisticas(signal?: AbortSignal): Promise<QuejasEstadisticas> {
+  const query = supabase.rpc('obtener_estadisticas_quejas')
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   const r = data as Record<string, number>
   return {
@@ -150,7 +157,7 @@ export async function fetchQuejasEstadisticas(): Promise<QuejasEstadisticas> {
 export function useQuejasEstadisticas() {
   return useQuery({
     queryKey: quejasEstadisticasKey,
-    queryFn: fetchQuejasEstadisticas,
+    queryFn: ({ signal }) => fetchQuejasEstadisticas(signal),
     staleTime: 30_000,
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,

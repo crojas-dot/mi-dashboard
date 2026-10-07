@@ -17,7 +17,9 @@ export interface Usuario {
 export const usuariosKey = queryKeys.usuarios
 
 export async function apiFetch(url: string, options: RequestInit = {}) {
+  options.signal?.throwIfAborted()
   const { data } = await supabase.auth.getSession()
+  options.signal?.throwIfAborted()
   const token = data.session?.access_token
   return fetch(url, {
     ...options,
@@ -33,12 +35,12 @@ export async function fetchUsuarios(params?: {
   search?: string
   rol?: string
   estado?: string
-}): Promise<Usuario[]> {
+}, signal?: AbortSignal): Promise<Usuario[]> {
   const qs = new URLSearchParams()
   if (params?.search) qs.set('search', params.search)
   if (params?.rol) qs.set('rol', params.rol)
   if (params?.estado) qs.set('estado', params.estado)
-  const res = await apiFetch(`/api/usuarios?${qs.toString()}`)
+  const res = await apiFetch(`/api/usuarios?${qs.toString()}`, { signal })
   if (!res.ok) throw Object.assign(new Error('No se pudo cargar el listado de usuarios'), { status: res.status })
   return (await res.json()) as Usuario[]
 }
@@ -65,7 +67,7 @@ export function useUsuarios(
 ) {
   return useQuery({
     queryKey: usuariosQueryKey(params),
-    queryFn: () => fetchUsuarios(params),
+    queryFn: ({ signal }) => fetchUsuarios(params, signal),
     enabled,
     refetchOnWindowFocus: true,
   })

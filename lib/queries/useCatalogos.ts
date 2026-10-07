@@ -16,19 +16,20 @@ export interface CatalogoValor {
 
 export const catalogosKey = queryKeys.catalogos
 
-export async function fetchCatalogos(): Promise<CatalogoValor[]> {
-  const { data, error } = await supabase
+export async function fetchCatalogos(signal?: AbortSignal): Promise<CatalogoValor[]> {
+  const query = supabase
     .from('catalogos')
     .select('*')
     .order('modulo')
     .order('tipo')
     .order('orden')
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as CatalogoValor[]) ?? []
 }
 
 export function useCatalogos(enabled = true) {
-  return useQuery({ queryKey: catalogosKey, queryFn: fetchCatalogos, enabled })
+  return useQuery({ queryKey: catalogosKey, queryFn: ({ signal }) => fetchCatalogos(signal), enabled })
 }
 
 export function catalogoTipoKey(tipo: string, modulo?: string) {
@@ -38,6 +39,7 @@ export function catalogoTipoKey(tipo: string, modulo?: string) {
 export async function fetchCatalogoTipo(
   tipo: string,
   modulo?: string,
+  signal?: AbortSignal,
 ): Promise<{ valor: string; color: string }[]> {
   let query = supabase
     .from('catalogos')
@@ -46,7 +48,7 @@ export async function fetchCatalogoTipo(
     .or('activo.is.null,activo.eq.true')
     .order('orden')
   if (modulo) query = query.eq('modulo', modulo)
-  const { data, error } = await query
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as { valor: string; color: string }[]) ?? []
 }
@@ -54,6 +56,6 @@ export async function fetchCatalogoTipo(
 export function useCatalogoTipo(tipo: string, modulo?: string) {
   return useQuery({
     queryKey: catalogoTipoKey(tipo, modulo),
-    queryFn: () => fetchCatalogoTipo(tipo, modulo),
+    queryFn: ({ signal }) => fetchCatalogoTipo(tipo, modulo, signal),
   })
 }

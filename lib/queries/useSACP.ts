@@ -21,10 +21,10 @@ export interface SACP {
 
 export const accionesKey = queryKeys.acciones
 
-export async function fetchAcciones(page = 0, estado = ''): Promise<Pagina<SACP>> {
-  return fetchPagina<SACP>('acciones', 'fecha_apertura', page, estado)
+export async function fetchAcciones(page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<SACP>> {
+  return fetchPagina<SACP>('acciones', 'fecha_apertura', page, estado, signal)
 }
 
 export function useSACP(page = 0, estado = '') {
-  return useQuery({ queryKey: paginaKey(accionesKey, page, estado), queryFn: () => fetchAcciones(page, estado) })
+  return useQuery({ queryKey: paginaKey(accionesKey, page, estado), queryFn: ({ signal }) => fetchAcciones(page, estado, signal) })
 }

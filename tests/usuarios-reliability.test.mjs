@@ -117,7 +117,7 @@ test('API Usuarios valida todos los campos antes de acceder a Auth o a la base d
   let databaseCalls = 0
   const api = loadModule('app/api/usuarios/route.ts', {
     '@/lib/server/supabase-admin': { createServiceClient: () => { databaseCalls++; throw new Error('No debe tocar datos') } },
-    '@/lib/server/auth': { getCurrentUser: async () => ({ rol: 'admin', auth_id: 'yo' }) },
+    '@/lib/server/auth': { getCurrentUser: async () => ({ rol: 'admin', auth_id: '00000000-0000-4000-8000-000000000001' }) },
     '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'test' },
   })
   const validPost = { nombre: 'Prueba', email: 'test@example.test', rol: 'colaborador' }
@@ -125,9 +125,9 @@ test('API Usuarios valida todos los campos antes de acceder a Auth o a la base d
     ['POST', []], ['POST', 42], ['POST', { ...validPost, nombre: 42 }],
     ['POST', { ...validPost, rol: 'inventado' }], ['POST', { ...validPost, estado: null }],
     ['POST', { ...validPost, password: 'corta' }],
-    ['PATCH', { id: 'otro', email: 'nuevo@example.test', newPassword: 'corta' }],
-    ['PATCH', { id: 'otro', email: {} }], ['PATCH', { id: 'otro', rol: null }],
-    ['PATCH', { id: 'otro', nombre: '   ' }], ['PATCH', { id: 'otro' }],
+    ['PATCH', { id: '00000000-0000-4000-8000-000000000002', email: 'nuevo@example.test', newPassword: 'corta' }],
+    ['PATCH', { id: '00000000-0000-4000-8000-000000000002', email: {} }], ['PATCH', { id: '00000000-0000-4000-8000-000000000002', rol: null }],
+    ['PATCH', { id: '00000000-0000-4000-8000-000000000002', nombre: '   ' }], ['PATCH', { id: '00000000-0000-4000-8000-000000000002' }],
   ]) {
     const response = await api[method](new Request('https://local.test/api/usuarios', { method, body: JSON.stringify(payload) }))
     assert.equal(response.status, 400, JSON.stringify(payload))
@@ -142,9 +142,9 @@ test('validación conserva perfiles válidos y no normaliza las contraseñas', (
   const created = validarUsuarioInput({ nombre: ' Persona ', email: ' PERSONA@EXAMPLE.TEST ', rol: 'colaborador', password }, 'POST')
   assert.equal(created.error, undefined)
   assert.deepEqual({ ...created.data }, { nombre: 'Persona', email: 'persona@example.test', rol: 'colaborador', password })
-  const edited = validarUsuarioInput({ id: 'yo', nombre: 'Nuevo nombre' }, 'PATCH')
+  const edited = validarUsuarioInput({ id: '00000000-0000-4000-8000-000000000001', nombre: 'Nuevo nombre' }, 'PATCH')
   assert.equal(edited.error, undefined)
-  assert.deepEqual({ ...edited.data }, { id: 'yo', nombre: 'Nuevo nombre' })
+  assert.deepEqual({ ...edited.data }, { id: '00000000-0000-4000-8000-000000000001', nombre: 'Nuevo nombre' })
 })
 
 test('reset solo escribe Auth y cambiar correo/contraseña usa una única petición Auth', async () => {
@@ -164,11 +164,11 @@ test('reset solo escribe Auth y cambiar correo/contraseña usa una única petici
     }
     const { PATCH } = loadModule('app/api/usuarios/route.ts', {
       '@/lib/server/supabase-admin': { createServiceClient: () => client },
-      '@/lib/server/auth': { getCurrentUser: async () => ({ rol: 'admin', auth_id: 'yo' }) },
+      '@/lib/server/auth': { getCurrentUser: async () => ({ rol: 'admin', auth_id: '00000000-0000-4000-8000-000000000001' }) },
       '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'test' },
     })
     const response = await PATCH(new Request('https://local.test/api/usuarios', {
-      method: 'PATCH', body: JSON.stringify({ id: 'otro', newPassword: 'Prueba-123', ...extra }),
+      method: 'PATCH', body: JSON.stringify({ id: '00000000-0000-4000-8000-000000000002', newPassword: 'Prueba-123', ...extra }),
     }))
     assert.equal(response.status, 200)
     assert.equal(authUpdates.length, 1)

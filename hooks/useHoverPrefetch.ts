@@ -15,7 +15,7 @@ export interface PrefetchConfig {
  *
  * Usage:
  *   const prefetch = useHoverPrefetch()
- *   <Link onMouseEnter={() => prefetch({ queryKey: ['quejas'], queryFn: () => fetchQuejas() })}>
+ *   <Link onMouseEnter={() => prefetch({ queryKey: ['quejas'], queryFn: ({ signal }) => fetchQuejas({}, signal) })}>
  *
  * Pre-fetches data into the React Query cache so navigation is instant.
  */

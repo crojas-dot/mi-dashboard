@@ -6,6 +6,7 @@ export interface AIProvider {
   tipo: AIProviderTipo
   base_url?: string
   api_key: string
+  has_api_key?: boolean
   tokens_usados: number
   limite_tokens: number
   modelos: string[]

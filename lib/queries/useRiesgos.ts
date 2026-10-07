@@ -19,19 +19,19 @@ export interface Riesgo {
 
 export const riesgosKey = queryKeys.riesgos
 
-export async function fetchRiesgos(page = 0, estado = ''): Promise<Pagina<Riesgo>> {
-  return fetchPagina<Riesgo>('riesgos', 'fecha_identificacion', page, estado)
+export async function fetchRiesgos(page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<Riesgo>> {
+  return fetchPagina<Riesgo>('riesgos', 'fecha_identificacion', page, estado, signal)
 }
 
 export function useRiesgos(page = 0, estado = '') {
-  return useQuery({ queryKey: paginaKey(riesgosKey, page, estado), queryFn: () => fetchRiesgos(page, estado) })
+  return useQuery({ queryKey: paginaKey(riesgosKey, page, estado), queryFn: ({ signal }) => fetchRiesgos(page, estado, signal) })
 }
 
 export function useMatrizRiesgos() {
   return useQuery({
     queryKey: [...riesgosKey, 'matriz'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('riesgos').select('probabilidad, impacto')
+    queryFn: async ({ signal }) => {
+      const { data, error } = await supabase.from('riesgos').select('probabilidad, impacto').abortSignal(signal)
       if (error) throw error
       const conteo = new Map<string, number>()
       for (const r of (data ?? []) as { probabilidad: number; impacto: number }[]) {

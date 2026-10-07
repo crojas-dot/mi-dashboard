@@ -18,13 +18,14 @@ export function comentariosKey(quejaId: string) {
   return [...queryKeys.quejas, 'comentarios', quejaId] as const
 }
 
-export async function fetchQuejaComentarios(quejaId: string): Promise<QuejaComentario[]> {
+export async function fetchQuejaComentarios(quejaId: string, signal?: AbortSignal): Promise<QuejaComentario[]> {
   if (!quejaId) return []
-  const { data, error } = await supabase
+  const query = supabase
     .from('quejas_comentarios')
     .select('*')
     .eq('queja_id', quejaId)
     .order('fecha', { ascending: true })
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as QuejaComentario[]) ?? []
 }
@@ -32,7 +33,7 @@ export async function fetchQuejaComentarios(quejaId: string): Promise<QuejaComen
 export function useQuejaComentarios(quejaId: string) {
   return useQuery({
     queryKey: comentariosKey(quejaId),
-    queryFn: () => fetchQuejaComentarios(quejaId),
+    queryFn: ({ signal }) => fetchQuejaComentarios(quejaId, signal),
     enabled: !!quejaId,
   })
 }

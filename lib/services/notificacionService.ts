@@ -12,13 +12,15 @@ export interface Notificacion {
   origen_id?: string
 }
 
-export async function listarNotificaciones(userId: string): Promise<Notificacion[]> {
-  const { data } = await supabase
+export async function listarNotificaciones(userId: string, signal?: AbortSignal): Promise<Notificacion[]> {
+  const query = supabase
     .from('notificaciones')
     .select('*')
     .eq('usuario_id', userId)
     .eq('archivada', false)
     .order('fecha', { ascending: false })
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
+  if (error) throw error
   return (data as Notificacion[]) ?? []
 }
 

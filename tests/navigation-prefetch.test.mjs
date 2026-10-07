@@ -24,7 +24,7 @@ test('hover, foco y tacto precargan Mis Quejas con la misma clave y el responsab
   assert.equal(fixture.preloads.length, 3)
   for (const config of fixture.preloads) {
     assert.equal(config.queryKey[1].responsableId, 'perfil-propio')
-    assert.deepEqual((await config.queryFn()).data.map(row => row.id), ['propia'])
+    assert.deepEqual((await config.queryFn({ signal: new AbortController().signal, queryKey: config.queryKey })).data.map(row => row.id), ['propia'])
   }
   assert.equal(new Set(fixture.preloads.map(config => JSON.stringify(config.queryKey))).size, 1)
 })

@@ -1,3 +1,4 @@
+import { getUserError } from '@/lib/errors/userError'
 import type { AIProvider, ModeloTestResultado } from './types'
 import { crearClienteIA } from './aiFactory'
 
@@ -32,7 +33,6 @@ export async function testearModelo(
     return { modelo, ok: true, latenciaMs, error: null }
   } catch (err) {
     const latenciaMs = Date.now() - inicio
-    const msg = err instanceof Error ? err.message : String(err)
-    return { modelo, ok: false, latenciaMs, error: msg.slice(0, 200) }
+    return { modelo, ok: false, latenciaMs, error: getUserError(err, 'No se pudo probar este modelo.').message }
   }
 }

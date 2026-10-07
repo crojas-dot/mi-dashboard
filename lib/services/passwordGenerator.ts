@@ -3,28 +3,23 @@ const LOWER = 'abcdefghijklmnopqrstuvwxyz'
 const DIGITS = '0123456789'
 const SYMBOLS = '!@#$%^&*()-_=+[]{}|;:,.<>?'
 
-function pick(chars: string, count: number): string {
-  let result = ''
-  const array = new Uint32Array(count)
-  crypto.getRandomValues(array)
-  for (let i = 0; i < count; i++) {
-    result += chars[array[i] % chars.length]
-  }
-  return result
+function randomIndex(size: number): number {
+  const ceiling = 2 ** 32 - (2 ** 32 % size)
+  const value = new Uint32Array(1)
+  do { crypto.getRandomValues(value) } while (value[0] >= ceiling)
+  return value[0] % size
 }
 
 export function generatePassword(length = 16): string {
-  if (length < 8) length = 8
-  const all = UPPER + LOWER + DIGITS + SYMBOLS
-  const upper = pick(UPPER, 1)
-  const lower = pick(LOWER, 1)
-  const digit = pick(DIGITS, 1)
-  const symbol = pick(SYMBOLS, 1)
-  const rest = pick(all, length - 4)
-  const combined = upper + lower + digit + symbol + rest
-  const shuffled = combined
-    .split('')
-    .sort(() => crypto.getRandomValues(new Uint32Array(1))[0] / (2 ** 32 - 1) - 0.5)
-    .join('')
-  return shuffled
+  const size = Number.isSafeInteger(length) ? Math.max(8, length) : 16
+  const groups = [UPPER, LOWER, DIGITS, SYMBOLS]
+  const characters = groups.map(group => group[randomIndex(group.length)])
+  const all = groups.join('')
+  while (characters.length < size) characters.push(all[randomIndex(all.length)])
+  // Fisher-Yates: cada posición se elige con Web Crypto, sin sort aleatorio.
+  for (let index = characters.length - 1; index > 0; index--) {
+    const target = randomIndex(index + 1)
+    ;[characters[index], characters[target]] = [characters[target], characters[index]]
+  }
+  return characters.join('')
 }

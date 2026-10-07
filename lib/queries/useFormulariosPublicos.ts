@@ -16,17 +16,18 @@ export interface FormularioPublico {
 
 export const formulariosKey = [...queryKeys.configuraciones, 'formularios'] as const
 
-export async function fetchFormulariosPublicos(): Promise<FormularioPublico[]> {
-  const { data, error } = await supabase
+export async function fetchFormulariosPublicos(signal?: AbortSignal): Promise<FormularioPublico[]> {
+  const query = supabase
     .from('formularios_publicos')
     .select('*')
     .order('created_at', { ascending: false })
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as FormularioPublico[]) ?? []
 }
 
 export function useFormulariosPublicos(enabled = true) {
-  return useQuery({ queryKey: formulariosKey, queryFn: fetchFormulariosPublicos, enabled })
+  return useQuery({ queryKey: formulariosKey, queryFn: ({ signal }) => fetchFormulariosPublicos(signal), enabled })
 }
 
 export function useCrearFormularioPublico() {

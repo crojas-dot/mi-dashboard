@@ -140,8 +140,8 @@ export default function QuejasPage() {
                         onMouseEnter={() => {
                           prefetch({
                             queryKey: quejaAdjuntosKey(q.id),
-                            queryFn: () => fetchQuejaAdjuntos(q.id),
-                            staleTime: Infinity,
+                            queryFn: ({ signal }) => fetchQuejaAdjuntos(q.id, signal),
+                            staleTime: 30_000,
                           })
                         }}
                       >

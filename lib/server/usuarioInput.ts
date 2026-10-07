@@ -19,6 +19,7 @@ export function validarUsuarioInput(input: unknown, method: 'POST' | 'PATCH'): R
   }
   if (method === 'POST' && (!data.nombre || !data.email || !data.rol)) return { error: 'Nombre, email y rol son obligatorios' }
   if (method === 'PATCH' && !data.id) return { error: 'id obligatorio' }
+  if (data.id !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.id)) return { error: 'id inválido' }
   if (data.nombre !== undefined && !data.nombre) return { error: 'El nombre no puede estar vacío' }
   if (data.email !== undefined) {
     data.email = data.email.toLowerCase()

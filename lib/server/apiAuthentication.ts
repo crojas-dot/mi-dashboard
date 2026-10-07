@@ -7,6 +7,7 @@ export const API_WITH_ROUTE_AUTH: Record<string, readonly string[]> = {
   '/api/usuarios': ['GET', 'POST', 'PATCH', 'DELETE'],
   '/api/ai/analizar': ['POST'],
   '/api/ai/test': ['POST'],
+  '/api/configuracion/ia': ['GET', 'PUT', 'POST'],
   '/api/configuracion/zona-horaria': ['GET', 'PUT'],
   '/api/drive/upload': ['POST'],
   '/api/drive/download': ['GET'],

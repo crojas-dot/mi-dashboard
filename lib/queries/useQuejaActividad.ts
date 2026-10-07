@@ -17,12 +17,13 @@ export function quejaActividadKey(quejaId: string) {
   return [...queryKeys.quejasActividad, quejaId] as const
 }
 
-export async function fetchQuejaActividad(quejaId: string): Promise<QuejaActividad[]> {
-  const { data, error } = await supabase
+export async function fetchQuejaActividad(quejaId: string, signal?: AbortSignal): Promise<QuejaActividad[]> {
+  const query = supabase
     .from('quejas_actividad')
     .select('*')
     .eq('queja_id', quejaId)
     .order('created_at', { ascending: true })
+  const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return (data as QuejaActividad[]) ?? []
 }
@@ -30,7 +31,7 @@ export async function fetchQuejaActividad(quejaId: string): Promise<QuejaActivid
 export function useQuejaActividad(quejaId: string) {
   return useQuery({
     queryKey: quejaActividadKey(quejaId),
-    queryFn: () => fetchQuejaActividad(quejaId),
+    queryFn: ({ signal }) => fetchQuejaActividad(quejaId, signal),
     enabled: !!quejaId,
     staleTime: 30_000,
   })

@@ -16,10 +16,10 @@ export interface Reunion {
 
 export const reunionesKey = queryKeys.reuniones
 
-export async function fetchReuniones(page = 0, estado = ''): Promise<Pagina<Reunion>> {
-  return fetchPagina<Reunion>('reuniones', 'created_at', page, estado)
+export async function fetchReuniones(page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<Reunion>> {
+  return fetchPagina<Reunion>('reuniones', 'created_at', page, estado, signal)
 }
 
 export function useReuniones(page = 0, estado = '') {
-  return useQuery({ queryKey: paginaKey(reunionesKey, page, estado), queryFn: () => fetchReuniones(page, estado) })
+  return useQuery({ queryKey: paginaKey(reunionesKey, page, estado), queryFn: ({ signal }) => fetchReuniones(page, estado, signal) })
 }

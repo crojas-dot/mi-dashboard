@@ -17,10 +17,10 @@ export interface Proceso {
 
 export const procesosKey = queryKeys.procesos
 
-export async function fetchProcesos(page = 0, estado = ''): Promise<Pagina<Proceso>> {
-  return fetchPagina<Proceso>('procesos', 'created_at', page, estado)
+export async function fetchProcesos(page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<Proceso>> {
+  return fetchPagina<Proceso>('procesos', 'created_at', page, estado, signal)
 }
 
 export function useProcesos(page = 0, estado = '') {
-  return useQuery({ queryKey: paginaKey(procesosKey, page, estado), queryFn: () => fetchProcesos(page, estado) })
+  return useQuery({ queryKey: paginaKey(procesosKey, page, estado), queryFn: ({ signal }) => fetchProcesos(page, estado, signal) })
 }

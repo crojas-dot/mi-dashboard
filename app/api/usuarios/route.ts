@@ -4,11 +4,19 @@ import { getCurrentUser } from '@/lib/server/auth'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 import { completarUltimoAcceso } from '@/lib/server/ultimoAcceso'
 import { logger } from '@/lib/utils/logger'
+import { validarUsuarioInput } from '@/lib/server/usuarioInput'
+import { containsPattern } from '@/lib/utils/postgrest'
+import { generatePassword } from '@/lib/services/passwordGenerator'
+import { getUserError } from '@/lib/errors/userError'
 
 export const runtime = 'nodejs'
+const json = (value: unknown, options: {status?: number; headers?: Record<string,string>} = {}) => NextResponse.json(value, {
+  ...options, headers: { ...options.headers, 'Cache-Control': 'no-store' },
+})
 
-function esEmailValido(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+function falloSeguro(error: unknown, action: string, fallback: string, status = 500) {
+  logger.error(fallback, { module: 'usuarios', action }, error)
+  return json({ error: getUserError(error, fallback).message }, { status, headers: { 'Cache-Control': 'no-store' } })
 }
 
 function parseBody(request: NextRequest) {
@@ -18,15 +26,15 @@ function parseBody(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request)
   if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
-    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+    return json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, request.signal)
   if (!current) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    return json({ error: 'No autorizado' }, { status: 401 })
   }
   if (!['admin', 'calidad'].includes(current.rol)) {
-    return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+    return json({ error: 'Sin permisos' }, { status: 403 })
   }
 
   const { searchParams } = new URL(request.url)
@@ -36,13 +44,14 @@ export async function GET(request: NextRequest) {
 
   const admin = createServiceClient()
   if (!admin) {
-    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
+    return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
   let query = admin.from('usuarios').select('id, email, nombre, rol, estado, auth_id, ultimo_acceso').order('nombre')
 
   if (search.trim()) {
-    query = query.or(`nombre.ilike.%${search}%,email.ilike.%${search}%`)
+    const pattern = containsPattern(search.trim())
+    query = query.or(`nombre.ilike.${pattern},email.ilike.${pattern}`)
   }
   if (rol) {
     query = query.eq('rol', rol)
@@ -51,56 +60,41 @@ export async function GET(request: NextRequest) {
     query = query.eq('estado', estado)
   }
 
-  const { data, error } = await query
+  const { data, error } = await query.abortSignal(request.signal)
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return falloSeguro(error, 'list', 'No se pudo listar usuarios.', 500)
   }
   try {
-    return NextResponse.json(await completarUltimoAcceso(admin, data ?? []))
+    return json(await completarUltimoAcceso(admin, data ?? []), { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     logger.error('No se pudo consultar el último acceso', { module: 'usuarios', action: 'list_access' }, error)
-    return NextResponse.json({ error: 'No se pudo consultar el último acceso de los usuarios.' }, { status: 502 })
+    return json({ error: 'No se pudo consultar el último acceso de los usuarios.' }, { status: 502 })
   }
 }
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
   if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
-    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+    return json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, request.signal)
   if (!current) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    return json({ error: 'No autorizado' }, { status: 401 })
   }
   if (current.rol !== 'admin') {
-    return NextResponse.json({ error: 'Solo administradores' }, { status: 403 })
+    return json({ error: 'Solo administradores' }, { status: 403 })
   }
 
-  const body = await parseBody(request)
-  if (!body) {
-    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
-  }
-
-  const nombre = (body.nombre || '').trim()
-  const email = (body.email || '').trim().toLowerCase()
-  const rol = ['admin', 'calidad', 'colaborador'].includes(body.rol) ? body.rol : 'calidad'
-  const estado = body.estado === 'inactivo' ? 'inactivo' : 'activo'
-  const tempPassword =
-    typeof body.password === 'string' && body.password.length >= 8 ? body.password : crypto.randomUUID().slice(0, 16)
-
-  if (!nombre || !email || !rol) {
-    return NextResponse.json({ error: 'Nombre, email y rol son obligatorios' }, { status: 400 })
-  }
-
-  if (!esEmailValido(email)) {
-    return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
-  }
+  const validation = validarUsuarioInput(await parseBody(request), 'POST')
+  if (validation.error) return json({ error: validation.error }, { status: 400 })
+  const { nombre, email, rol, estado = 'activo', password } = validation.data!
+  const tempPassword = password ?? generatePassword()
 
   const admin = createServiceClient()
   if (!admin) {
-    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
+    return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
@@ -111,7 +105,7 @@ export async function POST(request: NextRequest) {
   })
 
   if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 })
+    return falloSeguro(authError, 'create_auth', 'No se pudo crear la cuenta.', 400)
   }
   const newUserId = authUser.user.id
 
@@ -128,61 +122,47 @@ export async function POST(request: NextRequest) {
 
   if (insertError) {
     await admin.auth.admin.deleteUser(newUserId)
-    return NextResponse.json({ error: insertError.message }, { status: 500 })
+    return falloSeguro(insertError, 'create_profile', 'No se pudo crear el perfil.', 500)
   }
 
-  return NextResponse.json({ ok: true, userId: newUserId, tempPassword: tempPassword }, { status: 201 })
+  return json({ ok: true, userId: newUserId, tempPassword: tempPassword }, { status: 201 })
 }
 
 export async function PATCH(request: NextRequest) {
   const ip = getClientIp(request)
   if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
-    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+    return json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, request.signal)
   if (!current) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    return json({ error: 'No autorizado' }, { status: 401 })
   }
   if (current.rol !== 'admin') {
-    return NextResponse.json({ error: 'Solo administradores' }, { status: 403 })
+    return json({ error: 'Solo administradores' }, { status: 403 })
   }
 
-  const body = await parseBody(request)
-  if (!body) {
-    return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
-  }
-
-  const { id, nombre, rol, estado, email, newPassword } = body as {
-    id?: string
-    nombre?: string
-    rol?: string
-    estado?: string
-    email?: string
-    newPassword?: string
-  }
-
-  if (!id) {
-    return NextResponse.json({ error: 'id obligatorio' }, { status: 400 })
-  }
+  const validation = validarUsuarioInput(await parseBody(request), 'PATCH')
+  if (validation.error) return json({ error: validation.error }, { status: 400 })
+  const { id, nombre, rol, estado, email, newPassword } = validation.data!
 
   const admin = createServiceClient()
   if (!admin) {
-    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
+    return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
   const { data: userRow, error: fetchError } = await admin.from('usuarios').select('auth_id').eq('id', id).maybeSingle()
   if (fetchError || !userRow) {
-    return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    return json({ error: 'Usuario no encontrado' }, { status: 404 })
   }
   const authId = userRow.auth_id
 
   if (current.auth_id === authId) {
     if (estado !== undefined && estado === 'inactivo') {
-      return NextResponse.json({ error: 'No puedes desactivar tu propia cuenta' }, { status: 400 })
+      return json({ error: 'No puedes desactivar tu propia cuenta' }, { status: 400 })
     }
     if (rol !== undefined && rol !== 'admin') {
-      return NextResponse.json({ error: 'No puedes cambiar tu propio rol' }, { status: 400 })
+      return json({ error: 'No puedes cambiar tu propio rol' }, { status: 400 })
     }
   }
 
@@ -195,7 +175,7 @@ export async function PATCH(request: NextRequest) {
       if (nuevoRol !== 'admin' || nuevoEstado !== 'activo') {
         const { count } = await admin.from('usuarios').select('id', { count: 'exact', head: true }).eq('rol', 'admin').eq('estado', 'activo')
         if ((count ?? 0) <= 1) {
-          return NextResponse.json({ error: 'No se puede dejar el sistema sin administradores activos' }, { status: 409 })
+          return json({ error: 'No se puede dejar el sistema sin administradores activos' }, { status: 409 })
         }
       }
     }
@@ -207,76 +187,60 @@ export async function PATCH(request: NextRequest) {
     updates.nombre = nombre.trim()
   }
   if (rol !== undefined) {
-    updates.rol = ['admin', 'calidad', 'colaborador'].includes(rol) ? rol : 'calidad'
+    updates.rol = rol
   }
   if (estado !== undefined) {
-    updates.estado = estado === 'inactivo' ? 'inactivo' : 'activo'
+    updates.estado = estado
   }
-  if (email !== undefined) {
-    const newEmail = email.trim().toLowerCase()
-    if (!esEmailValido(newEmail)) {
-      return NextResponse.json({ error: 'Email inválido' }, { status: 400 })
-    }
-    const { error: emailError } = await admin.auth.admin.updateUserById(authId, { email: newEmail })
-    if (emailError) {
-      return NextResponse.json({ error: emailError.message }, { status: 400 })
-    }
-    updates.email = newEmail
-  }
-  if (newPassword !== undefined) {
-    if (newPassword.length < 8) {
-      return NextResponse.json({ error: 'La contraseña debe tener al menos 8 caracteres' }, { status: 400 })
-    }
-    const { error: pwError } = await admin.auth.admin.updateUserById(authId, { password: newPassword })
-    if (pwError) {
-      return NextResponse.json({ error: pwError.message }, { status: 400 })
-    }
+  const authUpdates: { email?: string; password?: string } = {}
+  if (email !== undefined) { authUpdates.email = email; updates.email = email }
+  if (newPassword !== undefined) authUpdates.password = newPassword
+  if (Object.keys(authUpdates).length) {
+    const { error: authError } = await admin.auth.admin.updateUserById(authId, authUpdates)
+    if (authError) return falloSeguro(authError, 'update_auth', 'No se pudo actualizar la cuenta.', 400)
   }
 
   if (Object.keys(updates).length === 0 && newPassword === undefined) {
-    return NextResponse.json({ error: 'Sin campos para actualizar' }, { status: 400 })
+    return json({ error: 'Sin campos para actualizar' }, { status: 400 })
   }
 
-  const { error } = await admin.from('usuarios').update(updates).eq('id', id)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  if (Object.keys(updates).length) {
+    const { error } = await admin.from('usuarios').update(updates).eq('id', id)
+    if (error) return falloSeguro(error, 'update_profile', 'No se pudo actualizar el perfil.')
   }
-  return NextResponse.json({ ok: true })
+  return json({ ok: true })
 }
 
 export async function DELETE(request: NextRequest) {
   const ip = getClientIp(request)
   if (!rateLimit(ip, 20, 60_000, 'usuarios')) {
-    return NextResponse.json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
+    return json({ error: 'Demasiadas solicitudes. Intentá de nuevo en un minuto.' }, { status: 429 })
   }
 
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, request.signal)
   if (!current) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    return json({ error: 'No autorizado' }, { status: 401 })
   }
   if (current.rol !== 'admin') {
-    return NextResponse.json({ error: 'Solo administradores' }, { status: 403 })
+    return json({ error: 'Solo administradores' }, { status: 403 })
   }
 
   const body = await parseBody(request)
   const id = body?.id || new URL(request.url).searchParams.get('id')
-  if (!id) {
-    return NextResponse.json({ error: 'id obligatorio' }, { status: 400 })
-  }
+  if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return json({ error: 'id inválido' }, { status: 400 })
 
   const admin = createServiceClient()
   if (!admin) {
-    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
+    return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
   const { data: userRow, error: fetchError } = await admin.from('usuarios').select('auth_id').eq('id', id).maybeSingle()
   if (fetchError || !userRow) {
-    return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+    return json({ error: 'Usuario no encontrado' }, { status: 404 })
   }
 
   if (current.auth_id === userRow.auth_id) {
-    return NextResponse.json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
+    return json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
   }
 
   // Verificar que no sea el último admin activo
@@ -284,19 +248,19 @@ export async function DELETE(request: NextRequest) {
   if (userToDelete?.rol === 'admin') {
     const { count } = await admin.from('usuarios').select('id', { count: 'exact', head: true }).eq('rol', 'admin').eq('estado', 'activo')
     if ((count ?? 0) <= 1) {
-      return NextResponse.json({ error: 'No se puede eliminar el último administrador activo del sistema' }, { status: 409 })
+      return json({ error: 'No se puede eliminar el último administrador activo del sistema' }, { status: 409 })
     }
   }
 
   const { error: authDeleteError } = await admin.auth.admin.deleteUser(userRow.auth_id)
   if (authDeleteError) {
-    return NextResponse.json({ error: authDeleteError.message }, { status: 400 })
+    return falloSeguro(authDeleteError, 'delete_auth', 'No se pudo eliminar la cuenta.', 400)
   }
 
   const { error: deleteError } = await admin.from('usuarios').delete().eq('id', id)
   if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return falloSeguro(deleteError, 'delete_profile', 'No se pudo eliminar el perfil.', 500)
   }
 
-  return NextResponse.json({ ok: true })
+  return json({ ok: true })
 }

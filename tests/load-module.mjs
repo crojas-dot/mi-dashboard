@@ -51,7 +51,9 @@ export function fakeDatabase(tables, failures = {}) {
       order(key, options = {}) { call.orders.push({ key, ascending: options.ascending !== false, nullsFirst: options.nullsFirst }); return query },
       limit(size) { call.end = size - 1; return query },
       range(start, end) { call.start = start; call.end = end; return query },
+      abortSignal(signal) { call.signal = signal; return query },
       then(resolve, reject) {
+        if (call.signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError')).then(resolve, reject)
         const rows = (tables[table] ?? []).filter((row) => call.filters.every((filter) => filter(row)))
         rows.sort((a, b) => {
           for (const { key, ascending, nullsFirst } of call.orders) {

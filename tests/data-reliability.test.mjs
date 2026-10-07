@@ -226,13 +226,16 @@ test('cancelar una búsqueda de Quejas aborta la petición de red real del clien
   client.clear()
 })
 
-test('cancelar una búsqueda de Usuarios aborta la petición de red real del cliente Supabase', async () => {
+test('cancelar una búsqueda de Usuarios aborta su petición API sin confundirla con el cliente Supabase', async () => {
   let requestSignal
-  const supabase = supabaseWithFetch((_url, options) => new Promise((_resolve, reject) => {
+  const apiFetch = (_url, options) => new Promise((_resolve, reject) => {
     requestSignal = options.signal
     requestSignal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true })
-  }))
-  const { useUsuarios } = loadModule('lib/queries/useUsuarios.ts', { '@/lib/supabase': { supabase }, '@tanstack/react-query': { ...queryCore, useQuery: (options) => options } })
+  })
+  const supabase = { auth: { getSession: async () => ({ data: { session: { access_token: 'test-token' } } }) } }
+  const { useUsuarios } = loadModule('lib/queries/useUsuarios.ts', {
+    '@/lib/supabase': { supabase }, '@tanstack/react-query': { ...queryCore, useQuery: (options) => options },
+  }, { fetch: apiFetch, URLSearchParams })
   const client = newClient()
   const options = useUsuarios({ search: 'texto anterior' })
   const pending = client.fetchQuery(options).catch((error) => error)
@@ -242,4 +245,51 @@ test('cancelar una búsqueda de Usuarios aborta la petición de red real del cli
   assert.equal(requestSignal.aborted, true)
   assert.equal(queryCore.isCancelledError(await pending), true)
   client.clear()
+})
+
+test('Realtime no duplica la lectura inicial ni resincroniza antes de una primera conexión exitosa', async () => {
+  const client = newClient()
+  client.setQueryData(['quejas'], 'cache')
+  let fetches = 0
+  const observer = new queryCore.QueryObserver(client, { queryKey: ['quejas'], queryFn: async () => ++fetches })
+  const unsubscribe = observer.subscribe(() => {})
+  const realtime = realtimeHarness(client)
+  realtime.status('CHANNEL_ERROR'); realtime.status('SUBSCRIBED'); realtime.status('SUBSCRIBED')
+  realtime.tick(1000); await settle()
+  assert.equal(fetches, 0)
+  assert.equal(client.getQueryState(['quejas']).isInvalidated, false)
+  realtime.status('TIMED_OUT'); realtime.status('SUBSCRIBED'); realtime.tick(750)
+  await settle()
+  assert.equal(fetches, 1)
+  realtime.status('SUBSCRIBED'); realtime.tick(1000); await settle()
+  assert.equal(fetches, 1)
+  realtime.cleanup(); unsubscribe(); client.clear()
+})
+
+test('Realtime ignora eventos y estados tardíos tras retirar el canal', async () => {
+  const client = newClient()
+  client.setQueryData(['quejas'], 'cache')
+  const realtime = realtimeHarness(client)
+  realtime.status('SUBSCRIBED')
+  realtime.cleanup()
+  realtime.event(); realtime.status('CLOSED'); realtime.status('SUBSCRIBED'); realtime.tick(1000)
+  await settle()
+  assert.equal(client.getQueryState(['quejas']).isInvalidated, false)
+  assert.equal(realtime.removed, 1)
+  client.clear()
+})
+
+test('Realtime compacta prefijos iguales y parciales con el matching de TanStack', async () => {
+  const client = newClient()
+  const invalidations = []
+  const originalInvalidate = client.invalidateQueries.bind(client)
+  client.invalidateQueries = (options) => { invalidations.push(options.queryKey); return originalInvalidate(options) }
+  const realtime = realtimeHarness(client, { invalidateKeys: [
+    ['quejas', { responsableId: 'propio', page: 0 }], ['quejas', { responsableId: 'propio' }],
+    ['quejas', { responsableId: 'propio' }], ['dashboard'], ['dashboard', 'actividad'],
+  ] })
+  realtime.event(); realtime.tick(750); await settle()
+  assert.deepEqual(invalidations.map((key) => JSON.stringify(key)).sort(),
+    [JSON.stringify(['quejas', { responsableId: 'propio' }]), JSON.stringify(['dashboard'])].sort())
+  realtime.cleanup(); client.clear()
 })

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { QueryFunctionContext } from '@tanstack/react-query'
 import {
   ChartPie, MessageSquareText, FolderOpen, ListChecks,
   ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
@@ -56,14 +57,14 @@ const sections: { label: string; links: { href: string; label: string; icon: Luc
 
 const prefetchMap: Record<string, PrefetchConfig | PrefetchConfig[]> = {
   '/':           dashboardPrefetchOptions(),
-  '/quejas':     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: () => fetchQuejas({ page: 0, pageSize: 25 }) },
-  '/documentos': { queryKey: paginaKey(documentosKey), queryFn: () => fetchDocumentos() },
-  '/sacp':       { queryKey: paginaKey(accionesKey), queryFn: () => fetchAcciones() },
-  '/riesgos':    { queryKey: paginaKey(riesgosKey), queryFn: () => fetchRiesgos() },
-  '/auditorias': { queryKey: paginaKey(auditoriasKey), queryFn: () => fetchAuditorias() },
-  '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: () => fetchReuniones() },
-  '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: () => fetchProcesos() },
-  '/usuarios':   { queryKey: usuariosQueryKey(), queryFn: () => fetchUsuarios() },
+  '/quejas':     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: ({ signal }) => fetchQuejas({ page: 0, pageSize: 25 }, signal) },
+  '/documentos': { queryKey: paginaKey(documentosKey), queryFn: ({ signal }) => fetchDocumentos(0, '', signal) },
+  '/sacp':       { queryKey: paginaKey(accionesKey), queryFn: ({ signal }) => fetchAcciones(0, '', signal) },
+  '/riesgos':    { queryKey: paginaKey(riesgosKey), queryFn: ({ signal }) => fetchRiesgos(0, '', signal) },
+  '/auditorias': { queryKey: paginaKey(auditoriasKey), queryFn: ({ signal }) => fetchAuditorias(0, '', signal) },
+  '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: ({ signal }) => fetchReuniones(0, '', signal) },
+  '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: ({ signal }) => fetchProcesos(0, '', signal) },
+  '/usuarios':   { queryKey: usuariosQueryKey(), queryFn: ({ signal }) => fetchUsuarios(undefined, signal) },
 }
 
 export default function Sidebar({ expanded = false, onNavigate, className = '' }: { expanded?: boolean; onNavigate?: () => void; className?: string } = {}) {
@@ -76,7 +77,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   const prepareNavigation = (href: string) => {
     const config = href === '/mis-quejas' && user?.id
-      ? { queryKey: quejasKey({ responsableId: user.id }), queryFn: () => fetchQuejas({ responsableId: user.id }) }
+      ? { queryKey: quejasKey({ responsableId: user.id }), queryFn: ({ signal }: QueryFunctionContext) => fetchQuejas({ responsableId: user.id }, signal) }
       : prefetchMap[href]
     if (config) prefetch(config)
   }

@@ -11,7 +11,7 @@ export function notificacionesKey(userId: string) {
 export function useNotificaciones(userId: string, enabled = true) {
   return useQuery({
     queryKey: notificacionesKey(userId),
-    queryFn: () => listarNotificaciones(userId),
+    queryFn: ({ signal }) => listarNotificaciones(userId, signal),
     enabled: !!userId && enabled,
     refetchInterval: 60000,
   })

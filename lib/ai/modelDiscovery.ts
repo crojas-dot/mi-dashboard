@@ -1,17 +1,18 @@
+import 'server-only'
+import { validarBaseUrl } from './providerUrl'
+import { logger } from '@/lib/utils/logger'
 import type { AIProvider } from './types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 const DEFAULT_TTL = 1440
 const MAX_MODELS = 50
 
-export function esOpenRouter(provider: AIProvider): boolean {
-  const url = (provider.base_url ?? '').toLowerCase()
-  const nombre = (provider.nombre ?? '').toLowerCase()
-  return url.includes('openrouter.ai') || nombre.includes('openrouter')
-}
+export { esOpenRouter } from './providerDisplay'
+import { esOpenRouter } from './providerDisplay'
 
-export async function obtenerModelosDisponibles(provider: AIProvider): Promise<{ modelos: string[]; total: number; descartados: number }> {
+export async function obtenerModelosDisponibles(provider: AIProvider, strict = false): Promise<{ modelos: string[]; total: number; descartados: number }> {
   try {
+    if (provider.base_url && !validarBaseUrl(provider.base_url)) throw new Error('URL de proveedor no permitida')
     if (provider.tipo === 'gemini') {
       const modelos = await listarModelosGemini(provider.api_key)
       return { modelos, total: modelos.length, descartados: 0 }
@@ -29,13 +30,15 @@ export async function obtenerModelosDisponibles(provider: AIProvider): Promise<{
     }
     return { modelos: [], total: 0, descartados: 0 }
   } catch (e) {
-    console.warn(`[modelDiscovery] No se pudieron obtener modelos de ${provider.nombre}:`, (e as Error).message)
+    logger.warn('No se pudo consultar la lista de modelos', {module:'ia',action:'discover_models'},e)
+    if (strict) throw e
     return { modelos: [], total: 0, descartados: 0 }
   }
 }
 
 async function listarModelosGemini(apiKey: string): Promise<string[]> {
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`, {
+    redirect: 'error',
     signal: AbortSignal.timeout(15_000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -57,6 +60,7 @@ async function listarModelosOpenRouter(provider: AIProvider): Promise<{ modelos:
   const base = (provider.base_url ?? '').trim().replace(/\/+$/, '') || 'https://openrouter.ai/api/v1'
   const res = await fetch(`${base}/models`, {
     headers: { Authorization: `Bearer ${provider.api_key}` },
+    redirect: 'error',
     signal: AbortSignal.timeout(20_000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -109,6 +113,7 @@ async function listarModelosOpenAI(provider: AIProvider): Promise<string[]> {
   const base = (provider.base_url ?? '').trim().replace(/\/+$/, '') || 'https://api.openai.com/v1'
   const res = await fetch(`${base}/models`, {
     headers: { Authorization: `Bearer ${provider.api_key}` },
+    redirect: 'error',
     signal: AbortSignal.timeout(15_000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -125,6 +130,7 @@ async function listarModelosAnthropic(apiKey: string): Promise<string[]> {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
+    redirect: 'error',
     signal: AbortSignal.timeout(15_000),
   })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)

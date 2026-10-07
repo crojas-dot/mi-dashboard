@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía vigente de arquitectura y trabajo
 
-Última revisión: **7 de octubre de 2026**, después de corregir la doble transición de recarga. El snapshot remoto de Supabase del 6 de octubre verificó 33 tablas públicas con RLS, migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`; esta corrección visual/proveedores no cambia Auth ni DB.
+Última revisión: **7 de octubre de 2026**, después de validar la auditoría externa y mejorar consultas, formularios, API de Usuarios y configuración IA. El snapshot remoto de Supabase del 6 de octubre verificó 33 tablas públicas con RLS, migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`; esta revisión no aplica migraciones ni modifica las políticas remotas de DB.
 
 Esta guía describe el **código local actual** y el estado remoto observado; no demuestra que Vercel ya tenga desplegado este checkout. Los cambios recientes de frontend/sesión requieren un nuevo despliegue para aparecer allí. La migración de seguridad `20261006232152` sí figura aplicada en Supabase. Conservar capacidades existentes y distinguir implementación, verificación histórica y pendientes.
 
@@ -35,7 +35,7 @@ Esta guía describe el **código local actual** y el estado remoto observado; no
 
 | Capa | Implementación actual |
 | --- | --- |
-| Framework | Next.js **16.2.12**, App Router; React **19.2.4** |
+| Framework | Next.js **16.3.6**, App Router; React **19.2.4** |
 | Datos | Supabase JS **2.111.0**, Postgres, Auth y Realtime |
 | Caché | TanStack Query **5.101.4** |
 | Estado de UI/sesión | Zustand **5.0.14** |
@@ -136,7 +136,7 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 - `getAuthToken` lee Bearer. `getCurrentUser` valida con `auth.getUser(token)`, consulta `usuarios` por `auth_id`, exige `estado='activo'` y devuelve `{id, auth_id, rol, email}`.
 - `proxy.ts` cubre `/api/:path*`, elimina `x-user-id`, `x-user-role`, `x-user-email` aportados por el cliente y devuelve 401 sin Bearer en API privadas.
 - `/api/drive/upload-public` es la excepción pública exacta; el endpoint valida token/folio/archivo.
-- Los métodos de `lib/server/apiAuthentication.ts` validan sesión dentro del handler una sola vez: Usuarios GET/POST/PATCH/DELETE, IA analizar/test POST, zona horaria GET/PUT, Drive upload POST/download GET/delete DELETE.
+- Los métodos de `lib/server/apiAuthentication.ts` validan sesión dentro del handler una sola vez: Usuarios GET/POST/PATCH/DELETE, IA analizar/test POST, configuración IA GET/PUT/POST, zona horaria GET/PUT, Drive upload POST/download GET/delete DELETE.
 - Una API o un método no registrado conserva el guard completo del proxy. En ese caso, los encabezados de identidad verificados se reenvían como **request headers**, no a la respuesta del navegador.
 - Los handlers registrados no confían en encabezados de identidad. No quitar su guard por asumir que el proxy ya consultó Auth.
 - `checkModuleAccess(usuariosId, rolReal, modulo, requireWrite)` es un helper server-only disponible: compara perfil activo/rol real, permite admin y consulta permisos con lectura antes de escritura. No está aplicado como middleware universal de todos los endpoints.
@@ -202,15 +202,15 @@ Las políticas permisivas se combinan con OR. Añadir una política estricta no 
 - Quejas: filtros folio/cliente, estado, prioridad, responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
 - Usuarios: API y parámetros normalizados; `usuariosQueryKey()` es la clave compartida entre página y precarga.
 - `useHoverPrefetch`: intención de 80 ms por hover/foco/tacto del Sidebar, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga sus cuatro recursos, no una consulta incompatible distinta. Mis Quejas precarga su clave con responsableId propio; sin id no consulta. Reportería no inserta datos ficticios en caché.
-- Cancelación real con `.abortSignal(signal)` está integrada en recursos del dashboard, actividad del dashboard y algunas lecturas analíticas. **No todos los hooks operativos/paginados propagan aún el signal al transporte**.
-- `containsPattern()` existe para escapar literales en `or().ilike`, pero las búsquedas actuales de Quejas y la API de Usuarios aún interpolan texto directamente en la gramática. Es un pendiente, no una corrección ya activa.
+- Cancelación real con `.abortSignal(signal)` está integrada en dashboard, seis listados paginados, Quejas/adjuntos/comentarios/actividad/estadísticas/SLA, catálogos, formularios públicos, permisos, notificaciones y API de Usuarios/zona horaria. Los wrappers de queryFn y precarga pasan solo `context.signal`. Las consultas directas legacy de componentes no quedan migradas automáticamente por esta revisión.
+- `containsPattern()` se usa en búsquedas de Quejas y API de Usuarios: comas, comillas y paréntesis quedan dentro del valor citado y no alteran la gramática de filtros. Conserva los comodines `%`/`_` ya admitidos por la búsqueda; no describirlo como una búsqueda literal de esos dos caracteres.
 
 ### Realtime
 
 - Publication `supabase_realtime`: acciones, auditorias, documentos, hallazgos, notificaciones, procesos, queja_adjuntos, quejas, quejas_actividad, quejas_comentarios, reuniones, riesgos.
 - Consumidores activos principales: listado de Quejas, Header para notificaciones por usuario y QuejasSummary para estadísticas. Estar publicado no implica que cada página ya tenga suscripción.
-- `useRealtimeSubscription` escucha `*`, filtra los eventos solicitados y usa debounce de 750 ms para invalidar prefijos. Por código, el default efectivo incluye INSERT/UPDATE/DELETE, pese al comentario antiguo del hook.
-- El hook actual no agrega resincronización explícita de datos al reconectar el canal ni deduplicación de prefijos solapados. Al desmontar elimina canal/cancela el timer; las pruebas de esos bordes siguen pendientes.
+- `useRealtimeSubscription` escucha `*`, filtra los eventos solicitados (default INSERT/UPDATE/DELETE) y agrupa invalidaciones en ventanas de 750 ms sin postergar continuamente una ráfaga. Compacta prefijos solapados con el matching de TanStack.
+- El hook resincroniza tras una desconexión posterior a SUBSCRIBED; la conexión inicial no genera una consulta extra. Al desmontar cancela el timer, invalida los cambios pendientes con refetchType:none, elimina el canal e ignora callbacks tardíos. Estos bordes tienen pruebas sintéticas; no equivalen a una prueba de la red real en producción.
 
 ### Errores y operaciones concurrentes
 
@@ -372,7 +372,7 @@ El resultado actualizado reemplaza el expediente abierto solo si conserva el mis
 - Reset mensual compara `tokens_updated_at`; incremento posterior por RPC `incrementar_tokens_proveedor`, exclusivo service role, JSON validado y fila bloqueada FOR UPDATE. No llamar ese RPC desde el navegador.
 - `.contexto_qms.txt` se descarga de Drive y se añade como contexto al prompt. El endpoint puede continuar sin él; no guarda evidencias en disco. Ese texto externo no es una autorización ni una protección infalible contra prompt injection.
 - IA visible en Mis Quejas: análisis automático, chat custom, lectura Markdown y textarea de edición. El resultado se mantiene en estado del panel; no hay historial IA persistente completo.
-- **Claves IA no son totalmente server-only**: el gestor las lee de DB y prueba/sincroniza modelos desde el navegador admin. La política SELECT heredada de configuraciones amplía todavía más esa exposición. Para aislar secretos hace falta una migración de almacenamiento/acceso y endpoint, no una máscara visual.
+- El gestor activo usa `/api/configuracion/ia` para leer/guardar, descubrir modelos, probar conexión y limpiar memoria. La API exige perfil activo admin, usa service role y responde sin claves guardadas (`api_key` vacío, `has_api_key` como indicador). La clave nueva que el admin teclea sí viaja al servidor al guardar/probar. **El aislamiento de DB sigue pendiente**: `configuraciones_sistema_select USING(true)` permite a authenticated leer directamente el registro IA y eludir esta API. No afirmar que todas las claves estén privadas hasta cerrar esa política y verificar los privilegios.
 
 ## 8. Esquema real de Supabase
 
@@ -649,3 +649,17 @@ node --test --test-name-pattern="hover reutiliza|QueryProvider recupera|Quejas p
 - Los cambios de una sesión de trabajo pueden seguir sin commit/push. Consultar `git status` y conservar el trabajo existente antes de editar o integrar cambios remotos.
 - Compilar localmente no actualiza Vercel ni prueba sus variables de entorno. Tras un despliegue solicitado, verificar URL de producción, login, recarga de ruta privada, logout, permisos y APIs; no afirmar despliegue completado sin evidencia.
 - Validación manual todavía útil: recorrido autenticado en producción y con volumen real, cuenta desactivada con token previo, concurrencia entre usuarios, envío ciudadano con evidencias/token activo, reconexión y diagnóstico de errores de servicios externos. El documento y los skeletons no sustituyen esas comprobaciones.
+
+## 13. Auditoría validada del 7 de octubre de 2026
+
+- Informe vigente: [docs/auditoria-validada-2026-10-07.md](docs/auditoria-validada-2026-10-07.md). El porcentaje de preparación del informe externo no procede de un benchmark y no se adopta.
+- Dependencias: Next/eslint-config-next 16.3.6 y transitivas compatibles actualizadas. npm audit --omit=dev: 0 vulnerabilidades. Auditoría completa: 5 entradas high de la cadena de desarrollo ESLint → fast-glob → micromatch → braces; no representan cinco fallos distintos del runtime y no se forzaron versiones incompatibles.
+- Seis altas operativas: lock síncrono por ref, validación de campos obligatorios recortados, fechas/orden/escala según formulario, try/catch/finally, error accesible y borrador conservado. Escape/backdrop/cancelar no cierran durante la escritura. Un refresco fallido después de INSERT exitoso no presenta el alta como fallida ni invita a duplicarla. No sustituye validación en DB; las constraints propuestas no están aplicadas.
+- Usuarios: validar cuerpo completo, rol/estado/tipos y UUID antes de efectos privilegiados; email normalizado, contraseña sin trim; email+contraseña en una sola petición Auth. Reset solo contraseña no envía UPDATE vacío a perfiles. Generación temporal con crypto.getRandomValues y Fisher-Yates; respuestas no-store y errores sanitizados. La protección de último admin sigue sin una transacción distribuida entre Auth y perfiles.
+- Configuración IA: claves permitidas y límite real de JSON de 1 MiB, respuestas no-store, URL HTTPS en allowlist compartida y sin credenciales/query/hash/puertos alternos; descubrimiento rechaza redirects. No reutilizar una clave almacenada en otro tipo/URL.
+- Guardado IA compatible con la DB existente: revisión explícita de configuración (excluye consumo), conservar claves vacías y contador actual, reset solo por IDs explícitos; UPDATE condicional compara xmin, la versión MVCC leída en la misma petición, sin secretos en filtros HTTP. Cambios de configuración o carreras de consumo producen 409 sin reintentar silenciosamente con una revisión nueva. No existe un RPC nuevo para este guardado.
+- El gestor IA conserva editor y revisión tras fallar, bloquea doble guardado y prueba el borrador actual. Las búsquedas de modelos y pruebas corren en servidor; no importa factory/discovery/memory desde UI. La carga inicial y el transporte del test se abortan al desmontar. Test limitado a 20 modelos: conserva los no probados, marca pendiente hasta el intento, no persiste resultados tras cancelar y termina loading incluso si guardar falla. modelTesting devuelve errores sanitizados.
+- No se construyó Seguridad y Estado, no se añadieron Sentry/Redis/PWA/virtualizador/DOMPurify ni se cambiaron los guards de sesión o skeletons. El estado local no demuestra publicación en Vercel.
+- Pruebas completas actuales: 199/222; 23 fallos también presentes en HEAD anterior. La comparación del commit anterior fue 119/156 con 37 fallos; se resolvieron 14 y no aparecieron fallos nuevos en esa suite. Restan contratos de prototipos/fixtures, cargas diferidas y aislamiento de respuestas en los paneles de quejas; no atribuir toda la deuda a pruebas visuales obsoletas.
+- Build de producción correcto, TypeScript correcto y lint con 0 errores/2 warnings históricos de .experiments. Capa visual: 114 archivos React verificados. Navegador Chrome temporal sin sesión real: URL privada → login y recarga correctas; HTML privado neutro en /, /quejas, /usuarios y /procesos; API de IA y Usuarios sin Bearer responden 401.
+- DB: esta auditoría solo releyó metadatos. Siguen políticas amplias en negocio, Configuraciones/Formularios/Catálogos/SLA. La revisión automática rechazó generar una migración que reemplazaba RLS en 13 tablas y agregaba constraints por falta de autorización suficientemente precisa. El usuario autorizó explícitamente completar el endurecimiento el 7 de octubre. Las migraciones A/B y su regresión están preparadas; su ejecución remota está pendiente de recuperar OAuth del MCP. No se ha aplicado SQL en esa continuación.

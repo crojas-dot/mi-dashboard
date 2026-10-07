@@ -6,12 +6,13 @@ export function paginaKey(base: readonly unknown[], page = 0, estado = '') {
   return [...base, 'pagina', page, estado] as const
 }
 
-export async function fetchPagina<T>(tabla: string, orden: string, page = 0, estado = ''): Promise<Pagina<T>> {
+export async function fetchPagina<T>(tabla: string, orden: string, page = 0, estado = '', signal?: AbortSignal): Promise<Pagina<T>> {
   const desde = Math.max(0, Math.floor(page)) * PAGE_SIZE
   let query = supabase.from(tabla).select('*', { count: 'exact' })
   if (estado) query = query.eq('estado', estado)
-  const { data, count, error } = await query.order(orden, { ascending: false, nullsFirst: false })
+  query = query.order(orden, { ascending: false, nullsFirst: false })
     .order('id', { ascending: true }).range(desde, desde + PAGE_SIZE - 1)
+  const { data, count, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
   return { data: (data as T[]) ?? [], count: count ?? 0 }
 }

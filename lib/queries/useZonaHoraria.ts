@@ -13,10 +13,13 @@ async function autorizacion(): Promise<string> {
   return data.session.access_token
 }
 
-async function solicitar(method: 'GET' | 'PUT', zonaHoraria?: string): Promise<string> {
+async function solicitar(method: 'GET' | 'PUT', zonaHoraria?: string, signal?: AbortSignal): Promise<string> {
+  signal?.throwIfAborted()
   const token = await autorizacion()
+  signal?.throwIfAborted()
   const respuesta = await fetch('/api/configuracion/zona-horaria', {
     method,
+    signal,
     headers: { Authorization: `Bearer ${token}`, ...(method === 'PUT' ? { 'Content-Type': 'application/json' } : {}) },
     ...(method === 'PUT' ? { body: JSON.stringify({ zonaHoraria }) } : {}),
     cache: 'no-store',
@@ -27,7 +30,7 @@ async function solicitar(method: 'GET' | 'PUT', zonaHoraria?: string): Promise<s
 }
 
 export function useZonaHoraria(enabled = true) {
-  return useQuery({ queryKey: zonaHorariaKey, queryFn: () => solicitar('GET'),
+  return useQuery({ queryKey: zonaHorariaKey, queryFn: ({ signal }) => solicitar('GET', undefined, signal),
     staleTime: 5 * 60 * 1000, retry: retryRead, enabled })
 }
 

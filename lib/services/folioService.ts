@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { logger } from '@/lib/utils/logger'
 
 const rpcByName = {
   queja: 'generar_folio_queja',
@@ -13,7 +14,7 @@ export type FolioTipo = keyof typeof rpcByName
 export async function generarFolio(tipo: FolioTipo): Promise<string> {
   const { data, error } = await supabase.rpc(rpcByName[tipo])
   if (error) {
-    console.error(`Error al generar folio (${tipo}):`, error)
+    logger.error('No se pudo generar el folio', { module: tipo, action: 'generate_folio' }, error)
     throw error
   }
   return (data as string) ?? ''

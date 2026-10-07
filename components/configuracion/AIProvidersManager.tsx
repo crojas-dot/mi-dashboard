@@ -4,7 +4,9 @@ import { useEffect, useState, useRef } from 'react'
 import { Plus, Save, Sparkles, KeyRound, Brain, Check, ChevronRight, Wifi, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import Spinner from '@/components/ui/Spinner'
-import { supabase } from '@/lib/supabase'
+import { apiFetch } from '@/lib/queries/useUsuarios'
+import { cargarConfigIA, guardarConfigIA, guardarProveedoresIA, modelosIA, conectarIA, limpiarMemoriaIA, modelosSinFallos } from '@/lib/services/aiConfigService'
+import { esOpenRouter } from '@/lib/ai/providerDisplay'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIProviderTipo, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
 import Select from '@/components/ui/Select'
@@ -35,7 +37,6 @@ const LIMITE_POR_TIPO: Record<AIProviderTipo, number> = {
   openai: 6_000_000, // Groq / OpenAI / Otros compatibles
 }
 
-const CLAVE_PROVEEDORES = 'ai_providers'
 const CLAVE_ROUTING = 'ai_routing'
 
 export default function AIProvidersManager() {
@@ -54,7 +55,8 @@ export default function AIProvidersManager() {
 const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(null)
   const [modalModulo, setModalModulo] = useState<string | null>(null)
   const [sysPrompt, setSysPrompt] = useState('')
-  const [reseteados, setReseteados] = useState<Set<string>>(new Set())
+  const providersRevisionRef = useRef('')
+  const savingProvidersRef = useRef(false)
   const [expandedFallbacks, setExpandedFallbacks] = useState<Set<string>>(new Set())
   const [syncingModels, setSyncingModels] = useState<Set<string>>(new Set())
   const [cacheTtlValue, setCacheTtlValue] = useState<number>(1)
@@ -79,21 +81,21 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     resultado: null,
   })
   const testAbortRef = useRef<AbortController | null>(null)
+  useEffect(() => () => {
+    testAbortRef.current?.abort()
+    testAbortRef.current = null
+  }, [])
 
   useEffect(() => {
     let activo = true
+    const controller = new AbortController()
     ;(async () => {
-      const { data, error } = await supabase
-        .from('configuraciones_sistema')
-        .select('clave, valor')
-        .in('clave', [CLAVE_PROVEEDORES, CLAVE_ROUTING, 'ai_cache_ttl_minutes'])
+      const config = await cargarConfigIA(controller.signal)
       if (!activo) return
-      if (error) { setLoadError(true); setLoading(false); return }
       setLoadError(false)
-      const porClave = new Map((data ?? []).map((r) => [r.clave, r.valor]))
-      const provs = Array.isArray(porClave.get(CLAVE_PROVEEDORES)) ? (porClave.get(CLAVE_PROVEEDORES) as AIProvider[]) : []
-      const rut = porClave.get(CLAVE_ROUTING)
-      const ttlMinutes = typeof porClave.get('ai_cache_ttl_minutes') === 'number' ? (porClave.get('ai_cache_ttl_minutes') as number) : 1440
+      const provs=config.providers
+      const rut=config.routing
+      const ttlMinutes=config.ttl
       let value: number
       let unit: 'minutes' | 'hours' | 'days'
       if (ttlMinutes >= 1440 && ttlMinutes % 1440 === 0) {
@@ -106,6 +108,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         value = ttlMinutes
         unit = 'minutes'
       }
+      providersRevisionRef.current = config.revision
       setProviders(provs)
       setRouting(rut && typeof rut === 'object' ? (rut as AIRouting) : {})
       setCacheTtlValue(value)
@@ -114,6 +117,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     })().catch(() => { if (activo) { setLoadError(true); setLoading(false) } })
     return () => {
       activo = false
+      controller.abort()
     }
   }, [loadVersion])
 
@@ -125,8 +129,8 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   useEffect(() => {
     if (loading || providersRef.current.length === 0) return
     let cancelado = false
+    const expectedRevision = providersRevisionRef.current
     ;(async () => {
-      const { esOpenRouter, obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
       const openRouterProviders = providersRef.current.filter((p) => esOpenRouter(p))
       if (openRouterProviders.length === 0) return
 
@@ -138,7 +142,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       for (const p of openRouterProviders) {
         if (!p.modelos.some((m) => m.startsWith('~') || /:paid|:premium/i.test(m))) continue
         try {
-          const resultado = await obtenerModelosDisponibles(p)
+          const resultado = await modelosIA(p.id)
           if (cancelado) return
           if (resultado.modelos.length > 0) {
             listaLimpia = (listaLimpia ?? providersRef.current).map((pr) => (pr.id === p.id ? { ...pr, modelos: resultado.modelos } : pr))
@@ -159,53 +163,32 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
       if (cancelado) return
       if (listaLimpia) {
-        setProviders(listaLimpia)
-        await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_PROVEEDORES, valor: listaLimpia, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+        const saved = await guardarProveedoresIA(listaLimpia, expectedRevision)
+        if (!cancelado) { providersRevisionRef.current = saved.revision; providersRef.current = saved.valor; setProviders(saved.valor) }
       }
       if (routingLimpio) {
-        setRouting(routingLimpio)
-        await supabase.from('configuraciones_sistema').upsert({ clave: CLAVE_ROUTING, valor: routingLimpio, descripcion: 'Subsistema de IA multi-proveedor', categoria: 'ia' }, { onConflict: 'clave' })
+        await guardarConfigIA(CLAVE_ROUTING, routingLimpio)
+        if (!cancelado) setRouting(routingLimpio)
       }
-    })()
+    })().catch(error => { if (!cancelado) showError(error, 'No se pudo actualizar la lista de modelos') })
     return () => { cancelado = true }
   }, [loading])
 
-  const upsertClave = async (clave: string, valor: unknown) => {
-    const { error } = await supabase.from('configuraciones_sistema').upsert(
-      {
-        clave,
-        valor,
-        descripcion: 'Subsistema de IA multi-proveedor',
-        categoria: 'ia',
-      },
-      { onConflict: 'clave' },
-    )
-    if (error) throw error
-  }
-
-  const persistirProveedores = async (lista: AIProvider[]) => {
+  const upsertClave = async (clave:string,valor:unknown) => { await guardarConfigIA(clave,valor) }
+  const persistirProveedores = async (lista: AIProvider[], resetTokens: string[] = [], expectedRevision = providersRevisionRef.current) => {
+    if (savingProvidersRef.current) return false
+    savingProvidersRef.current = true
     try {
-      const { data: actual, error } = await supabase
-        .from('configuraciones_sistema')
-        .select('valor')
-        .eq('clave', CLAVE_PROVEEDORES)
-        .maybeSingle()
-      if (error) throw error
-      const dbProviders = Array.isArray(actual?.valor) ? (actual.valor as AIProvider[]) : []
-      const dbPorId = new Map(dbProviders.map((p) => [p.id, p]))
-      const aGuardar = lista.map((p) => {
-        const db = dbPorId.get(p.id)
-        const tokens = reseteados.has(p.id) ? 0 : db?.tokens_usados ?? p.tokens_usados ?? 0
-        return { ...p, tokens_usados: tokens }
-      })
-      await upsertClave(CLAVE_PROVEEDORES, aGuardar)
-      setReseteados(new Set())
+      const saved = await guardarProveedoresIA(lista, expectedRevision, resetTokens)
+      providersRevisionRef.current = saved.revision
+      providersRef.current = saved.valor
+      setProviders(saved.valor)
       showSuccess('Proveedor de IA guardado')
       return true
-    } catch (e) {
-      showError(e as Error, 'No se pudo guardar el proveedor')
+    } catch (error) {
+      showError(error as Error, 'No se pudo guardar el proveedor')
       return false
-    }
+    } finally { savingProvidersRef.current = false }
   }
 
   const guardarRouting = async () => {
@@ -243,44 +226,18 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
   const cerrarEditor = () => { if (!guardandoProveedorRef.current) setEditingProvider(null) }
 
-  const probarConexion = async (providerId?: string) => {
-    const targetProvider = providerId ? providers.find(p => p.id === providerId) : editingProvider
-    if (!targetProvider) return
-
-    const base_url = targetProvider.base_url ?? ''
-    const api_key = targetProvider.api_key
-    const tipo = targetProvider.tipo
-
-    if (!base_url.trim() || !api_key.trim()) {
-      showError(null, 'URL Base y API Key son requeridos para probar la conexión')
-      return
-    }
-
-    try {
-      const base = base_url.trim().replace(/\/+$/, '')
-      const testUrl = tipo === 'gemini'
-        ? `${base}/v1beta/models?key=${api_key}`
-        : `${base}/models`
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (tipo !== 'gemini') headers['Authorization'] = `Bearer ${api_key}`
-      const res = await fetch(testUrl, { method: 'GET', headers, signal: AbortSignal.timeout(10000) })
-      
-      if (res.ok) {
-        showSuccess('Conexión exitosa ✓')
-      } else {
-        const err = await res.json().catch(() => ({}))
-        showError(null, `Falló la conexión: ${res.status} ${err?.error?.message || res.statusText}`)
-      }
-    } catch (e) {
-      showError(e as Error, 'No se pudo conectar con el proveedor')
-    }
+  const probarConexion = async (providerId?:string) => {
+    const provider=providerId?providers.find(value=>value.id===providerId):editingProvider
+    if(!provider)return
+    try { await conectarIA({...provider,modelos:Array.isArray(provider.modelos)?provider.modelos:provider.modelos.split(',').map(value=>value.trim()).filter(Boolean)});showSuccess('Conexión exitosa ✓') }
+    catch(error){showError(error as Error,'No se pudo conectar con el proveedor')}
   }
 
   const aplicarForm = async () => {
     if (!editingProvider || guardandoProveedorRef.current) return
     const p = editingProvider
-    if (!p.nombre.trim() || !p.api_key.trim()) {
-      showError(null, 'Nombre y API Key son obligatorios')
+    if (!p.nombre.trim() || (!p.api_key.trim() && !p.has_api_key)) {
+      showError(null, 'Nombre y una clave configurada son obligatorios')
       return
     }
     const modelosArray = (Array.isArray(p.modelos) ? p.modelos : p.modelos.split(',')).map(m => m.trim()).filter(Boolean)
@@ -299,21 +256,20 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     setGuardandoProveedor(true)
     try {
       if (!await persistirProveedores(nuevaLista)) return
-      setProviders(nuevaLista)
       setEditingProvider(null)
 
+      const savedRevision = providersRevisionRef.current
+      const savedList = providersRef.current
       const savedId = p.id && p.id !== '' ? p.id : nuevaLista[nuevaLista.length - 1].id
       const savedProvider = nuevaLista.find(pr => pr.id === savedId)
       if (savedProvider && savedProvider.modelos.length === 0) {
         try {
-          const { obtenerModelosDisponibles } = await import('@/lib/ai/modelDiscovery')
-          const resultado = await obtenerModelosDisponibles(savedProvider)
+          const resultado = await modelosIA(savedId)
           if (resultado.modelos.length > 0) {
-            const listaFinal = nuevaLista.map(pr =>
+            const listaFinal = savedList.map(pr =>
               pr.id === savedId ? { ...pr, modelos: resultado.modelos } : pr
             )
-            if (await persistirProveedores(listaFinal)) {
-              setProviders(listaFinal)
+            if (await persistirProveedores(listaFinal, [], savedRevision)) {
               showSuccess(`${resultado.modelos.length} modelos sincronizados automáticamente para ${savedProvider.nombre}`)
             }
           }
@@ -331,16 +287,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     for (const m of Object.keys(nuevoRouting)) {
       if (nuevoRouting[m]?.proveedor_id === id) delete nuevoRouting[m]
     }
-    setProviders(nuevaLista)
-    setReseteados((prev) => {
-      const s = new Set(prev)
-      s.delete(id)
-      return s
-    })
-    setRouting(nuevoRouting)
-    await persistirProveedores(nuevaLista)
+    if (!await persistirProveedores(nuevaLista)) return
     try {
       await upsertClave(CLAVE_ROUTING, nuevoRouting)
+      setRouting(nuevoRouting)
     } catch (e) {
       showError(e as Error, 'No se pudo actualizar el enrutamiento')
     }
@@ -348,19 +298,17 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
   const reiniciarContador = async (id: string) => {
     const nuevaLista = providers.map((p) => (p.id === id ? { ...p, tokens_usados: 0 } : p))
-    setProviders(nuevaLista)
-    setReseteados((prev) => new Set(prev).add(id))
-    await persistirProveedores(nuevaLista)
+    await persistirProveedores(nuevaLista, [id])
   }
 
   const sincronizarModelos = async (providerId: string) => {
     const provider = providers.find(p => p.id === providerId)
     if (!provider) return
 
+    const expectedRevision = providersRevisionRef.current
     setSyncingModels(prev => new Set(prev).add(providerId))
     try {
-      const { obtenerModelosDisponibles, esOpenRouter } = await import('@/lib/ai/modelDiscovery')
-      const resultado = await obtenerModelosDisponibles(provider)
+      const resultado = await modelosIA(providerId)
 
       if (resultado.modelos.length === 0) {
         if (esOpenRouter(provider)) {
@@ -374,8 +322,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       let modelosFinales = resultado.modelos
       let excluidosPorTest = 0
       try {
-        const { modelosExcluidosPorTest } = await import('@/lib/ai/modelTestingClient')
-        modelosFinales = await modelosExcluidosPorTest(supabase, providerId, resultado.modelos)
+        modelosFinales = await modelosSinFallos(providerId, resultado.modelos)
         excluidosPorTest = resultado.modelos.length - modelosFinales.length
       } catch {
         // Sin test previo o error, usar todos
@@ -384,14 +331,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       const nuevaLista = providers.map(p =>
         p.id === providerId ? { ...p, modelos: modelosFinales } : p
       )
-      setProviders(nuevaLista)
-      await persistirProveedores(nuevaLista)
+      if (!await persistirProveedores(nuevaLista, [], expectedRevision)) return
 
       try {
-        const { limpiarMemoriaModelos } = await import('@/lib/ai/modelMemory')
-        const { limpiarResultadoTest } = await import('@/lib/ai/modelTestingClient')
-        await limpiarMemoriaModelos(supabase, providerId, modelosFinales)
-        await limpiarResultadoTest(supabase, providerId, modelosFinales)
+        await limpiarMemoriaIA(providerId, modelosFinales)
       } catch {
         // Silenciar errores de limpieza de memoria
       }
@@ -407,8 +350,8 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
           }
         }
         if (routingActualizado) {
-          setRouting(nuevoRouting)
           await upsertClave(CLAVE_ROUTING, nuevoRouting)
+          setRouting(nuevoRouting)
         }
       }
 
@@ -462,37 +405,37 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   }
 
   const iniciarTest = async () => {
-    if (!testModal.providerId) return
+    if (!testModal.providerId || testAbortRef.current) return
     const provider = providers.find(p => p.id === testModal.providerId)
     if (!provider) return
 
+    const expectedRevision = providersRevisionRef.current
     const abortController = new AbortController()
     testAbortRef.current = abortController
 
     const initial: { [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo' } = {}
-    for (const m of provider.modelos) initial[m] = 'probando'
+    for (const m of provider.modelos) initial[m] = 'pendiente'
 
     setTestModal(prev => ({ ...prev, enCurso: true, cancelado: false, progreso: initial, resultado: null }))
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token ?? ''
-      const { guardarResultadoTest } = await import('@/lib/ai/modelTestingClient')
 
       const modelos = provider.modelos.slice(0, 20)
       const resultados: ModeloTestResultado[] = []
 
       for (const modelo of modelos) {
         if (abortController.signal.aborted) break
+        setTestModal(prev => ({ ...prev, progreso: { ...prev.progreso, [modelo]: 'probando' } }))
         try {
-          const res = await fetch('/api/ai/test', {
+          const res = await apiFetch('/api/ai/test', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ providerId: testModal.providerId, modelo }),
             signal: abortController.signal,
           })
           const json = await res.json().catch(() => null)
           if (!res.ok) throw new Error(json?.error || 'Error al probar el modelo')
+          if (abortController.signal.aborted || testAbortRef.current !== abortController) break
           const r = json as ModeloTestResultado
           resultados.push(r)
           setTestModal(prev => ({ ...prev, progreso: { ...prev.progreso, [modelo]: r.ok ? 'ok' : 'fallo' } }))
@@ -503,22 +446,25 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         }
       }
 
+      if (testAbortRef.current !== abortController) return
+      abortController.signal.throwIfAborted()
       if (resultados.length > 0) {
-        await guardarResultadoTest(supabase, testModal.providerId, { timestamp: Date.now(), resultados }, provider.nombre)
+        await guardarConfigIA('ai_test_resultado_'+testModal.providerId,{timestamp:Date.now(),resultados})
       }
 
+      if (testAbortRef.current !== abortController) return
       const buenos = resultados.filter(r => r.ok).length
       const malos = resultados.filter(r => !r.ok).length
 
       const modelosOk = resultados.filter(r => r.ok).map(r => r.modelo)
-      const nuevosModelos = provider.modelos.filter(m => modelosOk.includes(m))
+      const modelosProbados = new Set(resultados.map(r => r.modelo))
+      const nuevosModelos = provider.modelos.filter(m => !modelosProbados.has(m) || modelosOk.includes(m))
 
       if (nuevosModelos.length > 0) {
         const nuevaLista = providers.map(pr =>
           pr.id === testModal.providerId ? { ...pr, modelos: nuevosModelos } : pr
         )
-        setProviders(nuevaLista)
-        await persistirProveedores(nuevaLista)
+        if (!await persistirProveedores(nuevaLista, [], expectedRevision)) return
       }
 
       setTestModal(prev => ({
@@ -542,7 +488,10 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         showError(e as Error, 'No se pudo completar el test')
       }
     } finally {
-      testAbortRef.current = null
+      if (testAbortRef.current === abortController) {
+        testAbortRef.current = null
+        setTestModal(prev => ({ ...prev, enCurso: false }))
+      }
     }
   }
 
@@ -871,7 +820,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                 <p className="mt-1 text-xs text-gray-500">Separados por comas. Si queda vacío, se intentan sincronizar al guardar.</p>
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">API Key *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{editingProvider?.has_api_key ? 'API Key (opcional al editar)' : 'API Key *'}</label>
                 <div className="relative">
                   <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <input
@@ -879,7 +828,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                     autoComplete="off"
                     aria-label="Clave de API del proveedor"
                     className="ui-field w-full pl-10 pr-3 py-2 text-sm"
-                    placeholder="sk-..."
+                    placeholder={editingProvider?.has_api_key ? 'Dejar vacío para conservar la clave' : 'Clave del proveedor'}
                     value={editingProvider?.api_key ?? ''}
                     onChange={(e) => setEditingProvider({ ...editingProvider!, api_key: e.target.value })}
                   />
@@ -891,7 +840,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
             <Button size="sm" variant="secondary" disabled={guardandoProveedor} onClick={cerrarEditor}>
               Cancelar
             </Button>
-            <Button size="sm" variant="secondary" onClick={() => editingProvider?.id && probarConexion(editingProvider.id)}>
+            <Button size="sm" variant="secondary" disabled={guardandoProveedor} onClick={() => probarConexion()}>
               <Wifi className="h-3.5 w-3.5 mr-1" /> Probar Conexión
             </Button>
             <Button size="sm" loading={guardandoProveedor} onClick={aplicarForm}>
@@ -910,7 +859,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            Se probarán <strong>{testModal.modelos.length}</strong> modelos con 2 prompts (corto y largo).
+            Se probarán hasta <strong>{Math.min(20, testModal.modelos.length)}</strong> modelos con un prompt corto.
             {!testModal.enCurso && !testModal.resultado && ' Presione "Iniciar test" para comenzar.'}
             {testModal.enCurso && ' El test está en curso…'}
             {testModal.resultado && (
