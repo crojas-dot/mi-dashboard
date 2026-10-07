@@ -108,15 +108,17 @@ import Field from '@/components/ui/Field'
 ## Sesión y carga inicial
 
 - `AuthShell` bloquea el montaje de contenido privado antes de validar usuario y
-  permisos, mientras redirige y desde el primer instante de logout. Mostrar solo
-  `SessionScreen`: skeleton del espacio de trabajo o del formulario de login,
-  nunca el dashboard sin su shell. Son formas decorativas sin datos, nombres,
-  cifras, enlaces ni controles activos. Durante logout usa el skeleton de login.
-  Acceso denegado conserva una tarjeta estática con explicación y salida.
-- Antes de confirmar sesión/perfil/permisos, incluida la prerenderización de una
-  URL privada en Vercel, usar siempre la variante login. Workspace se reserva para
-  usuario validado, inicialización completa y ninguna carga/cierre en curso.
-  No elegir el skeleton según una URL privada mientras Auth sigue sin resolver.
+  permisos, mientras redirige y desde el primer instante de logout. Durante el
+  bootstrap de una URL privada usa `SessionScreen neutral`: fondo y una línea
+  discreta, sin silueta de login ni dashboard. Solo el módulo autorizado dibuja
+  su propio skeleton de datos. No hay un WorkspaceSkeleton global.
+- La variante login se usa en /login sin usuario, en logout o cuando el destino
+  /login ya está confirmado. Redirecciones internas de una sesión válida usan la
+  transición neutral. Acceso denegado conserva explicación estática y salida.
+- Un único QueryProvider envuelve todas las ramas dentro de AuthShell. Su key por
+  usuario/rol/vista remonta el ámbito de datos; el guard de sesión permanece fuera
+  y no se remonta. Conservar caché del mismo usuario durante navegación/redirect,
+  y vaciar el ámbito anterior al cambiar identidad/vista o salir.
 - La misma regla se aplica al HTML inicial de producción y a rutas sin permiso.
   La autorización de datos sigue siendo responsabilidad de API y RLS.
 - La pulsación suave es CSS, respeta movimiento reducido y usa un número fijo de

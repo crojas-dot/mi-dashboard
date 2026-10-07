@@ -51,7 +51,7 @@ test('el guard real no monta componentes privados ni dispara sus lecturas antes 
   }
 })
 
-test('el primer HTML y la restauración pendiente muestran login, sin anticipar el dashboard', () => {
+test('la restauración privada usa transición neutral y no anticipa login ni dashboard', () => {
   for (const pathname of ['/', '/quejas', '/usuarios', '/configuracion', '/login']) {
     for (const state of [
       { ...ready, initialized: false, loading: true },
@@ -68,7 +68,8 @@ test('el primer HTML y la restauración pendiente muestran login, sin anticipar 
       }).default
       function ProtectedData() { privateReads++; return createElement('p', null, 'DATOS-PRIVADOS') }
       const html = renderToStaticMarkup(createElement(Shell, null, createElement(ProtectedData)))
-      assert.equal(html.includes('data-session-layout="login"'), true)
+      const expectedLayout = state.signingOut || pathname === '/login' && !state.user ? 'login' : 'neutral'
+      assert.equal(html.includes('data-session-layout="' + expectedLayout + '"'), true)
       assert.equal(html.includes('data-session-layout="workspace"'), false)
       assert.equal(html.includes('w-[250px]'), false)
       assert.equal(html.includes('DATOS-PRIVADOS'), false)
@@ -77,12 +78,15 @@ test('el primer HTML y la restauración pendiente muestran login, sin anticipar 
   }
 })
 
-test('workspace solo aparece al redirigir con identidad resuelta; SessionScreen por defecto es login', () => {
+test('login solo se anticipa con destino confirmado y no existe workspace genérico', () => {
   const Screen = loadModule('components/SessionScreen.tsx').default
-  assert.match(renderToStaticMarkup(createElement(Screen)), /data-session-layout="login"/)
+  const neutralHtml = renderToStaticMarkup(createElement(Screen))
+  assert.match(neutralHtml, /data-session-layout="neutral"/)
+  assert.equal(neutralHtml.includes('max-w-md'), false)
+  assert.equal(neutralHtml.includes('min-w-[640px]'), false)
   for (const [state, expected] of [
     [ready, 'login'],
-    [{ ...ready, user, permisos: permissions }, 'workspace'],
+    [{ ...ready, user, permisos: permissions }, 'neutral'],
     [{ ...ready, user, permisos: permissions, signingOut: true }, 'login'],
   ]) {
     const Shell = loadModule('components/AuthShell.tsx', {
@@ -92,6 +96,29 @@ test('workspace solo aparece al redirigir con identidad resuelta; SessionScreen 
     }).default
     const html = renderToStaticMarkup(createElement(Shell))
     assert.equal(html.includes(`data-session-layout="${expected}"`), true)
+  }
+})
+
+test('una sesión resuelta monta la ruta solicitada directamente y su única carga es la del módulo', () => {
+  const Loading = loadModule('components/ui/LoadingSkeleton.tsx').default
+  for (const [pathname, modulo] of [['/quejas', 'quejas'], ['/documentos', 'documentos'], ['/usuarios', 'usuarios'], ['/revision', 'revision']]) {
+    let state = { ...ready, initialized: false, loading: true }
+    const Shell = loadModule('components/AuthShell.tsx', {
+      'next/navigation': { usePathname: () => pathname, useRouter: () => ({ replace() {} }) },
+      '@/lib/store/auth-store': { useAuthStore: selector => selector({ ...state, init() {}, logout() {} }) },
+      '@/components/AuthenticatedLayout': { default: ({ children }) => createElement('div', null, children) },
+    }).default
+    const moduleContent = createElement('section', { 'data-module': modulo }, createElement(Loading, { label: 'Cargando ' + modulo }))
+    const initial = renderToStaticMarkup(createElement(Shell, null, moduleContent))
+    assert.match(initial, /data-session-layout="neutral"/)
+    assert.equal(initial.includes('data-module='), false)
+    state = { ...ready, user, permisos: [{ rol: 'admin', modulo, leer: true, escribir: true }] }
+    assert.equal(authRoute(pathname, state).redirect, undefined)
+    const restored = renderToStaticMarkup(createElement(Shell, null, moduleContent))
+    assert.equal(restored.includes('data-module="' + modulo + '"'), true)
+    assert.equal(restored.includes('data-session-layout'), false)
+    assert.equal(restored.includes('w-[250px]'), false)
+    assert.equal(restored.includes('min-w-[640px]'), true)
   }
 })
 
@@ -123,6 +150,26 @@ function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async ()
   }, { setTimeout: task => { scheduled.push(task); return scheduled.length }, ...(storage ? { window: { sessionStorage: storage } } : {}) }).useAuthStore
   return { store, signOutPending, event: (event, value) => { activeSession = value; listener(event, value) }, runScheduled: () => { scheduled.splice(0).forEach(task => task()) } }
 }
+
+test('llamadas repetidas a init durante restauración no duplican lecturas de sesión ni permisos', async () => {
+  const identity=deferred()
+  const reads={session:0,identity:0,profile:0,permissions:0}
+  const fixture=storeFixture({
+    getSession:async()=>{reads.session++;return {data:{session:{user:{id:'auth-a'}}},error:null}},
+    getUser:()=>{reads.identity++;return identity.promise},
+    profile:async()=>{reads.profile++;return user},
+    rpc:async()=>{reads.permissions++;return {data:permissions,error:null}},
+  })
+  const first=fixture.store.getState().init()
+  await fixture.store.getState().init()
+  await flush()
+  assert.deepEqual(reads,{session:1,identity:1,profile:0,permissions:0})
+  identity.resolve({data:{user:{id:'auth-a'}},error:null})
+  await first
+  await fixture.store.getState().init()
+  assert.deepEqual(reads,{session:1,identity:1,profile:1,permissions:1})
+  assert.equal(fixture.store.getState().user.id,user.id)
+})
 
 test('cerrar sesión desmonta usuario/permisos antes de esperar la red y descarta perfiles tardíos', async () => {
   const pendingProfile = deferred()

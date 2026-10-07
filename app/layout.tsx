@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import QueryProvider from "@/lib/providers/QueryProvider"
 import ToastProvider from "@/lib/providers/ToastProvider"
 import AuthShell from "@/components/AuthShell"
 
@@ -20,10 +19,8 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body className={`${inter.className} select-none`}>
-        <QueryProvider>
-          <AuthShell>{children}</AuthShell>
-          <ToastProvider />
-        </QueryProvider>
+        <AuthShell>{children}</AuthShell>
+        <ToastProvider />
       </body>
     </html>
   )

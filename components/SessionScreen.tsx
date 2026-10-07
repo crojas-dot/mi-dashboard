@@ -4,7 +4,6 @@ import { useEffect, useId, useState } from 'react'
 import { ShieldAlert } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Skeleton from '@/components/ui/Skeleton'
-import DashboardLoading from '@/components/dashboard/DashboardLoading'
 
 interface SessionScreenProps {
   label?: string
@@ -12,7 +11,7 @@ interface SessionScreenProps {
   denied?: boolean
   onRetry?: () => void
   onExit?: () => void
-  layout?: 'workspace' | 'login'
+  layout?: 'neutral' | 'login'
 }
 
 /** Presentación pública: no recibe usuario, permisos, credenciales ni contenido privado. */
@@ -22,7 +21,7 @@ export default function SessionScreen({
   denied = false,
   onRetry,
   onExit,
-  layout = 'login',
+  layout = 'neutral',
 }: SessionScreenProps) {
   const titleId = useId()
   const [slow, setSlow] = useState(false)
@@ -35,7 +34,7 @@ export default function SessionScreen({
   if (!denied) return <main data-session-layout={layout} className="relative min-h-dvh bg-qms-background">
     <span role="status" className="sr-only">{label}</span>
     <div aria-hidden="true" aria-busy="true">
-      {layout === 'login' ? <LoginSkeleton /> : <WorkspaceSkeleton />}
+      {layout === 'login' ? <LoginSkeleton /> : <SessionTransition />}
     </div>
     {slow && <div className="fixed inset-x-4 bottom-4 z-10 mx-auto max-w-sm rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
       <p role="status" className="mb-3 text-sm text-qms-muted">La carga está tardando más de lo habitual.</p>
@@ -80,25 +79,10 @@ function LoginSkeleton() {
   </div>
 }
 
-function WorkspaceSkeleton() {
-  return <div className="flex h-dvh overflow-hidden">
-    <div className="hidden w-[250px] shrink-0 border-r border-qms-border bg-qms-surface p-5 lg:block">
-      <div className="space-y-8 motion-safe:animate-pulse [animation-duration:2.4s]">
-        <div className="flex items-center gap-3"><Skeleton className="h-9 w-9 rounded-card" /><Skeleton className="h-5 w-28" /></div>
-        <div className="space-y-7">{[0, 1, 2, 3, 4, 5].map(index => <div key={index} className="flex items-center gap-3"><Skeleton className="h-5 w-5" /><Skeleton className={`h-4 ${index % 2 ? 'w-24' : 'w-32'}`} /></div>)}</div>
-      </div>
-    </div>
-    <div className="flex min-w-0 flex-1 flex-col">
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-qms-border bg-qms-surface px-4">
-        <div className="flex items-center gap-3 motion-safe:animate-pulse [animation-duration:2.4s]"><Skeleton className="h-8 w-8 rounded-button" /><Skeleton className="h-4 w-28" /></div>
-        <div className="flex items-center gap-4 motion-safe:animate-pulse [animation-duration:2.4s]"><Skeleton className="h-5 w-5" /><Skeleton circle className="h-10 w-10" /></div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
-        <div className="mb-6 space-y-3 motion-safe:animate-pulse [animation-duration:2.4s]"><Skeleton className="h-7 w-36" /><Skeleton className="h-4 w-48" /></div>
-        <DashboardLoading variant="summary" className="mb-5" />
-        <DashboardLoading className="mb-5" />
-        <div className="grid gap-4 lg:grid-cols-2"><DashboardLoading variant="table" /><DashboardLoading variant="activity" /></div>
-      </div>
+function SessionTransition() {
+  return <div className="flex min-h-dvh items-center justify-center px-4">
+    <div className="h-1 w-28 overflow-hidden rounded-full bg-qms-primary/[0.07]">
+      <div className="h-full w-2/3 rounded-full bg-qms-primary/25 motion-safe:animate-pulse [animation-duration:2.4s]" />
     </div>
   </div>
 }

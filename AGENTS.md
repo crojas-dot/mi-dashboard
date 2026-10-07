@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía vigente de arquitectura y trabajo
 
-Última revisión: **6 de octubre de 2026**, después de las correcciones de sesión, permisos del workflow, último acceso, responsive y cargas compartidas. Se contrastó el checkout actual con el proyecto Supabase real `fykhrrpeoehwqznccmfp`: 33 tablas públicas con RLS, historial de migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`. Las comprobaciones remotas de esta actualización fueron de solo lectura.
+Última revisión: **7 de octubre de 2026**, después de corregir la doble transición de recarga. El snapshot remoto de Supabase del 6 de octubre verificó 33 tablas públicas con RLS, migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`; esta corrección visual/proveedores no cambia Auth ni DB.
 
 Esta guía describe el **código local actual** y el estado remoto observado; no demuestra que Vercel ya tenga desplegado este checkout. Los cambios recientes de frontend/sesión requieren un nuevo despliegue para aparecer allí. La migración de seguridad `20261006232152` sí figura aplicada en Supabase. Conservar capacidades existentes y distinguir implementación, verificación histórica y pendientes.
 
@@ -45,7 +45,7 @@ Esta guía describe el **código local actual** y el estado remoto observado; no
 | Integraciones | Google Drive con Service Account, webhook Apps Script, proveedores IA compatibles con OpenAI/Gemini/Anthropic |
 
 - Todas las páginas de negocio y de login/formulario público son Client Components (`'use client'`). Leen datos con hooks/servicios del cliente; Reportería y algunos editores conservan consultas directas en componentes.
-- `app/layout.tsx` es el wrapper de servidor normal de Next: exporta metadata y usa `next/font/google` (Inter). Monta `QueryProvider`, `AuthShell` y `ToastProvider`. No hace consultas de negocio.
+- `app/layout.tsx` es el wrapper de servidor normal de Next: exporta metadata y usa `next/font/google` (Inter). Monta `AuthShell` y `ToastProvider`. Un único `QueryProvider` se monta dentro de AuthShell alrededor de todas sus ramas, manteniendo el guard fuera del key de datos. No hace consultas de negocio.
 - Las API, `proxy.ts` y `lib/server/*` corren en servidor. No hay Server Actions ni un flujo de consultas de negocio mediante Server Components.
 - `lib/supabase.ts` es el cliente público singleton. `createServiceClient()` vive en `lib/server/supabase-admin.ts`, es server-only y evita persistir/refrescar sesiones.
 - URL del proyecto: `https://fykhrrpeoehwqznccmfp.supabase.co`. El MCP de Supabase está configurado en Codex para ese proyecto; su instalación/configuración OAuth no pertenece al código de la aplicación.
@@ -56,7 +56,7 @@ Esta guía describe el **código local actual** y el estado remoto observado; no
 | --- | --- |
 | `app/layout.tsx`, `components/AuthShell.tsx` | Providers, inicialización de Auth, redirecciones por sesión/permisos |
 | `lib/auth.ts`, `lib/store/auth-store.ts`, `lib/authRoute.ts`, `lib/authLogoutIntent.ts` | Login, restauración verificada, decisión de ruta, descarte de respuestas tardías y cierre pendiente por pestaña |
-| `components/SessionScreen.tsx` | Skeleton público de transición login/workspace, recuperación de espera y acceso denegado |
+| `components/SessionScreen.tsx` | Transición neutral de sesión, skeleton de login contextual, recuperación y acceso denegado |
 | `components/AuthenticatedLayout.tsx`, `Sidebar.tsx`, `Header.tsx` | Shell responsive, menú, breadcrumbs, notificaciones y menú del usuario |
 | `app/page.tsx`, `components/dashboard/QuejasSummary.tsx` | Dashboard activo por bloques y estadísticas SVG de quejas |
 | `app/<modulo>/page.tsx` y `components/` de la ruta | Listados operativos, estados de UI y modales de cada módulo |
@@ -109,15 +109,15 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 
 | Estado | Qué se monta |
 | --- | --- |
-| No inicializado / loading | Solo SessionScreen de login, también en HTML inicial de producción; no anticipar skeleton de dashboard |
+| No inicializado / loading | Transición neutral en URL privada, también en HTML inicial; login solo en su URL o durante cierre. No anticipar ningún módulo |
 | Ruta privada sin usuario | Skeleton de login mientras redirige a `/login` |
-| Login con usuario validado | Skeleton de workspace mientras redirige a `/` |
+| Login con usuario validado | Transición neutral mientras redirige a `/`; el dashboard carga sus datos después de autorizar |
 | Ruta con permiso de lectura | AuthenticatedLayout y después los hijos privados |
-| Ruta sin lectura | Redirigir a `/mis-quejas` o `/` únicamente si tienen lectura; mantener skeleton durante la redirección |
+| Ruta sin lectura | Redirigir a `/mis-quejas` o `/` únicamente si tienen lectura; transición neutral durante la redirección |
 | Sin destino autorizado | Explicación estática de acceso denegado y acción Cerrar sesión; no montar módulos ni crear bucles |
 | `/login` o `/q` por segmento | Contenido público al completar el bootstrap; no exige iniciar sesión para usar el formulario ciudadano |
 
-- `SessionScreen` usa formas decorativas login/workspace, sin nombres, cifras, datos previos, enlaces ni controles operativos. Logout usa login. Mensajes normales solo para lector de pantalla; tras 10 s muestra Reintentar, que recarga y vuelve a validar. No abre el panel ni agrega una espera mínima. Ver contrato visual en sección 10.
+- `SessionScreen` usa una transición neutral (fondo y línea CSS discreta) mientras restaura una URL privada. Login/logout/destino confirmado a login usan la silueta de login. No existe workspace global; tras validar solo se monta la carga propia del módulo solicitado. No incluye nombres, cifras, datos previos, enlaces ni controles operativos. Mensajes normales solo para lector de pantalla; tras 10 s muestra Reintentar, que recarga y vuelve a validar. No abre el panel ni agrega una espera mínima. Ver contrato visual en sección 10.
 - `/configuracion` y `/usuarios` conservan además guard duro `user.rol === 'admin'`, incluso al simular otro rol.
 - El cierre inmediato de la UI no equivale a invalidación instantánea de todos los JWT ya emitidos. Las API actuales validan `getUser(token)` y perfil activo, sin comprobación adicional de `auth.sessions.session_id`. La duración/revocación de tokens depende de Auth; no prometer revocación universal inmediata. Fuente: [sesiones de Supabase](https://supabase.com/docs/guides/auth/sessions).
 
@@ -185,7 +185,7 @@ Las políticas permisivas se combinan con OR. Añadir una política estricta no 
 ### Lecturas y claves
 
 - `queryKeys.ts` centraliza prefijos. Invalidar el prefijo del módulo tras mutar; el dashboard comparte prefijo `['dashboard']` para todos sus recursos.
-- `QueryProvider` crea un cliente por ámbito `usuarioId:rolReal:vistaActiva` y vacía el anterior al desmontar. Evita reutilizar datos entre usuarios/vistas.
+- `QueryProvider` crea un cliente por ámbito `usuarioId:rolReal:vistaActiva` y vacía el anterior al desmontar. Es un wrapper incondicional dentro de AuthShell: solo ScopedQueryProvider lleva key, por lo que el cambio de ámbito no remonta el guard ni reinicia sus efectos. Navegación y redirecciones del mismo ámbito conservan caché; usuario/rol/vista distintos la separan. El init del store ya era idempotente: no atribuir al antiguo remount una validación remota duplicada sin medirla.
 - `cacheConfig.ts` usa el primer elemento de la clave. Catálogos/SLA/permisos se mapean a configuración; `quejas_actividad` a quejas.
 
 | Prefijo | staleTime | gcTime |
@@ -516,8 +516,8 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 - Login azul de marca, tarjeta max-w-md, logo, formulario email/password y ayuda de contacto administrativo. No hay signup ni recuperación pública completa; cambio de contraseña propia y reset administrativo son flujos separados.
 - `ui-login-field` conserva texto/placeholder de 16px, fuente heredada y estilo de primera línea. Ambos campos empiezan readonly y se habilitan con foco o pointerdown capturado por el formulario: evita la vista previa interna de Chromium que mostraba el correo pequeño antes de enfocar.
 - Conservar `autoComplete="username"` y `current-password`, labels asociados, required, navegación por Tab y error inline con role=alert. No desactivar el gestor de contraseñas para arreglar apariencia ni guardar credenciales en preferencias/caché de negocio.
-- El botón Ingresar usa el Spinner compartido solo mientras ejecuta login. La transición global/restauración/cierre usa skeleton; no reintroducir la tarjeta central «Verificando sesión» ni mostrar el dashboard anterior mientras se comprueba Auth.
-- `SessionScreen` tiene login por defecto. AuthShell solo permite workspace cuando `user && initialized && !loading && !signingOut`; antes de confirmar identidad/permisos siempre muestra login, independientemente de la URL. Esto evita que el HTML prerenderizado de Vercel anticipe el dashboard antes del acceso. `data-session-layout` identifica la variante para regresión/inspección. Una espera de más de 10 s ofrece recuperación con recarga, sin bypass del guard. Acceso denegado tiene icono estático y salida.
+- El botón Ingresar usa el Spinner compartido solo mientras ejecuta login. Restauración privada/redirección interna usa transición neutral; cierre y acceso a login usan su skeleton; no reintroducir la tarjeta central «Verificando sesión» ni mostrar el dashboard anterior mientras se comprueba Auth.
+- `SessionScreen` tiene neutral por defecto: una línea pequeña, sin formulario ni panel genérico. AuthShell elige login solo en su URL sin usuario, durante logout o al redirigir a login. Una sesión válida va directamente a la ruta solicitada y muestra únicamente su skeleton de datos si está pendiente. `data-session-layout` identifica neutral/login para regresión. La recuperación de 10 s mantiene el guard cerrado.
 
 ### Contrato único de carga
 
@@ -617,11 +617,11 @@ node scripts/check-visual-layer.mjs
 - Pruebas por cambio: configuración/visuales/errores/datos/runtime/seguridad según alcance. `tests/load-module.mjs` transpila módulos reales con mocks y transporte controlado; las pruebas JS no usan credenciales reales.
 - La ejecución global documentada en la auditoría anterior fue **88/125, con 37 fallos históricos**. Es una referencia de aquella revisión, no el conteo ni el resultado global del checkout después de añadir pruebas nuevas. La suite completa no se volvió a ejecutar en las últimas correcciones visuales/sesión. No regenerar fixtures ni instalar dependencias de prototipos para ocultar fallos; comparar cada fallo con la referencia.
 
-Última selección de regresión ejecutada al corregir la entrada prerenderizada de Vercel: **51/51**, con este alcance:
+Última selección de regresión de sesión/cargas: **53/53**, con este alcance:
 
 | Archivo / selección | Casos | Qué se verificó |
 | --- | --- | --- |
-| `tests/auth-visibility.test.mjs` | 20 | Montaje privado, redirecciones, skeleton de login antes de validar sesión, identidad remota, cambio de usuario, logout inmediato/recarga/fallo, respuestas tardías, recuperación y consultas paralelas sin publicación parcial |
+| `tests/auth-visibility.test.mjs` | 22 | Montaje privado, redirecciones, transición neutral privada y carga única del módulo solicitado, identidad remota, cambio de usuario, logout inmediato/recarga/fallo, respuestas tardías, recuperación y consultas paralelas sin publicación parcial e init idempotente |
 | `tests/optimization-phases.test.mjs` | 12 | Errores seguros/logger, cuenta activa, permisos, guard API, caché y cargas independientes/cancelación del dashboard |
 | `tests/usuarios-acceso-workflow.test.mjs` | 7 | Último acceso Auth paginado, autorización/error API, privacidad de metadatos, revisión esperada y wrappers de quejas |
 | `tests/error-security.test.mjs` | 7 | Mensajes/reintentos, atributos y límites de API/identidad |
@@ -635,9 +635,10 @@ node --test --test-name-pattern="hover reutiliza|QueryProvider recupera|Quejas p
 
 - La regresión previa de fases/runtime fue 17/17. `tests/dashboard-runtime-regression.test.mjs` cubre QueryFunctionContext/AbortSignal, reintento SDK, cuatro requests compartidos, precarga, módulo lento y guard de métodos API; esos resultados pertenecen a la comprobación de esa corrección.
 - Último build de código: Next.js producción y TypeScript correctos. Lint sin errores, con dos advertencias históricas por cilFolder/cilUser sin usar en `.experiments/src/_nav.tsx`. No declarar «lint sin advertencias».
+- Verificación en navegador temporal con datos sintéticos: al navegar y pasar pending/ready se conserva la misma referencia de QueryClient y su caché; usuario/vista nuevos crean otro cliente vacío y limpian el anterior. El contador de init no aumenta y el guard no se remonta por scope. La fixture se retiró antes del build; no se usó sesión real ni se consultaron datos de negocio.
 - Verificación de cargas: las diez páginas principales se renderizaron con queries pendientes simuladas usando los componentes reales; todas con skeleton y sin spinner inicial. Los diez HTML prerenderizados del build conservan presentación neutra y no incluyen el shell privado antes de Auth.
 - En producción local se comprobó redirección al login en navegador, y el HTML inicial de `/`, `/quejas`, `/usuarios`, `/login`. Skeletons table/form/cards/list revisados en escritorio y móviles 320/375px sin desbordamiento horizontal; círculos de botones/operaciones centrados. Previews temporales eliminados, viewport restaurado y pestañas de prueba cerradas.
-- Corrección de entrada Vercel: el HTML público anterior incluía WorkspaceSkeleton mientras Auth todavía no estaba inicializado, sin datos privados. La prerenderización hacía visible esa silueta antes de login; local reducía el intervalo. El build corregido usa `data-session-layout="login"` y excluye workspace en el primer HTML de `/`, `/quejas`, `/usuarios`, `/configuracion` y `/login`, sin consultas adicionales ni demoras. Confirmar el mismo marcador en la URL pública después de desplegar.
+- Historial de entrada: cb160e6 eliminó workspace antes de validar y se verificó desplegado el 6 de octubre. La corrección del 7 elimina además login durante una recarga privada y todo workspace global: neutral → validación → módulo solicitado. No añade requests de identidad ni demoras; comprobar neutral en HTML inicial privado y login únicamente en /login antes del acceso.
 - Comprobaciones remotas previas: consultas anónimas sin datos del dashboard y pruebas transaccionales de wrappers bajo admin/rol no autorizado, conflicto 40001 y denegación legacy con ROLLBACK. No equivalen a un recorrido autenticado de toda la aplicación ni a una auditoría completa nueva de RLS.
 - Después de cambios de código cliente, Ctrl+F5 descarta chunks/timers antiguos. No borrar .next/node_modules o reiniciar servicios del usuario como primera respuesta a un error.
 - Cambio solo de Markdown: verificar enlaces/rutas, consistencia con código/DB y `git diff --check`; no requiere otro build de la aplicación.
