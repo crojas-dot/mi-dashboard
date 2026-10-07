@@ -45,6 +45,17 @@ function ScopedQueryProvider({ children, userId }: { children: React.ReactNode; 
     },
   )
 
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'development') return
+    return queryClient.getQueryCache().subscribe((event) => {
+      if (event.type === 'removed') {
+        logger.debug('Consulta retirada de caché', {
+          module: String(event.query.queryKey[0]), action: 'cache_removed', userId,
+        })
+      }
+    })
+  }, [queryClient, userId])
+
   useEffect(() => () => { queryClient.clear() }, [queryClient])
 
   return (
