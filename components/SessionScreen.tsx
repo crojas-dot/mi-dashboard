@@ -33,9 +33,7 @@ export default function SessionScreen({
 
   if (!denied) return <main data-session-layout={layout} className="relative min-h-dvh bg-qms-background">
     <span role="status" className="sr-only">{label}</span>
-    <div aria-hidden="true" aria-busy="true">
-      {layout === 'login' ? <LoginSkeleton /> : <SessionTransition />}
-    </div>
+    {layout === 'login' && <div aria-hidden="true" aria-busy="true"><LoginSkeleton /></div>}
     {slow && <div className="fixed inset-x-4 bottom-4 z-10 mx-auto max-w-sm rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
       <p role="status" className="mb-3 text-sm text-qms-muted">La carga está tardando más de lo habitual.</p>
       <Button variant="secondary" onClick={onRetry} className="min-h-11 w-full">Reintentar</Button>
@@ -75,14 +73,6 @@ function LoginSkeleton() {
         <div className="border-t border-qms-border px-6 py-5"><Skeleton className="mx-auto h-3 w-4/5" /></div>
       </div>
       <Skeleton className="mx-auto mt-6 h-3 w-3/5" />
-    </div>
-  </div>
-}
-
-function SessionTransition() {
-  return <div className="flex min-h-dvh items-center justify-center px-4">
-    <div className="h-1 w-28 overflow-hidden rounded-full bg-qms-primary/[0.07]">
-      <div className="h-full w-2/3 rounded-full bg-qms-primary/25 motion-safe:animate-pulse [animation-duration:2.4s]" />
     </div>
   </div>
 }

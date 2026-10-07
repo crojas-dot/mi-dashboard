@@ -109,8 +109,8 @@ import Field from '@/components/ui/Field'
 
 - `AuthShell` bloquea el montaje de contenido privado antes de validar usuario y
   permisos, mientras redirige y desde el primer instante de logout. Durante el
-  bootstrap de una URL privada usa `SessionScreen neutral`: fondo y una línea
-  discreta, sin silueta de login ni dashboard. Solo el módulo autorizado dibuja
+  bootstrap de una URL privada usa `SessionScreen neutral`: solo el fondo,
+  sin barra, animación, silueta de login ni dashboard. Solo el módulo autorizado dibuja
   su propio skeleton de datos. No hay un WorkspaceSkeleton global.
 - La variante login se usa en /login sin usuario, en logout o cuando el destino
   /login ya está confirmado. Redirecciones internas de una sesión válida usan la

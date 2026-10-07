@@ -82,6 +82,8 @@ test('login solo se anticipa con destino confirmado y no existe workspace genér
   const Screen = loadModule('components/SessionScreen.tsx').default
   const neutralHtml = renderToStaticMarkup(createElement(Screen))
   assert.match(neutralHtml, /data-session-layout="neutral"/)
+  assert.match(neutralHtml, /role="status" class="sr-only"/)
+  assert.equal(neutralHtml.includes('animate-pulse'), false)
   assert.equal(neutralHtml.includes('max-w-md'), false)
   assert.equal(neutralHtml.includes('min-w-[640px]'), false)
   for (const [state, expected] of [
