@@ -1,19 +1,19 @@
 'use client'
 
 import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
-import { Plus, Search, Loader2, Eye } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
 import { useQuejas, useSLAConfig, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import Badge from '@/components/ui/Badge'
-import Select from '@/components/ui/Select'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
+import QuejasToolbar from './components/QuejasToolbar'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
@@ -99,49 +99,14 @@ export default function QuejasPage() {
     <div className="flex h-full flex-col">
       <PageHeader title="Quejas" />
 
-      {/* Una fila en escritorio; en pantallas pequeñas los controles pasan de línea sin superponerse. */}
-      <div className="mb-4 flex shrink-0 flex-wrap items-center gap-3" role="group" aria-label="Buscar y filtrar quejas">
-        {noVistasCount > 0 && (
-          <button
-            onClick={() => marcarTodasVistas(quejaIds)}
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-card border border-qms-border bg-qms-surface px-3 text-xs font-medium text-qms-muted transition-colors hover:bg-qms-hover-bg"
-            title="Marcar todas las quejas visibles como vistas"
-          >
-            <Eye className="h-3.5 w-3.5" />
-            {noVistasCount} sin ver
-          </button>
-        )}
-        <div className="relative min-w-[180px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-qms-muted" aria-hidden="true" />
-          <input
-            placeholder="Buscar folio o cliente..."
-            aria-label="Buscar folio o cliente"
-            className="ui-field h-10 w-full pl-10 pr-4 text-sm placeholder:text-qms-muted"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-          />
-        </div>
-        <div className="w-[160px] shrink-0">
-          <Select aria-label="Estado" className="h-10 rounded-card text-gray-700" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setPage(0) }}>
-            <option value="">Estados</option>
-            {estados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-          </Select>
-        </div>
-        <div className="w-[140px] shrink-0">
-          <Select aria-label="Prioridad" className="h-10 rounded-card text-gray-700" value={filtroPrioridad} onChange={(e) => { setFiltroPrioridad(e.target.value); setPage(0) }}>
-            <option value="">Prioridad</option>
-            {prioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
-          </Select>
-        </div>
-        <button onClick={() => setNuevaOpen(true)} className="ui-button ui-button-primary inline-flex h-10 shrink-0 items-center gap-2">
-          <Plus className="h-4 w-4" aria-hidden="true" /> Nueva queja
-        </button>
-      </div>
+      <QuejasToolbar search={search} estado={filtroEstado} prioridad={filtroPrioridad} estados={estados} prioridades={prioridades} noVistas={noVistasCount}
+        onSearch={value => { setSearch(value); setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }} onPrioridad={value => { setFiltroPrioridad(value); setPage(0) }}
+        onMarcarVistas={() => marcarTodasVistas(quejaIds)} onNueva={() => setNuevaOpen(true)} />
 
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface">
         <div ref={tableRef} className="min-h-0 flex-1 overflow-auto overscroll-contain">
           {loading ? (
-            <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+            <LoadingSkeleton label="Cargando quejas…" framed={false} />
           ) : error ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <p className="text-sm text-gray-500">No se pudieron cargar las quejas.</p>
@@ -196,14 +161,14 @@ export default function QuejasPage() {
           )}
         </div>
         {!loading && !error && (
-          <div className="shrink-0 border-t border-qms-border bg-qms-surface px-6 py-3 [&>nav]:flex-wrap [&>nav]:py-0 [&_button]:min-h-9 [&_button]:min-w-9 [&_button]:rounded-card [&_nav>div]:flex-wrap [&_nav>div]:gap-1.5">
+          <div className="shrink-0 border-t border-qms-border bg-qms-surface px-3 py-3 sm:px-6 [&>nav]:py-0">
             {totalCount <= pageSize ? <p className="text-sm text-qms-muted">{totalCount} resultados</p> : <Pagination page={page} count={totalCount} busy={isFetching} onChange={nextPage => { setPage(nextPage); if (tableRef.current) tableRef.current.scrollTop = 0 }} />}
           </div>
         )}
       </div>
 
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} prioridades={prioridades} />
-      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={() => { invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />
+      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={updated => { if (updated) setDetalleOpen(current => current?.id === updated.id ? updated : current); invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />
     </div>
   )
 }

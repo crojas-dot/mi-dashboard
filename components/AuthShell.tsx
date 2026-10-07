@@ -4,14 +4,10 @@ import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import AuthenticatedLayout from '@/components/AuthenticatedLayout'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
-import { Loader2 } from 'lucide-react'
+import { authRoute } from '@/lib/authRoute'
+import SessionScreen from '@/components/SessionScreen'
 
-const PUBLIC_PATHS = ['/login', '/q']
-
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
-}
+const reloadSession = () => window.location.reload()
 
 export default function AuthShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -20,43 +16,28 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
   const permisos = useAuthStore((s) => s.permisos)
   const loading = useAuthStore((s) => s.loading)
   const initialized = useAuthStore((s) => s.initialized)
+  const signingOut = useAuthStore((s) => s.signingOut)
   const init = useAuthStore((s) => s.init)
+  const logout = useAuthStore((s) => s.logout)
+  const route = authRoute(pathname, { user, permisos, loading, initialized })
 
   useEffect(() => { init() }, [init])
 
   useEffect(() => {
-    if (!initialized || loading) return
-    const isPublic = isPublicPath(pathname)
-    if (!user && !isPublic) {
-      router.replace('/login')
-      return
-    }
-    if (user && pathname === '/login') {
-      router.replace('/')
-      return
-    }
-    if (user && !isPublic) {
-      const modulo = moduloDeRuta(pathname)
-      if (modulo && !tienePermiso(permisos, modulo, false, user.rol)) {
-        const destino = tienePermiso(permisos, 'mis_quejas', false, user.rol) ? '/mis-quejas' : '/'
-        if (destino !== pathname) router.replace(destino)
-      }
-    }
-  }, [user, permisos, loading, initialized, pathname, router])
+    if (route.redirect) router.replace(route.redirect)
+  }, [route.redirect, router])
 
-  if (!initialized || loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-      </div>
-    )
+  if (route.view === 'pending') return <SessionScreen
+    label={signingOut ? 'Cerrando tu sesión' : route.redirect && user ? 'Abriendo tu espacio' : undefined}
+    layout={signingOut || route.redirect === '/login' || pathname === '/login' && !user ? 'login' : 'workspace'}
+    onRetry={reloadSession}
+  />
+  if (route.view === 'denied') {
+    return <SessionScreen denied label="Acceso no disponible"
+      description="Tu cuenta no tiene acceso a este módulo. Contacta al administrador."
+      onExit={() => void logout()} />
   }
-
-  const isPublic = isPublicPath(pathname)
-
-  if (isPublic || !user) {
-    return <main>{children}</main>
-  }
+  if (route.view === 'public') return <main>{children}</main>
 
   return <AuthenticatedLayout>{children}</AuthenticatedLayout>
 }

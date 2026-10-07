@@ -100,7 +100,11 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
       if (rootRef.current && !rootRef.current.contains(e.target as Node)) setMenuAbierto(null)
     }
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMenuAbierto(null)
+      if (e.key === 'Escape') {
+        const trigger = rootRef.current?.querySelector<HTMLButtonElement>('button[aria-expanded="true"]')
+        setMenuAbierto(null)
+        trigger?.focus()
+      }
     }
     document.addEventListener('mousedown', handleClick)
     document.addEventListener('keydown', handleEsc)
@@ -178,7 +182,7 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
           saving={guardandoPrefs}
           soundId={sonidoSeleccionado}
           onToggle={() => setMenuAbierto(menuAbierto === 'user' ? null : 'user')}
-          onPassword={() => setCambiarPasswordOpen(true)}
+          onPassword={() => { setMenuAbierto(null); setCambiarPasswordOpen(true) }}
           onPreferences={handlerPrefs}
           onSound={handlerCambiarSonido}
           onPreviewSound={() => playNotificationSound(sonidoSeleccionado)}

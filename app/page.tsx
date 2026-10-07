@@ -6,7 +6,7 @@ import { useDashboardIndicadores, useDashboardTareas, useActividadReciente } fro
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import PageHeader from '@/components/ui/PageHeader'
-import { IndicadorSkeleton, TablaSkeleton } from '@/components/dashboard/DashboardSkeletons'
+import DashboardLoading from '@/components/dashboard/DashboardLoading'
 import { logger } from '@/lib/utils/logger'
 
 const QuejasSummary = lazy(() => import('@/components/dashboard/QuejasSummary'))
@@ -34,7 +34,7 @@ export default function DashboardPage() {
   return (
     <div>
       <PageHeader title="Dashboard" description="Panel de control general" compact={false} />
-      <Suspense fallback={<IndicadorSkeleton label="Cargando indicadores de Quejas…" />}>
+      <Suspense fallback={<DashboardLoading label="Cargando indicadores de Quejas…" variant="summary" className="mb-5" />}>
         <QuejasSummary />
       </Suspense>
       <IndicadoresBlock />
@@ -51,7 +51,7 @@ function IndicadoresBlock() {
   const { data, isPending, error, refetch } = useDashboardIndicadores()
   useDashboardError(error, 'indicadores')
   if (error) return <div role="alert" className="p-4">No se pudo cargar el dashboard. <button onClick={() => void refetch()} className="underline">Reintentar</button></div>
-  if (isPending) return <IndicadorSkeleton />
+  if (isPending) return <DashboardLoading label="Cargando indicadores…" className="mb-5 min-h-60" />
   const indicadores = data ?? []
   const maxIndicador = Math.max(1, ...indicadores.map((ind) => ind.valor))
 
@@ -79,7 +79,7 @@ function TareasPendientesBlock() {
   return (
         <div>
           <h6 className="mb-2 text-base font-bold text-qms-dark">Expedientes Pendientes</h6>
-          {isPending ? <TablaSkeleton /> : error ? <p role="alert" className="p-3 text-sm">No se pudieron cargar los expedientes. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : <Table>
+          {isPending ? <DashboardLoading label="Cargando expedientes…" variant="table" className="min-h-48" /> : error ? <p role="alert" className="p-3 text-sm">No se pudieron cargar los expedientes. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : <Table>
             <TableHead>
               <tr>
                 <TableHeaderCell>Expediente</TableHeaderCell>
@@ -114,7 +114,7 @@ function ActividadRecienteBlock() {
         <div>
           <h6 className="mb-2 text-base font-bold text-qms-dark">Actividad Reciente</h6>
           <div className="divide-y rounded-card border border-qms-border">
-            {actividad.isPending ? <p className="p-3 text-sm">Cargando actividad…</p>
+            {actividad.isPending ? <DashboardLoading label="Cargando actividad…" variant="activity" framed={false} />
               : actividad.error ? <p role="alert" className="p-3 text-sm">No se pudo cargar la actividad. <button className="underline" onClick={() => void actividad.refetch()}>Reintentar</button></p>
               : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>
               : actividad.data.map((item) => <div key={item.id} className="p-3 text-sm">

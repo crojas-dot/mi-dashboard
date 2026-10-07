@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2, LockKeyhole, Mail } from 'lucide-react'
+import { LockKeyhole, Mail } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Field from '@/components/ui/Field'
 import Input from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/store/auth-store'
+import SessionScreen from '@/components/SessionScreen'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -30,11 +31,7 @@ export default function LoginPage() {
   }, [user, initialized, router])
 
   if (!initialized) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-qms-background" role="status" aria-label="Cargando sesión">
-        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-qms-primary" />
-      </div>
-    )
+    return <SessionScreen layout="login" />
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

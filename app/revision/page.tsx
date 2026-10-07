@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2, Clock, Check } from 'lucide-react'
+import { Plus, Clock, Check } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useReuniones, reunionesKey, type Reunion } from '@/lib/queries/useReuniones'
 import Pagination from '@/components/ui/Pagination'
@@ -32,7 +33,7 @@ export default function RevisionPage() {
       </PageHeader>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando reuniones…" />
       ) : (
       <Table>
         <TableHead>
@@ -50,7 +51,7 @@ export default function RevisionPage() {
                 <TableCell className="font-medium text-gray-900 dark:text-white">{r.titulo}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{r.fecha_programada ? new Date(r.fecha_programada).toLocaleDateString('es-ES') : '-'}</TableCell>
                 <TableCell><Badge variant={estadoVariant[r.estado] || 'gray'}>{r.estado}</Badge></TableCell>
-                 <TableCell className="text-gray-600 dark:text-gray-400">{r.acta_drive_id ? <Check className="h-4 w-4 text-green-600" /> : <Clock className="h-4 w-4 animate-spin text-amber-500" />}</TableCell>
+                <TableCell><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-qms-muted" title={r.acta_drive_id ? 'Acta registrada' : 'Acta pendiente de redactar'}>{r.acta_drive_id ? <Check className="h-4 w-4 shrink-0 text-qms-success" aria-hidden="true" /> : <Clock className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />}<span>{r.acta_drive_id ? 'Registrada' : 'Pendiente'}</span></span></TableCell>
               </TableRow>
             ))
           )}

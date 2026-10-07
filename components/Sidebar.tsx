@@ -6,7 +6,7 @@ import {
   ChartPie, MessageSquareText, FolderOpen, ListChecks,
   ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
   UsersRound, Settings2, ChartNoAxesCombined, ChevronLeft, ChevronRight,
-  type LucideIcon,
+  X, type LucideIcon,
 } from 'lucide-react'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -64,7 +64,6 @@ const prefetchMap: Record<string, PrefetchConfig | PrefetchConfig[]> = {
   '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: () => fetchReuniones() },
   '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: () => fetchProcesos() },
   '/usuarios':   { queryKey: usuariosQueryKey(), queryFn: () => fetchUsuarios() },
-  '/reporteria': { queryKey: ['reporteria'], queryFn: () => Promise.resolve([]) },
 }
 
 export default function Sidebar({ expanded = false, onNavigate, className = '' }: { expanded?: boolean; onNavigate?: () => void; className?: string } = {}) {
@@ -75,11 +74,18 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
   const permisos = useAuthStore((s) => s.permisos)
   const prefetch = useHoverPrefetch()
 
+  const prepareNavigation = (href: string) => {
+    const config = href === '/mis-quejas' && user?.id
+      ? { queryKey: quejasKey({ responsableId: user.id }), queryFn: () => fetchQuejas({ responsableId: user.id }) }
+      : prefetchMap[href]
+    if (config) prefetch(config)
+  }
+
   return (
     <aside
       className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-[250px]'} bg-qms-dark ${className}`}
     >
-      <div className="flex items-center justify-between px-3 pt-3 pb-1">
+      <div className={`flex shrink-0 items-center justify-between px-3 ${expanded ? 'h-14 border-b border-white/10' : 'pt-3 pb-1'}`}>
         {!collapsed ? (
           <>
             <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
@@ -87,11 +93,13 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
               <div className="text-[17px] font-bold text-white">ECA-QMS</div>
             </Link>
             <button
+              type="button"
               onClick={onNavigate ?? toggle}
+              aria-label={onNavigate ? 'Cerrar menú de navegación' : 'Colapsar menú'}
               title={onNavigate ? 'Cerrar menú' : 'Colapsar menú'}
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
+              className={`flex shrink-0 items-center justify-center rounded-card bg-transparent transition-colors hover:bg-white/[0.08] hover:text-white ${expanded ? 'h-11 w-11 text-white/70' : 'h-7 w-7 border border-white/10 text-white/35 hover:border-white/25'}`}
             >
-              <ChevronLeft className="h-4 w-4" />
+              {expanded ? <X className="h-5 w-5" aria-hidden="true" /> : <ChevronLeft className="h-4 w-4" aria-hidden="true" />}
             </button>
           </>
         ) : (
@@ -105,16 +113,16 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
         )}
       </div>
 
-      <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />
+      {!expanded && <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />}
 
-       <nav className="flex-1 overflow-y-auto px-2">
+       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 ${expanded ? 'py-3' : ''}`}>
          {sections.map((section) => {
            const linksVisibles = section.links.filter((link) => tienePermiso(permisos, moduloDeRuta(link.href), false, user?.rol))
            if (linksVisibles.length === 0) return null
            return (
           <div key={section.label} className="mb-2">
             {!collapsed && (
-              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/25">
+              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/50">
                 {section.label}
               </p>
             )}
@@ -130,10 +138,9 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   aria-current={isActive ? 'page' : undefined}
                   onClick={onNavigate}
                   className={`my-0.5 flex items-center gap-2.5 rounded-button py-2.5 text-base leading-6 no-underline transition-colors ${collapsed ? 'justify-center px-0' : 'px-[15px]'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
-                  onMouseEnter={() => {
-                    const cfg = prefetchMap[link.href]
-                    if (cfg) prefetch(cfg)
-                  }}
+                  onMouseEnter={() => prepareNavigation(link.href)}
+                  onFocus={() => prepareNavigation(link.href)}
+                  onTouchStart={() => prepareNavigation(link.href)}
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                   {!collapsed && <span className="truncate">{link.label}</span>}
@@ -145,7 +152,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
          })}
       </nav>
 
-      <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />
+      {!expanded && <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />}
     </aside>
   )
 }

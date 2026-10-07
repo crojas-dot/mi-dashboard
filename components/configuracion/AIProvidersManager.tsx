@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Plus, Save, Loader2, Sparkles, KeyRound, Brain, Check, ChevronRight, Wifi, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
+import { Plus, Save, Sparkles, KeyRound, Brain, Check, ChevronRight, Wifi, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+import Spinner from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIProviderTipo, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
@@ -579,11 +581,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <Loader2 className="h-7 w-7 animate-spin text-gray-300" />
-      </div>
-    )
+    return <LoadingSkeleton variant="cards" label="Cargando proveedores de IA…" />
   }
   if (loadError) return <ErrorState message="No se pudo cargar la configuración de IA." onRetry={() => { setLoading(true); setLoadVersion(version => version + 1) }} />
 
@@ -925,7 +923,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
 
           {testModal.enCurso && (
             <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+              <Spinner size="sm" className="text-qms-primary" />
               {Object.values(testModal.progreso).filter(v => v !== 'pendiente').length} de {testModal.modelos.length} probados
             </div>
           )}
@@ -949,7 +947,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
                           {status === 'pendiente' && <span className="text-xs text-gray-400">—</span>}
                           {status === 'probando' && (
                             <span className="inline-flex items-center gap-1 text-xs text-qms-primary">
-                              <Loader2 className="h-3 w-3 animate-spin" /> Probando
+                              <Spinner size="sm" /> Probando
                             </span>
                           )}
                           {status === 'ok' && (

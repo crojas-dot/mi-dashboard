@@ -17,10 +17,10 @@ export default function AuthenticatedLayout({ children }: { children: ReactNode 
     <div className="hidden shrink-0 lg:block"><Sidebar /></div>
     <div className="flex min-w-0 flex-1 flex-col">
       <Header onOpenNavigation={() => setMobileOpen(true)} />
-      <main id="app-content" tabIndex={-1} className="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">{children}</main>
+      <main id="app-content" tabIndex={-1} className="relative min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">{children}</main>
     </div>
-    <Modal open={mobile && mobileOpen} onClose={() => setMobileOpen(false)} title="Menú de navegación" size="sm">
-      <div className="h-[min(70dvh,620px)]"><Sidebar expanded className="w-full!" onNavigate={() => setMobileOpen(false)} /></div>
+    <Modal open={mobile && mobileOpen} onClose={() => setMobileOpen(false)} title="Menú de navegación" variant="drawer">
+      <Sidebar expanded className="w-full!" onNavigate={() => setMobileOpen(false)} />
     </Modal>
   </div>
 }

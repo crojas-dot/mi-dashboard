@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRiesgos, riesgosKey, useMatrizRiesgos } from '@/lib/queries/useRiesgos'
 import Pagination from '@/components/ui/Pagination'
@@ -79,7 +80,7 @@ export default function RiesgosPage() {
       </div>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando riesgos…" />
       ) : (
       <Table>
         <TableHead>

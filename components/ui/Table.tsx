@@ -2,7 +2,7 @@ import type { ComponentPropsWithRef } from 'react'
 
 export function Table({ children, className = '', ...props }: ComponentPropsWithRef<'table'>) {
   return <div className="ui-panel overflow-x-auto overscroll-contain">
-    <table {...props} className={`w-full select-text text-left text-base text-gray-700 ${className}`}>{children}</table>
+    <table {...props} className={`w-full min-w-[640px] select-text text-left text-base text-gray-700 ${className}`}>{children}</table>
   </div>
 }
 

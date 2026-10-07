@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, FileText, BookOpen, History, Loader2 } from 'lucide-react'
+import { Plus, FileText, BookOpen, History } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { supabase } from '@/lib/supabase'
@@ -49,9 +50,9 @@ export default function DocumentosPage() {
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nuevo Documento</Button>
       </PageHeader>
 
-      <div className="flex gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+      <div aria-label="Vistas de documentos" className="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
         {(['todos', 'maestra', 'edicion'] as const).map((t) => (
-          <button key={t} onClick={() => { setTab(t); setPage(0) }} className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'}`}>
+          <button key={t} onClick={() => { setTab(t); setPage(0) }} className={`flex min-h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition sm:flex-none ${tab === t ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white' : 'text-gray-600 hover:text-gray-900 dark:text-gray-400'}`}>
             {t === 'todos' && <FileText className="h-4 w-4" />}
             {t === 'maestra' && <BookOpen className="h-4 w-4" />}
             {t === 'edicion' && <History className="h-4 w-4" />}
@@ -61,7 +62,7 @@ export default function DocumentosPage() {
       </div>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando documentos…" />
       ) : (
       <Table>
         <TableHead>

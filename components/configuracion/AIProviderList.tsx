@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Play, RefreshCw, Loader2, Wifi, RotateCcw, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Play, RefreshCw, Wifi, RotateCcw, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import Spinner from '@/components/ui/Spinner'
 import type { AIProvider } from '@/lib/ai/types'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -73,7 +74,7 @@ export default function AIProviderList({ providers, syncingModels, testProviderI
                     <Play className="h-3.5 w-3.5" aria-hidden="true" /> Testear
                   </Button>
                   <Button size="sm" variant="secondary" onClick={() => onSync(provider.id)} disabled={syncingModels.has(provider.id) || testInProgress && testProviderId === provider.id} title="Sincronizar modelos desde el proveedor">
-                    {syncingModels.has(provider.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} Sincronizar
+                    {syncingModels.has(provider.id) ? <Spinner size="sm" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} Sincronizar
                   </Button>
                   <Button size="sm" variant="link" onClick={() => onEdit(provider)}>Editar</Button>
                   <Button size="sm" variant="ghost" onClick={() => onConnect(provider.id)} title="Probar conexión con el proveedor">
@@ -98,7 +99,7 @@ export default function AIProviderList({ providers, syncingModels, testProviderI
         {modelProvider?.modelos.map(modelo => {
           const status = testProviderId === modelProvider.id ? testProgress[modelo] : undefined
           return <li key={modelo} className="flex items-center gap-2 border-b border-qms-border px-3 py-3 text-sm last:border-b-0">
-            {status === 'probando' && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-qms-primary" aria-label="Probando" />}
+            {status === 'probando' && <span role="status" className="inline-flex shrink-0 items-center"><Spinner className="text-qms-primary" /><span className="sr-only">Probando</span></span>}
             {status === 'ok' && <CheckCircle className="h-4 w-4 shrink-0 text-qms-success" aria-label="Prueba correcta" />}
             {status === 'fallo' && <XCircle className="h-4 w-4 shrink-0 text-qms-danger" aria-label="Prueba fallida" />}
             <span className="min-w-0 select-text break-all text-gray-700">{modelo}</span>

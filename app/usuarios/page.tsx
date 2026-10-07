@@ -1,7 +1,8 @@
 'use client'
 
 import { useDeferredValue, useEffect, useState } from 'react'
-import { Plus, Search, Loader2, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { useUsuarios, usuariosKey, apiFetch, type Usuario } from '@/lib/queries/useUsuarios'
@@ -56,7 +57,7 @@ export default function UsuariosPage() {
   })
 
   if (!initialized || user?.rol !== 'admin') {
-    return <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+    return <LoadingSkeleton label="Verificando acceso…" />
   }
 
   const esAuto = (u: Usuario) => u.id === user?.id
@@ -139,21 +140,22 @@ export default function UsuariosPage() {
         <Button onClick={abrirCrear}><Plus className="h-4 w-4" /> Nuevo usuario</Button>
       </PageHeader>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 min-w-0">
+      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid grid-cols-2 items-center gap-3 lg:grid-cols-[minmax(180px,1fr)_180px_160px]">
+        <div className="relative col-span-2 min-w-0 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
             placeholder="Buscar por nombre o email..."
-            className="ui-field h-[38px] w-full py-2 pl-9 pr-3 text-sm"
+            aria-label="Buscar por nombre o email"
+            className="ui-field h-11 pl-9 pr-3 lg:h-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Select value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setSearch('') }}>
+        <Select aria-label="Rol" className="h-11 lg:h-10" value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setSearch('') }}>
           <option value="">Todos los roles</option>
           {roles.map((r) => <option key={r} value={r}>{rolLabel[r]}</option>)}
         </Select>
-        <Select value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setSearch('') }}>
+        <Select aria-label="Estado del usuario" className="h-11 lg:h-10" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setSearch('') }}>
           <option value="">Todos los estados</option>
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
@@ -161,7 +163,7 @@ export default function UsuariosPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando usuarios…" />
       ) : isError ? (
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
@@ -200,7 +202,7 @@ export default function UsuariosPage() {
                   <TableCell><Badge variant={rolVariant[u.rol] || 'gray'}>{rolLabel[u.rol] || u.rol}</Badge></TableCell>
                   <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'red'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-qms-muted">
-                    {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : '—'}
+                    {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-end gap-1.5">

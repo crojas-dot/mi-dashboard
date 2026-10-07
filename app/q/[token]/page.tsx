@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Loader2, Paperclip, X } from 'lucide-react'
+import { Paperclip, X } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+import Spinner from '@/components/ui/Spinner'
 import { supabase } from '@/lib/supabase'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 
@@ -93,8 +95,8 @@ export default function FormularioQuejaPublicaPage() {
 
   if (estado.status === 'cargando') {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex min-h-dvh items-center justify-center px-4 py-8">
+        <LoadingSkeleton variant="form" label="Cargando formulario…" className="w-full max-w-2xl" />
       </div>
     )
   }
@@ -334,9 +336,10 @@ export default function FormularioQuejaPublicaPage() {
           <button
             type="submit"
             disabled={enviando}
+            aria-busy={enviando}
             className="ui-button ui-button-primary ui-button-sm flex w-full items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-50"
           >
-            {enviando && <Loader2 className="h-4 w-4 animate-spin" />}
+            {enviando && <Spinner />}
             {enviando ? (etapaEnvio || 'Enviando...') : 'Enviar queja'}
           </button>
         </form>

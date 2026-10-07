@@ -17,7 +17,7 @@ export default function PageHeader({ title, description, backHref, children, com
       <>
         <h1 className="sr-only">{title}</h1>
         {(backHref || children) && (
-          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="mb-3 flex shrink-0 flex-wrap items-center justify-end gap-2 [&>button]:min-h-11 [&>button]:w-full sm:[&>button]:min-h-10 sm:[&>button]:w-auto">
             {backHref && (
               <Link href={backHref} aria-label="Volver" className="mr-auto rounded-button p-1.5 text-qms-muted no-underline transition-colors hover:bg-qms-hover-bg">
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -30,8 +30,8 @@ export default function PageHeader({ title, description, backHref, children, com
     )
   }
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center gap-3">
+    <div className="mb-4 flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 items-center gap-3">
         {backHref && (
           <Link href={backHref} className="rounded-button p-1.5 text-qms-muted no-underline transition-colors hover:bg-qms-hover-bg">
             <ArrowLeft className="h-4 w-4" />
@@ -42,7 +42,7 @@ export default function PageHeader({ title, description, backHref, children, com
           {description && <p className="m-0 mt-0.5 text-base text-qms-muted">{description}</p>}
         </div>
       </div>
-      {children && <div className="flex items-center gap-2">{children}</div>}
+      {children && <div className="flex w-full flex-wrap items-center gap-2 [&>button]:w-full sm:w-auto sm:[&>button]:w-auto">{children}</div>}
     </div>
   )
 }

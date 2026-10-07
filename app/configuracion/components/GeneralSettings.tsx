@@ -13,6 +13,7 @@ import Textarea from '@/components/ui/Textarea'
 import Select from '@/components/ui/Select'
 import Field from '@/components/ui/Field'
 import ErrorState from '@/components/ui/ErrorState'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ZonaHorariaEditor from './ZonaHorariaEditor'
 
 const key = [...queryKeys.configuraciones, 'general'] as const
@@ -44,7 +45,7 @@ export default function GeneralSettings({ active }: { active: boolean }) {
     finally { savingRef.current = false; setSaving(false) }
   }
 
-  if (query.isPending) return <p role="status" className="p-6 text-sm text-qms-muted">Cargando ajustes…</p>
+  if (query.isPending) return <LoadingSkeleton variant="form" label="Cargando ajustes…" />
   if (query.error) return <ErrorState onRetry={() => void query.refetch()} />
 
   return <div className="space-y-5">

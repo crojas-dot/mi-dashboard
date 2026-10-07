@@ -13,6 +13,7 @@ import Select from '@/components/ui/Select'
 import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
 import ErrorState from '@/components/ui/ErrorState'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
 const procesos = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'revision_direccion']
@@ -41,7 +42,7 @@ export default function PlazosSettings({ active }: { active: boolean }) {
     finally { savingRef.current = false; setSaving(false) }
   }
 
-  if (query.isPending) return <p role="status" className="p-6 text-sm text-qms-muted">Cargando plazos…</p>
+  if (query.isPending) return <LoadingSkeleton label="Cargando plazos…" />
   if (query.error) return <ErrorState onRetry={() => void query.refetch()} />
 
   return <div className="space-y-5">

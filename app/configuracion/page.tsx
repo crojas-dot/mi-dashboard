@@ -3,7 +3,8 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Clock, Eye, Link as LinkIcon, Loader2, RotateCcw, Settings2, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import Button from '@/components/ui/Button'
@@ -49,7 +50,7 @@ export default function ConfiguracionPage() {
     if (initialized && user?.rol !== 'admin') router.replace('/')
   }, [initialized, user, router])
 
-  if (!initialized || user?.rol !== 'admin') return <div role="status" aria-label="Verificando acceso" className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-qms-muted" aria-hidden="true" /></div>
+  if (!initialized || user?.rol !== 'admin') return <LoadingSkeleton variant="form" label="Verificando acceso…" />
 
   const recargar = async () => {
     if (refreshing) return
@@ -92,7 +93,7 @@ export default function ConfiguracionPage() {
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-qms-primary-soft text-qms-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
             <div><h2 id="settings-section-title" className="text-xl font-medium text-qms-dark">{selected.label}</h2><p className="mt-1 text-sm text-qms-muted">{selected.description}</p></div>
           </div>
-          {section !== 'ia' && section !== 'vistas' && <Button size="sm" variant="secondary" disabled={refreshing} onClick={() => void recargar()}><RotateCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" /> Actualizar datos</Button>}
+          {section !== 'ia' && section !== 'vistas' && <Button size="sm" variant="secondary" loading={refreshing} loadingLabel="Actualizando datos…" onClick={() => void recargar()}>{!refreshing && <RotateCcw className="h-4 w-4" aria-hidden="true" />} Actualizar datos</Button>}
         </div>
         {sections.map(item => {
           const Panel = item.component

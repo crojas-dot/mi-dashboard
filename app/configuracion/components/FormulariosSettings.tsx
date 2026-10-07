@@ -10,6 +10,7 @@ import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
 import ErrorState from '@/components/ui/ErrorState'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import Modal from '@/components/Modal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
@@ -31,7 +32,7 @@ export default function FormulariosSettings({ active }: { active: boolean }) {
     } catch { showError(new Error('No se pudo copiar el enlace'), 'Usá el botón Abrir para acceder al formulario') }
   }
 
-  if (query.isPending) return <p role="status" className="p-6 text-sm text-qms-muted">Cargando formularios…</p>
+  if (query.isPending) return <LoadingSkeleton label="Cargando formularios…" />
   if (query.error) return <ErrorState onRetry={() => void query.refetch()} />
 
   return <div className="space-y-5">

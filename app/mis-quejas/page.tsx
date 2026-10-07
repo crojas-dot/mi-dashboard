@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Loader2 } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
 import { useQuejas } from '@/lib/queries/useQuejas'
@@ -33,7 +33,8 @@ export default function MisQuejasPage() {
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
 
-  const invalidate = () => {
+  const invalidate = (updated?: Queja) => {
+    if (updated) setPanelOpen(current => current?.id === updated.id ? updated : current)
     queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
   }
@@ -46,10 +47,10 @@ export default function MisQuejasPage() {
           Con el panel abierto se recorta 500px a la derecha (las columnas quedan bajo el panel)
           y aparece el scrollbar horizontal único para desplazarlas. */}
       <div
-        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-card border border-qms-border bg-qms-surface pb-4 ${panelOpen ? 'mr-[calc(500px-16px)]' : 'monday-scroll-no-x'}`}
+        className={`flex-1 min-w-0 monday-scroll overflow-x-auto overflow-y-auto rounded-card border border-qms-border bg-qms-surface pb-4 ${panelOpen ? 'lg:mr-[calc(500px-16px)]' : 'lg:monday-scroll-no-x'}`}
       >
           {loading ? (
-            <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+            <LoadingSkeleton label="Cargando tus quejas…" framed={false} />
           ) : error ? (
             <div className="flex min-h-[300px] flex-col items-center justify-center gap-3">
               <p className="text-sm text-gray-500">No se pudieron cargar tus quejas.</p>

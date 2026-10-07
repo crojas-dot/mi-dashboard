@@ -14,6 +14,7 @@ export interface PerfilUsuario {
 export interface LoginResult {
   error?: string
   user?: PerfilUsuario
+  authId?: string
 }
 
 export async function signIn(email: string, password: string): Promise<LoginResult> {
@@ -30,7 +31,7 @@ export async function signIn(email: string, password: string): Promise<LoginResu
     return { error: 'Tu cuenta está inactiva. Contacta al administrador.' }
   }
 
-  return { user }
+  return { user, authId: data.user.id }
 }
 
 export async function signOut(): Promise<void> {

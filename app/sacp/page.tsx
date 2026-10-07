@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, CheckCircle, Target, Loader2 } from 'lucide-react'
+import { Plus, CheckCircle, Target } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useSACP, accionesKey, type SACP } from '@/lib/queries/useSACP'
@@ -58,7 +59,7 @@ export default function SACPage() {
       </PageHeader>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando acciones SACP…" />
       ) : (
       <Table>
         <TableHead>

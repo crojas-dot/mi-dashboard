@@ -11,7 +11,7 @@ export interface Usuario {
   rol: string
   estado: string
   auth_id?: string
-  ultimo_acceso?: string
+  ultimo_acceso?: string | null
 }
 
 export const usuariosKey = queryKeys.usuarios
@@ -39,7 +39,7 @@ export async function fetchUsuarios(params?: {
   if (params?.rol) qs.set('rol', params.rol)
   if (params?.estado) qs.set('estado', params.estado)
   const res = await apiFetch(`/api/usuarios?${qs.toString()}`)
-  if (!res.ok) throw new Error('No tienes permisos para ver usuarios')
+  if (!res.ok) throw Object.assign(new Error('No se pudo cargar el listado de usuarios'), { status: res.status })
   return (await res.json()) as Usuario[]
 }
 
@@ -67,5 +67,6 @@ export function useUsuarios(
     queryKey: usuariosQueryKey(params),
     queryFn: () => fetchUsuarios(params),
     enabled,
+    refetchOnWindowFocus: true,
   })
 }

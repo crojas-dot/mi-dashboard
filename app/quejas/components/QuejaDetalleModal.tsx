@@ -1,5 +1,7 @@
 'use client'
 
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import Modal from '@/components/Modal'
@@ -29,7 +31,7 @@ import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 interface Props {
   queja: Queja | null
   onClose: () => void
-  onUpdated: () => void
+  onUpdated: (updated?: Queja) => void
   prioridades: { valor: string; color: string }[]
   categorias: { valor: string; color: string }[]
 }
@@ -125,7 +127,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
 
   const queryClient = useQueryClient()
   const quejaId = queja?.id ?? ''
-  const { data: comentarios = [] } = useQuejaComentarios(quejaId)
+  const { data: comentarios = [], isLoading: comentariosLoading } = useQuejaComentarios(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
   const { data: usuarios = [] } = useUsuarios({ estado: 'activo' }, !!queja)
@@ -171,11 +173,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     }
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'No Procede', { resolucion: justificacion })
+      const updated = await transicionarQueja(queja, 'No Procede', { resolucion: justificacion })
       showSuccess('Queja marcada como No Procede')
       setDecisionProcedencia(null)
       setJustificacion('')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo marcar la queja como No Procede')
     } finally {
@@ -195,7 +197,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     }
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'En Investigación', {
+      const updated = await transicionarQueja(queja, 'En Investigación', {
         justificacionProcede: justificacion,
         responsableId: responsable.id,
       })
@@ -203,7 +205,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
       setDecisionProcedencia(null)
       setJustificacion('')
       setResponsableSeleccionado(null)
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo iniciar la investigación')
     } finally {
@@ -219,11 +221,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     }
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'Resuelto', { resolucion })
+      const updated = await transicionarQueja(queja, 'Resuelto', { resolucion })
       showSuccess('Queja resuelta')
       setResolucionAbierta(false)
       setResolucion('')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo resolver la queja')
     } finally {
@@ -234,17 +236,17 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const handleSeleccionarResponsable = (u: Usuario | null) => {
     setResponsableSeleccionado(u)
     if (!u || estadoActual === 'Recibido' || u.id === queja.responsable_id) return
-    actualizarDetallesQueja({ quejaId: queja.id, responsableId: u.id })
-      .then(() => { showSuccess('Responsable asignado'); onUpdated() })
+    actualizarDetallesQueja({ quejaId: queja.id, revision: queja.revision, responsableId: u.id })
+      .then(updated => { showSuccess('Responsable asignado'); onUpdated(updated) })
       .catch((e) => showError(e as Error, 'No se pudo asignar el responsable'))
   }
 
   const handleFinalizar = async () => {
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'Finalizado')
+      const updated = await transicionarQueja(queja, 'Finalizado')
       showSuccess('Queja finalizada')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo finalizar la queja')
     } finally {
@@ -259,11 +261,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     }
     setReabriendo(true)
     try {
-      await transicionarQueja(queja.id, 'En Investigación', { motivoReapertura })
+      const updated = await transicionarQueja(queja, 'En Investigación', { motivoReapertura })
       showSuccess('Queja reabierta. Nuevo plazo: 15 días.')
       setReaperturaAbierta(false)
       setMotivoReapertura('')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo reabrir la queja')
     } finally {
@@ -314,9 +316,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const handleAprobarResolucion = async () => {
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'Resuelto')
+      const updated = await transicionarQueja(queja, 'Resuelto')
       showSuccess('Resolución aprobada. Queja resuelta.')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo aprobar la resolución')
     } finally {
@@ -327,9 +329,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const handleDevolverInvestigacion = async () => {
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'En Investigación')
+      const updated = await transicionarQueja(queja, 'En Investigación')
       showSuccess('Queja devuelta a investigación')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo devolver la queja')
     } finally {
@@ -442,7 +444,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
             <span className="text-xs text-gray-400">{adjuntos.length} archivo(s)</span>
           </div>
           {adjuntosLoading ? (
-            <p className="text-sm text-gray-400">Cargando evidencias...</p>
+            <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} />
           ) : adjuntos.length === 0 ? (
             <p className="text-sm text-gray-400">
               {estadoActual === 'Recibido'
@@ -690,7 +692,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
           <p className="text-base font-semibold text-gray-800 mb-2">Comentarios y notas internas</p>
 
           <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
-            {comentarios.length === 0 ? (
+            {comentariosLoading ? <LoadingSkeleton variant="list" label="Cargando comentarios…" framed={false} /> : comentarios.length === 0 ? (
               <p className="text-sm text-gray-400">Sin comentarios todavía.</p>
             ) : comentarios.map((c) => (
               <div key={c.id} className="rounded-lg border border-gray-200 p-2.5 bg-white">

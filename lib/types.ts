@@ -1,5 +1,6 @@
 export interface Queja {
   id: string
+  revision: number
   folio: string
   cliente_nombre: string
   email_cliente?: string

@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2 } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useRef } from 'react'
 import { usePermisos, useActualizarPermiso } from '@/lib/queries/usePermisos'
 import type { Permiso } from '@/lib/permisos'
@@ -35,7 +35,7 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
   const savingRef = useRef(false)
 
   if (isLoading) {
-    return <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+    return <LoadingSkeleton label="Cargando permisos…" />
   }
   if (error) return <ErrorState message="No se pudieron cargar los permisos." onRetry={() => void refetch()} />
 

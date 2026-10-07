@@ -25,6 +25,8 @@ export function getUserError(error: unknown, fallback = 'No se pudo completar la
     return result('Tu usuario no tiene permiso para esta operación.', 'Solicita acceso al administrador.')
   if (status === 429)
     return result('Se alcanzó el límite temporal de solicitudes.', 'Espera un momento antes de reintentar.', true)
+  if (rawCode === '40001')
+    return result('Otra persona modificó el registro.', 'Actualiza el expediente y revisa los cambios antes de guardar.')
   if (rawCode === '23505')
     return result('Ya existe un registro con esos datos.', 'Revisa los datos únicos antes de guardar.')
   if (rawCode === '23503')

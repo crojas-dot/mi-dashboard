@@ -68,6 +68,83 @@ import Field from '@/components/ui/Field'
 - Las etiquetas `ui-*` son utilidades de Tailwind v4, no clases Bootstrap.
   Las acciones nativas sencillas pueden usar las mismas recetas sin un wrapper.
 
+## Encabezado y menús
+
+- El perfil del encabezado usa un avatar de 40px y una flecha, con ancho estable.
+  Las iniciales tienen interlineado de 1 y un ajuste óptico vertical de 1px para
+  compensar el espacio de descendentes de la fuente al mostrar mayúsculas.
+  El nombre completo aparece en su tooltip/nombre accesible y dentro del menú,
+  junto al correo y rol. Nombre y correo pueden ocupar varias líneas; no recortar
+  ni abreviar nombres guardados para resolver el espacio del encabezado.
+- Menú de cuenta: 320px en escritorio. Notificaciones: 400px, mensajes de 14px
+  y fechas de 12px sin segundos. El contador visual llega a `99+`, conservando
+  la cantidad exacta en el nombre accesible de la campana.
+- En móvil los paneles se posicionan bajo el encabezado con 12px de margen a
+  cada lado y altura limitada al viewport. Sus listas hacen scroll interno.
+- Las notificaciones usan botones separados para abrir/marcar y para archivar;
+  archivar no debe navegar. Escape devuelve el foco al botón que abrió el panel.
+  El pie aclara cuando se muestran solo las 15 notificaciones más recientes.
+
+## Pantallas pequeñas
+
+- Por debajo de 1024px la navegación usa `Modal variant="drawer"`: panel lateral
+  pegado al borde izquierdo, de altura `100dvh`, sin marcos ni padding anidados.
+  Solo la lista de enlaces hace scroll. Conserva permisos, fondo inerte, bloqueo
+  del scroll de la página, cierre por Escape/fondo y retorno del foco al disparador.
+- Los diálogos mantienen Tab y Shift+Tab dentro de sus controles visibles.
+- `QuejasToolbar` adapta su cuadrícula al ancho del módulo mediante container
+  queries: buscador completo, dos filtros iguales y acción de ancho completo en
+  móvil; una fila al disponer de 860px. Controles móviles de 44px de altura.
+- PageHeader extiende las acciones principales en móvil; Pagination mantiene
+  anterior, estado y siguiente en una fila, con iconos y nombres accesibles.
+- Las tablas compartidas conservan un mínimo de 640px y scroll horizontal local
+  para evitar columnas ilegibles. No permitir que ensanchen la página completa.
+- Usuarios usa filtros en cuadrícula; las pestañas de Documentos pueden saltar
+  de fila. El panel de Mis Quejas ocupa el viewport móvil y conserva los 500px
+  y la reserva de espacio únicamente desde el breakpoint `lg`.
+- Revisión por Dirección indica acta `Pendiente`/`Registrada` con iconos estáticos.
+  Reservar la animación de carga para operaciones en curso, no estados permanentes.
+
+## Sesión y carga inicial
+
+- `AuthShell` bloquea el montaje de contenido privado antes de validar usuario y
+  permisos, mientras redirige y desde el primer instante de logout. Mostrar solo
+  `SessionScreen`: skeleton del espacio de trabajo o del formulario de login,
+  nunca el dashboard sin su shell. Son formas decorativas sin datos, nombres,
+  cifras, enlaces ni controles activos. Durante logout usa el skeleton de login.
+  Acceso denegado conserva una tarjeta estática con explicación y salida.
+- La misma regla se aplica al HTML inicial de producción y a rutas sin permiso.
+  La autorización de datos sigue siendo responsabilidad de API y RLS.
+- La pulsación suave es CSS, respeta movimiento reducido y usa un número fijo de
+  formas; no crear animaciones por registro ni temporizadores de animación JS.
+  Los mensajes normales de carga son solo para lectores de pantalla.
+  No retrasar artificialmente la transición.
+  Después de 10 s de espera, Reintentar recarga la página y vuelve a comprobar
+  identidad/perfil/permisos; no habilita el dashboard. Botones de al menos 44px.
+- Si se recarga durante un cierre de sesión pendiente, se continúa el cierre.
+  La marca de bloqueo no contiene información de cuenta y no concede permisos.
+- El dashboard usa `DashboardLoading` con variantes summary/modules/table/activity:
+  skeleton proporcional a cada bloque, círculos de gráficos y líneas cortas.
+  Conservar la carga independiente por bloque, no agregar un segundo marco dentro
+  de una tarjeta que ya tiene encabezado ni esperar a que terminen todos los bloques.
+  `components/ui/Skeleton` solo dibuja formas; no consulta datos ni permisos.
+- `LoadingSkeleton` es la carga inicial compartida de los módulos activos: table
+  para listados/permisos, form para ajustes/formulario público, cards para IA y
+  list para historial, hallazgos, comentarios y evidencias. Cinco filas de tabla
+  o tres elementos/tarjetas como máximo, independientes del número de registros.
+  Usar `framed={false}` dentro de un panel que ya tiene borde. No agregar spinners
+  sueltos ni mensajes visibles a esas cargas. Dashboard delega table/activity aquí.
+- Reservar `Spinner` para guardar, subir, descargar, sincronizar o analizar.
+  Caja estable de 14/16/24px, centrada en ambos ejes, sin deformar texto ni botones;
+  giro CSS solo con movimiento permitido. `Button loading` lo incorpora y conserva
+  disabled, aria-busy y anuncio accesible. `OperationLoading` centra icono y texto
+  dentro del área de informes/preview para operaciones más largas.
+- La navegación precarga por intención de hover, foco o tacto con el mismo debounce
+  de 80ms y caché compartida. Mis Quejas usa siempre el responsable propio; sin id
+  no precargar una consulta general. Conservar permisos, ámbitos por usuario/vista,
+  plazos de caché y actualización en segundo plano: no ampliar staleTime global
+  para aparentar rapidez ni esperar a terminar todos los bloques.
+
 ## Configuración
 
 La navegación agrupa Organización, Acceso y Servicios. Cada sección tiene un

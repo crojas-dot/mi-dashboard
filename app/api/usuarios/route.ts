@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
+import { completarUltimoAcceso } from '@/lib/server/ultimoAcceso'
+import { logger } from '@/lib/utils/logger'
 
 export const runtime = 'nodejs'
 
@@ -54,7 +56,12 @@ export async function GET(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
-  return NextResponse.json(data)
+  try {
+    return NextResponse.json(await completarUltimoAcceso(admin, data ?? []))
+  } catch (error) {
+    logger.error('No se pudo consultar el último acceso', { module: 'usuarios', action: 'list_access' }, error)
+    return NextResponse.json({ error: 'No se pudo consultar el último acceso de los usuarios.' }, { status: 502 })
+  }
 }
 
 export async function POST(request: NextRequest) {

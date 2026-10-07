@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { RefreshCw, Eye, EyeOff, Copy, Check, X, KeyRound, Loader2 } from 'lucide-react'
+import { RefreshCw, Eye, EyeOff, Copy, Check, X, KeyRound } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
@@ -105,8 +105,8 @@ export default function ResetPasswordModal({ open, usuario, onClose, onSaved }: 
                   {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   {copied ? 'Copiada' : 'Copiar'}
                 </Button>
-                <Button type="button" size="sm" onClick={guardar} disabled={saving}>
-                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                <Button type="button" size="sm" onClick={guardar} loading={saving}>
+                  {!saving && <KeyRound className="h-3.5 w-3.5" />}
                   Guardar
                 </Button>
               </div>

@@ -3,6 +3,14 @@ import { supabase } from '@/lib/supabase'
 import type { Queja } from '@/lib/types'
 import type { SACP } from '@/lib/queries/useSACP'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { CODIGOS_ESTADO_QUEJA } from '@/lib/constants/quejas'
+
+type ExpedienteVersionado = Pick<Queja, 'id' | 'revision'>
+
+function revisionEsperada(queja: ExpedienteVersionado): number {
+  if (!Number.isSafeInteger(queja.revision) || queja.revision < 0) throw new Error('Actualiza el expediente antes de guardar.')
+  return queja.revision
+}
 
 async function callRpc<T>(name: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(name, args)
@@ -28,17 +36,19 @@ export function crearQuejaInterna(input: {
 
 export function actualizarDetallesQueja(input: {
   quejaId: string
+  revision: number
   categoria?: string
   prioridad?: string
   responsableId?: string
   notas?: string
 }) {
-  return callRpc<Queja>('actualizar_detalles_queja', {
-    p_queja_id: input.quejaId,
+  return callRpc<Queja>('qms_update_details', {
+    p_id: input.quejaId,
+    p_expected: revisionEsperada({ id: input.quejaId, revision: input.revision }),
     p_categoria: input.categoria ?? null,
     p_prioridad: input.prioridad ?? null,
-    p_responsable_id: input.responsableId ?? null,
-    p_notas: input.notas ?? null,
+    p_owner: input.responsableId ?? null,
+    p_notes: input.notas ?? null,
   })
 }
 
@@ -49,14 +59,17 @@ export interface TransicionQuejaParams {
   motivoReapertura?: string | null
 }
 
-export function transicionarQueja(quejaId: string, nuevoEstado: string, params: TransicionQuejaParams = {}) {
-  return callRpc<Queja>('transicionar_queja', {
-    p_queja_id: quejaId,
-    p_nuevo_estado: nuevoEstado,
-    p_resolucion: params.resolucion?.trim() || null,
-    p_justificacion_procede: params.justificacionProcede?.trim() || null,
-    p_responsable_id: params.responsableId ?? null,
-    p_motivo_reapertura: params.motivoReapertura?.trim() || null,
+export function transicionarQueja(queja: ExpedienteVersionado, nuevoEstado: string, params: TransicionQuejaParams = {}) {
+  const codigo = CODIGOS_ESTADO_QUEJA[nuevoEstado]
+  if (!codigo) throw new Error('Estado no reconocido.')
+  return callRpc<Queja>('qms_transition', {
+    p_id: queja.id,
+    p_expected: revisionEsperada(queja),
+    p_state: codigo,
+    p_resolution: params.resolucion?.trim() || null,
+    p_justification: params.justificacionProcede?.trim() || null,
+    p_owner: params.responsableId ?? null,
+    p_reopen: params.motivoReapertura?.trim() || null,
   })
 }
 
@@ -78,11 +91,8 @@ export function agregarComentarioQueja(input: {
   })
 }
 
-export function reabrirQueja(quejaId: string, motivo: string) {
-  return callRpc<Queja>('reabrir_queja', {
-    p_queja_id: quejaId,
-    p_motivo: motivo.trim(),
-  })
+export function reabrirQueja(queja: ExpedienteVersionado, motivo: string) {
+  return transicionarQueja(queja, 'En Investigación', { motivoReapertura: motivo })
 }
 
 export async function subirAdjuntoQueja(quejaId: string, file: File): Promise<QuejaAdjunto> {

@@ -12,13 +12,13 @@ export default function Pagination({ page, count, busy, onChange }: {
 
   return <nav aria-label="Paginación" className="flex flex-wrap items-center justify-between gap-3 text-sm shrink-0 pt-2.5 pb-1">
     <p className="text-qms-muted">{count} resultados</p>
-    <div className="flex flex-wrap items-center gap-2">
-      <Button variant="secondary" size="sm" aria-label="Página anterior" disabled={busy || page <= 0} onClick={() => onChange(page - 1)}>
-        <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Anterior
+    <div className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:w-auto">
+      <Button variant="secondary" size="sm" className="min-h-11 min-w-11 sm:min-h-8" aria-label="Página anterior" disabled={busy || page <= 0} onClick={() => onChange(page - 1)}>
+        <ChevronLeft className="h-4 w-4" aria-hidden="true" /> <span className="sr-only sm:not-sr-only">Anterior</span>
       </Button>
-      <span role="status" aria-live="polite" aria-atomic="true" className="whitespace-nowrap px-1 tabular-nums text-qms-muted">Página <span className="font-medium text-qms-dark">{page + 1}</span> de {pages}</span>
-      <Button variant="secondary" size="sm" aria-label="Página siguiente" disabled={busy || page >= pages - 1} onClick={() => onChange(page + 1)}>
-        Siguiente <ChevronRight className="h-4 w-4" aria-hidden="true" />
+      <span role="status" aria-live="polite" aria-atomic="true" className="whitespace-nowrap px-1 text-center tabular-nums text-qms-muted">Página <span className="font-medium text-qms-dark">{page + 1}</span> de {pages}</span>
+      <Button variant="secondary" size="sm" className="min-h-11 min-w-11 sm:min-h-8" aria-label="Página siguiente" disabled={busy || page >= pages - 1} onClick={() => onChange(page + 1)}>
+        <span className="sr-only sm:not-sr-only">Siguiente</span> <ChevronRight className="h-4 w-4" aria-hidden="true" />
       </Button>
     </div>
   </nav>

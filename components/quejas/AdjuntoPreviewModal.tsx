@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react'
-import { Download, ExternalLink, FileText, FileQuestion, Loader2, X } from 'lucide-react'
+import { Download, ExternalLink, FileText, FileQuestion, X } from 'lucide-react'
+import OperationLoading from '@/components/ui/OperationLoading'
+import Spinner from '@/components/ui/Spinner'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { supabase } from '@/lib/supabase'
 import { descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
@@ -138,10 +140,11 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
             type="button"
             onClick={handleDescargar}
             disabled={descargando}
+            aria-busy={descargando}
             className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-white/40 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white/10 disabled:opacity-50"
             title="Descargar"
           >
-            {descargando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            {descargando ? <Spinner size="sm" /> : <Download className="h-3.5 w-3.5" />}
             Descargar
           </button>
           {drive && (
@@ -185,7 +188,7 @@ export default function AdjuntoPreviewModal({ adjunto, onClose }: Props) {
               <p className="text-sm text-gray-500">No se pudo generar la vista previa de este archivo.</p>
             </div>
           ) : (
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <OperationLoading label="Preparando vista previa…" />
           )}
         </div>
     </dialog>

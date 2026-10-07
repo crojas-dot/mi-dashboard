@@ -5,6 +5,16 @@ export const TIPOS_REGISTRO_QUEJA = [
   'Queja', 'Observación', 'Sugerencia', 'Denuncia', 'Reclamo', 'Felicitación',
 ] as const
 
+// Códigos estables del catálogo para las transiciones del workflow vigente.
+export const CODIGOS_ESTADO_QUEJA: Readonly<Record<string, string>> = {
+  Recibido: 'received',
+  'En Investigación': 'investigation',
+  'Pendiente de Revisión GC': 'quality_review',
+  Resuelto: 'resolved',
+  Finalizado: 'finished',
+  'No Procede': 'rejected',
+}
+
 export function tipoVisible(queja: { tipo?: string | null; categoria?: string | null }): string {
   return queja.tipo || queja.categoria || '—'
 }

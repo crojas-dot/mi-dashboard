@@ -1,11 +1,12 @@
 'use client'
 
-import { BellOff, BellRing, KeyRound, LogOut, Play } from 'lucide-react'
+import { BellOff, BellRing, ChevronDown, KeyRound, LogOut, Play } from 'lucide-react'
 import type { AppUser } from '@/lib/store/auth-store'
 import { SONIDOS_NOTIFICACION } from '@/lib/services/sonidosNotificacion'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import Select from '@/components/ui/Select'
+import { getRoleLabel, getRoleVariant } from '@/lib/constants/roles'
 
 interface UserMenuDropdownProps {
   open: boolean
@@ -24,16 +25,18 @@ interface UserMenuDropdownProps {
 export default function UserMenuDropdown({ open, user, initials, saving, soundId, onToggle, onPassword, onPreferences, onSound, onPreviewSound, onLogout }: UserMenuDropdownProps) {
   const notificationsEnabled = user.notif_habilitadas !== false
   const soundEnabled = user.notif_sonido !== false
-  const roleVariant: Record<string, string> = { admin: 'blue', calidad: 'green', coordinador: 'amber', revisor: 'purple', usuario: 'gray' }
 
   return (
-    <div className="relative flex items-center gap-2 border-l border-qms-border pl-3">
-      <button type="button" onClick={onToggle} aria-label={`Menú de ${user.nombre}`} aria-expanded={open} className="flex cursor-pointer items-center gap-2 rounded-button border-0 bg-transparent p-1 no-underline transition-colors hover:bg-qms-hover-bg">
-        <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-qms-primary text-[11px] font-medium text-white">{initials}</div>
-        <div className="hidden text-left leading-tight sm:block"><p className="m-0 text-sm font-medium text-qms-dark">{user.nombre}</p><p className="m-0 text-[0.85rem] capitalize text-qms-muted">{user.rol}</p></div>
+    <div className="relative flex shrink-0 items-center border-l border-qms-border pl-2 sm:pl-3">
+      <button type="button" onClick={onToggle} title={user.nombre} aria-label={`Menú de ${user.nombre}`} aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? 'user-menu-panel' : undefined} className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-button border-0 bg-transparent p-1 no-underline transition-colors hover:bg-qms-hover-bg">
+        <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-qms-primary text-sm font-semibold text-white">
+          {/* Centrado óptico de mayúsculas: compensar el espacio reservado a descendentes. */}
+          <span className="translate-y-px leading-none">{initials}</span>
+        </span>
+        <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-qms-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-card border border-qms-border bg-qms-surface shadow-sm">
-        <div className="border-b border-gray-100 px-4 py-3"><p className="m-0 truncate text-sm font-semibold text-qms-dark">{user.nombre}</p><p className="m-0 truncate text-xs text-qms-muted">{user.email}</p><div className="mt-1.5"><Badge variant={roleVariant[user.rol] || 'gray'}>{user.rol}</Badge></div></div>
+      {open && <div id="user-menu-panel" role="dialog" aria-label="Opciones de cuenta" className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-card border border-qms-border bg-qms-surface shadow-md sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:w-80">
+        <div className="min-w-0 border-b border-qms-border px-4 py-4"><p className="m-0 wrap-anywhere text-sm font-semibold text-qms-dark">{user.nombre}</p><p className="mt-1 wrap-anywhere text-xs text-qms-muted">{user.email}</p><div className="mt-2"><Badge variant={getRoleVariant(user.rol)}>{getRoleLabel(user.rol)}</Badge></div></div>
         <button type="button" onClick={onPassword} className="flex w-full cursor-pointer items-center gap-2.5 border-0 bg-transparent px-4 py-2.5 text-left text-sm text-qms-dark transition-colors hover:bg-qms-hover-bg"><KeyRound className="h-[15px] w-[15px] text-qms-muted" />Cambiar contraseña</button>
         <div className="space-y-3 border-t border-gray-100 px-4 py-2.5"><p className="m-0 text-xs font-medium uppercase tracking-wide text-qms-muted">Notificaciones</p>
           <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-sm text-qms-dark"><BellRing className="h-3.5 w-3.5 text-qms-muted" />Activas</span><Switch aria-label="Habilitar notificaciones" checked={notificationsEnabled} disabled={saving} onChange={(value) => onPreferences(value, soundEnabled)} /></div>

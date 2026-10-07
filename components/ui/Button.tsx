@@ -1,6 +1,7 @@
 'use client'
 
 import type { ComponentPropsWithRef } from 'react'
+import Spinner from '@/components/ui/Spinner'
 
 interface ButtonProps extends ComponentPropsWithRef<'button'> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'link'
@@ -23,16 +24,11 @@ export default function Button({ variant = 'primary', size = 'md', loading = fal
     <button
       {...props}
       type={type}
-      className={`ui-button ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      className={`ui-button relative ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
       disabled={disabled || loading}
       aria-busy={loading || props['aria-busy']}
     >
-      {loading && (
-        <svg aria-hidden="true" className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-      )}
+      {loading && <Spinner />}
       {loading && <span role="status" className="sr-only">{loadingLabel}</span>}
       {children}
     </button>

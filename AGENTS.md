@@ -10,7 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía vigente de arquitectura y trabajo
 
-Última revisión: **6 de octubre de 2026**. Se contrastó el checkout actual con el proyecto Supabase real `fykhrrpeoehwqznccmfp`. Este documento describe implementación y brechas, no una arquitectura ideal ni una lista de funciones propuestas.
+Última revisión: **6 de octubre de 2026**, después de las correcciones de sesión, permisos del workflow, último acceso, responsive y cargas compartidas. Se contrastó el checkout actual con el proyecto Supabase real `fykhrrpeoehwqznccmfp`: 33 tablas públicas con RLS, historial de migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`. Las comprobaciones remotas de esta actualización fueron de solo lectura.
+
+Esta guía describe el **código local actual** y el estado remoto observado; no demuestra que Vercel ya tenga desplegado este checkout. Los cambios recientes de frontend/sesión requieren un nuevo despliegue para aparecer allí. La migración de seguridad `20261006232152` sí figura aplicada en Supabase. Conservar capacidades existentes y distinguir implementación, verificación histórica y pendientes.
 
 ## 1. Reglas para trabajar en este repositorio
 
@@ -25,6 +27,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Mantener los guards de sesión/perfil/rol en cada API. El registro `API_WITH_ROUTE_AUTH` evita validación duplicada; solo incorporar un método después de comprobar su guard y probar el rechazo de tokens inválidos.
 - No volver a conceder acceso autenticado a RPC legacy de quejas cerrados para resolver rápidamente un error. Migrar el cliente a los wrappers con revisión esperada; ver sección 6.
 - Registrar como pendiente lo que exista solo en DB, en un componente no montado o en una utilidad sin consumidores. No presentarlo como función activa del producto.
+- Al añadir una ruta privada, registrarla en `MODULOS_DE_RUTA` y comprobar lectura/escritura, API y RLS. El guard cliente de una ruta no mapeada solo exige sesión; no inventa un permiso de módulo.
+- No montar hijos privados para disimular una espera: usar los skeletons de presentación, sin datos anteriores. No añadir demoras mínimas, spinners por registro, consultas para animaciones ni caché global infinita.
+- Una revisión esperada o el ámbito de sesión/usuario no se pueden actualizar silenciosamente para hacer pasar una operación rechazada. Preservar conflictos, estado inactivo, separación de caché y marca de cierre pendiente.
 
 ## 2. Stack y límites de ejecución
 
@@ -50,6 +55,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | Ubicación | Responsabilidad |
 | --- | --- |
 | `app/layout.tsx`, `components/AuthShell.tsx` | Providers, inicialización de Auth, redirecciones por sesión/permisos |
+| `lib/auth.ts`, `lib/store/auth-store.ts`, `lib/authRoute.ts`, `lib/authLogoutIntent.ts` | Login, restauración verificada, decisión de ruta, descarte de respuestas tardías y cierre pendiente por pestaña |
+| `components/SessionScreen.tsx` | Skeleton público de transición login/workspace, recuperación de espera y acceso denegado |
 | `components/AuthenticatedLayout.tsx`, `Sidebar.tsx`, `Header.tsx` | Shell responsive, menú, breadcrumbs, notificaciones y menú del usuario |
 | `app/page.tsx`, `components/dashboard/QuejasSummary.tsx` | Dashboard activo por bloques y estadísticas SVG de quejas |
 | `app/<modulo>/page.tsx` y `components/` de la ruta | Listados operativos, estados de UI y modales de cada módulo |
@@ -58,10 +65,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 | `components/header/` | Dropdowns de notificaciones y usuario |
 | `components/usuarios/` | Formularios de usuarios, contraseña temporal/reset/autoservicio y confirmaciones |
 | `components/quejas/` | Lista compartida de adjuntos y preview Drive/legacy |
-| `components/ui/` | Kit activo: Button, Input, Textarea, Select, Field, Badge, Switch, Table, Pagination, ErrorState, EmptyState, PageHeader, DeferredMount |
+| `components/ui/` | Kit activo: Button, Input, Textarea, Select, Field, Badge, Switch, Table, Pagination, ErrorState, EmptyState, PageHeader, DeferredMount, Skeleton, LoadingSkeleton, Spinner, OperationLoading |
 | `lib/queries/` | Hooks TanStack, claves de caché, paginación y lecturas |
 | `lib/services/` | Workflow de quejas, configuración, IA cliente, folios, notificaciones, sonidos y mensajes |
-| `lib/server/` | Auth Bearer, permisos, cliente privilegiado, Drive, límites, multipart, presupuestos de tiempo y registro de API con guard propio |
+| `lib/server/` | Auth Bearer, permisos, cliente privilegiado, último acceso de Auth, Drive, límites, multipart, presupuestos de tiempo y registro de API con guard propio |
 | `lib/ai/` | Clientes/modelos, descubrimiento, memoria, testing servidor y resultados client-safe |
 | `lib/store/` | Auth/permisos/vista, sidebar y una infraestructura de acción de header todavía no consumida por el Header actual |
 | `hooks/` | Precarga, Realtime, quejas vistas, breakpoints; guard de visitas disponible pero aún no integrado en los paneles de quejas |
@@ -77,12 +84,42 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 ### Identidades y sesión
 
 - Supabase Auth usa email/password. **`auth.users.id` se relaciona con `usuarios.auth_id`; no con `usuarios.id`.** Los responsables y autores de negocio referencian `usuarios.id`.
-- `lib/auth.ts`: `signIn`, `signOut`, `getAppUser`. El perfil determina rol/estado; una cuenta que no sea `activo` se rechaza. No usar `user_metadata` editable como autorización.
-- `auth-store.init()` lee sesión y perfil; si no hay perfil activo, limpia sesión en la inicialización. Suscribe `onAuthStateChange`; el store contiene `user`, `permisos`, `vistaActiva`, `loading`, `initialized` y preferencias.
-- `app_mis_permisos` carga permisos propios. `fetchPermisosByRol` se usa para simulación visual. Los errores de carga de permisos producen lista vacía, no acceso universal.
-- `AuthShell` deja públicas `/login` y `/q` con coincidencia por segmento; redirige sin sesión a `/login` y desde login autenticado a `/`.
-- Para una ruta sin permiso de lectura, intenta `/mis-quejas` si está permitido y luego `/`. El guard de ruta es presentación/navegación, no una política de DB.
-- `/configuracion` y `/usuarios` mantienen guard duro `user.rol === 'admin'`. Se evalúa el rol real, incluso al simular otro.
+- `lib/auth.ts` contiene `signIn`, `signOut`, `getAppUser`. El perfil determina rol/estado; una cuenta que no sea `activo` se rechaza. El rol operativo llamado «superadmin» por el usuario es `admin`; no hay un rol `superadmin` integrado. No usar `user_metadata` editable como autorización.
+- `lib/supabase.ts` usa el cliente JS estándar; el SDK administra persistencia/refresco de tokens del navegador. El store Zustand no es la autoridad de los datos. La aplicación no implementa una capa de sesión SSR con cookies HttpOnly ni un guard de páginas privadas en el proxy: las páginas prerenderizan una presentación neutra y las API validan Bearer en servidor.
+- El store contiene `user`, `permisos`, `vistaActiva`, `loading`, `initialized`, `signingOut` y preferencias. `app_mis_permisos` carga permisos propios; errores producen lista vacía. `fetchPermisosByRol` es para simulación visual.
+
+### Inicio, restauración y cierre: orden obligatorio
+
+| Operación | Flujo real y condición para publicar contenido |
+| --- | --- |
+| Inicio sin credenciales | `init` se ejecuta una vez, registra listener y lee `getSession`. Sin sesión termina la inicialización y la ruta privada redirige a login |
+| Restaurar una sesión | `getSession` detecta credenciales → `getUser` confirma identidad coincidente → perfil y permisos en paralelo → exigir perfil activo y revisión de sesión vigente → publicar usuario/permisos juntos |
+| Login explícito | Email normalizado trim/lowercase → `signInWithPassword` → perfil activo → `getUser` y permisos en paralelo → comparar authId con resultado del login y revisión vigente → publicar → `router.replace('/')` |
+| Evento de Auth | Callback síncrono, sin esperar otras llamadas SDK. Ignora INITIAL_SESSION porque init ya tiene lector; difiere resolución con setTimeout(0) para salir del bloqueo de Auth |
+| Refresh/foco de la misma identidad | SIGNED_IN/TOKEN_REFRESHED no reinician permisos, vista o caché si el usuario ya está resuelto |
+| Cambio de identidad / SIGNED_OUT | Incrementar revisión y retirar perfil anterior. Descartar respuestas tardías de identidad, perfil, permisos, login y vista; el nuevo usuario se publica solo al resolver sus comprobaciones |
+| Logout | Marcar cierre pendiente → incrementar revisión y retirar user/permisos/vista inmediatamente → desmontar ámbito privado de caché → esperar `signOut` → finalizar estado cerrado |
+| Recarga durante logout | Detectar marca antes de leer getSession y continuar cerrando. Los eventos automáticos no pueden restaurar el perfil anterior |
+
+`lib/authLogoutIntent.ts` guarda solo `qms:logout-pending=true` en sessionStorage por pestaña, además del bloqueo en memoria: no guarda tokens ni identidad. Un cierre inesperadamente fallido conserva la marca; completar logout o un login explícito confirmado la retira. Si Storage no está disponible, el bloqueo en memoria solo protege el documento actual. Un login no se inicia mientras el cierre está en curso.
+
+### Decisión de ruta y presentación de sesión
+
+`AuthShell` consume `authRoute`; la redirección es asíncrona y **la decisión de render debe bloquear también la espera de `router.replace`**. Nunca devolver los hijos privados porque todavía no existe user. Esto evita el dashboard desnudo antes de login y al salir.
+
+| Estado | Qué se monta |
+| --- | --- |
+| No inicializado / loading | Solo SessionScreen, también en HTML inicial de producción |
+| Ruta privada sin usuario | Skeleton de login mientras redirige a `/login` |
+| Login con usuario validado | Skeleton de workspace mientras redirige a `/` |
+| Ruta con permiso de lectura | AuthenticatedLayout y después los hijos privados |
+| Ruta sin lectura | Redirigir a `/mis-quejas` o `/` únicamente si tienen lectura; mantener skeleton durante la redirección |
+| Sin destino autorizado | Explicación estática de acceso denegado y acción Cerrar sesión; no montar módulos ni crear bucles |
+| `/login` o `/q` por segmento | Contenido público al completar el bootstrap; no exige iniciar sesión para usar el formulario ciudadano |
+
+- `SessionScreen` usa formas decorativas login/workspace, sin nombres, cifras, datos previos, enlaces ni controles operativos. Logout usa login. Mensajes normales solo para lector de pantalla; tras 10 s muestra Reintentar, que recarga y vuelve a validar. No abre el panel ni agrega una espera mínima. Ver contrato visual en sección 10.
+- `/configuracion` y `/usuarios` conservan además guard duro `user.rol === 'admin'`, incluso al simular otro rol.
+- El cierre inmediato de la UI no equivale a invalidación instantánea de todos los JWT ya emitidos. Las API actuales validan `getUser(token)` y perfil activo, sin comprobación adicional de `auth.sessions.session_id`. La duración/revocación de tokens depende de Auth; no prometer revocación universal inmediata. Fuente: [sesiones de Supabase](https://supabase.com/docs/guides/auth/sessions).
 
 ### Permisos de presentación
 
@@ -92,6 +129,7 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 - Sidebar filtra enlaces con esos permisos. No todas las páginas ocultan sus botones de escritura cuando `escribir=false`; una operación puede terminar rechazada por RLS.
 - Roles con etiquetas/colores en `lib/constants/roles.ts`: admin, calidad, colaborador, coordinador, revisor, usuario. Las comprobaciones operativas de las API de Usuarios y del workflow reconocen principalmente admin/calidad/colaborador; no confundir los seis rótulos con seis roles completamente implementados.
 - `setVistaActiva` cambia permisos visibles y el ámbito de caché, no el usuario de Auth ni el rol de DB. No usar esa simulación para ampliar privilegios.
+- Los roles de Postgres `anon`/`authenticated`/`service_role` y los roles operativos del perfil son capas distintas. El backend y los RPC resuelven el perfil real; «authenticated» por sí solo no significa admin ni autorización para todos los módulos.
 
 ### Autenticación y autorización de API
 
@@ -103,6 +141,19 @@ Los `*.styles.ts` con `tw:`, `components/ui/tailwind/`, `app/styles/tokens.css`,
 - Los handlers registrados no confían en encabezados de identidad. No quitar su guard por asumir que el proxy ya consultó Auth.
 - `checkModuleAccess(usuariosId, rolReal, modulo, requireWrite)` es un helper server-only disponible: compara perfil activo/rol real, permite admin y consulta permisos con lectura antes de escritura. No está aplicado como middleware universal de todos los endpoints.
 - Los endpoints con service role deben autorizar explícitamente usuario/rol/entidad: service role evita RLS y no sustituye la validación del llamador.
+
+### Protección implementada y límites de acceso
+
+| Capa | Implementado hoy | Alcance que no debe atribuirse a esa capa |
+| --- | --- | --- |
+| Guard cliente | Bloqueo de montaje, permisos de lectura, transición neutra y aislamiento entre sesiones | No autoriza una solicitud directa al Data API o a una API |
+| API privadas | Bearer validado por Auth, perfil activo, roles/entidad según handler; identidad falsificada por headers descartada | `checkModuleAccess` no está integrado universalmente |
+| RPC versionados de quejas | Staff/responsable real, revisión esperada, bloqueo/transición en DB | No conceder EXECUTE legacy ni reintentar con una revisión nueva para forzar un cambio |
+| RLS/ACL | Reglas por fila, columnas protegidas, vistas invoker y RPC internos cerrados | 33/33 con RLS no demuestra políticas estrictas en todas las áreas |
+| Rate limit propio | Por IP y scope en API seleccionadas, limpieza cada 30 s y máximo 10 000 entradas en memoria | No es distribuido entre instancias Vercel; no cubre el endpoint de login externo de Supabase |
+| Sesión/contraseña | Email/password, rechazo de inactivos, autoservicio de contraseña y administración Auth en servidor | No hay flujo 2FA/MFA, captchaToken/reCAPTCHA/Turnstile ni bloqueo persistente propio por intentos de login en este checkout |
+
+No se ha auditado aquí la configuración completa del servicio Auth (cuotas de login, expiraciones, restricciones de sesión o CAPTCHA del proyecto). La integración del cliente no prueba esos ajustes. Mantener cualquier configuración futura de seguridad fuera de componentes puramente visuales y verificar su enforcement en servidor/proveedor.
 
 ### RLS real, verificada en el servidor
 
@@ -150,7 +201,7 @@ Las políticas permisivas se combinan con OR. Añadir una política estricta no 
 - `pagination.ts`: páginas de 25, count exacto, filtro de estado antes de range, orden principal descendente + `id` ascendente. Se usa en Auditorías, Documentos, Procesos, Reuniones, Riesgos y SACP.
 - Quejas: filtros folio/cliente, estado, prioridad, responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
 - Usuarios: API y parámetros normalizados; `usuariosQueryKey()` es la clave compartida entre página y precarga.
-- `useHoverPrefetch`: intención de 80 ms, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga sus cuatro recursos, no una consulta incompatible distinta.
+- `useHoverPrefetch`: intención de 80 ms por hover/foco/tacto del Sidebar, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga sus cuatro recursos, no una consulta incompatible distinta. Mis Quejas precarga su clave con responsableId propio; sin id no consulta. Reportería no inserta datos ficticios en caché.
 - Cancelación real con `.abortSignal(signal)` está integrada en recursos del dashboard, actividad del dashboard y algunas lecturas analíticas. **No todos los hooks operativos/paginados propagan aún el signal al transporte**.
 - `containsPattern()` existe para escapar literales en `or().ilike`, pero las búsquedas actuales de Quejas y la API de Usuarios aún interpolan texto directamente en la gramática. Es un pendiente, no una corrección ya activa.
 
@@ -169,12 +220,41 @@ Las políticas permisivas se combinan con OR. Añadir una política estricta no 
 - Boundaries: `app/error.tsx`, `app/global-error.tsx` (html/body), `app/quejas/error.tsx`, `app/documentos/error.tsx`; mostrar recuperación/refetch o reset.
 - `createRequestScope`/`useEntityRequestGuard` modelan una visita A→B→A distinta y descartan respuestas tardías. **No están conectados todavía a los handlers de los paneles de quejas**. Esos paneles resetean UI al cambiar ID, pero no garantizan aislamiento de todas las respuestas IA/subidas/transiciones en vuelo.
 
+### Reglas de rendimiento que deben conservarse
+
+- Mostrar caché fresca al volver a un módulo y refrescar según sus reglas; no borrar datos globalmente al navegar. Cambiar de usuario/rol real/vista sí cambia el ámbito y vacía la caché anterior.
+- Compartir claves y queryFn entre precarga y vista: el dashboard usa cuatro recursos compartidos para indicadores/tareas, frente a seis lecturas anteriores. Estadísticas de Quejas y actividad son consultas adicionales independientes; no afirmar que toda la página hace únicamente cuatro requests.
+- Resolver identidad antes de datos de perfil; paralelizar solo lecturas independientes. Cada bloque de dashboard se revela al completar sus dependencias: tareas necesitan Quejas+Acciones; indicadores necesitan sus cuatro recursos; QuejasSummary y actividad tienen sus propios estados.
+- Eliminar la doble comprobación de Auth solo para métodos registrados que ya tienen guard completo. No reutilizar una autorización guardada entre requests ni sacrificar comprobación de perfil activo para ahorrar latencia.
+- Páginas operativas de 25 y consultas de resumen acotadas; reportería lee lotes de 500 con tope de 5000. Último acceso usa Auth Admin paginado por lotes de 1000, sin una solicitud por perfil. Ese escaneo puede crecer con el directorio Auth y no es un indicador de presencia en vivo.
+- `DeferredMount` aplaza montaje de modales/secciones y conserva borradores después de abrir; no es descarga diferida. Mantener hooks enabled por apertura/sección cuando ya lo implementen; evitar consultas de paneles invisibles.
+- Precarga del Sidebar por intención hover/foco/tacto: 80 ms, deduplicación en vuelo, claves reales y filtro propio en Mis Quejas. No precargar todas las páginas/datos al iniciar ni fabricar filas vacías en caché para aparentar carga.
+- Skeletons y spinners son CSS con movimiento reducido, cantidad fija de formas y sin queries/timers JS por registro. No poner relojes/spinners permanentes por fila ni una duración mínima de espera.
+- La comprobación actual verifica reutilización, cantidad de consultas y aislamiento; **no hay un benchmark autenticado completo con miles de registros ni una garantía de latencia constante**. Medir Network/React Profiler en producción antes de optimizar nuevos cuellos de botella, diferenciar dev de build de producción y no cambiar TTL a infinito para esconderlos.
+
+### Auditoría de negocio y diagnóstico técnico
+
+| Fuente | Qué contiene / quién la consume |
+| --- | --- |
+| `logs` | Auditoría de operaciones de los RPC legacy/workflow que la escriben: fecha, usuario, acción, módulo y detalle **text**. No es una captura universal de cada API o cambio |
+| `quejas_actividad` | Historia operativa del expediente; panel de colaborador y las últimas cinco entradas del dashboard |
+| `qms_config_audit` | Historia de configuración versionada/catálogos, actor y motivo, `old_value/new_value` JSONB; acceso de administración en DB, sin visor completo montado |
+| `qms_case_events` | Eventos de apertura/cierre/resolución generados por triggers QMS; distintos de quejas_actividad |
+| `qms_stage_runs.snapshot` | Copia inmutable de regla/calendario usados en un plazo; sirve para explicar su cálculo |
+| Logger de aplicación | Contexto seguro con timestamp/entorno/módulo/acción/usuario/status/código en consola cliente o servidor; QueryProvider, Auth y dashboard registran errores. No persiste automáticamente en DB ni en una plataforma de observabilidad |
+| Supabase/Vercel | Herramientas externas para logs/asesores. No hay un conector de esas fuentes a un visor dentro del panel actual |
+| `/auditorias` | Auditorías de calidad y hallazgos de negocio; no es un diagnóstico de seguridad, errores de runtime o salud de la DB |
+
+Los boundaries muestran recuperación y los servicios usan mensajes sanitizados donde están integrados; todavía hay consumidores/console.* legacy. Login conserva un mensaje compuesto con `error.message` del SDK en `signIn`; no afirmar que todos los errores visibles ya pasan por `getUserError`.
+
+El «Estado del sistema» estilo Wordfence, alertas de errores inesperados, controles de 2FA/CAPTCHA y métricas reales dentro del panel siguen **propuestos, sin UI/backend integrado**. JSONB ya existe en configuración/snapshots/auditoría QMS, pero no hay una tabla nueva de telemetría, ingesta de errores ni limpieza anual automática instalada. Definir cobertura, acceso, redacción de datos sensibles y retención antes de implementarlos; no inventar diagnósticos ni usar logs de auditoría de negocio como temporales descartables.
+
 ## 6. Páginas y lógica de negocio
 
 | Ruta | Qué monta y hace hoy | Límite / pendiente |
 | --- | --- | --- |
 | `/` | PageHeader, QuejasSummary lazy/Suspense, indicadores por módulo, ocho expedientes próximos y actividad real | No monta los tabs analíticos alternativos |
-| `/quejas` | Tabla con filtros, paginación, categorías/estados/prioridades, antigüedad SLA, vistas locales, precarga de adjuntos, alta y detalle | Flujo cliente legacy necesita reconciliarse con RPC restringidos en DB |
+| `/quejas` | Tabla con filtros, paginación, categorías/estados/prioridades, antigüedad SLA, vistas locales, precarga de adjuntos, alta y detalle | Edición y transición por wrappers QMS con revisión esperada; SLA visual aún legacy |
 | `/mis-quejas` | Filtra responsable_id=usuario real, tabla y panel fixed con Detalle/Análisis/Resolución | No permite adoptar otro responsable simulando rol |
 | `/configuracion` | Siete secciones agrupadas en Organización/Acceso/Servicios; solo admin | Editor de SLA legacy no publica versiones QMS |
 | `/procesos` | Listado paginado y alta nombre/tipo/objetivo/estado | Documentos vinculados/KPIs no constituyen un gestor completo |
@@ -193,13 +273,14 @@ Las políticas permisivas se combinan con OR. Añadir una política estricta no 
 - `useDashboardIndicadores`/`useDashboardTareas` usan `useQueries` y **comparten cuatro consultas** bajo `['dashboard','recurso',nombre]`: Quejas, Acciones, Documentos y Riesgos.
 - Quejas y Acciones devuelven count exacto + ocho filas ordenadas por vencimiento; Documentos y Riesgos usan HEAD/count. Las tareas combinan las dos listas y eligen los ocho vencimientos más próximos, poniendo sin fecha al final.
 - Indicadores: Quejas fuera de Finalizado/No Procede/Cerrada, SACP no Cerrada, documentos Borrador y riesgos Activo.
-- Un fallo/lentitud de Documentos no bloquea las tareas de Quejas/SACP. Skeletons accesibles en `DashboardSkeletons.tsx` y reintento por bloque.
+- Un fallo/lentitud de Documentos no bloquea las tareas de Quejas/SACP. `DashboardLoading.tsx` muestra skeletons proporcionales al contenido (summary/modules/table/activity), con role=status y texto solo para lectores de pantalla, respetando movimiento reducido. Formas de cantidad fija, sin animaciones por registro ni tarjetas anidadas. Cada bloque se revela en cuanto está listo; reintento por bloque.
+- Los listados/lecturas de detalle y las operaciones comparten el contrato de carga descrito en sección 10.
 - Actividad: últimas cinco filas de `quejas_actividad`, orden `created_at desc, id`; **no está hardcodeada**.
 - QuejasSummary dibuja SVG para resolución dentro de plazo, procedencia y volumen total/mes; usa `obtener_estadisticas_quejas` y permiso de quejas. El RPC es SECURITY INVOKER y respeta RLS.
 - `fetchDashboard`/`useDashboard` permanecen por compatibilidad, pero no son los hooks montados por la página activa.
 - GeneralTab/QuejasTab/SacpTab/DocumentosTab/RiesgosTab, ModuleTabs, Chart/ChartCanvas y hooks de análisis existen como implementación alternativa con kit `tw:`. No afirmar que están activos ni importarlos como patrón visual nuevo.
 
-### Workflow de quejas: intención del cliente y discrepancia actual
+### Workflow de quejas: cliente versionado y reglas vigentes
 
 El cliente presenta `Recibido → No Procede | En Investigación → [Pendiente de Revisión GC] → Resuelto → Finalizado`; permite reapertura desde estados admitidos por DB. Reglas visibles:
 
@@ -210,11 +291,11 @@ El cliente presenta `Recibido → No Procede | En Investigación → [Pendiente 
 - Derivación a SACP en investigación/resuelto, idempotente por RPC: crea acción de origen queja y guarda derivado_sacp_id.
 - Antigüedad visible del listado se calcula desde `fecha` con `sla_config` por prioridad (fallback 3/7 días); **no es la presentación del motor QMS de etapas**. `ahora` se captura con useState al montar; no hay actualmente interval de 60 s en esa página.
 - `useQuejasVistas` persiste por usuario en localStorage, máximo 500 registros. Abrir marca en requestAnimationFrame; botón de no vistas marca las de la página. Ambos listados distinguen visualmente las no leídas.
-- Mis Quejas conserva tabla min-width 1200px; panel 500px fixed, expandible a ancho completo, margen `calc(500px - 16px)` y ancho mínimo extra de tabla de 484px al abrir.
+- Mis Quejas conserva tabla min-width 1200px; panel fixed de ancho completo en móvil y 500px desde lg, expandible a ancho completo. Solo desde lg reserva margen `calc(500px - 16px)`; la tabla mantiene su ancho mínimo extra de 484px al abrir.
 
-**Discrepancia crítica verificada:** `quejaWorkflowService.ts` sigue llamando `actualizar_detalles_queja` y `transicionar_queja` (este último envía siempre sus seis argumentos, null cuando no aplican). En DB ambos están cerrados para authenticated; son invocados internamente por los wrappers versionados. El tipo `Queja` tampoco declara `revision` ni los atributos nuevos. No describir la edición/transición del cliente actual como reconciliada con esa DB.
+`quejaWorkflowService.ts` usa `qms_update_details(p_id,p_expected,p_categoria,p_prioridad,p_owner,p_notes)` y `qms_transition(p_id,p_expected,p_state,p_resolution,p_justification,p_owner,p_reopen)` con **la revisión que el usuario editó**. `Queja.revision` es obligatorio y se valida antes de enviar. Los códigos estables del workflow están en `CODIGOS_ESTADO_QUEJA`; los argumentos opcionales siempre se envían como null cuando no aplican.
 
-La integración pendiente debe usar `qms_update_details(p_id,p_expected,p_categoria,p_prioridad,p_owner,p_notes)` y `qms_transition(p_id,p_expected,p_state,p_resolution,p_justification,p_owner,p_reopen)` con **la revisión que el usuario editó** y el código estable del catálogo. Un conflicto 40001 requiere refrescar/explicar; no sustituir p_expected por una lectura fresca silenciosa ni reabrir permisos legacy. El servicio también exporta `reabrirQueja`, que llama `reabrir_queja(uuid,text)`; esa firma no existe en la DB observada. La UI actual usa transicionarQueja para reapertura.
+El resultado actualizado reemplaza el expediente abierto solo si conserva el mismo id, y luego invalida los listados. Un conflicto 40001 avisa que otro usuario modificó el registro y exige revisar/refrescar; nunca leer una revisión fresca para reintentar silenciosamente ni reabrir permisos legacy. `reabrirQueja` usa también qms_transition con motivo. Las funciones legacy siguen cerradas para authenticated y son invocadas únicamente por los wrappers. Los atributos nuevos y el SLA visual todavía necesitan integración aparte.
 
 ### Formulario público y archivos
 
@@ -251,7 +332,7 @@ La integración pendiente debe usar `qms_update_details(p_id,p_expected,p_catego
 - Riesgos: probabilidad×impacto con escala 1–3. <=2 Bajo, <=4 Medio, <=6 Alto, >6 Crítico; matriz 3×3. Alta directa de atributos y nivel.
 - Auditorías: alta con folio (manual o RPC), tipo/área/fechas/objetivo/alcance. Hallazgos asociados solo se listan; badge derivado_sacp_id no implementa derivación.
 - Documentos: alta con código/título, versión 1.0 y Borrador; `generar_folio_documento` existe pero no se usa aquí. Cambiar versión solo actualiza `documentos.version_actual`; el historial muestra un placeholder y no inserta versiones.
-- Revisión por Dirección: altas/listado/detalle de reuniones, agenda/fechas. No se implementa un gestor de actas o acuerdos con Drive completo.
+- Revisión por Dirección: altas/listado/detalle de reuniones, agenda/fechas. Acta Pendiente/Registrada con texto e icono estático; no usar spinner para un estado permanente. No se implementa un gestor de actas o acuerdos con Drive completo.
 - Reportería: módulos Quejas/SACP/Documentos/Auditorías/Riesgos/Revisión; filtros de fechas/estado/prioridad/tipo. Lee lotes de 500 ordenados por id, tope 5000 filas y exige restringir filtros al superarlo. `window.print`/CSS de impresión; no persiste informes_config.
 - Usuarios: GET API permite admin/Calidad (directorio de responsables); POST/PATCH/DELETE solo admin. Alta Auth+perfil y rollback de Auth al fallar el INSERT; comprobación de auto-desactivación/auto-rol/auto-borrado y del último admin activo (409). Esta última usa COUNT antes de la escritura, sin bloqueo transaccional de ambos administradores; no garantiza por sí sola el caso concurrente. Cambios Auth/perfil son llamadas separadas, no una transacción distribuida.
 - UI de usuarios/reset usa `generatePassword()` criptográfico con composición. **Fallback de la API actual es `crypto.randomUUID().slice(0,16)`**, no ese mismo generador. API reconoce admin/calidad/colaborador y normaliza otros valores a calidad. `validarUsuarioInput` existe pero el route actual no lo usa; no afirmar validación completa antes de tocar Auth.
@@ -273,6 +354,7 @@ La integración pendiente debe usar `qms_update_details(p_id,p_expected,p_catego
 
 - Todas estas API usan runtime nodejs. IA analizar maxDuration=60; uploads maxDuration=120 y timeout de Drive propio de 55 s.
 - Rate limits en memoria por IP/ruta: usuarios 20/min, IA analizar 10/min, IA test 30/min, Drive upload/upload-public/delete 30/min. No es un contador compartido entre instancias serverless.
+- GET usuarios completa `ultimo_acceso` con `auth.users.last_sign_in_at` mediante Auth Admin `listUsers` paginado (1000 por lote), solo en servidor y tras autorizar admin/calidad. `lib/server/ultimoAcceso.ts` une por auth_id y devuelve únicamente el timestamp; no devuelve metadatos de Auth. El campo histórico de public.usuarios no es la fuente para perfiles ligados a Auth. Fallos de Auth devuelven 502; nunca se confunden con ausencia de ingresos. La consulta se refresca al volver a la ventana si está stale.
 
 ### Subsistema de IA
 
@@ -398,7 +480,7 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 | `crear_queja_publica` | Usado por formulario público; activo/token, devuelve folio, notif diferida |
 | `*_con_atributos`, `actualizar_atributos_queja` | Existen en DB/017 para tipo/área/oficio/fecha/observaciones; no están integrados en los formularios actuales |
 | `actualizar_detalles_queja`, `transicionar_queja` | Funciones legacy internas cerradas para anon y authenticated; service/owner o wrappers internos |
-| `qms_update_details`, `qms_transition` | Wrappers actuales accesibles a authenticated con autorización y revisión esperada; cliente pendiente de migración |
+| `qms_update_details`, `qms_transition` | Wrappers usados por el cliente para editar, asignar responsable, transicionar y reabrir; autorización staff/responsable y revisión esperada |
 | `derivar_queja_a_sacp`, `agregar_comentario_queja`, `registrar_adjunto_queja` | Usados, autenticados y con validación de dominio |
 | `registrar_adjunto_queja_publica`, `notificar_queja_publica` | Acceso público intencional para submit ciudadano |
 | `actualizar_mis_preferencias_notificacion` | Propio activo, authenticated; retorna perfil |
@@ -418,14 +500,44 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 - Imports directos por archivo, sin barrel UI; los componentes transmiten props HTML/ARIA/ref. Controles nuevos deben usar Button/Input/Textarea/Select/Field del kit activo.
 - Table activa: texto base 16 px, celdas py-4 (16 px arriba/abajo), header sm semibold py-3.5. Conservar los pesos suaves de folios, tamaños de fila y tratamiento de sin leer de Quejas; no aplicar la negrita/rojo del documento antiguo indiscriminadamente.
 - TableRow con onClick tiene tabIndex y Enter/Espacio, sin interceptar controles hijos. Las tablas manuales de quejas conservan su implementación propia; no asumir todas sus filas ya cumplen ese contrato.
-- Modal nativo `<dialog>`: sm 500 px, md 600 px, lg 700 px, altura 90dvh, header oscuro, showModal/top layer, Esc/backdrop, foco y scroll lock compartido para modales anidados. No reemplazarlo por div fijo sin reproducir accesibilidad.
-- Sidebar desktop a partir de lg, ancho 250 px o 64 px colapsado, tres grupos (Gestión/Seguimiento/Administración), sin ficha de usuario al pie. En móvil se monta dentro de Modal; `useMobileNavigation` usa breakpoint 1023.98 px.
+- Modal nativo `<dialog>`: sm 500 px, md 600 px, lg 700 px, altura 90dvh, header oscuro, showModal/top layer, Esc/backdrop, Tab/Shift+Tab dentro del diálogo, foco y scroll lock compartido para modales anidados. Variante drawer: lateral izquierdo de hasta 320px, altura 100dvh y sin marcos/padding anidados. No reemplazarlo por div fijo sin reproducir accesibilidad.
+- Sidebar desktop a partir de lg, ancho 250 px o 64 px colapsado, tres grupos (Gestión/Seguimiento/Administración), sin ficha de usuario al pie. En móvil usa Modal variant="drawer", cierre X en su propia marca y scroll solo en nav; `useMobileNavigation` usa breakpoint 1023.98 px.
 - `useIsMobile` existe con breakpoint 991.98 px pero no es el hook que gobierna el shell actual.
 - Header claro: marca/breadcrumbs, campana y usuario; dropdowns controlados, click externo/Escape. Preferencias de sonido/notif, contraseña propia, logout. Acciones de página permanecen en PageHeader/vistas; infraestructura header-action todavía no se consume allí.
+- Perfil del Header con avatar de 40px y flecha de ancho estable; nombre completo, correo y rol dentro del menú de 320px, con texto multilínea. Notificaciones en panel de 400px, mensajes de 14px, fechas de 12px y contador visual `99+` (cantidad exacta accesible). En móvil ambos paneles se ajustan al viewport. Archivo y apertura tienen botones independientes; Escape restaura foco. Ver `docs/visual-patterns.md`.
 - Shell: h-dvh/overflow hidden, main con min-h-0 y scroll vertical propio, p-3 sm:p-4. Enlaces de salto al contenido y modal móvil para navegación.
+- Responsive: QuejasToolbar usa container queries (una fila desde 860px disponibles; buscador completo, filtros iguales y botón completo por debajo), controles de 44px en móvil; PageHeader y Pagination comparten reglas móviles. Table mantiene mínimo 640px con scroll local; filtros de Usuarios en grid y pestañas de Documentos con wrap.
 - Body select-none; tablas y contenido que debe copiarse usan select-text. Scrollbars Monday y reglas de impresión en globals.css; .informe-content es el área imprimible.
 - Clases dark: sobreviven, pero no hay un selector de tema completo integrado al menú actual.
 - QuejasSummary SVG evita cargar Chart.js. Si se integra la analítica alternativa, ChartCanvas carga Chart.js vía next/dynamic y debe adaptarse al kit/runtime; no introducir CoreUI/Bootstrap ni paletas duplicadas.
+
+### Login y transiciones
+
+- Login azul de marca, tarjeta max-w-md, logo, formulario email/password y ayuda de contacto administrativo. No hay signup ni recuperación pública completa; cambio de contraseña propia y reset administrativo son flujos separados.
+- `ui-login-field` conserva texto/placeholder de 16px, fuente heredada y estilo de primera línea. Ambos campos empiezan readonly y se habilitan con foco o pointerdown capturado por el formulario: evita la vista previa interna de Chromium que mostraba el correo pequeño antes de enfocar.
+- Conservar `autoComplete="username"` y `current-password`, labels asociados, required, navegación por Tab y error inline con role=alert. No desactivar el gestor de contraseñas para arreglar apariencia ni guardar credenciales en preferencias/caché de negocio.
+- El botón Ingresar usa el Spinner compartido solo mientras ejecuta login. La transición global/restauración/cierre usa skeleton; no reintroducir la tarjeta central «Verificando sesión» ni mostrar el dashboard anterior mientras se comprueba Auth.
+- `SessionScreen` selecciona login al cerrar, en login sin usuario o al redirigir a login; workspace durante preparación de acceso privado. Una espera de más de 10 s ofrece recuperación con recarga, sin bypass del guard. Acceso denegado tiene icono estático y salida.
+
+### Contrato único de carga
+
+| Componente / variante | Uso activo |
+| --- | --- |
+| `Skeleton` | Forma decorativa, color primario al 7%, opción circular, sin datos ni lógica de permisos |
+| `LoadingSkeleton table` | Quejas, Mis Quejas, Documentos, Auditorías, Riesgos, Revisión, Procesos, SACP, Usuarios, Catálogos, SLA, Roles y Formularios de Configuración |
+| `LoadingSkeleton form` | Ajustes generales/zona horaria, guard de Configuración y formulario público |
+| `LoadingSkeleton cards` | Carga inicial de proveedores IA |
+| `LoadingSkeleton list` | Hallazgos, actividad, comentarios y evidencias; actividad del dashboard |
+| `DashboardLoading` | Formas específicas para círculos/gráficos de Quejas y seguimiento por módulo; table/activity delegan al componente compartido |
+| `Spinner` | Guardar, subir/descargar archivos, sincronizar, probar modelos y analizar con IA. Cajas centradas de 14/16/24px |
+| `OperationLoading` | Generar informe o preparar preview: icono y texto centrados dentro del área correspondiente |
+
+- Cantidad fija: cinco filas de tabla, tres tarjetas/elementos de lista; no dibujar un placeholder por registro real. Pulsación CSS de 2.4 s y giro solo con `motion-safe`; respetar movimiento reducido. No timers JS para animar, librerías visuales nuevas ni queries propias.
+- Skeletons anuncian estado para lector de pantalla, con formas aria-hidden y sin mensajes normales visibles. No contienen cifras, nombres, contenido de cuenta o controles utilizables.
+- Dentro de un panel ya enmarcado usar `framed={false}`. El contenedor de carga es relativo para que sr-only no genere scroll externo; tablas skeleton recortan el mínimo de 640px sin ensanchar el documento.
+- `Button loading` deshabilita, marca aria-busy y anuncia loadingLabel; usa el mismo Spinner, con caja estable y botón relativo para su texto oculto. En spinners manuales de operaciones comunicar el estado en el control/contenedor; no copiar SVG/Loader2 con otros tamaños o posiciones.
+- No usar círculo para cargar una página, para Acta Pendiente ni como animación permanente por fila. Datos en caché/refresco de fondo no deben sustituirse por un skeleton completo cuando ya están disponibles.
+- No añadir una duración mínima, overlay modal de carga ni esperar a todas las consultas de todos los módulos para revelar un bloque listo. Mostrar errores con recuperación real en vez de conservar indefinidamente una carga.
 
 ### Notificaciones y sonido
 
@@ -439,7 +551,6 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 
 | Prioridad | Pendiente confirmado |
 | --- | --- |
-| Alta | Migrar edición/transición de quejas a qms_* con revisión/códigos; funciones legacy usadas por el servicio están restringidas en DB |
 | Alta | Restringir lectura heredada de configuraciones_sistema y aislar claves IA; máscara/admin guard frontend no es seguridad del Data API |
 | Alta | Alinear formularios públicos y tablas con ALL authenticated a permisos/estado reales; políticas permisivas antiguas siguen activas |
 | Alta | Reconciliar Catálogos con codigo/valor_interno y trigger que prohíbe DELETE/cambios estructurales; editor legacy conserva esas acciones |
@@ -449,8 +560,13 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 | Media | Integrar guard de visitas en respuestas IA/chat/subidas/transiciones; A→B→A sigue necesitando protección |
 | Media | Propagar signals y escapar búsquedas en todos los hooks operativos; mejorar resincronización/lotes de Realtime |
 | Media | Completar validación de usuarios antes de efectos Auth/DB y unificar roles ofrecidos/persistidos. usuarioInput y generador de contraseñas no están plenamente integrados en API |
+| Media | Decidir e implementar MFA/2FA, CAPTCHA y protección de intentos/sesiones si se incorporan; actualmente no hay flujo integrado ni contador distribuido de login |
+| Media | Perfilar navegación autenticada, tiempos de red y memoria con volumen real; las comprobaciones existentes no miden una carga de miles de registros |
 | Producto | CRUD hallazgos/derivación, eficacia/validación SACP, historial/versionado y Drive documental, actas/acuerdos completos |
 | Producto | Persistencia de informes_config/tareas/solicitudes documentales; no hay escritores frontend completos para esas capacidades |
+| Producto | Estado del sistema/visor de salud y errores reales, controles de seguridad y observabilidad: propuestos, sin ingesta ni dashboard integrado |
+| Producto | Telemetría JSONB y retención/limpieza anual: sin implementación programada; no borrar auditoría o expedientes al introducir una política de logs |
+| Producto | Fondo personalizado desde el menú y selector de tema completo: no están implementados en el runtime actual |
 | Mantenimiento | Componentes/prototipos analíticos y utilidades sin consumidores; no tratarlos como UI activa |
 
 Esta actualización de AGENTS es documentación. No modifica esas capacidades, corrige políticas por sí sola ni autoriza ejecutar dumps, seeds o migraciones antiguas indiscriminadamente.
@@ -468,6 +584,8 @@ Esta actualización de AGENTS es documentación. No modifica esas capacidades, c
 - `supabase/schema-actual.txt`, dumps y el antiguo `rls-role-based.sql` son snapshots/referencias; no reaplicarlos como estado deseado.
 - `SUPABASE_PHASE3_RLS.sql` se incorporó al integrar commits remotos: es un borrador histórico incompatible con esta DB. No ejecutarlo ni convertirlo en migración sin corregir identidad Auth/perfil, permisos y duplicaciones.
 - `docs/auditoria-fases-1-3.md` conserva resultados/cambios anteriores y la corrección de AbortSignal/performance.
+- En esta actualización se releyeron metadatos por MCP, sin INSERT/UPDATE/DELETE ni migraciones: RLS 33/33; tres vistas invoker; legacy actualizar/transicionar sin EXECUTE para anon/authenticated; wrappers QMS para authenticated; contador IA solo service_role entre los roles de cliente; estadísticas sin anon. Se confirmaron las políticas `true` heredadas de Configuraciones/Formularios y ausencia de `cron.job`. La confirmación de estos puntos no sustituye revisar todas las políticas o ejecutar una auditoría exhaustiva nueva.
+- El esquema detallado de sección 8 y el resto de reglas de DB conservan el snapshot de la auditoría de octubre. No se extrajeron registros de personas, tokens, claves IA ni secretos para redactar esta guía.
 
 ### Variables y servicios externos
 
@@ -483,7 +601,7 @@ Esta actualización de AGENTS es documentación. No modifica esas capacidades, c
 
 `.env*`, `.next`, node_modules y .vercel están ignorados. Configurar también el entorno del despliegue; la presencia de .env.local no demuestra configuración de producción. No agregar secretos al repo. La infraestructura externa Apps Script/Drive no se verifica solo por compilar.
 
-### Comandos y comprobaciones
+### Comandos y alcance de verificación
 
 ```sh
 npm run dev
@@ -497,9 +615,35 @@ node scripts/check-visual-layer.mjs
 
 - Scripts package.json: dev/start/build/lint/test. `npm test` usa node --test sin force-exit; algunos fallos previos dejan timers abiertos. Usar force-exit para obtener el diagnóstico completo, no para ocultar resultados.
 - Pruebas por cambio: configuración/visuales/errores/datos/runtime/seguridad según alcance. `tests/load-module.mjs` transpila módulos reales con mocks y transporte controlado; las pruebas JS no usan credenciales reales.
-- Última ejecución verificada antes de esta actualización documental: **125 pruebas, 88 pasan y 37 fallan**; comparación con referencia anterior sin regresiones nuevas. Muchos fallos son de Realtime/cancelación/concurrencia/Usuarios y contratos de prototipos. No regenerar fixtures ni instalar dependencias visuales para esconderlos.
-- Pruebas específicas de fases + runtime: **17/17**; compilan types/build y lint sin errores, con dos warnings previos de `.experiments/src/_nav.tsx`.
-- Regresión runtime cubre QueryFunctionContext/AbortSignal, reintento SDK, cuatro requests compartidos, precarga reutilizada, módulo lento y guard de todos los métodos privados registrados.
+- La ejecución global documentada en la auditoría anterior fue **88/125, con 37 fallos históricos**. Es una referencia de aquella revisión, no el conteo ni el resultado global del checkout después de añadir pruebas nuevas. La suite completa no se volvió a ejecutar en las últimas correcciones visuales/sesión. No regenerar fixtures ni instalar dependencias de prototipos para ocultar fallos; comparar cada fallo con la referencia.
+
+Última selección de regresión ejecutada al terminar las cargas compartidas: **49/49**, con este alcance:
+
+| Archivo / selección | Casos | Qué se verificó |
+| --- | --- | --- |
+| `tests/auth-visibility.test.mjs` | 18 | Montaje privado, redirecciones, permisos vacíos, identidad remota, cambio de usuario, logout inmediato/recarga/fallo, respuestas tardías, recuperación y consultas paralelas sin publicación parcial |
+| `tests/optimization-phases.test.mjs` | 12 | Errores seguros/logger, cuenta activa, permisos, guard API, caché y cargas independientes/cancelación del dashboard |
+| `tests/usuarios-acceso-workflow.test.mjs` | 7 | Último acceso Auth paginado, autorización/error API, privacidad de metadatos, revisión esperada y wrappers de quejas |
+| `tests/error-security.test.mjs` | 7 | Mensajes/reintentos, atributos y límites de API/identidad |
+| `tests/navigation-prefetch.test.mjs` | 2 | Hover/foco/tacto con clave propia; sin identidad no consultar ni precargar rutas no permitidas |
+| Tres casos seleccionados de `tests/data-reliability.test.mjs` | 3 | Caché fresca/invalidada sin duplicados, remontaje y orden estable de paginación. No equivale a aprobar todo ese archivo |
+
+```sh
+node --test tests/auth-visibility.test.mjs tests/optimization-phases.test.mjs tests/usuarios-acceso-workflow.test.mjs tests/error-security.test.mjs tests/navigation-prefetch.test.mjs
+node --test --test-name-pattern="hover reutiliza|QueryProvider recupera|Quejas pagina" tests/data-reliability.test.mjs
+```
+
+- La regresión previa de fases/runtime fue 17/17. `tests/dashboard-runtime-regression.test.mjs` cubre QueryFunctionContext/AbortSignal, reintento SDK, cuatro requests compartidos, precarga, módulo lento y guard de métodos API; esos resultados pertenecen a la comprobación de esa corrección.
+- Último build de código: Next.js producción y TypeScript correctos. Lint sin errores, con dos advertencias históricas por cilFolder/cilUser sin usar en `.experiments/src/_nav.tsx`. No declarar «lint sin advertencias».
+- Verificación de cargas: las diez páginas principales se renderizaron con queries pendientes simuladas usando los componentes reales; todas con skeleton y sin spinner inicial. Los diez HTML prerenderizados del build conservan presentación neutra y no incluyen el shell privado antes de Auth.
+- En producción local se comprobó redirección al login en navegador, y el HTML inicial de `/`, `/quejas`, `/usuarios`, `/login`. Skeletons table/form/cards/list revisados en escritorio y móviles 320/375px sin desbordamiento horizontal; círculos de botones/operaciones centrados. Previews temporales eliminados, viewport restaurado y pestañas de prueba cerradas.
+- Comprobaciones remotas previas: consultas anónimas sin datos del dashboard y pruebas transaccionales de wrappers bajo admin/rol no autorizado, conflicto 40001 y denegación legacy con ROLLBACK. No equivalen a un recorrido autenticado de toda la aplicación ni a una auditoría completa nueva de RLS.
 - Después de cambios de código cliente, Ctrl+F5 descarta chunks/timers antiguos. No borrar .next/node_modules o reiniciar servicios del usuario como primera respuesta a un error.
 - Cambio solo de Markdown: verificar enlaces/rutas, consistencia con código/DB y `git diff --check`; no requiere otro build de la aplicación.
 - Revalidar esta guía después de cambios de RPC/RLS, rutas, queries montadas o estilos. Actualizar implementado vs pendiente y fecha/snapshot; no sostener afirmaciones antiguas porque figuraban en AGENTS.
+
+### Continuidad y despliegue
+
+- Los cambios de una sesión de trabajo pueden seguir sin commit/push. Consultar `git status` y conservar el trabajo existente antes de editar o integrar cambios remotos.
+- Compilar localmente no actualiza Vercel ni prueba sus variables de entorno. Tras un despliegue solicitado, verificar URL de producción, login, recarga de ruta privada, logout, permisos y APIs; no afirmar despliegue completado sin evidencia.
+- Validación manual todavía útil: recorrido autenticado en producción y con volumen real, cuenta desactivada con token previo, concurrencia entre usuarios, envío ciudadano con evidencias/token activo, reconexión y diagnóstico de errores de servicios externos. El documento y los skeletons no sustituyen esas comprobaciones.

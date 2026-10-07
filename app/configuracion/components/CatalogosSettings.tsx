@@ -14,6 +14,7 @@ import Field from '@/components/ui/Field'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import ErrorState from '@/components/ui/ErrorState'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
 const modulos = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'general']
@@ -50,7 +51,7 @@ export default function CatalogosSettings({ active }: { active: boolean }) {
     finally { savingRef.current = false; setSaving(false) }
   }
 
-  if (query.isPending) return <p role="status" className="p-6 text-sm text-qms-muted">Cargando catálogos…</p>
+  if (query.isPending) return <LoadingSkeleton label="Cargando catálogos…" />
   if (query.error) return <ErrorState onRetry={() => void query.refetch()} />
 
   return <div className="space-y-5">

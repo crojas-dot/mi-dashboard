@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import {
   MessageSquareWarning, ClipboardList, FileCheck2,
-  ShieldAlert, ClipboardCheck, SearchCheck, Loader2,
+  ShieldAlert, ClipboardCheck, SearchCheck,
   ChevronRight, ChevronLeft, Check, Printer, X,
 } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
+import OperationLoading from '@/components/ui/OperationLoading'
 import Badge from '@/components/ui/Badge'
 import { showError } from '@/lib/services/errorToast'
 import { supabase } from '@/lib/supabase'
@@ -361,9 +362,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
         {paso === 3 && (
           <div>
             {loading ? (
-              <div className="flex min-h-[200px] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-qms-primary" />
-              </div>
+              <OperationLoading label="Generando informe…" />
             ) : (
               <div className="space-y-5">
                 <div className="text-center pb-3 border-b border-gray-200">

@@ -26,7 +26,7 @@ Las correcciones locales y de base de datos están aplicadas y probadas. La migr
 - `lib/queries/cacheConfig.ts` y `lib/providers/QueryProvider.tsx`: dashboard 60s/5min, quejas 30s/3min, notificaciones 15s/1min y configuración 10min/30min. Los tiempos corresponden a `staleTime/gcTime`. Catálogos, SLA y permisos usan la configuración de ajustes; actividad de quejas usa la de quejas.
 - Hooks de quejas, actividad, notificaciones y permisos: eliminadas opciones que anulaban los TTL o repetían errores 401/403. Se conservan las excepciones existentes de refetch de Quejas y el polling de notificaciones.
 - `lib/queries/useDashboard.ts`: consultas compartidas por tabla, con errores independientes entre bloques y cancelación real del transporte. Se mantienen `fetchDashboard` y `useDashboard` para compatibilidad. Actividad ya consultaba datos reales; se conservó esa implementación.
-- `app/page.tsx`, `components/dashboard/QuejasSummary.tsx` y `DashboardSkeletons.tsx`: carga por bloques y estados accesibles de espera, error, recuperación y contenido vacío.
+- `app/page.tsx`, `components/dashboard/QuejasSummary.tsx` y `DashboardLoading.tsx`: carga por bloques y estados accesibles de espera, error, recuperación y contenido vacío; el indicador discreto reemplaza las barras skeleton iniciales.
 - `components/Sidebar.tsx` y `hooks/useHoverPrefetch.ts`: precarga alineada con la clave del dashboard nuevo. TanStack reutiliza datos frescos y vuelve a consultar los invalidados sin duplicar peticiones simultáneas.
 - `scripts/auditoria-fases-1-3.sql`: auditoría remota, exclusivamente de lectura.
 - `tests/optimization-phases.test.mjs`: 12 pruebas de errores, logger, permisos, proxy, caché, cancelación y aislamiento de bloques.

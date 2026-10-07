@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, ListChecks, Loader2 } from 'lucide-react'
+import { Plus, ListChecks } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuditorias, auditoriasKey, useHallazgos, type Auditoria } from '@/lib/queries/useAuditorias'
 import Pagination from '@/components/ui/Pagination'
@@ -24,7 +25,7 @@ export default function AuditoriasPage() {
   const invalidateAuditorias = () => queryClient.invalidateQueries({ queryKey: auditoriasKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
   const [hallazgosOpen, setHallazgosOpen] = useState<Auditoria | null>(null)
-  const { data: hallazgos = [] } = useHallazgos(hallazgosOpen?.id ?? '')
+  const { data: hallazgos = [], isLoading: hallazgosLoading } = useHallazgos(hallazgosOpen?.id ?? '')
 
   return (
     <div className="space-y-6">
@@ -33,7 +34,7 @@ export default function AuditoriasPage() {
       </PageHeader>
 
       {error ? <p role="alert">No se pudo cargar el listado. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : loading ? (
-        <div className="flex min-h-[300px] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
+        <LoadingSkeleton label="Cargando auditorías…" />
       ) : (
       <Table>
         <TableHead>
@@ -70,7 +71,7 @@ export default function AuditoriasPage() {
 
       <Modal open={!!hallazgosOpen} onClose={() => setHallazgosOpen(null)} title={`Hallazgos - ${hallazgosOpen?.folio || hallazgosOpen?.objetivo}`} size="lg">
         <div className="space-y-3">
-          {hallazgos.length === 0 ? (
+          {hallazgosLoading ? <LoadingSkeleton variant="list" label="Cargando hallazgos…" framed={false} /> : hallazgos.length === 0 ? (
             <p className="text-center text-sm text-gray-500 py-4">No hay hallazgos registrados</p>
           ) : (
             hallazgos.map((h) => (

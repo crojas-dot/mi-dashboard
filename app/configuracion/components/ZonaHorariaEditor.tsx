@@ -7,6 +7,7 @@ import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import ErrorState from '@/components/ui/ErrorState'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { guardarZonaHoraria, useZonaHoraria, zonaHorariaKey } from '@/lib/queries/useZonaHoraria'
 import { DEFAULT_TIME_ZONE, TIME_ZONE_GROUPS } from '@/lib/timeZone'
@@ -25,7 +26,7 @@ export default function ZonaHorariaEditor({ active = true }: { active?: boolean 
   const guardandoRef = useRef(false)
 
   if (zonaQuery.error) return <ErrorState message="No se pudo cargar la zona horaria." onRetry={() => void zonaQuery.refetch()} />
-  if (zonaQuery.isPending) return <p role="status" className="ui-panel p-6 text-sm text-qms-muted">Cargando zona horaria…</p>
+  if (zonaQuery.isPending) return <LoadingSkeleton variant="form" label="Cargando zona horaria…" />
 
   const actual = zonaQuery.data ?? DEFAULT_TIME_ZONE
   const seleccion = borrador ?? actual

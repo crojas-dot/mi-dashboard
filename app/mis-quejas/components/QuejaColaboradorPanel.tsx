@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { X, Info, Activity, CheckCircle, Send, Loader2, Maximize, Sparkles, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
+import { X, Info, Activity, CheckCircle, Send, Maximize, Sparkles, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
+import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
+import Spinner from '@/components/ui/Spinner'
 import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
@@ -21,7 +23,7 @@ import ReactMarkdown from 'react-markdown'
 interface Props {
   queja: Queja | null
   onClose: () => void
-  onUpdated: () => void
+  onUpdated: (updated?: Queja) => void
 }
 
 type Tab = 'detalle' | 'actividad' | 'resolucion'
@@ -50,7 +52,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
   const crearActividad = useCrearQuejaActividad()
-  const { data: adjuntos = [] } = useQuejaAdjuntos(quejaId)
+  const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -88,10 +90,10 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     }
     setLoading(true)
     try {
-      await transicionarQueja(queja.id, 'Pendiente de Revisión GC', { resolucion })
+      const updated = await transicionarQueja(queja, 'Pendiente de Revisión GC', { resolucion })
       showSuccess('Resolución enviada a Gestión de Calidad')
       setResolucion('')
-      onUpdated()
+      onUpdated(updated)
     } catch (error) {
       showError(error as Error, 'No se pudo enviar la resolución')
     } finally {
@@ -183,11 +185,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
   return (
     <aside
-      className={`fixed top-0 right-0 z-50 flex h-screen flex-col bg-white border-l border-gray-200 shadow-2xl transition-[width] duration-300 ease-in-out ${isExpanded ? 'w-full' : 'w-[500px]'}`}
+      className={`fixed top-0 right-0 z-50 flex h-dvh w-full max-w-full flex-col bg-white border-l border-gray-200 shadow-2xl transition-[width] duration-300 ease-in-out ${isExpanded ? '' : 'lg:w-[500px]'}`}
     >
       {/* Top bar */}
       <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2.5">
-        <div className="flex items-center text-sm">
+        <div className="flex min-w-0 items-center text-sm">
           <button
             type="button"
             onClick={onClose}
@@ -196,14 +198,14 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
             Mis Quejas
           </button>
           <span className="mx-1 text-gray-300">/</span>
-          <span className="px-2 py-1 font-medium text-gray-900">{queja.folio}</span>
+          <span className="truncate px-2 py-1 font-medium text-gray-900">{queja.folio}</span>
         </div>
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => setIsExpanded((v) => !v)}
             title={isExpanded ? 'Reducir panel' : 'Expandir panel'}
-            className={`cursor-pointer rounded p-1 transition-colors hover:bg-gray-100 ${isExpanded ? 'text-qms-primary' : 'text-gray-400 hover:text-gray-700'}`}
+            className={`hidden cursor-pointer rounded p-1 transition-colors hover:bg-gray-100 lg:block ${isExpanded ? 'text-qms-primary' : 'text-gray-400 hover:text-gray-700'}`}
           >
             <Maximize className="h-4 w-4" />
           </button>
@@ -211,7 +213,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
             type="button"
             onClick={onClose}
             title="Cerrar panel"
-            className="cursor-pointer rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Cerrar panel de queja"
+            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <X className="h-4 w-4" />
           </button>
@@ -219,7 +222,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       </div>
 
       {/* Underline tabs */}
-      <nav className="flex shrink-0 gap-6 border-b border-gray-200 px-6">
+      <nav className="flex shrink-0 justify-between gap-2 border-b border-gray-200 px-3 sm:justify-start sm:gap-6 sm:px-6">
         {tabs.map((t) => {
           const Icon = t.icon
           const isActive = activeTab === t.key
@@ -240,7 +243,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       </nav>
 
       {/* Blank-page content */}
-      <div className="flex-1 select-text overflow-y-auto px-8 py-6">
+      <div className="min-h-0 flex-1 select-text overflow-y-auto px-4 py-4 sm:px-8 sm:py-6">
         {activeTab === 'detalle' && (
           <div className="mx-auto max-w-2xl">
             <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{queja.folio}</h1>
@@ -302,7 +305,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
             <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
               <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Evidencias adjuntas</h2>
-              {adjuntos.length === 0 ? (
+              {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntos.length === 0 ? (
                 <p className="mt-2 text-sm text-gray-400">Sin evidencias todavía.</p>
               ) : (
                 <ListaAdjuntos
@@ -335,7 +338,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               </div>
               {aiAutoLoading && (
                 <p className="mt-2 flex items-center gap-1.5 text-xs text-qms-primary-hover">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Obteniendo contexto y consultando a la IA…
+                  <Spinner size="sm" /> Obteniendo contexto y consultando a la IA…
                 </p>
               )}
               {aiResult && (
@@ -397,7 +400,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               {chatLoading && (
                 <div className="mt-2 flex justify-start">
                   <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Analizando…
+                    <Spinner size="sm" /> Analizando…
                   </div>
                 </div>
               )}
@@ -440,7 +443,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
               </div>
               <p className="mt-1 text-xs text-gray-400">Archivos internos de investigación. Solo visibles para staff y responsable.</p>
               
-              {adjuntos.filter((a) => a.usuario_id).length === 0 ? (
+              {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias de análisis…" framed={false} /> : adjuntos.filter((a) => a.usuario_id).length === 0 ? (
                 <p className="mt-2 text-sm text-gray-400">Sin evidencias de análisis todavía.</p>
               ) : (
                 <ListaAdjuntos
@@ -469,7 +472,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                   </label>
                   {subiendoAdjuntoAnalisis && (
                     <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Subiendo...
+                      <Spinner size="sm" /> Subiendo…
                     </span>
                   )}
                 </div>
@@ -477,7 +480,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
             </div>
 
             {actividadLoading ? (
-              <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-gray-300" /></div>
+              <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} />
             ) : actividad.length === 0 ? (
               <p className="py-10 text-sm text-gray-400">Sin actividad registrada todavía.</p>
             ) : (
