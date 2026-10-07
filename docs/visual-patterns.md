@@ -54,6 +54,11 @@ import Field from '@/components/ui/Field'
   `type="button"` por defecto. Loading deshabilita el botón y anuncia su estado.
 - Input, Textarea y Select comparten `ui-field` y el focus ring global.
   Field exige `id` y `label`; enlazar `aria-describedby` cuando haya una ayuda.
+- Login añade `ui-login-field`: texto, placeholder y primera línea de 16px con
+  la fuente heredada. Chromium fuerza otra fuente en su vista previa interna;
+  el formulario habilita ambos campos al recibir foco o pointerdown para evitar
+  esa vista previa al cargar. Conservar `username`/`current-password` para el
+  gestor de contraseñas y comprobar clic, Tab y validación de campos vacíos.
 - Badge conserva el tamaño de las etiquetas de Quejas. Ámbar usa texto oscuro
   para mayor contraste; naranja distingue una prioridad alta.
 - Switch admite nombres accesibles y atributos HTML; cada permiso necesita

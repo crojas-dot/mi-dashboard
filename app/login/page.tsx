@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import { Loader2, LockKeyhole, Mail } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import Field from '@/components/ui/Field'
+import Input from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/store/auth-store'
 
 export default function LoginPage() {
@@ -10,6 +13,10 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  // La vista previa de credenciales de Chromium usa una fuente interna que
+  // ignora el CSS. Permitir el llenado al entrar al formulario evita esa vista
+  // previa al cargar, sin desactivar el gestor de contraseñas.
+  const [credentialsEditable, setCredentialsEditable] = useState(false)
   const login = useAuthStore((s) => s.login)
   const user = useAuthStore((s) => s.user)
   const initialized = useAuthStore((s) => s.initialized)
@@ -24,8 +31,8 @@ export default function LoginPage() {
 
   if (!initialized) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className="flex min-h-dvh items-center justify-center bg-qms-background" role="status" aria-label="Cargando sesión">
+        <Loader2 aria-hidden="true" className="h-8 w-8 animate-spin text-qms-primary" />
       </div>
     )
   }
@@ -42,34 +49,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="w-full max-w-sm rounded-card border border-qms-border bg-qms-surface p-8 shadow-sm">
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-card bg-qms-primary text-xl font-bold text-white">E</div>
-          <h2 className="m-0 text-xl font-bold text-qms-dark">ECA-QMS</h2>
-          <p className="mt-1 text-[0.85rem] text-qms-muted">Sistema de Gestión de Calidad</p>
+    <div className="flex min-h-dvh items-center justify-center bg-qms-background px-4 py-10 text-qms-dark antialiased">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex items-center justify-center gap-3">
+          <div aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card bg-qms-primary text-2xl font-semibold text-white">E</div>
+          <span className="text-2xl font-semibold tracking-tight">ECA-QMS</span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Correo electrónico</label>
-            <input type="email" required className="ui-field w-full px-3 py-2 text-sm" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Contraseña</label>
-            <input type="password" required className="ui-field w-full px-3 py-2 text-sm" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <section aria-labelledby="login-title" className="rounded-card border border-qms-border bg-qms-surface shadow-md">
+          <div className="p-6 sm:p-8">
+            <h1 id="login-title" className="text-center text-xl font-normal">Iniciar sesión</h1>
+            <p className="mt-1 mb-6 text-center text-sm text-qms-muted">Ingresa a tu cuenta de Gestión de Calidad</p>
+
+            <form
+              onSubmit={handleSubmit}
+              onPointerDownCapture={() => setCredentialsEditable(true)}
+              onFocusCapture={() => setCredentialsEditable(true)}
+              className="space-y-4"
+            >
+              <Field id="login-email" label="Correo electrónico">
+                <div className="relative">
+                  <Mail aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-qms-muted" />
+                  <Input
+                    id="login-email"
+                    name="email"
+                    type="email"
+                    autoComplete="username"
+                    placeholder="nombre@ejemplo.com"
+                    required
+                    readOnly={!credentialsEditable}
+                    className="ui-login-field pl-10"
+                    aria-describedby={error ? 'login-error' : undefined}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+              </Field>
+              <Field id="login-password" label="Contraseña">
+                <div className="relative">
+                  <LockKeyhole aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-qms-muted" />
+                  <Input
+                    id="login-password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    required
+                    readOnly={!credentialsEditable}
+                    className="ui-login-field pl-10"
+                    aria-describedby={error ? 'login-error' : undefined}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+              </Field>
+
+              {error && <p id="login-error" role="alert" className="text-sm text-qms-danger">{error}</p>}
+
+              <Button type="submit" loading={loading} loadingLabel="Ingresando…" size="lg" className="w-full">
+                {loading ? 'Ingresando…' : 'Ingresar'}
+              </Button>
+            </form>
           </div>
 
-          {error && <p className="text-sm text-qms-danger">{error}</p>}
+          <div className="rounded-b-card border-t border-qms-border bg-qms-hover-bg px-6 py-4 text-center text-sm text-qms-muted">
+            ¿Necesitas acceso o recuperar tu contraseña?{' '}
+            <span className="font-medium text-qms-primary">Contacta al administrador.</span>
+          </div>
+        </section>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="ui-button ui-button-primary ui-button-sm w-full disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? 'Ingresando...' : 'Ingresar'}
-          </button>
-        </form>
+        <p className="mt-6 text-center text-xs text-qms-muted">
+          © {new Date().getFullYear()} ECA · Ente Costarricense de Acreditación
+        </p>
       </div>
     </div>
   )

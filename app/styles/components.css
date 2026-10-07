@@ -65,6 +65,19 @@
   min-height: 6rem;
 }
 
+/* Tipografía estable del texto editable, placeholder y autocompletado aceptado.
+   La vista previa interna de Chromium usa otra fuente impuesta por el navegador;
+   Login controla cuándo habilitar el autocompletado para evitarla al cargar. */
+@utility ui-login-field {
+  @apply text-base;
+  &::first-line, &::placeholder {
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: inherit;
+    line-height: var(--text-base--line-height);
+  }
+}
+
 @utility ui-panel {
   @apply min-w-0 rounded-card border border-qms-border bg-qms-surface;
 }
