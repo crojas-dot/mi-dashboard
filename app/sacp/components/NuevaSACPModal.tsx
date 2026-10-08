@@ -74,12 +74,12 @@ export default function NuevaSACPModal({ open, onClose, onCreated }: Props) {
         {errorMessage && <p role="alert" className="text-sm text-qms-danger">{errorMessage}</p>}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Folio</label>
-            <input className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.folio} onChange={(e) => setForm({ ...form, folio: e.target.value })} placeholder="Auto-generado si se deja vacío" />
+            <label htmlFor="nueva-sacp-folio" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Folio</label>
+            <input id="nueva-sacp-folio" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.folio} onChange={(e) => setForm({ ...form, folio: e.target.value })} placeholder="Auto-generado si se deja vacío" />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
-            <Select className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+            <label htmlFor="nueva-sacp-tipo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+            <Select id="nueva-sacp-tipo" className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
               <option>Correctiva</option>
               <option>Preventiva</option>
               <option>Mejora</option>
@@ -87,13 +87,13 @@ export default function NuevaSACPModal({ open, onClose, onCreated }: Props) {
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
-          <textarea rows={3} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
+          <label htmlFor="nueva-sacp-descripcion" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Descripción</label>
+          <textarea id="nueva-sacp-descripcion" rows={3} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Límite</label>
-            <input type="date" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.fecha_limite} onChange={(e) => setForm({ ...form, fecha_limite: e.target.value })} />
+            <label htmlFor="nueva-sacp-fecha-limite" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Límite</label>
+            <input id="nueva-sacp-fecha-limite" type="date" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.fecha_limite} onChange={(e) => setForm({ ...form, fecha_limite: e.target.value })} />
           </div>
         </div>
         <div className="flex justify-end gap-3 pt-2">

@@ -9,12 +9,12 @@ import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { nivelRiesgoVariant } from '@/lib/constants/estados'
+import { calcularNivelRiesgo } from '@/lib/utils/riesgos'
 import EmptyState from '@/components/ui/EmptyState'
 
 import Button from '@/components/ui/Button'
 import NuevoRiesgoModal from './components/NuevoRiesgoModal'
-
-const nivelColor: Record<string, string> = { Bajo: 'green', Medio: 'amber', Alto: 'red', Critico: 'red' }
 
 const matrizCellClass: Record<string, string> = {
   Bajo: 'bg-soft-green-bg text-soft-green-text',
@@ -31,22 +31,14 @@ export default function RiesgosPage() {
   const invalidateRiesgos = () => queryClient.invalidateQueries({ queryKey: riesgosKey })
   const [nuevoOpen, setNuevoOpen] = useState(false)
 
-  const calcularNivel = (p: number, i: number): string => {
-    const m = p * i
-    if (m <= 2) return 'Bajo'
-    if (m <= 4) return 'Medio'
-    if (m <= 6) return 'Alto'
-    return 'Critico'
-  }
 
   const matrizQuery = useMatrizRiesgos()
   const matriz = matrizQuery.data ?? []
 
+  // La matriz conserva su leyenda de tres niveles; el registro conserva cuatro.
   const getCellLevel = (p: number, i: number): string => {
-    const m = p * i
-    if (m <= 2) return 'Bajo'
-    if (m <= 4) return 'Medio'
-    return 'Alto'
+    const nivel = calcularNivelRiesgo(p, i)
+    return nivel === 'Critico' ? 'Alto' : nivel
   }
 
   return (
@@ -99,7 +91,7 @@ export default function RiesgosPage() {
                 <TableCell><span className="font-mono text-xs">{r.folio || '-'}</span></TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{r.probabilidad}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{r.impacto}</TableCell>
-                <TableCell><Badge variant={nivelColor[r.nivel || ''] || 'gray'}>{r.nivel || calcularNivel(r.probabilidad, r.impacto)}</Badge></TableCell>
+                <TableCell><Badge variant={nivelRiesgoVariant[r.nivel || ''] || 'gray'}>{r.nivel || calcularNivelRiesgo(r.probabilidad, r.impacto)}</Badge></TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{r.estado}</TableCell>
               </TableRow>
             ))

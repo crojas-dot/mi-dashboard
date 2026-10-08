@@ -11,13 +11,12 @@ import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { estadoDocumentoVariant } from '@/lib/constants/estados'
 import EmptyState from '@/components/ui/EmptyState'
 
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import NuevoDocumentoModal from './components/NuevoDocumentoModal'
-
-const estadoVariant: Record<string, string> = { Borrador: 'gray', Publicado: 'green', Archivado: 'red', 'En Revisión': 'amber' }
 
 export default function DocumentosPage() {
   const [page, setPage] = useState(0)
@@ -82,7 +81,7 @@ export default function DocumentosPage() {
                 <TableCell><span className="font-mono text-xs">{doc.codigo_doc}</span></TableCell>
                 <TableCell className="font-medium text-gray-900 dark:text-white">{doc.titulo}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">v{doc.version_actual}</TableCell>
-                <TableCell><Badge variant={estadoVariant[doc.estado] || 'gray'}>{doc.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoDocumentoVariant[doc.estado] || 'gray'}>{doc.estado}</Badge></TableCell>
                 <TableCell className="text-gray-500">{doc.fecha_publicacion ? new Date(doc.fecha_publicacion).toLocaleDateString('es-ES') : '-'}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">

@@ -74,14 +74,14 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
     >
         {drawer ? <h2 id={titleId} className="sr-only">{title}</h2> : <div
           data-modal-header
-          className="flex shrink-0 items-center justify-between rounded-t-modal bg-qms-dark px-4 py-3 text-white"
+          className="flex shrink-0 items-center justify-between rounded-t-modal bg-qms-dark px-4 py-3 text-white/75"
         >
-          <h2 id={titleId} className="m-0 text-base font-medium">{title}</h2>
+          <h2 id={titleId} className="m-0 text-base leading-6">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label={`Cerrar ${title}`}
-            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-button border border-transparent bg-transparent text-white/70 hover:bg-white/10 hover:text-white"
+            className="inline-flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-button border border-transparent bg-transparent text-white/75 hover:bg-white/10 hover:text-white"
           >
             <svg aria-hidden="true" className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

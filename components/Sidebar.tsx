@@ -1,3 +1,9 @@
+/**
+ * Sidebar — menú lateral de navegación.
+ * Lee los módulos y grupos de lib/constants/modulos.ts (fuente única).
+ * Filtra enlaces visibles con tienePermiso() según el rol del usuario.
+ * Precarga datos del módulo destino con hover/focus (prefetchMap + useHoverPrefetch).
+ */
 'use client'
 
 import Link from 'next/link'
@@ -11,7 +17,8 @@ import {
 } from 'lucide-react'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { tienePermiso, moduloDeRuta } from '@/lib/permisos'
+import { tienePermiso } from '@/lib/permisos'
+import { MODULOS, GRUPOS_NAVEGACION, type ModuloId, type ModuloIconKey } from '@/lib/constants/modulos'
 import { useHoverPrefetch, type PrefetchConfig } from '@/hooks/useHoverPrefetch'
 import { fetchQuejas, quejasKey } from '@/lib/queries/useQuejas'
 import { paginaKey } from '@/lib/queries/pagination'
@@ -24,47 +31,33 @@ import { fetchProcesos, procesosKey } from '@/lib/queries/useProcesos'
 import { fetchUsuarios, usuariosQueryKey } from '@/lib/queries/useUsuarios'
 import { dashboardPrefetchOptions } from '@/lib/queries/useDashboard'
 
-// Iconos del menú: misma familia Lucide, tamaño y grosor definidos en el render.
-const sections: { label: string; links: { href: string; label: string; icon: LucideIcon }[] }[] = [
-  {
-    label: 'Gestión',
-    links: [
-      { href: '/', label: 'Dashboard', icon: ChartPie },
-      { href: '/quejas', label: 'Quejas', icon: MessageSquareText },
-      { href: '/mis-quejas', label: 'Mis Quejas', icon: Inbox },
-      { href: '/documentos', label: 'Documentos', icon: FolderOpen },
-      { href: '/sacp', label: 'SACP', icon: ListChecks },
-    ],
-  },
-  {
-    label: 'Seguimiento',
-    links: [
-      { href: '/riesgos', label: 'Riesgos', icon: ShieldAlert },
-      { href: '/auditorias', label: 'Auditorías', icon: ClipboardCheck },
-      { href: '/revision', label: 'Revisión por Dirección', icon: Presentation },
-      { href: '/procesos', label: 'Procesos', icon: Workflow },
-    ],
-  },
-  {
-    label: 'Administración',
-    links: [
-      { href: '/usuarios', label: 'Usuarios', icon: UsersRound },
-      { href: '/reporteria', label: 'Reportería', icon: ChartNoAxesCombined },
-      { href: '/configuracion', label: 'Configuración', icon: Settings2 },
-    ],
-  },
-]
+// Los iconos viven en UI: el registro compartido no incorpora Lucide al servidor.
+const ICONOS_MODULO: Record<ModuloIconKey, LucideIcon> = {
+  chartPie: ChartPie, messageSquareText: MessageSquareText, inbox: Inbox,
+  folderOpen: FolderOpen, listChecks: ListChecks, shieldAlert: ShieldAlert,
+  clipboardCheck: ClipboardCheck, presentation: Presentation, workflow: Workflow,
+  usersRound: UsersRound, settings2: Settings2, chartNoAxesCombined: ChartNoAxesCombined,
+}
+const sections = GRUPOS_NAVEGACION.map(section => ({
+  label: section.label,
+  links: section.modulos.map(id => ({
+    id,
+    href: MODULOS[id].ruta,
+    label: MODULOS[id].label,
+    icon: ICONOS_MODULO[MODULOS[id].iconKey],
+  })),
+}))
 
-const prefetchMap: Record<string, PrefetchConfig | PrefetchConfig[]> = {
-  '/':           dashboardPrefetchOptions(),
-  '/quejas':     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: ({ signal }) => fetchQuejas({ page: 0, pageSize: 25 }, signal) },
-  '/documentos': { queryKey: paginaKey(documentosKey), queryFn: ({ signal }) => fetchDocumentos(0, '', signal) },
-  '/sacp':       { queryKey: paginaKey(accionesKey), queryFn: ({ signal }) => fetchAcciones(0, '', signal) },
-  '/riesgos':    { queryKey: paginaKey(riesgosKey), queryFn: ({ signal }) => fetchRiesgos(0, '', signal) },
-  '/auditorias': { queryKey: paginaKey(auditoriasKey), queryFn: ({ signal }) => fetchAuditorias(0, '', signal) },
-  '/revision':   { queryKey: paginaKey(reunionesKey), queryFn: ({ signal }) => fetchReuniones(0, '', signal) },
-  '/procesos':   { queryKey: paginaKey(procesosKey), queryFn: ({ signal }) => fetchProcesos(0, '', signal) },
-  '/usuarios':   { queryKey: usuariosQueryKey(), queryFn: ({ signal }) => fetchUsuarios(undefined, signal) },
+const prefetchMap: Partial<Record<ModuloId, PrefetchConfig | PrefetchConfig[]>> = {
+  dashboard:  dashboardPrefetchOptions(),
+  quejas:     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: ({ signal }) => fetchQuejas({ page: 0, pageSize: 25 }, signal) },
+  documentos: { queryKey: paginaKey(documentosKey), queryFn: ({ signal }) => fetchDocumentos(0, '', signal) },
+  sacp:       { queryKey: paginaKey(accionesKey), queryFn: ({ signal }) => fetchAcciones(0, '', signal) },
+  riesgos:    { queryKey: paginaKey(riesgosKey), queryFn: ({ signal }) => fetchRiesgos(0, '', signal) },
+  auditorias: { queryKey: paginaKey(auditoriasKey), queryFn: ({ signal }) => fetchAuditorias(0, '', signal) },
+  revision:   { queryKey: paginaKey(reunionesKey), queryFn: ({ signal }) => fetchReuniones(0, '', signal) },
+  procesos:   { queryKey: paginaKey(procesosKey), queryFn: ({ signal }) => fetchProcesos(0, '', signal) },
+  usuarios:   { queryKey: usuariosQueryKey(), queryFn: ({ signal }) => fetchUsuarios(undefined, signal) },
 }
 
 export default function Sidebar({ expanded = false, onNavigate, className = '' }: { expanded?: boolean; onNavigate?: () => void; className?: string } = {}) {
@@ -75,10 +68,10 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
   const permisos = useAuthStore((s) => s.permisos)
   const prefetch = useHoverPrefetch()
 
-  const prepareNavigation = (href: string) => {
-    const config = href === '/mis-quejas' && user?.id
+  const prepareNavigation = (id: ModuloId) => {
+    const config = id === 'mis_quejas' && user?.id
       ? { queryKey: quejasKey({ responsableId: user.id }), queryFn: ({ signal }: QueryFunctionContext) => fetchQuejas({ responsableId: user.id }, signal) }
-      : prefetchMap[href]
+      : prefetchMap[id]
     if (config) prefetch(config)
   }
 
@@ -118,7 +111,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
        <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 ${expanded ? 'py-3' : ''}`}>
          {sections.map((section) => {
-           const linksVisibles = section.links.filter((link) => tienePermiso(permisos, moduloDeRuta(link.href), false, user?.rol))
+           const linksVisibles = section.links.filter((link) => tienePermiso(permisos, link.id, false, user?.rol))
            if (linksVisibles.length === 0) return null
            return (
           <div key={section.label} className="mb-2">
@@ -139,9 +132,9 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   aria-current={isActive ? 'page' : undefined}
                   onClick={onNavigate}
                   className={`my-0.5 flex items-center gap-2.5 rounded-button py-2.5 text-base leading-6 no-underline transition-colors ${collapsed ? 'justify-center px-0' : 'px-[15px]'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
-                  onMouseEnter={() => prepareNavigation(link.href)}
-                  onFocus={() => prepareNavigation(link.href)}
-                  onTouchStart={() => prepareNavigation(link.href)}
+                  onMouseEnter={() => prepareNavigation(link.id)}
+                  onFocus={() => prepareNavigation(link.id)}
+                  onTouchStart={() => prepareNavigation(link.id)}
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
                   {!collapsed && <span className="truncate">{link.label}</span>}

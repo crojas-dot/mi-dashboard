@@ -1,3 +1,10 @@
+/**
+ * cacheConfig — TTLs de TanStack Query por dominio de datos.
+ * staleTime: cuánto tiempo la data se considera fresca (no re-fetch en mount).
+ * gcTime: cuánto se mantiene en memoria tras perder todos los observers.
+ * getCacheConfig() resuelve el tier correcto desde el primer segmento del queryKey.
+ * Ejemplo: queryKey=['quejas', {page:0}] → CACHE_CONFIG.quejas.
+ */
 import type { QueryKey } from '@tanstack/react-query'
 
 export const CACHE_CONFIG = {

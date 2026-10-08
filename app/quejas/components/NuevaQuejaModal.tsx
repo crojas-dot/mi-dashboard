@@ -71,7 +71,7 @@ export default function NuevaQuejaModal({ open, onClose, onCreated, categorias, 
             <input required className="ui-field w-full px-3 py-2 text-sm" placeholder="Escribir categoría" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} />
           )}
         </div>
-        <p className="rounded-lg border border-blue-100 bg-qms-primary-soft px-3 py-2 text-sm text-qms-primary-dark">
+        <p className="rounded-lg border-qms-primary bg-qms-primary text-white px-3 py-2 text-sm">
           La queja se registrar? inicialmente con el estado <strong>Recibido</strong>.
         </p>
         <div>

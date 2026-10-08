@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
-import { X, Info, Activity, CheckCircle, Send, Maximize, Sparkles, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { X, Info, Activity, CheckCircle, Send, Maximize, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import Spinner from '@/components/ui/Spinner'
 import type { Queja } from '@/lib/types'
@@ -10,11 +9,13 @@ import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { estadoVariant, prioridadVariant } from '@/lib/constants/variants'
+import { estadoVariant, prioridadVariant } from '@/lib/constants/estados'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { useQuejaAdjuntos, quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
-import { transicionarQueja, descargarAdjuntoQueja, subirAdjuntoQueja, eliminarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
-import { analizarIA } from '@/lib/services/aiService'
+import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { transicionarQueja } from '@/lib/services/quejaWorkflowService'
+import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
+import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
+import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -23,7 +24,7 @@ import ReactMarkdown from 'react-markdown'
 interface Props {
   queja: Queja | null
   onClose: () => void
-  onUpdated: (updated?: Queja) => void
+  onUpdated: (updated?: Queja, isCurrent?: () => boolean) => void
 }
 
 type Tab = 'detalle' | 'actividad' | 'resolucion'
@@ -32,35 +33,41 @@ const ESTADOS_ENVIADOS = ['Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
 
 export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Props) {
   const user = useAuthStore((s) => s.user)
-  const queryClient = useQueryClient()
+  const scope = useEntityRequestGuard(queja?.id ?? null)
+  const draftVersions = useRef({ nota: 0, resolucion: 0 })
   const [activeTab, setActiveTab] = useState<Tab>('detalle')
   const [resolucion, setResolucion] = useState('')
   const [nota, setNota] = useState('')
   const [loading, setLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [previewAdjunto, setPreviewAdjunto] = useState<QuejaAdjunto | null>(null)
-  const [aiAutoLoading, setAiAutoLoading] = useState(false)
-  const [aiResult, setAiResult] = useState('')
-  const [chat, setChat] = useState<{ id: string; role: 'user' | 'ia'; content: string }[]>([])
-  const [chatInput, setChatInput] = useState('')
-  const [chatLoading, setChatLoading] = useState(false)
-  const [modoEdicion, setModoEdicion] = useState(false)
-  const [subiendoAdjuntoAnalisis, setSubiendoAdjuntoAnalisis] = useState(false)
-  const [eliminandoAdjunto, setEliminandoAdjunto] = useState<string | null>(null)
-  const [confirmarEliminacion, setConfirmarEliminacion] = useState<string | null>(null)
+  const [agregandoNota, setAgregandoNota] = useState(false)
+  const {
+    previewAdjunto, setPreviewAdjunto, subiendoAdjunto: subiendoAdjuntoAnalisis,
+    eliminandoAdjunto, confirmarEliminacion, setConfirmarEliminacion,
+    handleSubirAdjunto: handleSubirAdjuntoAnalisis, handleEliminarAdjunto, handleDescargarAdjunto,
+  } = useQuejaAttachmentActions(queja?.id ?? null, scope)
+  const {
+    aiAutoLoading, aiResult, setAiResult, chat, chatInput, setChatInput,
+    chatLoading, modoEdicion, setModoEdicion, handleAnalisisAuto, handleEnviarIA,
+  } = useQuejaAssistant(queja?.id ?? null, scope)
 
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
   const crearActividad = useCrearQuejaActividad()
   const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
 
+  const handleClose = useCallback(() => {
+    scope.invalidate()
+    onClose()
+  }, [scope, onClose])
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') handleClose()
     }
     if (queja) document.addEventListener('keydown', handleEsc)
     return () => document.removeEventListener('keydown', handleEsc)
-  }, [queja, onClose])
+  }, [queja, handleClose])
 
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
@@ -68,14 +75,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     setResolucion('')
     setNota('')
     setIsExpanded(false)
-    setPreviewAdjunto(null)
-    setAiResult('')
-    setChat([])
-    setConfirmarEliminacion(null)
-    setEliminandoAdjunto(null)
-    setChatInput('')
-    setAiAutoLoading(false)
-    setChatLoading(false)
+    setLoading(false)
+    setAgregandoNota(false)
   }
 
   if (!queja) return null
@@ -88,87 +89,48 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       showError(null, 'Escribí la conclusión antes de enviarla a revisión')
       return
     }
+    const operation = scope.start('workflow')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    const draftVersion = draftVersions.current.resolucion
     setLoading(true)
+    let confirmed = false
     try {
       const updated = await transicionarQueja(queja, 'Pendiente de Revisión GC', { resolucion })
-      showSuccess('Resolución enviada a Gestión de Calidad')
-      setResolucion('')
-      onUpdated(updated)
+      confirmed = true
+      if (isContextCurrent()) onUpdated(updated, operation.isCurrent)
+      if (operation.isCurrent()) {
+        showSuccess('Resolución enviada a Gestión de Calidad')
+        if (draftVersions.current.resolucion === draftVersion) setResolucion('')
+      }
     } catch (error) {
-      showError(error as Error, 'No se pudo enviar la resolución')
+      if (operation.isCurrent()) showError(error, confirmed
+        ? 'La resolución se envió, pero no se pudo actualizar la vista'
+        : 'No se pudo enviar la resolución')
     } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAnalisisAuto = async () => {
-    setAiAutoLoading(true)
-    setAiResult('')
-    try {
-      const txt = await analizarIA({ modulo: 'quejas', entidad_id: queja.id, tipo_consulta: 'auto' })
-      setAiResult(txt)
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : 'No se pudo generar el análisis IA'
-      showError(e as Error, errorMsg)
-      setAiResult('')
-    } finally {
-      setAiAutoLoading(false)
-    }
-  }
-
-  const handleEnviarIA = async () => {
-    const msg = chatInput.trim()
-    if (!msg) return
-    setChat((c) => [...c, { id: crypto.randomUUID(), role: 'user', content: msg }])
-    setChatInput('')
-    setChatLoading(true)
-    try {
-      const txt = await analizarIA({ modulo: 'quejas', entidad_id: queja.id, tipo_consulta: 'custom', prompt_usuario: msg })
-      setChat((c) => [...c, { id: crypto.randomUUID(), role: 'ia', content: txt }])
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : 'No se pudo obtener respuesta de IA'
-      showError(e as Error, errorMsg)
-      setChat((c) => c.slice(0, -1))
-    } finally {
-      setChatLoading(false)
+      if (operation.isCurrent()) setLoading(false)
+      operation.finish()
     }
   }
 
   const handleAgregarNota = async () => {
     if (!nota.trim()) return
+    const operation = scope.start('activity-note')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    const draftVersion = draftVersions.current.nota
+    setAgregandoNota(true)
     try {
-      await crearActividad.mutateAsync({ quejaId: queja.id, descripcion: nota, usuarioId: user?.id ?? null })
-      showSuccess('Nota agregada a la actividad')
-      setNota('')
+      await crearActividad.mutateAsync({ quejaId: queja.id, descripcion: nota, usuarioId: user?.id ?? null, isContextCurrent })
+      if (operation.isCurrent()) {
+        showSuccess('Nota agregada a la actividad')
+        if (draftVersions.current.nota === draftVersion) setNota('')
+      }
     } catch (error) {
-      showError(error as Error, 'No se pudo agregar la nota')
-    }
-  }
-
-  const handleSubirAdjuntoAnalisis = async (file: File) => {
-    setSubiendoAdjuntoAnalisis(true)
-    try {
-      await subirAdjuntoQueja(queja.id, file)
-      queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
-      showSuccess('Adjunto de análisis subido')
-    } catch (error) {
-      showError(error as Error, 'No se pudo subir el adjunto de análisis')
+      if (operation.isCurrent()) showError(error, 'No se pudo agregar la nota')
     } finally {
-      setSubiendoAdjuntoAnalisis(false)
-    }
-  }
-
-  const handleEliminarAdjunto = async (adjuntoId: string) => {
-    setEliminandoAdjunto(adjuntoId)
-    try {
-      await eliminarAdjuntoQueja(adjuntoId)
-      queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
-      showSuccess('Adjunto eliminado')
-      setConfirmarEliminacion(null)
-    } catch (error) {
-      showError(error as Error, 'No se pudo eliminar el adjunto')
-    } finally {
-      setEliminandoAdjunto(null)
+      if (operation.isCurrent()) setAgregandoNota(false)
+      operation.finish()
     }
   }
 
@@ -192,7 +154,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
         <div className="flex min-w-0 items-center text-sm">
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="cursor-pointer rounded px-2 py-1 font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
           >
             Mis Quejas
@@ -211,7 +173,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             title="Cerrar panel"
             aria-label="Cerrar panel de queja"
             className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
@@ -311,7 +273,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 <ListaAdjuntos
                   adjuntos={adjuntos}
                   onPreview={(a) => setPreviewAdjunto(a)}
-                  onDownload={(a) => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                  onDownload={handleDescargarAdjunto}
                   puedeEliminar={puedeEliminarAdjunto}
                   onEliminar={(a) => setConfirmarEliminacion(a.id)}
                 />
@@ -327,13 +289,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
 
             <div className="mb-6 rounded-xl border border-blue-200 bg-qms-primary-soft p-5">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-qms-primary" />
                 <h2 className="text-xs font-medium uppercase tracking-wider text-qms-primary">Asistente IA</h2>
               </div>
               <p className="mt-1 text-xs text-blue-900/70">Analizá la queja con el proveedor configurado en Configuración → IA.</p>
               <div className="mt-3 flex items-center gap-2">
                 <Button size="sm" onClick={handleAnalisisAuto} loading={aiAutoLoading}>
-                  <Sparkles className="h-3.5 w-3.5" /> Análisis IA
+                  Análisis IA
                 </Button>
               </div>
               {aiAutoLoading && (
@@ -427,10 +388,10 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 placeholder="Registrá un avance o comentario de tu investigación..."
                 className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
                 value={nota}
-                onChange={(e) => setNota(e.target.value)}
+                onChange={(e) => { draftVersions.current.nota++; setNota(e.target.value) }}
               />
               <div className="mt-2 flex justify-end">
-                <Button size="sm" onClick={handleAgregarNota} disabled={!nota.trim()} loading={crearActividad.isPending}>
+                <Button size="sm" onClick={handleAgregarNota} disabled={!nota.trim()} loading={agregandoNota}>
                   <Send className="h-3 w-3" /> Agregar nota
                 </Button>
               </div>
@@ -449,7 +410,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 <ListaAdjuntos
                   adjuntos={adjuntos.filter((a) => a.usuario_id)}
                   onPreview={(a) => setPreviewAdjunto(a)}
-                  onDownload={(a) => descargarAdjuntoQueja(a).catch((e) => showError(e as Error, 'No se pudo descargar el archivo'))}
+                  onDownload={handleDescargarAdjunto}
                   puedeEliminar={puedeEliminarAdjunto}
                   onEliminar={(a) => setConfirmarEliminacion(a.id)}
                 />
@@ -517,7 +478,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
                 placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
                 className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
                 value={resolucion}
-                onChange={(e) => setResolucion(e.target.value)}
+                onChange={(e) => { draftVersions.current.resolucion++; setResolucion(e.target.value) }}
                 disabled={estado === 'Recibido' || resolucionEnviada}
               />
 

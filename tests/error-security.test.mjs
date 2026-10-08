@@ -32,21 +32,22 @@ test('no expone diagnósticos SQL, credenciales o URLs en mensajes ni fallback',
   assert.equal(getUserError({ code: 'P0001', message: 'Debes asignar un responsable.' }).message, 'Debes asignar un responsable.')
 })
 
-test('el error visible conserva causa y recuperación accesibles', () => {
-  const { default: ErrorState } = loadModule('components/ui/tailwind/ErrorState.tsx')
-  const html = renderToStaticMarkup(createElement(ErrorState, {
-    error: { code: '42501' }, title: 'No se pudieron cargar las evidencias', onRetry() {}, retrying: true,
-  }))
+test('el error visible conserva un mensaje seguro y una recuperación accesible', () => {
+  const { default: ErrorState } = loadModule('components/ui/ErrorState.tsx')
+  const info = getUserError({ code: '42501', details: 'private_customer' })
+  let retries = 0
+  const element = ErrorState({ message: info.message, onRetry: () => retries++ })
+  const html = renderToStaticMarkup(element)
   assert.match(html, /role="alert"/)
-  assert.match(html, /No se pudieron cargar las evidencias/)
   assert.match(html, /permiso/)
-  assert.match(html, /42501/)
-  assert.match(html, /disabled=""/)
-  assert.match(html, /aria-busy="true"/)
+  assert.match(html, /Reintentar/)
+  assert.doesNotMatch(html, /private_customer/)
+  element.props.children[1].props.onClick()
+  assert.equal(retries, 1)
 })
 
 test('el adaptador Button conserva atributos de formulario y accesibilidad', () => {
-  const { default: Button } = loadModule('components/ui/tailwind/Button.tsx')
+  const { default: Button } = loadModule('components/ui/Button.tsx')
   const html = renderToStaticMarkup(createElement(Button, {
     form: 'editor', name: 'guardar', type: 'submit', 'aria-label': 'Guardar expediente', 'aria-describedby': 'ayuda',
   }, 'Guardar'))
@@ -102,4 +103,52 @@ test('los errores HTTP conservan status y ocultan diagnósticos de servicios', (
   assert.equal(failed.status, 500)
   assert.doesNotMatch(failed.message, /privado/)
   assert.match(getUserError(failed).message, /servicio/)
+})
+
+
+test('los fallbacks de ruta comparten recuperación accesible sin mostrar ni registrar el error crudo', () => {
+  for (const [file, title, source] of [
+    ['app/error.tsx', 'Algo salió mal', 'route'],
+    ['app/documentos/error.tsx', 'Error en Documentos', 'documentos'],
+    ['app/quejas/error.tsx', 'Error en Quejas', 'quejas'],
+  ]) {
+    const logged = []
+    const { default: Page } = loadModule(file, {
+      react: { useEffect: effect => effect() },
+    }, { console: { error: (...args) => logged.push(args) } })
+    let resets = 0
+    const error = Object.assign(new Error('Bearer synthetic-private-token'), { code: '42501', details: 'private_customer' })
+    const element = Page({ error, reset: () => resets++ })
+    const html = renderToStaticMarkup(element)
+    assert.match(html, /role="alert"/)
+    assert.ok(html.includes(title), file)
+    assert.match(html, /Intentar de nuevo/)
+    assert.doesNotMatch(html, /⚠|🤖|🧠|✨|private_customer|synthetic-private-token/)
+    const fallback = element.type(element.props)
+    fallback.props.children.props.onRetry()
+    assert.equal(resets, 1)
+    assert.deepEqual(logged[0], ['[' + source + '-error]', '42501'])
+    assert.doesNotMatch(JSON.stringify(logged), /private_customer|synthetic-private-token/)
+  }
+})
+
+test('el error global conserva documento y fuente propios con recuperación compartida', () => {
+  const { default: Page } = loadModule('app/global-error.tsx', {
+    react: { useEffect() {} },
+    'next/font/google': { Inter: () => ({ className: 'test-inter' }) },
+    '@/app/globals.css': {},
+  })
+  let resets = 0
+  const element = Page({ error: new Error('synthetic-private-token'), reset: () => resets++ })
+  const html = renderToStaticMarkup(element)
+  assert.equal(element.type, 'html')
+  assert.equal(element.props.lang, 'es')
+  assert.equal(element.props.children.type, 'body')
+  assert.match(html, /<body[^>]*class="test-inter select-none"/)
+  assert.match(html, /Error inesperado \| ECA-QMS/)
+  assert.match(html, /role="alert"/)
+  assert.doesNotMatch(html, /⚠|🤖|🧠|✨|synthetic-private-token/)
+  const shared = element.props.children.props.children.props.children[1]
+  shared.props.reset()
+  assert.equal(resets, 1)
 })

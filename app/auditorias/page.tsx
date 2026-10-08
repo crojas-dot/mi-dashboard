@@ -9,13 +9,12 @@ import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { estadoAuditoriaVariant } from '@/lib/constants/estados'
 import EmptyState from '@/components/ui/EmptyState'
 
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import NuevaAuditoriaModal from './components/NuevaAuditoriaModal'
-
-const estadoVariant: Record<string, string> = { Planificada: 'blue', 'En Curso': 'amber', Completada: 'green' }
 
 export default function AuditoriasPage() {
   const [page, setPage] = useState(0)
@@ -53,7 +52,7 @@ export default function AuditoriasPage() {
                 <TableCell><span className="font-mono text-xs">{a.folio || '-'}</span></TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{a.tipo}</TableCell>
                 <TableCell className="font-medium text-gray-900 dark:text-white">{a.objetivo || '-'}</TableCell>
-                <TableCell><Badge variant={estadoVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoAuditoriaVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
                 <TableCell>
 <Button size="sm" variant="ghost" onClick={() => setHallazgosOpen(a)}>
                       <ListChecks className="h-3.5 w-3.5" />

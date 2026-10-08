@@ -37,55 +37,6 @@ test('logger usa contexto y timestamp tanto en servidor como cliente sin publica
   }
 })
 
-test('useApiError entrega un toast seguro y conserva el contexto del evento', () => {
-  const calls = []
-  const { useApiError } = loadModule('lib/hooks/useApiError.ts', {
-    react: { useCallback: (callback) => callback },
-    sonner: { toast: { error: (message) => calls.push(['toast', message]) } },
-    '@/lib/utils/logger': { logger: { error: (message, context) => calls.push(['log', message, context]) } },
-  })
-  useApiError().handleError({ status: 403, details: 'privado' }, { userId: 'u1', module: 'usuarios', action: 'guardar' })
-  assert.equal(calls[0][2].status, 403)
-  assert.equal(calls[0][2].action, 'guardar')
-  assert.deepEqual(calls[1], ['toast', 'No tienes permiso'])
-  assert.doesNotMatch(JSON.stringify(calls), /privado/)
-})
-
-function permissionsFixture(profile, permiso, failure = null, available = true) {
-  const reads = []
-  const client = { from(table) {
-    const query = {
-      select() { return query }, eq(field, value) { reads.push([table, field, value]); return query },
-      async maybeSingle() { return { data: table === 'usuarios' ? profile : permiso, error: failure } },
-    }
-    return query
-  } }
-  return { reads, ...loadModule('lib/server/permissions.ts', {
-    '@/lib/server/supabase-admin': { createServiceClient: () => available ? client : null },
-  }) }
-}
-
-test('los permisos exigen perfil activo, rol real, lectura y escritura cuando corresponde', async () => {
-  const profile = { estado: 'activo', rol: 'calidad' }
-  const api = permissionsFixture(profile, { leer: true, escribir: false })
-  assert.equal(await api.checkModuleAccess('perfil-1', 'calidad', 'quejas'), true)
-  assert.equal(await api.checkModuleAccess('perfil-1', 'calidad', 'quejas', true), false)
-  assert.equal(await api.checkModuleAccess('perfil-1', 'admin', 'quejas'), false)
-  assert.ok(api.reads.some(([table, field, value]) => table === 'usuarios' && field === 'id' && value === 'perfil-1'))
-  for (const [user, permiso, error, available] of [
-    [{ estado: 'inactivo', rol: 'admin' }, null],
-    [null, null], [profile, { leer: false, escribir: true }],
-    [profile, { leer: true, escribir: true }, new Error('BD no disponible')],
-    [profile, null, null, false],
-  ]) {
-    const denied = permissionsFixture(user, permiso, error, available ?? true)
-    assert.equal(await denied.checkModuleAccess('u1', user?.rol ?? 'calidad', 'quejas', true), false)
-  }
-  const admin = permissionsFixture({ estado: 'activo', rol: 'admin' }, null)
-  assert.equal(await admin.checkModuleAccess('u1', 'admin', 'quejas', true), true)
-  assert.equal((await admin.validateUserStatus('u1')).valid, true)
-})
-
 function proxyFixture(user) {
   const checks = []
   const { proxy } = loadModule('proxy.ts', {

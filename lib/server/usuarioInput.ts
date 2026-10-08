@@ -1,8 +1,9 @@
+import { esRolGestionable } from '@/lib/constants/roles'
+
 type UsuarioInput = Partial<Record<'id' | 'nombre' | 'email' | 'rol' | 'estado' | 'password' | 'newPassword', string>>
 type Resultado = { data: UsuarioInput; error?: never } | { data?: never; error: string }
 
-// Validar todo ANTES de tocar Auth o el perfil. Un cast de TypeScript no valida
-// JSON: antes, por ejemplo, un password inválido podía fallar tras cambiar el email.
+// Validar todo antes de Auth/perfil: el JSON externo no tiene garantías de TypeScript.
 export function validarUsuarioInput(input: unknown, method: 'POST' | 'PATCH'): Resultado {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { error: 'Body inválido' }
   const body = input as Record<string, unknown>
@@ -25,7 +26,7 @@ export function validarUsuarioInput(input: unknown, method: 'POST' | 'PATCH'): R
     data.email = data.email.toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return { error: 'Email inválido' }
   }
-  if (data.rol !== undefined && !['admin', 'calidad', 'colaborador'].includes(data.rol)) return { error: 'Rol inválido' }
+  if (data.rol !== undefined && !esRolGestionable(data.rol)) return { error: 'Rol inválido' }
   if (data.estado !== undefined && !['activo', 'inactivo'].includes(data.estado)) return { error: 'Estado inválido' }
   const password = method === 'POST' ? data.password : data.newPassword
   if (password !== undefined && password.length < 8) return { error: 'La contraseña debe tener al menos 8 caracteres' }

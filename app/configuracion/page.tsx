@@ -3,7 +3,7 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, ShieldCheck, Sparkles, Tag, type LucideIcon } from 'lucide-react'
+import { Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, ShieldCheck, Tag, type LucideIcon } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { queryKeys } from '@/lib/queries/queryKeys'
@@ -22,7 +22,7 @@ import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
 
 type Section = 'general' | 'catalogos' | 'sla' | 'formularios' | 'roles' | 'vistas' | 'ia'
 interface SectionDefinition {
-  id: Section; label: string; description: string; group: string; icon: LucideIcon
+  id: Section; label: string; description: string; group: string; icon?: LucideIcon
   component: ComponentType<{ active: boolean }>
 }
 const sections: SectionDefinition[] = [
@@ -32,7 +32,7 @@ const sections: SectionDefinition[] = [
   { id: 'roles', label: 'Roles y accesos', description: 'Qué puede ver y editar cada rol.', group: 'Acceso', icon: ShieldCheck, component: RolesAccesos },
   { id: 'vistas', label: 'Vista por rol', description: 'Revisá cómo se presenta el panel a otro rol.', group: 'Acceso', icon: Eye, component: ModoVistaActiva },
   { id: 'formularios', label: 'Formularios públicos', description: 'Enlaces para recibir quejas sin iniciar sesión.', group: 'Servicios', icon: LinkIcon, component: FormulariosSettings },
-  { id: 'ia', label: 'Asistente de IA', description: 'Proveedores, modelos y respaldo por módulo.', group: 'Servicios', icon: Sparkles, component: AIProvidersManager },
+  { id: 'ia', label: 'Asistente de IA', description: 'Proveedores, modelos y respaldo por módulo.', group: 'Servicios', component: AIProvidersManager },
 ]
 const groups = ['Organización', 'Acceso', 'Servicios']
 
@@ -81,7 +81,7 @@ export default function ConfiguracionPage() {
             return <button key={item.id} type="button" aria-current={section === item.id ? 'page' : undefined}
               aria-controls={`settings-panel-${item.id}`} onClick={() => setSection(item.id)}
               className={`flex items-start gap-2.5 rounded-card border px-3 py-2.5 text-left text-sm lg:w-full ${section === item.id ? 'border-qms-primary/20 bg-qms-primary-soft text-qms-primary' : 'border-transparent bg-transparent text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark'}`}>
-              <ItemIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              {ItemIcon && <ItemIcon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />}
               <span className="font-medium">{item.label}</span>
             </button>
           })}</div>
@@ -90,7 +90,7 @@ export default function ConfiguracionPage() {
       <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain p-1">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-qms-primary-soft text-qms-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>
+            {Icon && <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-qms-primary-soft text-qms-primary"><Icon className="h-5 w-5" aria-hidden="true" /></span>}
             <div><h2 id="settings-section-title" className="text-xl font-medium text-qms-dark">{selected.label}</h2><p className="mt-1 text-sm text-qms-muted">{selected.description}</p></div>
           </div>
           {section !== 'ia' && section !== 'vistas' && <Button size="sm" variant="secondary" loading={refreshing} loadingLabel="Actualizando datos…" onClick={() => void recargar()}>{!refreshing && <RotateCcw className="h-4 w-4" aria-hidden="true" />} Actualizar datos</Button>}

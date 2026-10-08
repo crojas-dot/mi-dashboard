@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
+import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
 import { useQuejas, useSLAConfig, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
@@ -18,7 +19,8 @@ import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
+import { esQuejaResuelta } from '@/lib/constants/quejas'
+import { prioridadVariant, estadoVariant } from '@/lib/constants/estados'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -69,7 +71,7 @@ export default function QuejasPage() {
   }, [slaConfigs])
 
   function calcularSLA(fecha: string, prioridad: string, estado: string): { label: string; variant: string } {
-    if (estadoVariant[estado] === 'green') return { label: 'Completado', variant: 'green' }
+    if (esQuejaResuelta(estado)) return { label: 'Completado', variant: 'green' }
     const dias = Math.floor((ahora - new Date(fecha).getTime()) / 86400000)
     // El indicador actual cuenta días transcurridos desde la recepción.
     const label = `${dias} ${dias === 1 ? 'día' : 'días'}`
@@ -168,7 +170,7 @@ export default function QuejasPage() {
       </div>
 
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} prioridades={prioridades} />
-      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={updated => { if (updated) setDetalleOpen(current => current?.id === updated.id ? updated : current); invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />
+      <QuejaDetalleModal queja={detalleOpen} onClose={() => setDetalleOpen(null)} onUpdated={(updated, isCurrent) => { if (updated) setDetalleOpen(current => updateSelectedQueja(current, updated, isCurrent)); invalidateQuejas() }} prioridades={prioridades} categorias={categorias} />
     </div>
   )
 }

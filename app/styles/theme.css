@@ -1,0 +1,75 @@
+/* =========================================================
+   Tema ECA-QMS — modificar aquí colores, escala y radios
+   Radios de esquina pequeños => look "cuadradito" uniforme
+   ========================================================= */
+@theme {
+  /* Escala de lectura: texto auxiliar 14px, controles 15px y contenido 16px. */
+  --text-xs: 0.875rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  /* Radios "cuadraditos" */
+  --radius-xs: 0.125rem;
+  --radius-sm: 0.1875rem;   /* 3px */
+  --radius-md: 0.25rem;     /* 4px, estándar para inputs/botones */
+  --radius-lg: 0.375rem;    /* 6px, para modales y tarjetas */
+  --radius-xl: 0.5rem;      /* 8px, solo paneles flotantes */
+  --radius-2xl: 0.625rem;   /* 10px, excepcional */
+  --radius-3xl: 0.75rem;
+  --radius-4xl: 1rem;
+  --radius: 0.25rem;        /* alias por defecto */
+
+  /* Colores base */
+  --color-qms-primary: #024796;
+  --color-qms-primary-dark: #013b7d;
+  --color-qms-primary-hover: #013b7d;
+  --color-qms-primary-soft: #e7edf5;
+  --color-qms-focus-border: color-mix(in srgb, var(--color-qms-primary) 50%, white);
+  --color-qms-focus-ring: color-mix(in srgb, var(--color-qms-primary) 25%, transparent);
+  --color-qms-dark: #212529;
+  --color-qms-muted: #6c757d;
+  --color-qms-border: #dee2e6;
+  /* Cabeceras de tablas: fondo claro independiente del menú y de los modales. */
+  --color-qms-table-head: #F0F2F5;
+  --color-qms-header: #343a40;
+  --color-qms-surface: #ffffff;
+  --color-qms-background: #f4f7f6;
+  --color-qms-danger: #dc3545;
+  --color-qms-success: #198754;
+  --color-qms-warning: #e0a800;
+  --color-qms-warning-text: #382b00;
+  --color-qms-orange: #c65d08;
+  /* Etiqueta «En Investigación» (quejas) */
+  --color-qms-investigacion: #f57c00;
+  --color-qms-investigacion-text: #ffffff;
+  --color-qms-info: #024796;
+  --color-qms-purple: #6f42c1;
+  --color-qms-hover-bg: #f8f9fa;
+  --color-qms-scroll: #cbd5e1;
+  --color-qms-scroll-hover: #94a3b8;
+
+  /* Radios semánticos para componentes reutilizables */
+  --radius-button: 0.25rem;
+  --radius-card: 0.375rem;
+  --radius-modal: 0.375rem;
+
+  /* Fondos semánticos */
+  --color-soft-blue-bg: #e7edf5;
+  --color-soft-blue-text: #024796;
+  --color-soft-green-bg: #e8f5ee;
+  --color-soft-green-text: #198754;
+  --color-soft-red-bg: #fdeeee;
+  --color-soft-red-text: #dc3545;
+  --color-soft-amber-bg: #fff3cd;
+  --color-soft-amber-text: #856404;
+  --color-soft-purple-bg: #f1ecf9;
+  --color-soft-purple-text: #6f42c1;
+  --color-soft-gray-bg: #f8f9fa;
+  --color-soft-gray-text: #495057;
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+  --shadow-md: 0 0.5rem 1rem rgba(0,0,0,0.15);
+  --shadow-lg: 0 1rem 3rem rgba(0,0,0,0.175);
+}

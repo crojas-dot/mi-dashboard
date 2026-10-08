@@ -7,6 +7,7 @@ import { logger } from '@/lib/utils/logger'
 import { retryRead } from '@/lib/errors/userError'
 import { CACHE_CONFIG, getCacheConfig } from '@/lib/queries/cacheConfig'
 import { queryKeys } from '@/lib/queries/queryKeys'
+import { activateQueryContext } from '@/lib/queries/queryContextScope'
 
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const scope = useAuthStore((state) =>
@@ -56,7 +57,13 @@ function ScopedQueryProvider({ children, userId }: { children: React.ReactNode; 
     })
   }, [queryClient, userId])
 
-  useEffect(() => () => { queryClient.clear() }, [queryClient])
+  useEffect(() => {
+    const invalidateContext = activateQueryContext(queryClient)
+    return () => {
+      invalidateContext()
+      queryClient.clear()
+    }
+  }, [queryClient])
 
   return (
     <QueryClientProvider client={queryClient}>

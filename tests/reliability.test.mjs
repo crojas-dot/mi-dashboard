@@ -6,8 +6,9 @@ test('dashboard excluye estados terminales y devuelve los ocho vencimientos más
   const quejas = Array.from({ length: 12 }, (_, i) => ({ id: `q${i}`, estado: 'En Investigación', fecha_sla: `2026-09-${String(20 - i).padStart(2, '0')}` }))
   quejas.push(...['Finalizado', 'No Procede', 'Cerrada'].map((estado) => ({ id: estado, estado, fecha_sla: '2020-01-01' })))
   const db = fakeDatabase({ quejas, acciones: [], documentos: [], riesgos: [] })
-  const { fetchDashboard } = loadModule('lib/queries/useDashboard.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
-  const result = await fetchDashboard()
+  const { fetchDashboardIndicadores, fetchDashboardTareas } = loadModule('lib/queries/useDashboard.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
+  const [indicadores, tareas] = await Promise.all([fetchDashboardIndicadores(), fetchDashboardTareas()])
+  const result = { indicadores, tareas }
   assert.equal(result.indicadores[0].valor, 12)
   assert.deepEqual(Array.from(result.tareas, (row) => row.id), ['q11', 'q10', 'q9', 'q8', 'q7', 'q6', 'q5', 'q4'])
 })
@@ -15,8 +16,8 @@ test('dashboard excluye estados terminales y devuelve los ocho vencimientos más
 test('dashboard propaga errores de BD en lugar de inventar indicadores en cero', async () => {
   const failure = new Error('BD no disponible')
   const db = fakeDatabase({}, { riesgos: failure })
-  const { fetchDashboard } = loadModule('lib/queries/useDashboard.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
-  await assert.rejects(fetchDashboard(), /BD no disponible/)
+  const { fetchDashboardIndicadores } = loadModule('lib/queries/useDashboard.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
+  await assert.rejects(fetchDashboardIndicadores(), /BD no disponible/)
 })
 
 test('paginación filtra antes de limitar y conserva el total del filtro', async () => {

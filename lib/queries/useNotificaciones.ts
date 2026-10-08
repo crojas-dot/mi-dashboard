@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listarNotificaciones, marcarLeida, marcarTodasLeidas, archivarNotificacion, archivarTodasVisibles } from '@/lib/services/notificacionService';
 import { queryKeys } from './queryKeys';
+import { showError } from '@/lib/services/errorToast';
 
 export function notificacionesKey(userId: string) {
   return [...queryKeys.notificaciones, userId] as const
@@ -25,6 +26,7 @@ export function useMarcarNotificacionLeida() {
       return userId
     },
     onSuccess: (userId) => queryClient.invalidateQueries({ queryKey: notificacionesKey(userId) }),
+    onError: (error) => showError(error, 'No se pudo marcar la notificación como leída.'),
   })
 }
 
@@ -36,6 +38,7 @@ export function useMarcarTodasLeidas() {
       return userId
     },
     onSuccess: (userId) => queryClient.invalidateQueries({ queryKey: notificacionesKey(userId) }),
+    onError: (error) => showError(error, 'No se pudieron marcar las notificaciones como leídas.'),
   })
 }
 
@@ -47,6 +50,7 @@ export function useArchivarNotificacion() {
       return userId
     },
     onSuccess: (userId) => queryClient.invalidateQueries({ queryKey: notificacionesKey(userId) }),
+    onError: (error) => showError(error, 'No se pudo archivar la notificación.'),
   })
 }
 
@@ -58,5 +62,6 @@ export function useArchivarTodas() {
       return userId
     },
     onSuccess: (userId) => queryClient.invalidateQueries({ queryKey: notificacionesKey(userId) }),
+    onError: (error) => showError(error, 'No se pudieron archivar las notificaciones.'),
   })
 }

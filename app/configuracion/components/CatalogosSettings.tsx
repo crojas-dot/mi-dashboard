@@ -6,6 +6,7 @@ import { Plus, Save } from 'lucide-react'
 import { useCatalogos, catalogosKey, type CatalogoValor } from '@/lib/queries/useCatalogos'
 import { guardarValorCatalogo, eliminarValorCatalogo } from '@/lib/services/configuracionService'
 import { presentarNombre } from '@/lib/utils/configuracion'
+import { COLORES_CATALOGO } from '@/lib/constants/badges'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -18,7 +19,7 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
 const modulos = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'general']
-const colores = { blue: 'Azul', green: 'Verde', amber: 'Ámbar', orange: 'Naranja', red: 'Rojo', purple: 'Morado', gray: 'Gris' }
+const etiquetaColor = (value: string | null) => COLORES_CATALOGO.find(color => color.value === value)?.label ?? value ?? 'Gris'
 
 export default function CatalogosSettings({ active }: { active: boolean }) {
   const query = useCatalogos(active)
@@ -67,14 +68,14 @@ export default function CatalogosSettings({ active }: { active: boolean }) {
           {tipos.map(t => <option key={t} value={t}>{presentarNombre(t)}</option>)}
         </Select>
       </Field>
-      <Button disabled={!actual || !!editor || saving} onClick={() => setEditor({ modulo, tipo: actual, valor: '', color: 'gray', orden: 0, activo: true })}><Plus className="h-4 w-4" aria-hidden="true" /> Agregar valor</Button>
+      <Button disabled={!actual || !!editor || saving} onClick={() => setEditor({ modulo, tipo: actual, valor: '', color: 'secondary', orden: 0, activo: true })}><Plus className="h-4 w-4" aria-hidden="true" /> Agregar valor</Button>
     </div>
 
     {editor && <form className="ui-panel space-y-4 border-qms-primary/20 bg-qms-primary-soft p-5" onSubmit={event => { event.preventDefault(); void ejecutar(false) }}>
       <h3 className="text-base font-medium">{editor.id ? 'Editar valor' : 'Nuevo valor'} · {presentarNombre(editor.tipo ?? actual)}</h3>
       <fieldset disabled={saving} className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[2fr_1fr_100px_auto]">
         <Field id="catalogo-valor" label="Valor"><Input id="catalogo-valor" required value={editor.valor ?? ''} onChange={event => setEditor({ ...editor, valor: event.target.value })} /></Field>
-        <Field id="catalogo-color" label="Color"><Select id="catalogo-color" value={editor.color ?? 'gray'} onChange={event => setEditor({ ...editor, color: event.target.value })}>{Object.entries(colores).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</Select></Field>
+        <Field id="catalogo-color" label="Color"><Select id="catalogo-color" value={editor.color ?? 'secondary'} onChange={event => setEditor({ ...editor, color: event.target.value })}>{COLORES_CATALOGO.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</Select></Field>
         <Field id="catalogo-orden" label="Orden"><Input id="catalogo-orden" required type="number" min={0} step={1} value={editor.orden ?? ''} onChange={event => setEditor({ ...editor, orden: Number.isNaN(event.target.valueAsNumber) ? undefined : event.target.valueAsNumber })} /></Field>
         <div className="flex items-end gap-2 pb-2"><Switch aria-label="Valor activo" checked={editor.activo !== false} onChange={activo => setEditor({ ...editor, activo })} /><span className="text-sm">Activo</span></div>
       </fieldset>
@@ -85,7 +86,7 @@ export default function CatalogosSettings({ active }: { active: boolean }) {
       <caption className="sr-only">{presentarNombre(actual || 'catalogos')} de {presentarNombre(modulo)}</caption>
       <thead><tr><th scope="col">Valor</th><th scope="col">Color</th><th scope="col">Orden</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
       <tbody>{filas.length ? filas.map(c => <tr key={c.id}>
-        <td className="font-medium">{c.valor}</td><td><Badge variant={c.color || 'gray'}>{colores[c.color as keyof typeof colores] ?? c.color ?? 'Gris'}</Badge></td><td>{c.orden}</td>
+        <td className="font-medium">{c.valor}</td><td><Badge variant={c.color || 'secondary'}>{etiquetaColor(c.color)}</Badge></td><td>{c.orden}</td>
         <td><Badge variant={c.activo !== false ? 'green' : 'gray'}>{c.activo !== false ? 'Activo' : 'Inactivo'}</Badge></td>
         <td><div className="flex gap-1"><Button size="sm" variant="link" disabled={saving} onClick={() => setEditor(c)} aria-label={`Editar ${c.valor}`}>Editar</Button><Button size="sm" variant="danger" disabled={saving} onClick={() => setEliminar(c)} aria-label={`Eliminar ${c.valor}`}>Eliminar</Button></div></td>
       </tr>) : <tr><td colSpan={5} className="py-10! text-center text-qms-muted">No hay valores en este catálogo.</td></tr>}</tbody>

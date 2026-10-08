@@ -3,7 +3,6 @@
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import Modal from '@/components/Modal'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
@@ -12,26 +11,25 @@ import type { Queja } from '@/lib/types'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
 import { useQuejaComentarios, useCrearQuejaComentario } from '@/lib/queries/useQuejaComentarios'
-import { quejaAdjuntosKey, useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import {
   actualizarDetallesQueja,
   derivarQuejaASACP,
   transicionarQueja,
-  subirAdjuntoQueja,
-  descargarAdjuntoQueja,
-  eliminarAdjuntoQueja,
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { estadoVariant } from '@/lib/constants/variants'
+import { estadoVariant } from '@/lib/constants/estados'
 import { Send, GitBranch, Upload, RotateCcw } from 'lucide-react'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
+import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
+import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 
 interface Props {
   queja: Queja | null
   onClose: () => void
-  onUpdated: (updated?: Queja) => void
+  onUpdated: (updated?: Queja, isCurrent?: () => boolean) => void
   prioridades: { valor: string; color: string }[]
   categorias: { valor: string; color: string }[]
 }
@@ -117,21 +115,23 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const [nuevoComentario, setNuevoComentario] = useState('')
   const [comentarioTipo, setComentarioTipo] = useState<'interno' | 'cliente'>('interno')
   const [visibleCliente, setVisibleCliente] = useState(false)
-  const [subiendoAdjunto, setSubiendoAdjunto] = useState(false)
   const [reaperturaAbierta, setReaperturaAbierta] = useState(false)
   const [motivoReapertura, setMotivoReapertura] = useState('')
   const [reabriendo, setReabriendo] = useState(false)
-  const [previewAdjunto, setPreviewAdjunto] = useState<QuejaAdjunto | null>(null)
-  const [eliminandoAdjunto, setEliminandoAdjunto] = useState<string | null>(null)
-  const [confirmarEliminacion, setConfirmarEliminacion] = useState<string | null>(null)
-
-  const queryClient = useQueryClient()
+  const [agregandoComentario, setAgregandoComentario] = useState(false)
+  const draftVersions = useRef({ workflow: 0, comentario: 0 })
   const quejaId = queja?.id ?? ''
   const { data: comentarios = [], isLoading: comentariosLoading } = useQuejaComentarios(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
   const { data: usuarios = [] } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)
+  const scope = useEntityRequestGuard(queja?.id ?? null)
+  const {
+    previewAdjunto, setPreviewAdjunto, subiendoAdjunto, eliminandoAdjunto,
+    confirmarEliminacion, setConfirmarEliminacion,
+    handleSubirAdjunto, handleEliminarAdjunto, handleDescargarAdjunto,
+  } = useQuejaAttachmentActions(queja?.id ?? null, scope)
 
   const responsables = useMemo(
     () => (usuarios as Usuario[]).filter((u) => u.rol === 'admin' || u.rol === 'calidad' || u.rol === 'colaborador'),
@@ -150,9 +150,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     setResolucion('')
     setReaperturaAbierta(false)
     setMotivoReapertura('')
-    setPreviewAdjunto(null)
-    setConfirmarEliminacion(null)
-    setEliminandoAdjunto(null)
+    setLoading(false)
+    setDerivando(false)
+    setReabriendo(false)
+    setAgregandoComentario(false)
+    setNuevoComentario('')
+    setComentarioTipo('interno')
+    setVisibleCliente(false)
   }
 
   if (!queja) return null
@@ -165,24 +169,53 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     return found ? colorMap[found.color] || '#6c757d' : '#6c757d'
   }
 
-  // ── Recibido: Decisión de procedencia (solo admin/calidad) ──
+  const handleClose = () => {
+    scope.invalidate()
+    onClose()
+  }
+
+  // El servicio recibe la revisión capturada; ningún fallo autoriza buscar otra para reintentar.
+  const runCaseUpdate = async (
+    write: () => Promise<Queja>,
+    successMessage: string,
+    errorMessage: string,
+    onCurrentDraft?: () => void,
+    setPending = setLoading,
+  ) => {
+    const operation = scope.start('workflow')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    const draftVersion = draftVersions.current.workflow
+    setPending(true)
+    let confirmed = false
+    try {
+      const updated = await write()
+      confirmed = true
+      if (isContextCurrent()) onUpdated(updated, operation.isCurrent)
+      if (operation.isCurrent()) {
+        showSuccess(successMessage)
+        if (draftVersions.current.workflow === draftVersion) onCurrentDraft?.()
+      }
+    } catch (error) {
+      if (operation.isCurrent()) showError(error, confirmed
+        ? 'La queja se guardó, pero no se pudo actualizar la vista'
+        : errorMessage)
+    } finally {
+      if (operation.isCurrent()) setPending(false)
+      operation.finish()
+    }
+  }
+
   const handleGuardarNoProcede = async () => {
     if (!justificacion.trim()) {
       showError(null, 'La justificación / resolución es obligatoria para marcar como No Procede')
       return
     }
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'No Procede', { resolucion: justificacion })
-      showSuccess('Queja marcada como No Procede')
-      setDecisionProcedencia(null)
-      setJustificacion('')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo marcar la queja como No Procede')
-    } finally {
-      setLoading(false)
-    }
+    await runCaseUpdate(
+      () => transicionarQueja(queja, 'No Procede', { resolucion: justificacion }),
+      'Queja marcada como No Procede', 'No se pudo marcar la queja como No Procede',
+      () => { setDecisionProcedencia(null); setJustificacion('') },
+    )
   }
 
   const handleGuardarProcede = async () => {
@@ -195,117 +228,52 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
       showError(null, 'Seleccioná un responsable antes de iniciar la investigación')
       return
     }
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'En Investigación', {
-        justificacionProcede: justificacion,
-        responsableId: responsable.id,
-      })
-      showSuccess('Queja en investigación. Plazo: 15 días.')
-      setDecisionProcedencia(null)
-      setJustificacion('')
-      setResponsableSeleccionado(null)
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo iniciar la investigación')
-    } finally {
-      setLoading(false)
-    }
+    await runCaseUpdate(
+      () => transicionarQueja(queja, 'En Investigación', {
+        justificacionProcede: justificacion, responsableId: responsable.id,
+      }),
+      'Queja en investigación. Plazo: 15 días.', 'No se pudo iniciar la investigación',
+      () => { setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) },
+    )
   }
 
-  // ── En Investigación: Resolver ──
   const handleConfirmarResolucion = async () => {
     if (!resolucion.trim()) {
       showError(null, 'Escribí el análisis / resolución final antes de resolver la queja')
       return
     }
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'Resuelto', { resolucion })
-      showSuccess('Queja resuelta')
-      setResolucionAbierta(false)
-      setResolucion('')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo resolver la queja')
-    } finally {
-      setLoading(false)
-    }
+    await runCaseUpdate(
+      () => transicionarQueja(queja, 'Resuelto', { resolucion }),
+      'Queja resuelta', 'No se pudo resolver la queja',
+      () => { setResolucionAbierta(false); setResolucion('') },
+    )
   }
 
-  const handleSeleccionarResponsable = (u: Usuario | null) => {
-    setResponsableSeleccionado(u)
-    if (!u || estadoActual === 'Recibido' || u.id === queja.responsable_id) return
-    actualizarDetallesQueja({ quejaId: queja.id, revision: queja.revision, responsableId: u.id })
-      .then(updated => { showSuccess('Responsable asignado'); onUpdated(updated) })
-      .catch((e) => showError(e as Error, 'No se pudo asignar el responsable'))
+  const handleSeleccionarResponsable = async (usuario: Usuario | null) => {
+    draftVersions.current.workflow++
+    setResponsableSeleccionado(usuario)
+    if (!usuario || estadoActual === 'Recibido' || usuario.id === queja.responsable_id) return
+    await runCaseUpdate(
+      () => actualizarDetallesQueja({ quejaId: queja.id, revision: queja.revision, responsableId: usuario.id }),
+      'Responsable asignado', 'No se pudo asignar el responsable',
+    )
   }
 
-  const handleFinalizar = async () => {
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'Finalizado')
-      showSuccess('Queja finalizada')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo finalizar la queja')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleFinalizar = () => runCaseUpdate(
+    () => transicionarQueja(queja, 'Finalizado'),
+    'Queja finalizada', 'No se pudo finalizar la queja',
+  )
 
   const handleReabrir = async () => {
     if (!motivoReapertura.trim()) {
       showError(null, 'Escribí el motivo antes de reabrir la queja')
       return
     }
-    setReabriendo(true)
-    try {
-      const updated = await transicionarQueja(queja, 'En Investigación', { motivoReapertura })
-      showSuccess('Queja reabierta. Nuevo plazo: 15 días.')
-      setReaperturaAbierta(false)
-      setMotivoReapertura('')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo reabrir la queja')
-    } finally {
-      setReabriendo(false)
-    }
-  }
-
-  const handleSubirAdjunto = async (file: File) => {
-    setSubiendoAdjunto(true)
-    try {
-      await subirAdjuntoQueja(queja.id, file)
-      queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
-      showSuccess('Adjunto subido')
-    } catch (error) {
-      showError(error as Error, 'No se pudo subir el adjunto')
-    } finally {
-      setSubiendoAdjunto(false)
-    }
-  }
-
-  const handleDescargarAdjunto = async (adjunto: QuejaAdjunto) => {
-    try {
-      await descargarAdjuntoQueja(adjunto)
-    } catch (error) {
-      showError(error as Error, 'No se pudo descargar el adjunto')
-    }
-  }
-
-  const handleEliminarAdjunto = async (adjuntoId: string) => {
-    setEliminandoAdjunto(adjuntoId)
-    try {
-      await eliminarAdjuntoQueja(adjuntoId)
-      queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(queja.id) })
-      showSuccess('Adjunto eliminado')
-      setConfirmarEliminacion(null)
-    } catch (error) {
-      showError(error as Error, 'No se pudo eliminar el adjunto')
-    } finally {
-      setEliminandoAdjunto(null)
-    }
+    await runCaseUpdate(
+      () => transicionarQueja(queja, 'En Investigación', { motivoReapertura }),
+      'Queja reabierta. Nuevo plazo: 15 días.', 'No se pudo reabrir la queja',
+      () => { setReaperturaAbierta(false); setMotivoReapertura('') }, setReabriendo,
+    )
   }
 
   const puedeEliminarAdjunto = (adjunto: QuejaAdjunto): boolean => {
@@ -313,65 +281,64 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     return user?.rol === 'admin' || user?.rol === 'calidad' || queja.responsable_id === user?.id
   }
 
-  const handleAprobarResolucion = async () => {
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'Resuelto')
-      showSuccess('Resolución aprobada. Queja resuelta.')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo aprobar la resolución')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleAprobarResolucion = () => runCaseUpdate(
+    () => transicionarQueja(queja, 'Resuelto'),
+    'Resolución aprobada. Queja resuelta.', 'No se pudo aprobar la resolución',
+  )
 
-  const handleDevolverInvestigacion = async () => {
-    setLoading(true)
-    try {
-      const updated = await transicionarQueja(queja, 'En Investigación')
-      showSuccess('Queja devuelta a investigación')
-      onUpdated(updated)
-    } catch (error) {
-      showError(error as Error, 'No se pudo devolver la queja')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const handleDevolverInvestigacion = () => runCaseUpdate(
+    () => transicionarQueja(queja, 'En Investigación'),
+    'Queja devuelta a investigación', 'No se pudo devolver la queja',
+  )
 
   const handleDerivarSACP = async () => {
+    const operation = scope.start('workflow')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
     setDerivando(true)
+    let confirmed = false
     try {
       const accion = await derivarQuejaASACP(queja.id)
-      showSuccess(`Derivada a SACP como ${accion.folio || 'nueva acción'}`)
-      onUpdated()
+      confirmed = true
+      if (isContextCurrent()) onUpdated(undefined, operation.isCurrent)
+      if (operation.isCurrent()) showSuccess('Derivada a SACP como ' + (accion.folio || 'nueva acción'))
     } catch (error) {
-      showError(error as Error, 'No se pudo derivar a SACP')
+      if (operation.isCurrent()) showError(error, confirmed
+        ? 'La derivación se guardó, pero no se pudo actualizar la vista'
+        : 'No se pudo derivar a SACP')
     } finally {
-      setDerivando(false)
+      if (operation.isCurrent()) setDerivando(false)
+      operation.finish()
     }
   }
 
   const handleAgregarComentario = async () => {
     if (!nuevoComentario.trim()) return
+    const operation = scope.start('case-comment')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    const draftVersion = draftVersions.current.comentario
+    setAgregandoComentario(true)
     try {
       await crearComentario.mutateAsync({
-        quejaId: queja.id,
-        comentario: nuevoComentario,
-        tipo: comentarioTipo,
-        visibleCliente,
+        quejaId: queja.id, comentario: nuevoComentario, tipo: comentarioTipo, visibleCliente, isContextCurrent,
       })
-      showSuccess('Comentario agregado')
-      setNuevoComentario('')
+      if (operation.isCurrent()) {
+        showSuccess('Comentario agregado')
+        if (draftVersions.current.comentario === draftVersion) setNuevoComentario('')
+      }
     } catch (error) {
-      showError(error as Error, 'No se pudo agregar el comentario')
+      if (operation.isCurrent()) showError(error, 'No se pudo agregar el comentario')
+    } finally {
+      if (operation.isCurrent()) setAgregandoComentario(false)
+      operation.finish()
     }
   }
 
   return (
     <>
       <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
-      <Modal open={!!queja} onClose={onClose} title={`Queja ${queja.folio}`} size="lg">
+      <Modal open={!!queja} onClose={handleClose} title={`Queja ${queja.folio}`} size="lg">
       <div className="space-y-5 select-text">
         {/* Sección 1: Datos de la queja */}
         <div className="space-y-6">
@@ -489,7 +456,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
               rows={3}
               className="ui-textarea w-full px-3 py-2 text-sm"
               value={resolucion}
-              onChange={(e) => setResolucion(e.target.value)}
+              onChange={(e) => { draftVersions.current.workflow++; setResolucion(e.target.value) }}
             />
             {queja.resolucion && (
               <p className="mt-2 text-sm text-gray-700 bg-white rounded-lg p-3 border border-gray-200 whitespace-pre-wrap">{queja.resolucion}</p>
@@ -529,11 +496,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                       rows={4}
                       className="ui-textarea w-full px-3 py-2 text-sm"
                       value={justificacion}
-                      onChange={(e) => setJustificacion(e.target.value)}
+                      onChange={(e) => { draftVersions.current.workflow++; setJustificacion(e.target.value) }}
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <Button variant="danger" onClick={handleGuardarNoProcede} loading={loading}>Guardar</Button>
-                      <Button variant="ghost" onClick={() => { setDecisionProcedencia(null); setJustificacion('') }}>Volver</Button>
+                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia(null); setJustificacion('') }}>Volver</Button>
                     </div>
                   </>
                 ) : (
@@ -547,7 +514,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                       rows={3}
                       className="ui-textarea w-full px-3 py-2 text-sm"
                       value={justificacion}
-                      onChange={(e) => setJustificacion(e.target.value)}
+                      onChange={(e) => { draftVersions.current.workflow++; setJustificacion(e.target.value) }}
                     />
                     <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                       <label className="text-xs font-medium text-gray-500 uppercase tracking-wider sm:w-36 shrink-0">Responsable *</label>
@@ -555,7 +522,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Button onClick={handleGuardarProcede} loading={loading}>Guardar</Button>
-                      <Button variant="ghost" onClick={() => { setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) }}>Volver</Button>
+                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) }}>Volver</Button>
                     </div>
                   </>
                 )
@@ -577,7 +544,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
 
                 {!resolucionAbierta ? (
                   <div className="flex flex-wrap items-center gap-2">
-                    <Button onClick={() => setResolucionAbierta(true)}>Resolver</Button>
+                    <Button onClick={() => { draftVersions.current.workflow++; setResolucionAbierta(true) }}>Resolver</Button>
                     {!queja.derivado_sacp_id && (
                       <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando}>
                         <GitBranch className="h-3.5 w-3.5" /> Derivar a SACP
@@ -592,11 +559,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                       rows={4}
                       className="ui-textarea w-full px-3 py-2 text-sm"
                       value={resolucion}
-                      onChange={(e) => setResolucion(e.target.value)}
+                      onChange={(e) => { draftVersions.current.workflow++; setResolucion(e.target.value) }}
                     />
                     <div className="flex flex-wrap items-center gap-2">
                       <Button onClick={handleConfirmarResolucion} loading={loading}>Confirmar resolución</Button>
-                      <Button variant="ghost" onClick={() => { setResolucionAbierta(false); setResolucion('') }}>Volver</Button>
+                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setResolucionAbierta(false); setResolucion('') }}>Volver</Button>
                     </div>
                   </>
                 )}
@@ -630,7 +597,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
               esStaff ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <Button onClick={handleFinalizar} loading={loading}>Finalizar</Button>
-                  <Button variant="secondary" onClick={() => setReaperturaAbierta(true)}>
+                  <Button variant="secondary" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(true) }}>
                     <RotateCcw className="h-3.5 w-3.5" /> Reabrir queja
                   </Button>
                   {!queja.derivado_sacp_id && (
@@ -649,7 +616,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
             {estadoActual === 'Finalizado' && (
               esStaff ? (
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="secondary" onClick={() => setReaperturaAbierta(true)}>
+                  <Button variant="secondary" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(true) }}>
                     <RotateCcw className="h-3.5 w-3.5" /> Reabrir queja
                   </Button>
                 </div>
@@ -676,11 +643,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
                   rows={2}
                   className="ui-textarea w-full px-3 py-2 text-sm"
                   value={motivoReapertura}
-                  onChange={(e) => setMotivoReapertura(e.target.value)}
+                  onChange={(e) => { draftVersions.current.workflow++; setMotivoReapertura(e.target.value) }}
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   <Button onClick={handleReabrir} loading={reabriendo}>Confirmar reapertura</Button>
-                  <Button variant="ghost" onClick={() => setReaperturaAbierta(false)}>Cancelar</Button>
+                  <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(false) }}>Cancelar</Button>
                 </div>
               </div>
             )}
@@ -712,18 +679,18 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
               rows={2}
               className="ui-textarea w-full px-3 py-2 text-sm"
               value={nuevoComentario}
-              onChange={(e) => setNuevoComentario(e.target.value)}
+              onChange={(e) => { draftVersions.current.comentario++; setNuevoComentario(e.target.value) }}
             />
             <div className="flex flex-col gap-1.5 shrink-0">
-              <Select className="w-full" value={comentarioTipo} onChange={(e) => setComentarioTipo(e.target.value as 'interno' | 'cliente')}>
+              <Select className="w-full" value={comentarioTipo} onChange={(e) => { draftVersions.current.comentario++; setComentarioTipo(e.target.value as 'interno' | 'cliente') }}>
                 <option value="interno">Interno</option>
                 <option value="cliente">Cliente</option>
               </Select>
               <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
-                <input type="checkbox" checked={visibleCliente} onChange={(e) => setVisibleCliente(e.target.checked)} />
+                <input type="checkbox" checked={visibleCliente} onChange={(e) => { draftVersions.current.comentario++; setVisibleCliente(e.target.checked) }} />
                 Visible al quejoso
               </label>
-              <Button size="sm" onClick={handleAgregarComentario} disabled={!nuevoComentario.trim()}><Send className="h-3 w-3" /> Agregar</Button>
+              <Button size="sm" onClick={handleAgregarComentario} loading={agregandoComentario} disabled={!nuevoComentario.trim()}><Send className="h-3 w-3" /> Agregar</Button>
             </div>
           </div>
         </div>

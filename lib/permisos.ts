@@ -1,23 +1,10 @@
+import { MODULOS_DE_RUTA } from '@/lib/constants/modulos'
+
 export interface Permiso {
   rol: string
   modulo: string
   leer: boolean
   escribir: boolean
-}
-
-export const MODULOS_DE_RUTA: Record<string, string> = {
-  '': 'dashboard',
-  'mis-quejas': 'mis_quejas',
-  quejas: 'quejas',
-  documentos: 'documentos',
-  sacp: 'sacp',
-  riesgos: 'riesgos',
-  auditorias: 'auditorias',
-  revision: 'revision',
-  procesos: 'procesos',
-  usuarios: 'usuarios',
-  configuracion: 'configuracion',
-  reporteria: 'reporteria',
 }
 
 export function moduloDeRuta(pathname: string): string {

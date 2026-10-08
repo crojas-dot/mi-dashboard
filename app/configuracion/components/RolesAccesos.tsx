@@ -4,30 +4,13 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useRef } from 'react'
 import { usePermisos, useActualizarPermiso } from '@/lib/queries/usePermisos'
 import type { Permiso } from '@/lib/permisos'
+import { MODULOS_PERMISOS } from '@/lib/constants/modulos'
 import Switch from '@/components/ui/Switch'
 import ErrorState from '@/components/ui/ErrorState'
 import { showError, showSuccess } from '@/lib/services/errorToast'
+import { getRoleLabel, ROLES_GESTIONABLES } from '@/lib/constants/roles'
 
-const ROLES = [
-  { key: 'admin', label: 'Administrador' },
-  { key: 'calidad', label: 'Calidad' },
-  { key: 'colaborador', label: 'Colaborador' },
-]
-
-const MODULOS = [
-  { key: 'dashboard', label: 'Dashboard' },
-  { key: 'quejas', label: 'Quejas' },
-  { key: 'mis_quejas', label: 'Mis Quejas' },
-  { key: 'documentos', label: 'Documentos' },
-  { key: 'sacp', label: 'SACP' },
-  { key: 'riesgos', label: 'Riesgos' },
-  { key: 'auditorias', label: 'Auditorías' },
-  { key: 'revision', label: 'Revisión por Dirección' },
-  { key: 'procesos', label: 'Procesos' },
-  { key: 'usuarios', label: 'Usuarios' },
-  { key: 'configuracion', label: 'Configuración' },
-  { key: 'reporteria', label: 'Reportería' },
-]
+const ROLES = ROLES_GESTIONABLES.map(key => ({ key, label: getRoleLabel(key) }))
 
 export default function RolesAccesos({ active = true }: { active?: boolean }) {
   const { data: permisos = [], isLoading, error, refetch } = usePermisos(active)
@@ -82,7 +65,7 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
             </tr>
           </thead>
           <tbody>
-            {MODULOS.map((m) => (
+            {MODULOS_PERMISOS.map((m) => (
               <tr key={m.key} className="border-b border-gray-200 hover:bg-gray-50">
                 <td className="px-3 py-2 font-medium text-gray-900">{m.label}</td>
                 {ROLES.map((r) => {

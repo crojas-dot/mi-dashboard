@@ -10,17 +10,17 @@ import { loadModule } from './load-module.mjs'
 
 const render = (component, props) => renderToStaticMarkup(createElement(component, props))
 
-test('el kit resuelve overrides tw: sin confundir color, tamaño y modificadores', () => {
-  const { cn } = loadModule('components/ui/tailwind/cn.ts')
-  assert.equal(cn('tw:px-3 tw:text-base tw:text-primary tw:hover:bg-primary', {
-    'tw:px-6 tw:text-sm tw:text-danger tw:hover:bg-danger': true,
-    'tw:hidden': false,
-  }), 'tw:px-6 tw:text-sm tw:text-danger tw:hover:bg-danger')
-  assert.equal(cn('tw:p-4', 'tw:p-0'), 'tw:p-0')
+test('Button usa las recetas canónicas y conserva clases del consumidor', () => {
+  const { default: Button } = loadModule('components/ui/Button.tsx')
+  const html = render(Button, { variant: 'danger', size: 'sm', className: 'w-full', children: 'Eliminar' })
+  assert.match(html, /ui-button-danger/)
+  assert.match(html, /ui-button-sm/)
+  assert.match(html, /w-full/)
+  assert.doesNotMatch(html, /tw:|btn-danger/)
 })
 
 test('Button conserva atributos, ref y eventos; loading bloquea envíos y anuncia estado', () => {
-  const { default: Button } = loadModule('components/ui/tailwind/Button.tsx')
+  const { default: Button } = loadModule('components/ui/Button.tsx')
   const onClick = () => {}
   const ref = { current: null }
   const element = Button({ children: 'Guardar', onClick, ref, 'aria-label': 'Guardar queja' })
@@ -36,54 +36,47 @@ test('Button conserva atributos, ref y eventos; loading bloquea envíos y anunci
   assert.match(render(Button, { disabled: true, children: 'Guardar' }), /disabled=""/)
 })
 
-test('Input y Label enlazan nombre y error sin descartar props nativas', () => {
-  const { default: Input } = loadModule('components/ui/tailwind/Input.tsx')
-  const { default: Label } = loadModule('components/ui/tailwind/Label.tsx')
+test('Input y Field enlazan nombre y ayuda sin descartar props nativas', () => {
+  const { default: Input } = loadModule('components/ui/Input.tsx')
+  const { default: Field } = loadModule('components/ui/Field.tsx')
   const onChange = () => {}
   const ref = { current: null }
-  const element = Input({ id: 'email', name: 'email', type: 'email', required: true,
-    'aria-invalid': true, 'aria-describedby': 'email-error', htmlSize: 30, onChange, ref })
-  assert.equal(element.props.onChange, onChange)
-  assert.equal(element.props.ref, ref)
-  const html = renderToStaticMarkup(element)
+  const input = Input({ id: 'email', name: 'email', type: 'email', required: true,
+    'aria-invalid': true, 'aria-describedby': 'email-hint', size: 30, onChange, ref })
+  assert.equal(input.props.onChange, onChange)
+  assert.equal(input.props.ref, ref)
+  const html = render(Field, { id: 'email', label: 'Correo', hint: 'Correo de acceso', children: input })
   assert.match(html, /name="email"/)
   assert.match(html, /required=""/)
-  assert.match(html, /aria-describedby="email-error"/)
+  assert.match(html, /aria-describedby="email-hint"/)
+  assert.match(html, /id="email-hint"/)
   assert.match(html, /aria-invalid="true"/)
   assert.match(html, /size="30"/)
-  assert.match(render(Label, { htmlFor: 'email', children: 'Correo' }), /for="email"/)
+  assert.match(html, /for="email"/)
 })
 
-test('Card compuesto y Badge transmiten atributos sin clases CoreUI', () => {
-  const { Card, CardHeader, CardContent, CardFooter } = loadModule('components/ui/tailwind/Card.tsx')
-  const { Badge } = loadModule('components/ui/tailwind/Badge.tsx')
-  const html = render(Card, { 'aria-labelledby': 'card-heading', children: [
-    createElement(CardHeader, { key: 'header' }, createElement('h2', { id: 'card-heading' }, 'Quejas')),
-    createElement(CardContent, { key: 'content', className: 'tw:p-0' }, createElement(Badge, { variant: 'success', title: 'Estado' }, 'Resuelto')),
-    createElement(CardFooter, { key: 'footer' }, 'Acciones'),
-  ] })
-  assert.match(html, /aria-labelledby="card-heading"/)
-  assert.match(html, /class="tw:p-0"/)
+test('Badge transmite atributos y usa variantes semánticas del kit activo', () => {
+  const { default: Badge } = loadModule('components/ui/Badge.tsx')
+  const html = render(Badge, { variant: 'green', title: 'Estado', 'aria-label': 'Queja resuelta', children: 'Resuelto' })
   assert.match(html, /title="Estado"/)
-  assert.match(html, /tw:text-green-800/)
-  assert.doesNotMatch(html, /class="(?:card|badge)\b/)
+  assert.match(html, /aria-label="Queja resuelta"/)
+  assert.match(html, /bg-qms-success/)
+  assert.doesNotMatch(html, /tw:/)
 })
 
-test('PostCSS publica los tokens y un único Preflight en la entrada consolidada', async () => {
-  const kitPath = path.resolve('app/styles/ui-kit.css')
-  const compile = (filename) => postcss([tailwind({ optimize: false })]).process(fs.readFileSync(filename, 'utf8'), { from: filename })
-  const kit = await compile(kitPath)
-  const styles = postcss.parse(kit.css)
-  const rules = new Map()
-  styles.walkRules((rule) => rules.set(rule.selector, rule))
-  const padding = rules.get('.tw\\:p-4')
-  assert.ok(padding, 'falta la utilidad con prefijo')
-  assert.equal(padding.nodes.find((node) => node.prop === 'padding')?.value, 'calc(var(--tw-spacing) * 4)')
-  assert.ok(rules.get('.tw\\:bg-primary'))
-  assert.ok(rules.get('.tw\\:font-sans'))
-  assert.ok(rules.has('button, input, select, optgroup, textarea, ::file-selector-button'), 'falta el único reset de Tailwind')
-  const legacy = await compile(path.resolve('app/globals.css'))
-  assert.match(legacy.css, /--color-qms-primary:\s*#3b82f6/)
-  assert.match(legacy.css, /--color-qms-dark:\s*#111827/)
-  assert.match(legacy.css, /--radius-qms-control:\s*0\.375rem/)
+test('PostCSS compila una única entrada con los tokens de marca y un solo Preflight', async () => {
+  const entry = path.resolve('app/globals.css')
+  const result = await postcss([tailwind({ optimize: false })]).process(fs.readFileSync(entry, 'utf8'), { from: entry })
+  const styles = postcss.parse(result.css)
+  let resets = 0
+  styles.walkRules(rule => {
+    if (rule.selector.replace(/\s+/g, ' ').trim() === 'button, input, select, optgroup, textarea, ::file-selector-button') resets++
+  })
+  assert.equal(resets, 1)
+  assert.match(result.css, /--color-qms-primary:\s*#024796/)
+  assert.match(result.css, /--color-qms-dark:\s*#212529/)
+  assert.match(result.css, /--radius-button:\s*0\.25rem/)
+  assert.match(result.css, /\.ui-field\b/)
+  assert.match(result.css, /\.ui-button-primary\b/)
+  assert.doesNotMatch(result.css, /\.tw\\:/)
 })

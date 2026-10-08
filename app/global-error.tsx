@@ -1,38 +1,20 @@
 'use client'
 
-import { useEffect } from 'react'
+import { Inter } from 'next/font/google'
+import RouteErrorFallback, { type RouteErrorProps } from '@/components/RouteErrorFallback'
+import '@/app/globals.css'
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string }
-  reset: () => void
-}) {
-  useEffect(() => {
-    console.error('[global-error]', error)
-  }, [error])
+const inter = Inter({ subsets: ['latin'] })
 
+export default function GlobalError(props: RouteErrorProps) {
+  // Next sustituye el layout raíz: este fallback necesita documento, fuente y CSS propios.
   return (
     <html lang="es">
-      <body className="select-none">
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-            <div className="text-4xl mb-4">⚠️</div>
-            <h1 className="text-xl font-semibold text-gray-800 mb-2">
-              Error inesperado
-            </h1>
-            <p className="text-gray-500 mb-6">
-              Algo salió mal. Por favor intentá de nuevo.
-            </p>
-            <button
-              onClick={reset}
-              className="px-4 py-2 bg-[#0d6efd] text-white rounded-md hover:bg-[#0b5ed7] transition-colors"
-            >
-              Intentar de nuevo
-            </button>
-          </div>
-        </div>
+      <body className={inter.className + ' select-none'}>
+        <main className="flex min-h-dvh items-center justify-center bg-qms-background dark:bg-gray-900">
+          <title>Error inesperado | ECA-QMS</title>
+          <RouteErrorFallback {...props} source="global" title="Error inesperado" message="Algo salió mal. Por favor intentá de nuevo." />
+        </main>
       </body>
     </html>
   )

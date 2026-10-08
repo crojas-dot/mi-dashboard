@@ -51,6 +51,7 @@ export function useCrearQuejaComentario() {
       comentario: string
       tipo: 'interno' | 'cliente'
       visibleCliente: boolean
+      isContextCurrent?: () => boolean
     }) => {
       const { data, error } = await supabase.rpc('agregar_comentario_queja', {
         p_queja_id: quejaId,
@@ -62,6 +63,7 @@ export function useCrearQuejaComentario() {
       return data as QuejaComentario
     },
     onSuccess: (_data, vars) => {
+      if (vars.isContextCurrent?.() === false) return
       queryClient.invalidateQueries({ queryKey: comentariosKey(vars.quejaId) })
     },
   })

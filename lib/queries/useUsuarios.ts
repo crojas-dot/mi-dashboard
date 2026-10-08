@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { apiFetch } from '@/lib/services/apiClient'
 import { queryKeys } from './queryKeys'
 
 export interface Usuario {
@@ -16,20 +16,8 @@ export interface Usuario {
 
 export const usuariosKey = queryKeys.usuarios
 
-export async function apiFetch(url: string, options: RequestInit = {}) {
-  options.signal?.throwIfAborted()
-  const { data } = await supabase.auth.getSession()
-  options.signal?.throwIfAborted()
-  const token = data.session?.access_token
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers,
-    },
-  })
-}
+// Compatibilidad con los consumidores anteriores del transporte.
+export { apiFetch } from '@/lib/services/apiClient'
 
 export async function fetchUsuarios(params?: {
   search?: string

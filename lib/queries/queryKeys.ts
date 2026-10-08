@@ -1,3 +1,9 @@
+/**
+ * queryKeys — fuente única de prefijos para TanStack Query.
+ * Cada hook en lib/queries/ construye sus claves a partir de estos prefijos.
+ * Invalidar: queryClient.invalidateQueries({ queryKey: queryKeys.quejas }).
+ * createQueryKey() agrega parámetros (paginación, filtros) al prefijo base.
+ */
 export const queryKeys = {
   dashboard: ['dashboard'] as const,
   quejas: ['quejas'] as const,

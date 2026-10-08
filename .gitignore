@@ -40,4 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+
+# Artefactos locales de auditoría y previews; no son fuentes del producto.
+/.performance/
+/.ref-template/
+/tmp/

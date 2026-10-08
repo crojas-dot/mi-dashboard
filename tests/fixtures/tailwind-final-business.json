@@ -139,42 +139,6 @@
     "hooks": "fc1cbe6b8664c56837f0ee3f01ebe65bb59ae5e599cfd78055b603d9652456f4",
     "events": "7945a6a19dd965ba0ecd6ad08bc4fc856644c5c87bc71ff9428324a5cb5a014c"
   },
-  "components/dashboard/BreakdownChart.tsx": {
-    "hooks": "42bb7d9e37e85dd4f50a600d8b43e4e698326ae3f57c60579ac2e31d6ff00a1d",
-    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  },
-  "components/dashboard/chartKit.tsx": {
-    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  },
-  "components/dashboard/DocumentosTab.tsx": {
-    "hooks": "18418e08356d104ef8e6e712975ad7782feb4698e66f54a36e4712c9c10d76d4",
-    "events": "e2c5f63a8bbdcd843c39a7cf399d82145b1bf84a7609b8a8d147da0799ad929b"
-  },
-  "components/dashboard/GeneralTab.tsx": {
-    "hooks": "cd07a8e99972104cd2e4833d214d00825c67fcbf62c14fb02bbbce3b5f46eaed",
-    "events": "300f669fff3237d280e791ab19558b517cefaf6d27ead4624e8ed94ed4087f36"
-  },
-  "components/dashboard/ModuleTabs.tsx": {
-    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "events": "4ce8b207f8333650eb77b06654d6ab2a8056c860b572d4769b9ebe8b2c08838a"
-  },
-  "components/dashboard/QuejasTab.tsx": {
-    "hooks": "6568338ac081cd74560766d1d08c05c584f8cdfb9d519c3284e71930d5c09a0e",
-    "events": "584510118752e2356f9af402906fea89d929457893409c7c58a1cec2d47c2f2f"
-  },
-  "components/dashboard/QuejasTrend.tsx": {
-    "hooks": "4c47f461ab77cd78cdcc4f94de84b7a0febe9397ffdefa3d34d864741059fb08",
-    "events": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  },
-  "components/dashboard/RiesgosTab.tsx": {
-    "hooks": "5a6e08d813ce53a81029d83a7d37cfea93dd214318b4409b17b34e6bdd6b06eb",
-    "events": "0d9694b021423a033841d935ab8bd8a89eff5e52faf0bb56302ea2fa97329148"
-  },
-  "components/dashboard/SacpTab.tsx": {
-    "hooks": "0bdd56578822f13470d2d7a09f6d31e8a214bf5992ee2fb04f2b65400d5d7b95",
-    "events": "0d9694b021423a033841d935ab8bd8a89eff5e52faf0bb56302ea2fa97329148"
-  },
   "components/header/NotificationDropdown.tsx": {
     "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "events": "0580de002176c8c02ffe3e31627177d1ea6cada5636f1b76cc5e82e8a37cc069"
@@ -198,10 +162,6 @@
   "components/Sidebar.tsx": {
     "hooks": "c167ed9bafd9f31ee4e420b0fda3bba3dc9029e028ca1bc3638c50e543130f78",
     "events": "0d679a3de3ed44f004f6150d9aa210652deb526ecb8c8303f109996d01ae51b5"
-  },
-  "components/StatCard.tsx": {
-    "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "events": "4bc3c4adb5dd7cd741afaf2e4ff5072d8e50f8e643997182e38b98b7f9f62a5e"
   },
   "components/usuarios/CambiarMiPasswordModal.tsx": {
     "hooks": "caca83c0d6514f468be67d3ed742f57ed6ba8ad5bda43f73601884bf9d9f2ec3",

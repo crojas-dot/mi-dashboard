@@ -8,12 +8,11 @@ import { guardarUltimoExito, obtenerUltimoExito, registrarFallo, obtenerModelosN
 import { getDriveClient, buscarOCrearSubcarpeta } from '@/lib/server/drive'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 import type { AIProvider, AIRouting } from '@/lib/ai/types'
+import { esModuloIA } from '@/lib/constants/modulos'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
-
-const MODULOS_VALIDOS = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'revision', 'general']
 
 const TABLA_POR_MODULO: Record<string, string> = {
   quejas: 'quejas',
@@ -251,7 +250,7 @@ async function analizar(request: NextRequest, signal: AbortSignal, inicio: numbe
     prompt_usuario?: string
   }
 
-  if (!modulo || !MODULOS_VALIDOS.includes(modulo)) {
+  if (!esModuloIA(modulo)) {
     return NextResponse.json({ error: 'Módulo inválido' }, { status: 400 })
   }
   if (!entidad_id) {

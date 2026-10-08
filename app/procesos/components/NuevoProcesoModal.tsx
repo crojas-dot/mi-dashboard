@@ -69,12 +69,12 @@ export default function NuevoProcesoModal({ open, onClose, onCreated }: Props) {
         {errorMessage && <p role="alert" className="text-sm text-qms-danger">{errorMessage}</p>}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre del Proceso</label>
-            <input required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.nombre_proceso} onChange={(e) => setForm({ ...form, nombre_proceso: e.target.value })} />
+            <label htmlFor="nuevo-proceso-nombre-del-proceso" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre del Proceso</label>
+            <input id="nuevo-proceso-nombre-del-proceso" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.nombre_proceso} onChange={(e) => setForm({ ...form, nombre_proceso: e.target.value })} />
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
-            <Select className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+            <label htmlFor="nuevo-proceso-tipo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+            <Select id="nuevo-proceso-tipo" className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
               <option>Estratégico</option>
               <option>Operativo</option>
               <option>Soporte</option>
@@ -82,8 +82,8 @@ export default function NuevoProcesoModal({ open, onClose, onCreated }: Props) {
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Objetivo</label>
-          <textarea rows={2} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} />
+          <label htmlFor="nuevo-proceso-objetivo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Objetivo</label>
+          <textarea id="nuevo-proceso-objetivo" rows={2} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>Cancelar</Button>

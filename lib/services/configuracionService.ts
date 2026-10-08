@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { esColorCatalogo } from '@/lib/constants/badges'
 import type { CatalogoValor } from '@/lib/queries/useCatalogos'
 import type { SLAConfig } from '@/lib/queries/useQuejas'
 import { esConfiguracionIA, validarPlazos } from '@/lib/utils/configuracion'
@@ -8,7 +9,9 @@ export interface ConfigGeneral { clave: string; valor: unknown; descripcion: str
 export async function guardarValorCatalogo(valor: Partial<CatalogoValor>) {
   if (!valor.modulo || !valor.tipo || !valor.valor?.trim()) throw new Error('Completá módulo, catálogo y valor.')
   if (!Number.isInteger(valor.orden ?? 0) || (valor.orden ?? 0) < 0) throw new Error('El orden debe ser un número entero desde 0.')
-  const payload = { modulo: valor.modulo, tipo: valor.tipo, valor: valor.valor.trim(), color: valor.color || 'gray', orden: valor.orden ?? 0, activo: valor.activo ?? true }
+  const color = valor.color ?? 'secondary'
+  if (!esColorCatalogo(color)) throw new Error('Seleccioná un color válido del catálogo.')
+  const payload = { modulo: valor.modulo, tipo: valor.tipo, valor: valor.valor.trim(), color, orden: valor.orden ?? 0, activo: valor.activo ?? true }
   const query = valor.id ? supabase.from('catalogos').update(payload).eq('id', valor.id) : supabase.from('catalogos').insert(payload)
   const { error } = await query.select('id').single()
   if (error) throw error

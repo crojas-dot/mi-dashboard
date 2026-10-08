@@ -1,3 +1,9 @@
+/**
+ * Dashboard principal (ruta: /)
+ * Queries: useDashboardIndicadores, useDashboardTareas, useActividadReciente (lib/queries/useDashboard).
+ * Los indicadores cuentan registros por módulo; las tareas muestran expedientes próximos a vencer.
+ * QuejasSummary se carga con lazy() para no bloquear el primer paint.
+ */
 'use client'
 
 import Link from 'next/link'
@@ -5,6 +11,7 @@ import { lazy, Suspense, useEffect } from 'react'
 import { useDashboardIndicadores, useDashboardTareas, useActividadReciente } from '@/lib/queries/useDashboard'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { varianteEstado } from '@/lib/constants/estados'
 import PageHeader from '@/components/ui/PageHeader'
 import DashboardLoading from '@/components/dashboard/DashboardLoading'
 import { logger } from '@/lib/utils/logger'
@@ -15,12 +22,6 @@ function useDashboardError(error: unknown, action: string) {
   useEffect(() => {
     if (error) logger.error('No se pudo cargar un bloque del dashboard', { module: 'dashboard', action }, error)
   }, [error, action])
-}
-
-const estadoBadge: Record<string, string> = {
-  Abierta: 'red', Alta: 'red', 'En Proceso': 'amber', Planificada: 'blue',
-  Abierto: 'red', Pendiente: 'amber', Cerrada: 'green', Cerrado: 'green',
-  Publicado: 'green', Borrador: 'gray', Activo: 'green', Inactivo: 'gray',
 }
 
 const indicatorBg: Record<string, string> = {
@@ -96,7 +97,7 @@ function TareasPendientesBlock() {
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.titulo}</TableCell>
                     <TableCell><span className="text-qms-muted">{t.tipo}</span></TableCell>
-                    <TableCell><Badge variant={estadoBadge[t.estado] || 'gray'}>{t.estado}</Badge></TableCell>
+                    <TableCell><Badge variant={t.entidad === 'Quejas' ? varianteEstado('quejas', t.estado) : t.entidad === 'SACP' ? varianteEstado('sacp', t.estado) : 'gray'}>{t.estado}</Badge></TableCell>
                     <TableCell className="text-qms-muted">{t.vence ? new Date(t.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'}</TableCell>
                   </TableRow>
                 ))

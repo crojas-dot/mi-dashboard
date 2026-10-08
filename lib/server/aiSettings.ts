@@ -1,6 +1,7 @@
 import 'server-only';
 import { createHash } from 'node:crypto';
 import { validarBaseUrl } from '@/lib/ai/providerUrl';
+import { esModuloIA } from '@/lib/constants/modulos';
 import { getUserError } from '@/lib/errors/userError';
 import type { AIProvider, AIRouting } from '@/lib/ai/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -84,7 +85,7 @@ export function normalizeRouting(value: unknown): AIRouting {
         throw new AISettingsInputError('Enrutamiento inválido.');
     const result: AIRouting = {};
     for (const [module, raw] of Object.entries(value)) {
-        if (!['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'revision', 'general'].includes(module) || !raw || typeof raw !== 'object')
+        if (!esModuloIA(module) || !raw || typeof raw !== 'object')
             throw new AISettingsInputError('Ruta de IA inválida.');
         const route = raw as Record<string, unknown>;
         for (const key of ['proveedor_id', 'modelo_nombre', 'fallback_provider_id', 'fallback_modelo', 'system_prompt'])

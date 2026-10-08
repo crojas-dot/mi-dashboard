@@ -1,41 +1,25 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { Plus, Save, Sparkles, KeyRound, Brain, Check, ChevronRight, Wifi, Play, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
+import { Plus, Save } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import Spinner from '@/components/ui/Spinner'
-import { apiFetch } from '@/lib/queries/useUsuarios'
+import { apiFetch } from '@/lib/services/apiClient'
 import { cargarConfigIA, guardarConfigIA, guardarProveedoresIA, modelosIA, conectarIA, limpiarMemoriaIA, modelosSinFallos } from '@/lib/services/aiConfigService'
 import { esOpenRouter } from '@/lib/ai/providerDisplay'
+import { MODULOS_IA } from '@/lib/constants/modulos'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import type { AIProvider, AIProviderTipo, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
+import type { AIProvider, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import ErrorState from '@/components/ui/ErrorState'
 import AIProviderList from '@/components/configuracion/AIProviderList'
-
-const MODULOS_QMS: { id: string; label: string }[] = [
-  { id: 'quejas', label: 'Quejas' },
-  { id: 'sacp', label: 'SACP (Acciones)' },
-  { id: 'documentos', label: 'Documentos' },
-  { id: 'auditorias', label: 'Auditorías' },
-  { id: 'riesgos', label: 'Riesgos' },
-  { id: 'revision', label: 'Revisión Dirección' },
-  { id: 'general', label: 'General' },
-]
-
-const TIPOS: { value: AIProviderTipo; label: string }[] = [
-  { value: 'gemini', label: 'Gemini (Google)' },
-  { value: 'anthropic', label: 'Anthropic (Claude)' },
-  { value: 'openai', label: 'Estándar OpenAI (OpenAI, DeepSeek, Grok, OpenRouter…)' },
-]
-
-const LIMITE_POR_TIPO: Record<AIProviderTipo, number> = {
-  gemini: 30_000_000,
-  anthropic: 250_000,
-  openai: 6_000_000, // Groq / OpenAI / Otros compatibles
-}
+import ProviderEditorModal from '@/components/configuracion/ia/ProviderEditorModal'
+import ModelTestModal from '@/components/configuracion/ia/ModelTestModal'
+import ModuleRoutingEditor from '@/components/configuracion/ia/ModuleRoutingEditor'
+import type { EditingProvider, ModelTestState } from '@/components/configuracion/ia/types'
+import { limitePorTipo, modelosDelEditor } from '@/components/configuracion/ia/configuracion'
+import { cambiarRutaIA, type CampoRutaIA } from '@/components/configuracion/ia/routing'
 
 const CLAVE_ROUTING = 'ai_routing'
 
@@ -49,9 +33,6 @@ export default function AIProvidersManager() {
   const [guardandoProveedor, setGuardandoProveedor] = useState(false)
   const guardandoProveedorRef = useRef(false)
 
-  interface EditingProvider extends Omit<AIProvider, 'modelos'> {
-  modelos: string | string[]
-}
 const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(null)
   const [modalModulo, setModalModulo] = useState<string | null>(null)
   const [sysPrompt, setSysPrompt] = useState('')
@@ -61,16 +42,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   const [syncingModels, setSyncingModels] = useState<Set<string>>(new Set())
   const [cacheTtlValue, setCacheTtlValue] = useState<number>(1)
   const [cacheTtlUnit, setCacheTtlUnit] = useState<'minutes' | 'hours' | 'days'>('days')
-  const [testModal, setTestModal] = useState<{
-    abierto: boolean
-    providerId: string | null
-    providerNombre: string
-    modelos: string[]
-    progreso: { [modelo: string]: 'pendiente' | 'probando' | 'ok' | 'fallo' }
-    enCurso: boolean
-    cancelado: boolean
-    resultado: { buenos: number; malos: number; total: number } | null
-  }>({
+  const [testModal, setTestModal] = useState<ModelTestState>({
     abierto: false,
     providerId: null,
     providerNombre: '',
@@ -216,7 +188,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     }
   }
 
-  const getLimitePorTipo = (tipo: AIProviderTipo) => LIMITE_POR_TIPO[tipo] ?? 250_000
+  const getLimitePorTipo = limitePorTipo
 
   const abrirNuevo = () =>
     setEditingProvider({ id: '', nombre: '', tipo: 'openai', base_url: '', api_key: '', modelos: [], tokens_usados: 0, limite_tokens: getLimitePorTipo('openai') } as AIProvider)
@@ -229,7 +201,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   const probarConexion = async (providerId?:string) => {
     const provider=providerId?providers.find(value=>value.id===providerId):editingProvider
     if(!provider)return
-    try { await conectarIA({...provider,modelos:Array.isArray(provider.modelos)?provider.modelos:provider.modelos.split(',').map(value=>value.trim()).filter(Boolean)});showSuccess('Conexión exitosa ✓') }
+    try { await conectarIA({...provider,modelos:modelosDelEditor(provider.modelos)});showSuccess('Conexión exitosa') }
     catch(error){showError(error as Error,'No se pudo conectar con el proveedor')}
   }
 
@@ -240,7 +212,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       showError(null, 'Nombre y una clave configurada son obligatorios')
       return
     }
-    const modelosArray = (Array.isArray(p.modelos) ? p.modelos : p.modelos.split(',')).map(m => m.trim()).filter(Boolean)
+    const modelosArray = modelosDelEditor(p.modelos)
     const base = {
       nombre: p.nombre.trim(),
       tipo: p.tipo,
@@ -499,24 +471,8 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     testAbortRef.current?.abort()
   }
 
-  const actualizarRuta = (
-    modulo: string,
-    campo: 'proveedor_id' | 'modelo_nombre' | 'system_prompt',
-    valor: string,
-  ) => {
-    setRouting((prev) => {
-      const next = { ...prev, [modulo]: { ...prev[modulo], [campo]: valor } }
-      // Auto-seleccionar modelo si el proveedor tiene exactamente 1 modelo
-      if (campo === 'proveedor_id' && valor) {
-        const prov = providers.find((p) => p.id === valor)
-        if (prov?.modelos?.length === 1) {
-          next[modulo].modelo_nombre = prov.modelos[0]
-        } else {
-          next[modulo].modelo_nombre = ''
-        }
-      }
-      return next
-    })
+  const actualizarRuta = (modulo: string, campo: CampoRutaIA, valor: string) => {
+    setRouting(previous => cambiarRutaIA(previous, modulo, campo, valor, providers))
   }
 
   const abrirModalContexto = (moduloId: string) => {
@@ -537,7 +493,6 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Sparkles className="h-4 w-4 text-qms-primary" />
         <h3 className="text-sm font-semibold text-qms-dark">Proveedores de IA</h3>
         <span className="text-sm text-qms-muted">Conectá un proveedor, seleccioná un modelo y definí un respaldo para cada módulo.</span>
       </div>
@@ -563,144 +518,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         onReset={reiniciarContador}
       />
 
-      <div className="mt-8">
-        <h3 className="text-base font-medium text-qms-dark">Modelo por módulo</h3>
-        <p className="mt-1 text-xs text-gray-500">
-          Elegí el proveedor y modelo principal. El respaldo se usa cuando el principal no responde.
-        </p>
-
-        <div className="mt-3 space-y-2">
-          {MODULOS_QMS.map((m) => {
-            const ruta = routing[m.id]
-            const prov = providers.find((p) => p.id === ruta?.proveedor_id)
-            return (
-              <div key={m.id} className="space-y-2">
-                <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-slate-50 p-3">
-                  <span className="w-40 shrink-0 text-sm font-medium text-gray-700">{m.label}</span>
-                  <Select
-                    value={ruta?.proveedor_id ?? ''}
-                    onChange={(e) => actualizarRuta(m.id, 'proveedor_id', e.target.value)}
-                  >
-                    <option value="">Sin proveedor</option>
-                    {providers.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre} ({p.tipo})
-                      </option>
-                    ))}
-                  </Select>
-                  {!prov ? (
-                    <input
-                      className="ui-field w-56 bg-gray-100 px-2.5 py-1.5 text-sm"
-                      placeholder="Elegí un proveedor primero"
-                      disabled
-                    />
-                  ) : (
-                    <Select
-                      value={ruta?.modelo_nombre ?? ''}
-                      onChange={(e) => actualizarRuta(m.id, 'modelo_nombre', e.target.value)}
-                    >
-                      <option value="">Seleccionar modelo</option>
-                      {(prov.modelos?.length ?? 0) > 0 ? (
-                        prov.modelos.map((mod) => <option key={mod} value={mod}>{mod}</option>)
-                      ) : (
-                        <option value="" disabled>Sincronice modelos con el botón ↻</option>
-                      )}
-                    </Select>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => abrirModalContexto(m.id)}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                      ruta?.system_prompt?.trim()
-                        ? 'border-green-600 bg-green-600 text-white hover:bg-green-700'
-                        : 'border-qms-primary text-qms-primary hover:bg-qms-primary-soft'
-                    }`}
-                    title="Definir el rol / system prompt de la IA para este módulo"
-                  >
-                    {ruta?.system_prompt?.trim() ? <Check className="h-3.5 w-3.5" /> : <Brain className="h-3.5 w-3.5" />}
-                    {ruta?.system_prompt?.trim() ? 'Especializado' : 'Especializar'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setExpandedFallbacks(prev => {
-                      const next = new Set(prev)
-                      if (next.has(m.id)) next.delete(m.id)
-                      else next.add(m.id)
-                      return next
-                    })}
-                    className="flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-                    title="Configurar proveedor de respaldo (fallback)"
-                  >
-                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedFallbacks.has(m.id) ? 'rotate-90' : ''}`} />
-                    Respaldo
-                  </button>
-                </div>
-                {expandedFallbacks.has(m.id) && (
-                  <div className="ml-11 mt-2 pt-2 border-t border-gray-200 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <span className="w-40 shrink-0 text-xs font-medium text-gray-500">Respaldo (Fallback)</span>
-                      <Select
-                        value={routing[m.id]?.fallback_provider_id ?? ''}
-                        onChange={(e) => {
-                          const newRouting = { ...routing }
-                          if (!newRouting[m.id]) newRouting[m.id] = { proveedor_id: '', modelo_nombre: '', system_prompt: '' }
-                          newRouting[m.id].fallback_provider_id = e.target.value
-                          // Auto-seleccionar modelo fallback si el proveedor tiene exactamente 1 modelo
-                          if (e.target.value) {
-                            const fbProv = providers.find((p) => p.id === e.target.value)
-                            if (fbProv?.modelos?.length === 1) {
-                              newRouting[m.id].fallback_modelo = fbProv.modelos[0]
-                            } else {
-                              newRouting[m.id].fallback_modelo = ''
-                            }
-                          } else {
-                            newRouting[m.id].fallback_modelo = ''
-                          }
-                          setRouting(newRouting)
-                        }}
-                      >
-                        <option value="">Sin proveedor de respaldo</option>
-                        {providers.filter(p => p.id !== routing[m.id]?.proveedor_id).map((p) => (
-                          <option key={p.id} value={p.id}>{p.nombre} ({p.tipo})</option>
-                        ))}
-                      </Select>
-                      {routing[m.id]?.fallback_provider_id && (
-                        <Select
-                          value={routing[m.id]?.fallback_modelo ?? ''}
-                          onChange={(e) => {
-                            const newRouting = { ...routing }
-                            if (!newRouting[m.id]) newRouting[m.id] = { proveedor_id: '', modelo_nombre: '', system_prompt: '' }
-                            newRouting[m.id].fallback_modelo = e.target.value
-                            setRouting(newRouting)
-                          }}
-                        >
-                          <option value="">Seleccionar modelo</option>
-                          {(() => {
-                            const fallbackProvId = routing[m.id]?.fallback_provider_id
-                            const fallbackProv = fallbackProvId ? providers.find(p => p.id === fallbackProvId) : null
-                            if (!fallbackProv) return <option value="" disabled>Primero elegí un proveedor</option>
-                            return (fallbackProv.modelos?.length ?? 0) > 0 ? (
-                              fallbackProv.modelos.map((mod) => <option key={mod} value={mod}>{mod}</option>)
-                            ) : (
-                              <option value="" disabled>Sincronice modelos con el botón ↻</option>
-                            )
-                          })()}
-                        </Select>
-                      )}
-                    </div>
-                  </div>
-                )}
-                </div>
-              )
-            })}
-        </div>
-
-        <div className="mt-3">
-          <Button size="sm" onClick={guardarRouting} loading={guardandoRut}>
-            <Save className="h-3.5 w-3.5" /> Guardar enrutamiento
-          </Button>
-        </div>
-      </div>
+      <ModuleRoutingEditor providers={providers} routing={routing} expandedFallbacks={expandedFallbacks} setExpandedFallbacks={setExpandedFallbacks} actualizarRuta={actualizarRuta} abrirModalContexto={abrirModalContexto} guardandoRut={guardandoRut} guardarRouting={guardarRouting} />
 
       <div className="mt-8">
         <h3 className="text-sm font-semibold text-gray-800">Caché de resolución de modelos</h3>
@@ -734,7 +552,7 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
       <Modal
         open={!!modalModulo}
         onClose={() => setModalModulo(null)}
-        title={`Especialización de IA para ${MODULOS_QMS.find((m) => m.id === modalModulo)?.label ?? ''}`}
+        title={`Especialización de IA para ${MODULOS_IA.find((m) => m.id === modalModulo)?.label ?? ''}`}
         size="md"
       >
         <div className="space-y-3">
@@ -755,188 +573,9 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
         </div>
       </Modal>
 
-      {/* Modal para editar/crear proveedor con fallback - usando el Modal estándar */}
-      <Modal
-        open={!!editingProvider}
-        onClose={cerrarEditor}
-        title={editingProvider?.id && editingProvider.id !== '' ? 'Editar Proveedor' : 'Nuevo Proveedor'}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <div className="space-y-4">
-            <h6 className="text-sm font-medium text-gray-700">Datos del Proveedor</h6>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2 min-w-0">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Nombre *</label>
-                <input
-                  className="ui-field w-full px-3 py-2 text-sm"
-                  placeholder="Ej: Grok xAI"
-                  value={editingProvider?.nombre ?? ''}
-                  onChange={(e) => setEditingProvider({ ...editingProvider!, nombre: e.target.value })}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Tipo de API *</label>
-                <div className="w-full">
-                  <Select value={editingProvider?.tipo ?? 'openai'} onChange={(e) => {
-                      const nuevoTipo = e.target.value as AIProviderTipo
-                      setEditingProvider({ ...editingProvider!, tipo: nuevoTipo, limite_tokens: getLimitePorTipo(nuevoTipo) })
-                    }}>
-                    {TIPOS.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </Select>
-                </div>
-              </div>
-              <div className="min-w-0">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Límite de Tokens</label>
-                <input
-                  type="number"
-                  min="1"
-                  className="ui-field w-full px-3 py-2 text-sm"
-                  value={editingProvider?.limite_tokens ?? 100000}
-                  onChange={(e) => setEditingProvider({ ...editingProvider!, limite_tokens: parseInt(e.target.value) || 100000 })}
-                />
-              </div>
-              {editingProvider?.tipo === 'openai' && (
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-medium text-gray-600 mb-1">URL Base (opcional)</label>
-                  <input
-                    className="ui-field w-full px-3 py-2 text-sm"
-                    placeholder="https://api.x.ai/v1"
-                    value={editingProvider?.base_url ?? ''}
-                    onChange={(e) => setEditingProvider({ ...editingProvider!, base_url: e.target.value })}
-                  />
-                </div>
-              )}
-              <div className="sm:col-span-2">
-                <label htmlFor="ai-provider-models" className="block text-sm font-medium text-gray-600 mb-1">Modelos disponibles (opcional)</label>
-                <input
-                  className="ui-field w-full px-3 py-2 text-sm"
-                  id="ai-provider-models" placeholder="ej. modelo-1, modelo-2"
-                  value={(editingProvider?.modelos as string[] | undefined)?.join(', ') || ''}
-                  onChange={(e) => setEditingProvider({ ...editingProvider!, modelos: e.target.value.split(',').map(m => m.trimStart()) })}
-                />
-                <p className="mt-1 text-xs text-gray-500">Separados por comas. Si queda vacío, se intentan sincronizar al guardar.</p>
-              </div>
-              <div className="sm:col-span-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">{editingProvider?.has_api_key ? 'API Key (opcional al editar)' : 'API Key *'}</label>
-                <div className="relative">
-                  <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="password"
-                    autoComplete="off"
-                    aria-label="Clave de API del proveedor"
-                    className="ui-field w-full pl-10 pr-3 py-2 text-sm"
-                    placeholder={editingProvider?.has_api_key ? 'Dejar vacío para conservar la clave' : 'Clave del proveedor'}
-                    value={editingProvider?.api_key ?? ''}
-                    onChange={(e) => setEditingProvider({ ...editingProvider!, api_key: e.target.value })}
-                  />
-                </div>
-              </div>
-          </div>
+      <ProviderEditorModal editingProvider={editingProvider} setEditingProvider={setEditingProvider} guardandoProveedor={guardandoProveedor} cerrarEditor={cerrarEditor} probarConexion={probarConexion} aplicarForm={aplicarForm} />
 
-          <div className="flex items-end justify-end gap-2 pt-4 border-t border-gray-200">
-            <Button size="sm" variant="secondary" disabled={guardandoProveedor} onClick={cerrarEditor}>
-              Cancelar
-            </Button>
-            <Button size="sm" variant="secondary" disabled={guardandoProveedor} onClick={() => probarConexion()}>
-              <Wifi className="h-3.5 w-3.5 mr-1" /> Probar Conexión
-            </Button>
-            <Button size="sm" loading={guardandoProveedor} onClick={aplicarForm}>
-              <Save className="h-3.5 w-3.5 mr-1" /> {editingProvider?.id && editingProvider?.id !== '' ? 'Guardar Cambios' : 'Crear Proveedor'}
-            </Button>
-          </div>
-        </div>
-      </div>
-      </Modal>
-
-      <Modal
-        open={testModal.abierto}
-        onClose={cerrarTestModal}
-        title={`Testear modelos — ${testModal.providerNombre}`}
-        size="lg"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Se probarán hasta <strong>{Math.min(20, testModal.modelos.length)}</strong> modelos con un prompt corto.
-            {!testModal.enCurso && !testModal.resultado && ' Presione "Iniciar test" para comenzar.'}
-            {testModal.enCurso && ' El test está en curso…'}
-            {testModal.resultado && (
-              <span className={testModal.resultado.malos > 0 ? 'text-amber-600' : 'text-green-600'}>
-                {' '}{testModal.resultado.buenos} buenos, {testModal.resultado.malos} malos de {testModal.resultado.total} probados.
-              </span>
-            )}
-            {testModal.cancelado && ' Test cancelado por el usuario.'}
-          </p>
-
-          {testModal.enCurso && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Spinner size="sm" className="text-qms-primary" />
-              {Object.values(testModal.progreso).filter(v => v !== 'pendiente').length} de {testModal.modelos.length} probados
-            </div>
-          )}
-
-          <div className="rounded-lg border border-qms-border overflow-hidden max-h-[50vh]">
-            <div className="overflow-y-auto monday-scroll max-h-[calc(50vh-8px)]">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10">
-                  <tr className="bg-qms-table-head">
-                    <th className="px-3 py-2 text-left font-semibold text-qms-dark">Modelo</th>
-                    <th className="px-3 py-2 text-center font-semibold text-qms-dark w-24">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {testModal.modelos.map((modelo) => {
-                    const status = testModal.progreso[modelo]
-                    return (
-                      <tr key={modelo} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-3 py-1.5 font-mono text-xs text-gray-800">{modelo}</td>
-                        <td className="px-3 py-1.5 text-center">
-                          {status === 'pendiente' && <span className="text-xs text-gray-400">—</span>}
-                          {status === 'probando' && (
-                            <span className="inline-flex items-center gap-1 text-xs text-qms-primary">
-                              <Spinner size="sm" /> Probando
-                            </span>
-                          )}
-                          {status === 'ok' && (
-                            <span className="inline-flex items-center gap-1 text-xs text-green-600">
-                              <CheckCircle className="h-3 w-3" /> OK
-                            </span>
-                          )}
-                          {status === 'fallo' && (
-                            <span className="inline-flex items-center gap-1 text-xs text-red-600">
-                              <XCircle className="h-3 w-3" /> Fallo
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-200">
-            {!testModal.enCurso && !testModal.resultado && (
-              <Button size="sm" onClick={iniciarTest}>
-                <Play className="h-3.5 w-3.5 mr-1" /> Iniciar test
-              </Button>
-            )}
-            {testModal.enCurso && (
-              <Button size="sm" variant="secondary" onClick={cancelarTest}>
-                <ShieldAlert className="h-3.5 w-3.5 mr-1" /> Cancelar
-              </Button>
-            )}
-            {(testModal.resultado || testModal.cancelado || (!testModal.enCurso && testModal.modelos.length > 0)) && (
-              <Button size="sm" variant="secondary" onClick={cerrarTestModal}>
-                Cerrar
-              </Button>
-            )}
-          </div>
-        </div>
-      </Modal>
+      <ModelTestModal testModal={testModal} cerrarTestModal={cerrarTestModal} iniciarTest={iniciarTest} cancelarTest={cancelarTest} />
     </div>
   )
 }

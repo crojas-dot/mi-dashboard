@@ -5,15 +5,20 @@ export const TIPOS_REGISTRO_QUEJA = [
   'Queja', 'Observación', 'Sugerencia', 'Denuncia', 'Reclamo', 'Felicitación',
 ] as const
 
-// Códigos estables del catálogo para las transiciones del workflow vigente.
-export const CODIGOS_ESTADO_QUEJA: Readonly<Record<string, string>> = {
-  Recibido: 'received',
-  'En Investigación': 'investigation',
-  'Pendiente de Revisión GC': 'quality_review',
-  Resuelto: 'resolved',
-  Finalizado: 'finished',
-  'No Procede': 'rejected',
-}
+// El código se envía al workflow; la variante pinta la UI y no concede autorización.
+export const ESTADOS_QUEJA = {
+  Recibido: { codigo: 'received', variante: 'blue' },
+  'En Investigación': { codigo: 'investigation', variante: 'investigacion' },
+  'Pendiente de Revisión GC': { codigo: 'quality_review', variante: 'purple' },
+  Resuelto: { codigo: 'resolved', variante: 'green' },
+  Finalizado: { codigo: 'finished', variante: 'gray' },
+  'No Procede': { codigo: 'rejected', variante: 'red' },
+} as const
+export const CODIGOS_ESTADO_QUEJA: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(ESTADOS_QUEJA).map(([estado, config]) => [estado, config.codigo]),
+)
+/** Regla del indicador SLA legacy: cambiar un color nunca cambia la resolución. */
+export function esQuejaResuelta(estado: string): boolean { return estado === 'Resuelto' }
 
 export function tipoVisible(queja: { tipo?: string | null; categoria?: string | null }): string {
   return queja.tipo || queja.categoria || '—'

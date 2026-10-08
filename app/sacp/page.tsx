@@ -11,15 +11,12 @@ import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { estadoSACPVariant } from '@/lib/constants/estados'
 import EmptyState from '@/components/ui/EmptyState'
 
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import NuevaSACPModal from './components/NuevaSACPModal'
-
-const estadoVariant: Record<string, string> = {
-  Abierta: 'red', 'En Proceso': 'blue', Cerrada: 'green', 'En Validación': 'amber',
-}
 
 export default function SACPage() {
   const [page, setPage] = useState(0)
@@ -87,7 +84,7 @@ export default function SACPage() {
                     <span className="text-xs text-gray-500">{a.seguimiento_porcentaje || 0}%</span>
                   </div>
                 </TableCell>
-                <TableCell><Badge variant={estadoVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoSACPVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost" onClick={() => { setSegModal(a); setAvance(a.seguimiento_porcentaje || 0) }}>

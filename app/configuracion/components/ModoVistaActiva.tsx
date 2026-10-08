@@ -6,12 +6,18 @@ import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
+import { getRoleLabel, ROLES_GESTIONABLES, type RolGestionable } from '@/lib/constants/roles'
 
-const ROLES = [
-  { key: 'admin', label: 'Administrador', description: 'Configuración y acceso completo al sistema.' },
-  { key: 'calidad', label: 'Calidad', description: 'Quejas, documentos, acciones y seguimiento.' },
-  { key: 'colaborador', label: 'Colaborador', description: 'Gestión de las quejas que tiene asignadas.' },
-]
+const ROLE_VIEW_DESCRIPTIONS: Record<RolGestionable, string> = {
+  admin: 'Configuración y acceso completo al sistema.',
+  calidad: 'Quejas, documentos, acciones y seguimiento.',
+  colaborador: 'Gestión de las quejas que tiene asignadas.',
+}
+const ROLES = ROLES_GESTIONABLES.map(key => ({
+  key,
+  label: getRoleLabel(key),
+  description: ROLE_VIEW_DESCRIPTIONS[key],
+}))
 
 export default function ModoVistaActiva() {
   const user = useAuthStore(state => state.user)

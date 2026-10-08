@@ -40,7 +40,7 @@ export function useQuejaActividad(quejaId: string) {
 export function useCrearQuejaActividad() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { quejaId: string; descripcion: string; usuarioId?: string | null }) => {
+    mutationFn: async (input: { quejaId: string; descripcion: string; usuarioId?: string | null; isContextCurrent?: () => boolean }) => {
       const { error } = await supabase.from('quejas_actividad').insert([
         {
           queja_id: input.quejaId,
@@ -52,6 +52,7 @@ export function useCrearQuejaActividad() {
       if (error) throw error
     },
     onSuccess: (_data, input) => {
+      if (input.isContextCurrent?.() === false) return
       queryClient.invalidateQueries({ queryKey: quejaActividadKey(input.quejaId) })
     },
   })

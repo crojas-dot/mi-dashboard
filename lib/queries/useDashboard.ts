@@ -20,11 +20,6 @@ export interface TareaPendiente {
   estado: string
 }
 
-export interface DashboardData {
-  indicadores: Indicador[]
-  tareas: TareaPendiente[]
-}
-
 export const dashboardKey = queryKeys.dashboard
 
 type QuejaResumen = { id: string; folio: string; cliente_nombre: string; fecha_sla?: string | null; estado: string }
@@ -121,34 +116,6 @@ export function useDashboardTareas() {
     error: resultados.find((resultado) => resultado.error)?.error ?? null,
     refetch: () => Promise.all(resultados.map((resultado) => resultado.refetch())),
   }
-}
-
-export async function fetchDashboard(): Promise<DashboardData> {
-  const [qRes, aRes, docsRes, riesgosRes] = await Promise.all([
-    supabase.from('quejas').select('id, folio, cliente_nombre, fecha_sla, estado', { count: 'exact' }).not('estado', 'in', '(Finalizado,"No Procede",Cerrada)').order('fecha_sla', { ascending: true, nullsFirst: false }).order('id').limit(8),
-    supabase.from('acciones').select('id, folio, tipo, descripcion, fecha_limite, estado', { count: 'exact' }).neq('estado', 'Cerrada').order('fecha_limite', { ascending: true, nullsFirst: false }).order('id').limit(8),
-    supabase.from('documentos').select('id, titulo, estado', { count: 'exact', head: true }).eq('estado', 'Borrador'),
-    supabase.from('riesgos').select('id', { count: 'exact', head: true }).eq('estado', 'Activo'),
-  ])
-
-  for (const result of [qRes, aRes, docsRes, riesgosRes]) {
-    if (result.error) throw result.error
-  }
-
-  const tareas = organizarTareas(qRes.data ?? [], aRes.data ?? [])
-
-  const indicadores = [
-    { label: 'Quejas Abiertas', valor: qRes.count ?? 0, color: '#dc3545', url: '/quejas' },
-    { label: 'SACP en Proceso', valor: aRes.count ?? 0, color: '#fd7e14', url: '/sacp' },
-    { label: 'Docs. en Borrador', valor: docsRes.count ?? 0, color: '#0d6efd', url: '/documentos' },
-    { label: 'Riesgos Activos', valor: riesgosRes.count ?? 0, color: '#198754', url: '/riesgos' },
-  ]
-
-  return { indicadores, tareas }
-}
-
-export function useDashboard() {
-  return useQuery({ queryKey: dashboardKey, queryFn: fetchDashboard })
 }
 
 export function useActividadReciente() {

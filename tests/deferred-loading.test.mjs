@@ -8,7 +8,7 @@ const { default: DeferredMount } = loadModule('components/ui/DeferredMount.tsx')
 
 test('primera apertura renderiza el formulario sin suspender ni esperar una descarga', () => {
   const { default: NuevaQuejaModal } = loadModule('app/quejas/components/NuevaQuejaModal.tsx', {
-    '@/components/ui/tailwind/Modal': { default: ({ children }) => createElement('section', { role: 'dialog' }, children) },
+    '@/components/Modal': { default: ({ children }) => createElement('section', { role: 'dialog' }, children) },
     '@/lib/services/errorToast': {},
     '@/lib/services/quejaWorkflowService': {},
   })

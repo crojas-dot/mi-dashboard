@@ -7,15 +7,12 @@ import {
 } from 'lucide-react'
 import PageHeader from '@/components/ui/PageHeader'
 import GeneradorInformeModal from './components/GeneradorInformeModal'
+import { MODULOS_INFORME, type IconoInforme } from './components/generador/configuracion'
 
-const modulos = [
-  { value: 'quejas', label: 'Quejas', icon: MessageSquareWarning },
-  { value: 'sacp', label: 'SACP', icon: ClipboardList },
-  { value: 'documentos', label: 'Documentos', icon: FileCheck2 },
-  { value: 'riesgos', label: 'Riesgos', icon: ShieldAlert },
-  { value: 'auditorias', label: 'Auditorías', icon: ClipboardCheck },
-  { value: 'revision_direccion', label: 'Revisión por Dirección', icon: SearchCheck },
-]
+const iconos: Record<IconoInforme, typeof MessageSquareWarning> = {
+  quejas: MessageSquareWarning, sacp: ClipboardList, documentos: FileCheck2,
+  riesgos: ShieldAlert, auditorias: ClipboardCheck, revision_direccion: SearchCheck,
+}
 
 export default function ReporteriaPage() {
   const [moduloSeleccionado, setModuloSeleccionado] = useState<string | null>(null)
@@ -29,8 +26,8 @@ export default function ReporteriaPage() {
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {modulos.map((m) => {
-          const Icon = m.icon
+        {MODULOS_INFORME.map((m) => {
+          const Icon = iconos[m.iconKey]
           const selected = moduloSeleccionado === m.value
           return (
             <button

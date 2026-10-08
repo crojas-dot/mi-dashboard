@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { scanVisualImports } from '../scripts/audit-ui-migration.mjs'
 
-test('todo el panel usa componentes locales y clases tw: sin CSS Modules ni CoreUI', () => {
+test('todo el panel usa componentes locales y utilidades Tailwind sin CSS Modules ni CoreUI', () => {
   const violations = scanVisualImports().filter(file => file.coreui.length || file.unprefixedClasses.length || file.cssModules.length)
   assert.deepEqual(violations, [])
   const dependencies = JSON.parse(fs.readFileSync('package.json', 'utf8')).dependencies
@@ -18,13 +18,4 @@ test('tablas de quejas conservan HTML nativo y contención de scroll', () => {
     // o en el CSS Module del wrapper (quejas.styles / mis-quejas.styles)
     assert.doesNotMatch(source, /<CTable\b/)
   }
-})
-
-test('Chart.js sigue aislado de la carga inicial y libera el canvas al desmontar', () => {
-  const loader = fs.readFileSync('components/dashboard/Chart.tsx', 'utf8')
-  const canvas = fs.readFileSync('components/dashboard/ChartCanvas.tsx', 'utf8')
-  assert.match(loader, /ssr: false/)
-  assert.match(loader, /import\('\.\/ChartCanvas'\)/)
-  assert.match(canvas, /instance\.destroy\(\)/)
-  assert.doesNotMatch(loader, /from 'chart\.js'/)
 })

@@ -71,13 +71,13 @@ export default function NuevaReunionModal({ open, onClose, onCreated }: Props) {
       <form onSubmit={handleSubmit} aria-busy={loading} className="space-y-4">
         {errorMessage && <p role="alert" className="text-sm text-qms-danger">{errorMessage}</p>}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
-          <input required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+          <label htmlFor="nueva-reunion-titulo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
+          <input id="nueva-reunion-titulo" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
-            <Select className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
+            <label htmlFor="nueva-reunion-tipo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Tipo</label>
+            <Select id="nueva-reunion-tipo" className="w-full" value={form.tipo} onChange={(e) => setForm({ ...form, tipo: e.target.value })}>
               <option>Revisión por Dirección</option>
               <option>Comité de Calidad</option>
               <option>Reunión Operativa</option>
@@ -85,17 +85,17 @@ export default function NuevaReunionModal({ open, onClose, onCreated }: Props) {
             </Select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Programada</label>
-            <input type="date" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.fecha_programada} onChange={(e) => setForm({ ...form, fecha_programada: e.target.value })} />
+            <label htmlFor="nueva-reunion-fecha-programada" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha Programada</label>
+            <input id="nueva-reunion-fecha-programada" type="date" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.fecha_programada} onChange={(e) => setForm({ ...form, fecha_programada: e.target.value })} />
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Participantes</label>
-          <input placeholder="Nombres separados por coma" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.participantes} onChange={(e) => setForm({ ...form, participantes: e.target.value })} />
+          <label htmlFor="nueva-reunion-participantes" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Participantes</label>
+          <input id="nueva-reunion-participantes" placeholder="Nombres separados por coma" className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.participantes} onChange={(e) => setForm({ ...form, participantes: e.target.value })} />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Agenda</label>
-          <textarea rows={3} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} />
+          <label htmlFor="nueva-reunion-agenda" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Agenda</label>
+          <textarea id="nueva-reunion-agenda" rows={3} className="ui-textarea w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.agenda} onChange={(e) => setForm({ ...form, agenda: e.target.value })} />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>Cancelar</Button>

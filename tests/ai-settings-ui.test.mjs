@@ -14,7 +14,7 @@ function harness({save,initialProvider=provider,testResponse=async options=>Resp
     '@/components/ui/Select':{default:'Select'},'@/components/ui/Button':{default:'Button'},
     '@/components/Modal':{default:'Modal'},'@/components/ui/ErrorState':{default:'ErrorState'},
     '@/components/configuracion/AIProviderList':{default:'AIProviderList'},
-    '@/lib/queries/useUsuarios':{apiFetch:async(_url,options)=>{calls.push(['model-test',options]);return testResponse(options)}},
+    '@/lib/services/apiClient':{apiFetch:async(_url,options)=>{calls.push(['model-test',options]);return testResponse(options)}},
     '@/lib/services/aiConfigService':{
       cargarConfigIA:async signal=>{calls.push(['load',signal]);return {providers:[initialProvider],routing:{},ttl:1440,revision:'initial-revision'}},
       guardarProveedoresIA:async(...args)=>{calls.push(['save',...args]);return save?await save(...args):{valor:args[0].map(p=>({...p,api_key:'',has_api_key:true})),revision:'saved-revision'}},
@@ -25,7 +25,9 @@ function harness({save,initialProvider=provider,testResponse=async options=>Resp
   })
   const visit=value=>Array.isArray(value)?value.flatMap(visit):value?.props?[value,...visit(value.props.children)]:[]
   const text=value=>Array.isArray(value)?value.map(text).join(''):value?.props?text(value.props.children):typeof value==='string'?value:''
-  const render=()=>{cursor=0;tree=Manager();while(queued.length)queued.shift()();return tree}
+  // Renderiza las vistas extraídas reales: siguen siendo componentes sin estado/red.
+  const expand=value=>Array.isArray(value)?value.map(expand):value?.props?typeof value.type==='function'?expand(value.type(value.props)):{...value,props:{...value.props,children:expand(value.props.children)}}:value
+  const render=()=>{cursor=0;tree=expand(Manager());while(queued.length)queued.shift()();return tree}
   return {calls,errors,render,ready:async()=>{render();await new Promise(resolve=>setTimeout(resolve,0));render()},
     node:type=>visit(tree).find(n=>n.type===type),button:label=>visit(tree).find(n=>n.type==='Button'&&text(n).trim()===label),
     input:placeholder=>visit(tree).find(n=>n.type==='input'&&n.props.placeholder===placeholder),

@@ -67,12 +67,12 @@ export default function NuevoDocumentoModal({ open, onClose, onCreated }: Props)
       <form onSubmit={handleSubmit} aria-busy={loading} className="space-y-4">
         {errorMessage && <p role="alert" className="text-sm text-qms-danger">{errorMessage}</p>}
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Código del Documento</label>
-          <input required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.codigo_doc} onChange={(e) => setForm({ ...form, codigo_doc: e.target.value })} placeholder="Ej: PR-001" />
+          <label htmlFor="nuevo-documento-codigo-del-documento" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Código del Documento</label>
+          <input id="nuevo-documento-codigo-del-documento" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.codigo_doc} onChange={(e) => setForm({ ...form, codigo_doc: e.target.value })} placeholder="Ej: PR-001" />
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
-          <input required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
+          <label htmlFor="nuevo-documento-titulo" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Título</label>
+          <input id="nuevo-documento-titulo" required className="ui-field w-full px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} />
         </div>
         <div className="flex justify-end gap-3 pt-2">
           <Button type="button" variant="secondary" disabled={loading} onClick={handleClose}>Cancelar</Button>

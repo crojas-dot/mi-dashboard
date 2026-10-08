@@ -9,13 +9,12 @@ import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
+import { estadoRevisionVariant } from '@/lib/constants/estados'
 import EmptyState from '@/components/ui/EmptyState'
 
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import NuevaReunionModal from './components/NuevaReunionModal'
-
-const estadoVariant: Record<string, string> = { Planificada: 'blue', Realizada: 'green', Cancelada: 'red' }
 
 export default function RevisionPage() {
   const [page, setPage] = useState(0)
@@ -50,7 +49,7 @@ export default function RevisionPage() {
               <TableRow key={r.id} onClick={() => setDetalle(r)}>
                 <TableCell className="font-medium text-gray-900 dark:text-white">{r.titulo}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{r.fecha_programada ? new Date(r.fecha_programada).toLocaleDateString('es-ES') : '-'}</TableCell>
-                <TableCell><Badge variant={estadoVariant[r.estado] || 'gray'}>{r.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoRevisionVariant[r.estado] || 'gray'}>{r.estado}</Badge></TableCell>
                 <TableCell><span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs text-qms-muted" title={r.acta_drive_id ? 'Acta registrada' : 'Acta pendiente de redactar'}>{r.acta_drive_id ? <Check className="h-4 w-4 shrink-0 text-qms-success" aria-hidden="true" /> : <Clock className="h-4 w-4 shrink-0 text-amber-500" aria-hidden="true" />}<span>{r.acta_drive_id ? 'Registrada' : 'Pendiente'}</span></span></TableCell>
               </TableRow>
             ))
@@ -72,7 +71,7 @@ export default function RevisionPage() {
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase">Estado</p>
-                <Badge variant={estadoVariant[detalle.estado] || 'gray'}>{detalle.estado}</Badge>
+                <Badge variant={estadoRevisionVariant[detalle.estado] || 'gray'}>{detalle.estado}</Badge>
               </div>
             </div>
             {detalle.participantes && (

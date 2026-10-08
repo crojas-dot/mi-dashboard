@@ -52,17 +52,22 @@ export async function crearNotificacion(input: {
 }
 
 export async function marcarLeida(id: string) {
-  await supabase.from('notificaciones').update({ leida: true }).eq('id', id)
+  // Una fila oculta por RLS tampoco confirma un guardado individual.
+  const { error } = await supabase.from('notificaciones').update({ leida: true }).eq('id', id).select('id').single()
+  if (error) throw error
 }
 
 export async function marcarTodasLeidas(userId: string) {
-  await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', userId).eq('leida', false).eq('archivada', false)
+  const { error } = await supabase.from('notificaciones').update({ leida: true }).eq('usuario_id', userId).eq('leida', false).eq('archivada', false)
+  if (error) throw error
 }
 
 export async function archivarNotificacion(id: string) {
-  await supabase.from('notificaciones').update({ archivada: true }).eq('id', id)
+  const { error } = await supabase.from('notificaciones').update({ archivada: true }).eq('id', id).select('id').single()
+  if (error) throw error
 }
 
 export async function archivarTodasVisibles(userId: string) {
-  await supabase.from('notificaciones').update({ archivada: true }).eq('usuario_id', userId).eq('archivada', false)
+  const { error } = await supabase.from('notificaciones').update({ archivada: true }).eq('usuario_id', userId).eq('archivada', false)
+  if (error) throw error
 }

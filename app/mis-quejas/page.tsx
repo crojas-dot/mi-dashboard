@@ -4,6 +4,7 @@ import { useState } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
+import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
 import { useQuejas } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -12,7 +13,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
-import { prioridadVariant, estadoVariant } from '@/lib/constants/variants'
+import { prioridadVariant, estadoVariant } from '@/lib/constants/estados'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 export default function MisQuejasPage() {
   const user = useAuthStore((s) => s.user)
@@ -33,8 +34,8 @@ export default function MisQuejasPage() {
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
 
-  const invalidate = (updated?: Queja) => {
-    if (updated) setPanelOpen(current => current?.id === updated.id ? updated : current)
+  const invalidate = (updated?: Queja, isCurrent?: () => boolean) => {
+    if (updated) setPanelOpen(current => updateSelectedQueja(current, updated, isCurrent))
     queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard })
   }

@@ -1,3 +1,9 @@
+/**
+ * AuthShell — puerta de sesión que envuelve toda la app (montado en layout.tsx).
+ * Decide qué renderizar: pending (fondo neutral en URL privada), denied, public o private.
+ * La lógica de redirección vive en authRoute.ts; los permisos en auth-store.ts.
+ * QueryProvider vive AQUÍ (un solo provider para toda la app, incluyendo redirecciones).
+ */
 'use client'
 
 import { useEffect } from 'react'

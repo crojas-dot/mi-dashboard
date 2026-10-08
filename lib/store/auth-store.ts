@@ -1,3 +1,10 @@
+/**
+ * auth-store — Zustand store para sesión/autenticación (estado global de UI).
+ * Flujo: init() → getSession → getUser → perfil + permisos → publish.
+ * Login: signIn → perfil activo → permisos. Logout: marca pending → limpia todo → signOut.
+ * vistaActiva: permite a admin simular la vista de otro rol (solo UI, no RLS).
+ * Consumidores principales: AuthShell, Header y Sidebar. La API autoriza en lib/server/auth.
+ */
 'use client'
 
 import { create } from 'zustand'

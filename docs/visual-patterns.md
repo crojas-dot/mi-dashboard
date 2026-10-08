@@ -8,9 +8,9 @@ como otra biblioteca. El azul de marca es **#024796**.
 
 | Cambio | Archivo |
 | --- | --- |
-| Colores, tamaños de texto, radios y sombras | `app/globals.css`, bloque `@theme` |
+| Colores, tamaños de texto, radios y sombras | `app/styles/theme.css`, bloque `@theme` |
 | Recetas Tailwind compartidas de botones, campos y tablas | `app/styles/components.css` |
-| Focus ring de todos los controles | `@utility focus-ring` en `app/globals.css` |
+| Focus ring y reglas globales | `app/globals.css` |
 | Props y comportamiento de los controles | `components/ui/`, un archivo por componente |
 | Modal, Escape, foco y fondo inerte | `components/Modal.tsx` (`<dialog>` nativo) |
 | Navegación de Configuración y guard de admin | `app/configuracion/page.tsx` |
@@ -19,18 +19,21 @@ como otra biblioteca. El azul de marca es **#024796**.
 | Validación de plazos y tipos de valores | `lib/utils/configuracion.ts` |
 | Menú lateral y encabezado | `components/Sidebar.tsx` y `components/Header.tsx` |
 
+Al igualar un color, inspeccionar el componente de referencia y reutilizar su token
+semántico; no escoger un hex o una clase azul «parecida». Por ejemplo, Button primary
+usa `qms-primary`; colores con nombres distintos pueden ser tonos distintos.
+
 ## Una única entrada Tailwind
 
-`app/layout.tsx` importa `app/globals.css`. Esta importa Tailwind **sin prefijo**
-y las recetas en `app/styles/components.css`. No agregar CDN ni otra configuración
+`app/layout.tsx` importa `app/globals.css`. Esta importa Tailwind **sin prefijo**,
+los tokens de `app/styles/theme.css` y las recetas en `app/styles/components.css`. No agregar CDN ni otra configuración
 de Tailwind. `tailwind.config.ts` no es la fuente de los tokens de v4.
 Los directorios de previews, experimentos y pruebas se excluyen del escaneo con
 `@source not`, para que no generen clases adicionales en el CSS publicado.
 
-La carpeta `components/ui/tailwind/`, los archivos con clases `tw:` y las guías de
-la migración anterior se conservan como prototipos históricos. No están conectados
-a la entrada CSS del panel activo. No usarlos como base de nuevas vistas ni
-importar su `cn`, que requiere dependencias ajenas al kit activo.
+Las guías de migración y `docs/historico/` documentan etapas anteriores; no
+definen el CSS actual. El kit duplicado con prefijo y sus estilos huérfanos se
+retiraron. No introducir un segundo kit, prefijo o helper `cn` de prototipos.
 
 ## Componentes y recetas
 
@@ -67,6 +70,12 @@ import Field from '@/components/ui/Field'
   también puede abrirse con Enter o Espacio, sin interceptar sus botones internos.
 - Las etiquetas `ui-*` son utilidades de Tailwind v4, no clases Bootstrap.
   Las acciones nativas sencillas pueden usar las mismas recetas sin un wrapper.
+
+Los fallbacks de ruta usan `components/RouteErrorFallback.tsx` y `ErrorState`:
+mensaje seguro, alerta accesible y acción de reintento, sin emojis decorativos.
+`global-error.tsx` sustituye el layout y declara documento, CSS y fuente propios.
+La IA conserva sus acciones y etiquetas textuales; no usa robots, cerebros ni
+destellos como adorno. Los iconos que identifican controles siguen disponibles.
 
 ## Encabezado y menús
 

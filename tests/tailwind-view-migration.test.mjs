@@ -9,7 +9,7 @@ import { scanVisualImports } from '../scripts/audit-ui-migration.mjs'
 
 const batch = Object.keys(JSON.parse(fs.readFileSync('tests/fixtures/step4-batch1-business.json', 'utf8')))
 
-test('los diez archivos del lote usan solo el kit local y clases con prefijo', () => {
+test('los listados y formularios operativos usan el kit activo sin imports legacy', () => {
   const inventory = scanVisualImports()
   for (const file of batch) {
     const entry = inventory.find(entry => entry.file === file)
@@ -17,15 +17,15 @@ test('los diez archivos del lote usan solo el kit local y clases con prefijo', (
     assert.deepEqual(entry.unprefixedClasses, [], file)
     assert.deepEqual(entry.cssModules, [], file)
     const source = fs.readFileSync(file, 'utf8')
-    assert.doesNotMatch(source, /from ['"]@\/components\/(?:Modal|ui\/(?:Button|Badge|Select|Table|Pagination|EmptyState|ErrorState|icons))['"]/, file)
+    assert.doesNotMatch(source, /components\/ui\/tailwind|@coreui\/|\.module\.css/, file)
   }
 })
 
-test('los cinco formularios conservan etiquetas asociadas, campos nativos y submit', () => {
-  for (const file of batch.filter(file => file.includes('/components/'))) {
+test('los seis formularios conservan etiquetas asociadas, campos nativos y submit', () => {
+  for (const file of [...batch.filter(file => file.includes('/components/')), 'app/documentos/components/NuevoDocumentoModal.tsx']) {
     const { default: Form } = loadModule(file, {
-      react: { ...React, useState: value => [value, () => {}] },
-      '@/components/ui/tailwind/Modal': { default: ({ children }) => createElement('section', null, children) },
+      react: { ...React, useState: value => [value, () => {}], useRef: current => ({ current }) },
+      '@/components/Modal': { default: ({ children }) => createElement('section', null, children) },
       '@/lib/supabase': { supabase: {} },
       '@/lib/services/folioService': {}, '@/lib/services/errorToast': {},
     })
@@ -41,7 +41,7 @@ test('los cinco formularios conservan etiquetas asociadas, campos nativos y subm
 })
 
 test('Table conserva semántica, atributos de celdas y acceso por teclado a filas interactivas', () => {
-  const { Table, TableHead, TableHeaderCell, TableRow, TableCell } = loadModule('components/ui/tailwind/Table.tsx')
+  const { Table, TableHead, TableHeaderCell, TableRow, TableCell } = loadModule('components/ui/Table.tsx')
   const html = renderToStaticMarkup(createElement(Table, { 'aria-label': 'Procesos' },
     createElement(TableHead, null, createElement('tr', null, createElement(TableHeaderCell, null, 'Nombre'))),
     createElement('tbody', null, createElement(TableRow, null, createElement(TableCell, { colSpan: 2 }, 'Proceso'))),
@@ -52,7 +52,7 @@ test('Table conserva semántica, atributos de celdas y acceso por teclado a fila
   assert.match(html, /<td\b[^>]*colSpan="2"/i)
   let opens = 0
   const row = TableRow({ onClick: () => opens++, children: null })
-  const target = {}
+  const target = { click: () => opens++ }
   row.props.onKeyDown({ key: 'Enter', target, currentTarget: target, preventDefault() {} })
   row.props.onKeyDown({ key: 'Enter', target: {}, currentTarget: target, preventDefault() {} })
   assert.equal(opens, 1, 'no abrir la fila al pulsar un control dentro de ella')
@@ -60,21 +60,21 @@ test('Table conserva semántica, atributos de celdas y acceso por teclado a fila
 })
 
 test('Pagination bloquea navegación durante refresco y preserva límites y callbacks', () => {
-  const { default: Pagination } = loadModule('components/ui/tailwind/Pagination.tsx')
+  const { default: Pagination } = loadModule('components/ui/Pagination.tsx', { '@/lib/queries/pagination': { PAGE_SIZE: 25 } })
   const html = renderToStaticMarkup(createElement(Pagination, { page: 0, count: 75, busy: true, onChange() {} }))
   assert.equal([...html.matchAll(/<button\b[^>]*disabled=""/g)].length, 2)
-  assert.match(html, /Página 1 de 3/)
+  assert.match(html.replace(/<[^>]+>/g, ''), /Página 1 de 3/)
   const changes = []
   const element = Pagination({ page: 1, count: 75, onChange: value => changes.push(value) })
-  const controls = element.props.children
+  const controls = element.props.children[1].props.children
   controls[0].props.onClick()
   controls[2].props.onClick()
   assert.deepEqual(changes, [0, 2])
 })
 
 test('Badge conserva un fallback visual seguro para estados desconocidos', () => {
-  const { default: Badge } = loadModule('components/ui/tailwind/Badge.tsx')
+  const { default: Badge } = loadModule('components/ui/Badge.tsx')
   const html = renderToStaticMarkup(createElement(Badge, { variant: 'toString' }, 'Pendiente'))
-  assert.match(html, /tw:bg-gray-100/)
+  assert.match(html, /bg-qms-muted/)
   assert.match(html, />Pendiente</)
 })

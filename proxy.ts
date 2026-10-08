@@ -1,3 +1,11 @@
+/**
+ * proxy.ts — middleware de Next.js que protege /api/*.
+ * 1. Descarta headers de identidad enviados por el cliente (x-user-id, etc.).
+ * 2. Rutas públicas (/login, /q, drive/upload-public) pasan sin auth.
+ * 3. Rutas con guard propio (API_WITH_ROUTE_AUTH) solo exigen Bearer token aquí.
+ * 4. El resto resuelve getCurrentUser() y propaga identidad vía headers internos.
+ * NO es middleware.ts de Next; se usa proxy.ts para evitar conflictos (ver AGENTS.md).
+ */
 import { NextResponse, type NextRequest } from 'next/server'
 import { getAuthToken, getCurrentUser } from '@/lib/server/auth'
 import { authenticatesInRoute } from '@/lib/server/apiAuthentication'

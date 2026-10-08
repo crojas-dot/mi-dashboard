@@ -1,39 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ECA-QMS
 
-## Getting Started
+Panel de gestión de calidad: Quejas, SACP, Documentos, Riesgos, Auditorías,
+Revisión por Dirección, Procesos, Reportería y administración de usuarios/configuración.
+Next.js 16 + React 19, Supabase, TanStack Query, Zustand y kit propio Tailwind v4.
 
-First, run the development server:
+## Para encontrar lo que quieres editar
 
-```bash
+- [Mapa de arquitectura y edición](docs/arquitectura/README.md): rutas exactas para cada cambio.
+- [Guía de trabajo](AGENTS.md): reglas breves de sesión, seguridad, datos y capas.
+- [Patrones visuales](docs/visual-patterns.md): tokens, controles, responsive y cargas.
+- [Módulos y flujos](docs/arquitectura/modulos-y-flujos.md): capacidades activas y límites.
+- [DB](docs/arquitectura/base-de-datos.md): esquema y RLS observados; verificar remoto antes de alterar.
+- Las reglas locales se cargan por carpeta: [app/AGENTS.md](app/AGENTS.md), [lib/AGENTS.md](lib/AGENTS.md), [components/AGENTS.md](components/AGENTS.md) y [tests/AGENTS.md](tests/AGENTS.md). No hace falta copiar el mapa entero en cada solicitud.
+
+## Pedir un cambio
+
+Describe el resultado y lo que debe seguir igual; las guías indican dónde editar y cómo validar.
+
+> En Usuarios, agrega filtro por estado. Conserva permisos y comportamiento móvil; ejecuta la prueba pertinente.
+
+## Ejecutar localmente
+
+~~~sh
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+~~~
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir http://localhost:3000. Configurar .env.local con las variables documentadas en
+[integraciones](docs/arquitectura/integraciones.md); nunca añadir secretos al repositorio.
+El servidor de desarrollo no confirma variables ni despliegue de producción.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Verificar cambios
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+~~~sh
+npx tsc --noEmit
+npm run lint
+npm run check:structure
+npm run check:visual
+npm run build
+~~~
 
-## Learn More
+Ejecutar además la suite pertinente de tests/. El [mapa de verificación](docs/arquitectura/verificacion-y-pendientes.md)
+explica regresiones, resultados históricos y pendientes; la suite global conserva deuda previa.
+Las pruebas de DB con fixtures terminan en ROLLBACK y se ejecutan solo sobre el proyecto autorizado.
 
-To learn more about Next.js, take a look at the following resources:
+## Dónde vive cada responsabilidad
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-Prueba
-De nuevo
+app/ compone páginas y API; components/ contiene UI; lib/queries/ lee datos remotos;
+lib/services/ ejecuta flujos; lib/server/ autoriza recursos privilegiados;
+lib/constants/ centraliza diccionarios; app/styles/theme.css define tokens visuales.
+app/globals.css compone Tailwind y las reglas globales.
+La documentación por tema se mantiene en docs/arquitectura/ y la evidencia fechada
+en auditorías/migraciones. Consultar consumidores actuales antes de integrar material histórico.

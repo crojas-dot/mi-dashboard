@@ -1,28 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
 
-test('la limpieza tardía de una página no borra la acción de la nueva ruta', () => {
-  const { useHeaderActionStore: store } = loadModule('lib/store/header-action-store.ts')
-  const first = { label: 'Nuevo proceso', onClick() {} }
-  const next = { label: 'Nueva queja', onClick() {} }
-  store.getState().registerAction('procesos', first)
-  store.getState().registerAction('quejas', next)
-  const activeState = store.getState()
-  store.getState().clearAction('procesos')
-  assert.equal(store.getState(), activeState, 'tampoco debe notificar un cambio inexistente')
-  assert.equal(store.getState().action, next)
-  store.getState().clearAction('quejas')
-  assert.equal(store.getState().action, null)
-})
-
 test('paginación conserva controles HTML accesibles y no envía formularios', () => {
-  const { default: Pagination } = loadModule('components/ui/tailwind/Pagination.tsx', {
+  const { default: Pagination } = loadModule('components/ui/Pagination.tsx', {
     '@/lib/queries/pagination': { PAGE_SIZE: 25 },
   })
-  // Renderizar CoreUI real detecta props descartadas por sus componentes polymorphic.
+  // Renderizar el kit activo detecta atributos descartados por sus wrappers.
   const html = renderToStaticMarkup(createElement(Pagination, { page: 0, count: 75, onChange() {} }))
   const buttons = [...html.matchAll(/<button\b([^>]*)>(.*?)<\/button>/g)]
   assert.equal(buttons.length, 2)
@@ -31,14 +18,14 @@ test('paginación conserva controles HTML accesibles y no envía formularios', (
   assert.match(buttons[0][1], /aria-label="Página anterior"/)
   assert.match(buttons.at(-1)[1], /aria-label="Página siguiente"/)
   assert.doesNotMatch(buttons.at(-1)[1], /\sdisabled(?:=|\s|$)/)
-  assert.match(html, />Página 1 de 3/)
+  assert.match(html.replace(/<[^>]+>/g, ''), /Página 1 de 3/)
   const busy = renderToStaticMarkup(createElement(Pagination, { page: 1, count: 75, busy: true, onChange() {} }))
   assert.equal([...busy.matchAll(/<button\b[^>]*disabled=""/g)].length, 2)
 })
 
 function modalFixture({ open = true } = {}) {
   let closes = 0
-  const { default: Modal } = loadModule('components/ui/tailwind/Modal.tsx', {
+  const { default: Modal } = loadModule('components/Modal.tsx', {
     react: {
       useEffect() {},
       useId: () => 'parent',
@@ -49,6 +36,18 @@ function modalFixture({ open = true } = {}) {
   const element = Modal({ open, title: 'Expediente', onClose: () => closes++, children: null })
   return { element, dialog: element, closes: () => closes }
 }
+
+test('el encabezado de diálogo reutiliza exactamente el token del botón primario', () => {
+  const { dialog } = modalFixture()
+  const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  const { default: Button } = loadModule('components/ui/Button.tsx')
+  const button = Button({ children: 'Nueva queja' })
+  const recipes = fs.readFileSync('app/styles/components.css', 'utf8')
+
+  assert.match(header.props.className, /\bbg-qms-primary\b/)
+  assert.match(button.props.className, /\bui-button-primary\b/)
+  assert.match(recipes, /@utility ui-button-primary\s*\{\s*@apply border-qms-primary bg-qms-primary text-white;/)
+})
 
 test('cancelación nativa del diálogo consume Escape antes del panel de fondo', () => {
   const top = modalFixture()

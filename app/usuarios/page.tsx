@@ -5,9 +5,11 @@ import { Plus, Search, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { useUsuarios, usuariosKey, apiFetch, type Usuario } from '@/lib/queries/useUsuarios'
+import { useUsuarios, usuariosKey, type Usuario } from '@/lib/queries/useUsuarios'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { showError, showSuccess } from '@/lib/services/errorToast'
+import { mutateUsuario } from '@/lib/services/usuariosService'
+import { useOperationLock } from '@/lib/hooks/useOperationLock'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
@@ -18,19 +20,19 @@ import UsuarioFormModal from '@/components/usuarios/UsuarioFormModal'
 import PasswordModal from '@/components/usuarios/PasswordModal'
 import ResetPasswordModal from '@/components/usuarios/ResetPasswordModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
-
-const roles = ['admin', 'calidad', 'colaborador'] as const
-
-const rolLabel: Record<string, string> = { admin: 'Administrador', calidad: 'Calidad', colaborador: 'Colaborador' }
-const rolVariant: Record<string, string> = { admin: 'blue', calidad: 'gray', colaborador: 'green' }
-const rolBg: Record<string, string> = { admin: 'bg-qms-primary', calidad: 'bg-qms-muted', colaborador: 'bg-qms-success' }
+import {
+  getDirectoryRoleAvatarClass,
+  getDirectoryRoleVariant,
+  getRoleLabel,
+  ROLES_GESTIONABLES,
+} from '@/lib/constants/roles'
 
 export default function UsuariosPage() {
   const user = useAuthStore((s) => s.user)
   const initialized = useAuthStore((s) => s.initialized)
   const router = useRouter()
   const queryClient = useQueryClient()
-  const invalidateUsuarios = () => queryClient.invalidateQueries({ queryKey: usuariosKey })
+  const invalidateUsuarios = () => queryClient.invalidateQueries({ queryKey: usuariosKey }, { throwOnError: true })
 
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
@@ -43,7 +45,8 @@ export default function UsuariosPage() {
   const [resetSel, setResetSel] = useState<Usuario | null>(null)
   const [pwModal, setPwModal] = useState<{ password: string; title: string; subtitle?: string } | null>(null)
   const [confirmar, setConfirmar] = useState<{ usuario: Usuario; accion: 'desactivar' | 'activar' } | null>(null)
-  const [confirmando, setConfirmando] = useState(false)
+  const cambioEstado = useOperationLock<'estado'>()
+  const confirmando = cambioEstado.operation !== null
 
   useEffect(() => {
     if (!initialized) return
@@ -54,7 +57,7 @@ export default function UsuariosPage() {
     search: deferredSearch,
     rol: filtroRol || undefined,
     estado: filtroEstado || undefined,
-  })
+  }, initialized && user?.rol === 'admin')
 
   if (!initialized || user?.rol !== 'admin') {
     return <LoadingSkeleton label="Verificando acceso…" />
@@ -74,10 +77,9 @@ export default function UsuariosPage() {
     setFormOpen(true)
   }
 
-  function handleFormSuccess(result: { tempPassword?: string }) {
+  async function handleFormSuccess(result: { tempPassword?: string }) {
     setFormOpen(false)
     setUsuarioSel(null)
-    invalidateUsuarios()
     if (result.tempPassword) {
       setPwModal({
         password: result.tempPassword,
@@ -85,44 +87,32 @@ export default function UsuariosPage() {
         subtitle: formMode === 'crear' ? 'Contraseña temporal del nuevo usuario' : 'Nueva contraseña para el usuario',
       })
     }
+    await invalidateUsuarios()
   }
 
   async function eliminarUsuario(u: Usuario) {
-    if (esAuto(u)) {
-      showError(null, 'No puedes eliminar tu propia cuenta')
-      return
-    }
-    const res = await apiFetch('/api/usuarios', {
-      method: 'DELETE',
-      body: JSON.stringify({ id: u.id }),
-    })
-    if (res.ok) {
-      showSuccess('Usuario eliminado')
-      setFormOpen(false)
-      setUsuarioSel(null)
-      invalidateUsuarios()
-    } else {
-      const data = await res.json().catch(() => null)
-      showError(null, data?.error || 'No se pudo eliminar el usuario')
-    }
+    if (esAuto(u)) throw new Error('No puedes eliminar tu propia cuenta')
+    await mutateUsuario('DELETE', { id: u.id }, 'No se pudo eliminar el usuario')
+    showSuccess('Usuario eliminado')
+    setFormOpen(false)
+    setUsuarioSel(null)
+    try { await invalidateUsuarios() }
+    catch { showError(null, 'El usuario se eliminó, pero no se pudo actualizar el listado') }
   }
 
   async function confirmarCambioEstado() {
-    if (!confirmar) return
+    if (!confirmar || !cambioEstado.begin('estado')) return
     const { usuario: u, accion } = confirmar
-    setConfirmando(true)
-    const res = await apiFetch('/api/usuarios', {
-      method: 'PATCH',
-      body: JSON.stringify({ id: u.id, estado: accion === 'desactivar' ? 'inactivo' : 'activo' }),
-    })
-    setConfirmando(false)
-    if (res.ok) {
+    try {
+      await mutateUsuario('PATCH', { id: u.id, estado: accion === 'desactivar' ? 'inactivo' : 'activo' }, 'No se pudo cambiar el estado')
       showSuccess(accion === 'desactivar' ? 'Usuario desactivado' : 'Usuario activado')
       setConfirmar(null)
-      invalidateUsuarios()
-    } else {
-      const data = await res.json().catch(() => null)
-      showError(null, data?.error || 'No se pudo cambiar el estado')
+      try { await invalidateUsuarios() }
+      catch { showError(null, 'El estado se guardó, pero no se pudo actualizar el listado') }
+    } catch (error) {
+      showError(error, 'No se pudo cambiar el estado')
+    } finally {
+      cambioEstado.finish()
     }
   }
 
@@ -153,7 +143,7 @@ export default function UsuariosPage() {
         </div>
         <Select aria-label="Rol" className="h-11 lg:h-10" value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setSearch('') }}>
           <option value="">Todos los roles</option>
-          {roles.map((r) => <option key={r} value={r}>{rolLabel[r]}</option>)}
+          {ROLES_GESTIONABLES.map((r) => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
         </Select>
         <Select aria-label="Estado del usuario" className="h-11 lg:h-10" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setSearch('') }}>
           <option value="">Todos los estados</option>
@@ -186,7 +176,7 @@ export default function UsuariosPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${rolBg[u.rol] || 'bg-qms-muted'}`}
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${getDirectoryRoleAvatarClass(u.rol)}`}
                       >
                         {u.nombre.charAt(0).toUpperCase()}
                       </div>
@@ -199,7 +189,7 @@ export default function UsuariosPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant={rolVariant[u.rol] || 'gray'}>{rolLabel[u.rol] || u.rol}</Badge></TableCell>
+                  <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
                   <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'red'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-qms-muted">
                     {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}
@@ -271,7 +261,7 @@ export default function UsuariosPage() {
         danger={confirmar?.accion === 'desactivar'}
         loading={confirmando}
         onConfirm={confirmarCambioEstado}
-        onCancel={() => { setConfirmar(null); setConfirmando(false) }}
+        onCancel={() => { if (!cambioEstado.isLocked()) setConfirmar(null) }}
       />
     </div>
   )

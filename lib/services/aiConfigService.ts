@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/queries/useUsuarios'
+import { apiFetch } from '@/lib/services/apiClient'
 import type { AIProvider, AIRouting, TestResultado } from '@/lib/ai/types'
 import { createHttpError } from '@/lib/errors/httpError'
 

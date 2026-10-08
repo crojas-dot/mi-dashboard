@@ -1,3 +1,9 @@
+/**
+ * Header — barra superior con título, notificaciones y menú de usuario.
+ * El título viene de tituloDeRuta() (lib/constants/modulos.ts).
+ * Notificaciones: realtime vía useRealtimeSubscription; sonidos vía sonidosNotificacion.
+ * Dropdowns: NotificationDropdown y UserMenuDropdown (components/header/).
+ */
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
@@ -13,21 +19,7 @@ import UserMenuDropdown from '@/components/header/UserMenuDropdown'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 import { Menu } from 'lucide-react'
-
-const titles: Record<string, string> = {
-  '/': 'Dashboard',
-  '/quejas': 'Quejas',
-  '/mis-quejas': 'Mis Quejas',
-  '/documentos': 'Documentos',
-  '/sacp': 'SACP',
-  '/riesgos': 'Riesgos',
-  '/auditorias': 'Auditorías',
-  '/revision': 'Revisión por Dirección',
-  '/procesos': 'Procesos',
-  '/usuarios': 'Usuarios',
-  '/configuracion': 'Configuración',
-  '/reporteria': 'Reportería',
-}
+import { tituloDeRuta } from '@/lib/constants/modulos'
 
 export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => void } = {}) {
   const pathname = usePathname()
@@ -39,7 +31,7 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
   const [menuAbierto, setMenuAbierto] = useState<'notif' | 'user' | null>(null)
 
-  const title = titles[pathname] || 'QMS'
+  const title = tituloDeRuta(pathname)
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
@@ -168,8 +160,8 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
           onToggle={() => setMenuAbierto(menuAbierto === 'notif' ? null : 'notif')}
           notifications={notificaciones}
           unreadCount={countNoLeidas}
-          onMarkAll={() => { if (user) void marcarTodas.mutateAsync(user.id) }}
-          onArchiveAll={() => { if (user) void archivarTodas.mutateAsync(user.id) }}
+          onMarkAll={() => { if (user) marcarTodas.mutate(user.id) }}
+          onArchiveAll={() => { if (user) archivarTodas.mutate(user.id) }}
           onMarkRead={(notification) => { if (!notification.leida && user) marcarLeida.mutate({ id: notification.id, userId: user.id }) }}
           onArchive={(notification) => { if (user) archivar.mutate({ id: notification.id, userId: user.id }) }}
           onNavigate={(notification) => irA(notification.enlace || undefined, notification.origen_id || undefined)}
