@@ -1,0 +1,50 @@
+[
+  {
+    "check_name": "procesos.nombre",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "reuniones.titulo",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "documentos.titulo",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "documentos.codigo",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "acciones.folio",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "riesgos.folio",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "auditorias.folio",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "auditorias.fechas",
+    "invalid_rows": 1
+  },
+  {
+    "check_name": "riesgos.probabilidad",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "riesgos.impacto",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "acciones.porcentaje",
+    "invalid_rows": 0
+  },
+  {
+    "check_name": "sla.plazos",
+    "invalid_rows": 0
+  }
+]

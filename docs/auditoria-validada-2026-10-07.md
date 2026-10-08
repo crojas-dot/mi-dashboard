@@ -29,13 +29,13 @@ Se contrastó el informe aportado con el checkout local, el commit anterior y me
 6. API Usuarios valida todos los campos antes de efectos Auth/DB, permite solo roles/estados conocidos y UUID válido, envía email+contraseña juntos y no actualiza perfiles para un reset exclusivamente Auth. Contraseñas temporales criptográficas, errores sanitizados y respuestas no-store.
 7. Gestor IA trasladado a API admin con perfil activo: respuestas sin claves guardadas, conexiones/descubrimiento/limpieza en servidor, JSON limitado a 1 MiB y validación de HTTPS/hosts permitidos. El campo vacío conserva la clave; el admin puede introducir una nueva. Guardado con revisión explícita y comparación condicional de xmin (versión MVCC, verificada por lectura de metadatos en el proyecto) conserva consumo, rechaza carreras con 409 y no fuerza una revisión nueva. Usa la tabla existente y no depende de un nuevo RPC.
 
-## Endurecimiento DB autorizado, en preparación
+## Endurecimiento DB autorizado y aplicado
 
-La política remota configuraciones_sistema_select USING(true) sigue permitiendo lectura directa a authenticated. Por tanto la máscara y la API nueva **no cierran por sí solas la exposición de claves IA en DB**. La consulta remota de esta revisión solo leyó políticas, nunca valores de claves o datos de usuarios.
+Se eliminó configuraciones_sistema_select USING(true). La política final permite configuración ordinaria a admin activo y excluye el prefijo exacto ai_ para todo cliente authenticated, incluso admin. El backend service role usa la API autorizada y conserva acceso. No se recuperaron claves reales ni datos de usuarios para la auditoría.
 
-La revisión automática rechazó generar una migración amplia porque reemplazaba RLS en numerosas tablas, añadía constraints y cambiaba acceso a credenciales IA sin una autorización suficientemente precisa. El propietario autorizó explícitamente completar ese alcance el 7 de octubre. Se prepararon las dos migraciones y las pruebas; recuperar OAuth del MCP sigue siendo necesario para ejecutar y verificar SQL remoto.
+La revisión automática rechazó generar una migración amplia porque reemplazaba RLS en numerosas tablas, añadía constraints y cambiaba acceso a credenciales IA sin una autorización suficientemente precisa. El propietario autorizó explícitamente completar ese alcance el 7 de octubre. OAuth se recuperó y se aplicaron 20261008011901_auditoria_permisos_validacion y 20261008012121_aislamiento_credenciales_ia. Sus fechas son 8/oct UTC y 7/oct Costa Rica. El frontend/API compatible se publicó primero en Vercel: commit 07763ff.
 
-El alcance propuesto para revisar y autorizar es:
+El alcance aplicado es:
 
 | Tablas | Regla propuesta |
 | --- | --- |
@@ -46,7 +46,7 @@ El alcance propuesto para revisar y autorizar es:
 | formularios_publicos | Lectura ciudadana de formularios activos y administración exclusiva admin. |
 | configuraciones_sistema | Datos ordinarios de configuración solo admin activo; claves ai_* reservadas al servidor después de desplegar el gestor/API compatible. |
 
-También se proponen checks conservadores para nuevas escrituras: textos obligatorios no vacíos, fechas de auditoría ordenadas, escalas de riesgos 1–3, seguimiento 0–100 y plazos positivos. No se propone eliminar ni reescribir registros históricos. Requiere revisar datos existentes y probar roles/lectura/escritura con rollback antes de aplicar. Una política estricta adicional no neutraliza otra permisiva combinada con OR.
+Se aplicaron 11 CHECK NOT VALID para textos no vacíos cuando presentes, riesgos 1–3, seguimiento 0–100 y plazos válidos. Los conteos previos fueron cero para esas incompatibilidades. Una auditoría histórica tenía fechas invertidas: un trigger valida altas/cambios de fechas y mantiene la edición de otros campos; se probó la corrección permitida y el rechazo de fechas nuevas inválidas. No se borraron ni reescribieron registros históricos. Una política estricta adicional no neutraliza otra permisiva combinada con OR.
 
 ## Verificación y límites
 
@@ -65,3 +65,15 @@ También se proponen checks conservadores para nuevas escrituras: textos obligat
 Los 23 fallos restantes incluyen contratos de prototipos/fixtures, un contrato de carga diferida y aislamiento de respuestas IA/subidas/transiciones/notas en paneles de quejas. Este último es deuda de confiabilidad real: useEntityRequestGuard existe pero aún no está integrado allí. No se presenta como corregido por estas mejoras de formularios.
 
 No se usaron datos de negocio ni sesión real en las pruebas, no se ejecutaron conexiones de IA de pago y no hay benchmark autenticado con miles de registros. El rate limit propio sigue por instancia, la protección de último admin no es una transacción entre Auth y DB y la telemetría persistente sigue fuera de esta etapa. Las consultas directas legacy y la configuración de Auth externa requieren auditorías específicas. El build local no demuestra despliegue en Vercel.
+
+## Cierre y comprobación remota
+
+- Migraciones aplicadas en Supabase: 20261008011901 y 20261008012121. Archivos locales sincronizados con el historial remoto.
+- Preflight fase A y A+B ejecutado en la DB real con fixtures y ROLLBACK: PASS. Regresión del estado final aplicada: PASS. Admin activo conserva CRUD; cuentas sin permiso/inactivas no obtienen acceso privado; categorías/formularios públicos activos conservan lectura.
+- El RPC SECURITY DEFINER derivar_queja_a_sacp también verifica permisos Quejas+SACP para staff, conserva admin y su cuerpo/idempotencia. Search paths de helpers y derivación quedan fijados; EXECUTE público de derivación cerrado.
+- Respaldo y rollback de metadatos preparados. El rollback se probó en otra transacción con ROLLBACK: PASS, sin deshacer las políticas nuevas.
+- REST: lectura anon de configuración devuelve 401; service role conserva la proyección xmin. No se extrajeron valores IA. API IA de Vercel GET/PUT/POST con Bearer sintético inválido devuelve 401/no-store.
+- Asesores antes/después conservan los mismos cinco grupos: uno INFO de tablas internas cerradas, y avisos de extensión public, RPC SECURITY DEFINER públicos/auth y [protección de contraseñas filtradas](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Los RPC públicos del formulario ciudadano son intencionales; el aviso no justifica eliminar ese flujo. Los restantes ajustes Auth/extensiones quedan documentados fuera del alcance de las dos migraciones.
+- El futuro módulo Seguridad y Estado sigue sin construirse. Los 23 fallos históricos de tests de UI/contratos/aislamiento de respuestas y el benchmark de volumen permanecen pendientes; no se presenta el producto como completamente auditado ni invulnerable.
+
+Última comprobación tras el ensayo de rollback: 33/33 tablas con RLS, 11 CHECK y la política ai_ cerrada permanecen aplicados. La regresión de IA/sesión/runtime pasó 47/47 después de los cambios remotos.

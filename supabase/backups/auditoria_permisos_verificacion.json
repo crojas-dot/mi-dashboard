@@ -1,0 +1,40 @@
+{
+  "projectRef": "fykhrrpeoehwqznccmfp",
+  "migrations": [
+    "20261008011901",
+    "20261008012121"
+  ],
+  "frontendCommit": "07763ff93fb160776910675342aa0b0463540449",
+  "checks": {
+    "phaseA": "PASS",
+    "phaseAB": "PASS",
+    "appliedState": "PASS",
+    "rollbackInTransaction": "PASS",
+    "restAnonConfig": 401,
+    "restServiceXmin": "PASS",
+    "vercelInvalidToken": [
+      "GET:401 no-store",
+      "PUT:401 no-store",
+      "POST:401 no-store"
+    ]
+  },
+  "historicalRowsModified": 0,
+  "publicFlowCoverage": "ACL/active-form/category reads; no full citizen submit",
+  "testData": "synthetic fixtures rolled back",
+  "finalMetadata": {
+    "constraints": 11,
+    "config_policy": [
+      {
+        "name": "configuraciones_non_ai_admin",
+        "qual": "(( SELECT app_es_admin() AS app_es_admin) AND (\"left\"(clave, 3) <> 'ai_'::text))",
+        "check": "(( SELECT app_es_admin() AS app_es_admin) AND (\"left\"(clave, 3) <> 'ai_'::text))"
+      }
+    ],
+    "public_tables": 33,
+    "all_rls_enabled": true
+  },
+  "localRegression": {
+    "passed": 47,
+    "total": 47
+  }
+}

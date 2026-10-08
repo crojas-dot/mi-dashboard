@@ -10,9 +10,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía vigente de arquitectura y trabajo
 
-Última revisión: **7 de octubre de 2026**, después de validar la auditoría externa y mejorar consultas, formularios, API de Usuarios y configuración IA. El snapshot remoto de Supabase del 6 de octubre verificó 33 tablas públicas con RLS, migraciones, vistas, ACL de RPC críticos, políticas heredadas y ausencia de `cron.job`; esta revisión no aplica migraciones ni modifica las políticas remotas de DB.
+Última revisión: **7 de octubre de 2026**, después de validar la auditoría externa y mejorar consultas, formularios, API de Usuarios y configuración IA. El endurecimiento autorizado está aplicado en Supabase: migraciones `20261008011901` y `20261008012121` (8 de octubre UTC, 7 de octubre Costa Rica). Se reemplazaron políticas amplias de 13 tablas, se limitaron grants, se cerró el bypass de derivación SACP y se aisló `ai_*` del Data API cliente. La autenticación y los skeletons conservan su flujo.
 
-Esta guía describe el **código local actual** y el estado remoto observado; no demuestra que Vercel ya tenga desplegado este checkout. Los cambios recientes de frontend/sesión requieren un nuevo despliegue para aparecer allí. La migración de seguridad `20261006232152` sí figura aplicada en Supabase. Conservar capacidades existentes y distinguir implementación, verificación histórica y pendientes.
+Esta guía describe el **código local actual** y el estado remoto observado. El frontend/API de auditoría está verificado en Vercel en `07763ff93fb160776910675342aa0b0463540449`; sus guards de IA y transiciones de login se comprobaron antes del aislamiento de DB. El historial conserva la migración previa `20261006232152` y agrega las dos migraciones autorizadas. Conservar capacidades existentes y distinguir implementación, verificación histórica y pendientes.
 
 ## 1. Reglas para trabajar en este repositorio
 
@@ -170,15 +170,16 @@ Las **33 tablas públicas** tienen RLS habilitada. Su alcance efectivo es desigu
 | Documentos/Auditorías | SELECT por lectura del módulo; INSERT/UPDATE/DELETE por lectura+escritura; admin activo conserva autoridad |
 | Informes guardados | RLS activa; lectura por Reportería, creación/edición del propio autor con escritura, override admin y DELETE solo admin |
 | Notificaciones | SELECT/UPDATE propias, usando la identidad operativa activa |
-| Catálogos/SLA | Escritura admin, pero conviven políticas SELECT amplias para authenticated. Catálogos anon: solo categoría de quejas activa |
-| Configuraciones | Escritura admin. **La política heredada `configuraciones_sistema_select USING(true)` permite lectura a authenticated**; el guard de Configuración no elimina esa exposición |
-| Formularios públicos | Anon lee activos. Hay políticas heredadas INSERT/UPDATE/DELETE `true` para authenticated además de la política admin; el límite admin de la UI no se cumple completamente en DB |
-| Acciones, Riesgos, Procesos, Reuniones, Hallazgos, versiones/solicitudes documentales y Tareas | Políticas ALL heredadas basadas en `auth.role()='authenticated'`; no están alineadas universalmente con permisos por módulo ni estado activo |
+| Catálogos/SLA | Lectura por perfil activo y escritura por admin activo; anon solo categorías de quejas activas o legacy NULL. Se preservan códigos/estados protegidos por el trigger y colores semánticos |
+| Configuraciones | Datos ordinarios solo admin activo. Claves con prefijo exacto `ai_` sin lectura/escritura por cliente authenticated, incluso admin; backend service role conserva acceso. API IA valida admin antes de usar ese privilegio |
+| Formularios públicos | Anon y authenticated leen activos como flujo ciudadano; admin activo ve también inactivos y administra. INSERT/UPDATE/DELETE amplios se eliminaron |
+| Acciones, Riesgos, Procesos, Reuniones, Hallazgos y versiones/solicitudes documentales | Perfil activo y lectura/escritura del módulo correspondiente, con override de admin activo. UPDATE verifica USING y WITH CHECK |
+| Tareas | Admin activo administra; responsables activos leen solo sus propias tareas. No hay un módulo UI integrado |
 | Logs/mail_queue | Políticas INSERT para authenticated; no hay lectura general por cliente |
 | Motor QMS | Reglas/calendarios legibles por sesión, ejecuciones por quejas visibles y eventos por expedientes visibles. Auditoría de configuración solo admin |
 | Tablas internas cerradas | `folios_quejas_anuales` y `qms_deadline_notices` tienen RLS sin políticas de cliente; acceden funciones/roles privilegiados |
 
-Las políticas permisivas se combinan con OR. Añadir una política estricta no corrige otra antigua amplia. No afirmar que todas las claves IA están privadas: están en `configuraciones_sistema`, cuya lectura heredada es un pendiente de seguridad.
+Las políticas permisivas se combinan con OR. Añadir una política estricta no corrige otra antigua amplia. La lectura heredada de Configuraciones se eliminó: `ai_*` se accede por backend autorizado. Project owners/roles privilegiados de Supabase conservan acceso administrativo; el JSONB no se convirtió en almacenamiento cifrado ni Vault.
 
 ## 5. Datos, caché, navegación y errores
 
@@ -322,7 +323,7 @@ El resultado actualizado reemplaza el expediente abierto solo si conserva el mis
 - El servicio/UI legacy aún intenta borrar filas y no integra completamente códigos internos. Al corregirlo, ofrecer desactivación/historial; no quitar el trigger para hacer funcionar el botón.
 - SLA legacy escribe `sla_config`: días enteros, alerta>=0, vencimiento>=1 y alerta<=vencimiento. **No publica `qms_stage_versions` ni calendarios**; ver motor real de DB.
 - Roles y Accesos hace upsert por rol/módulo; requiere Ver antes de Editar y bloquea Configuración para admin. Los permisos del store se recargan al recuperar sesión/vista, no hay suscripción dedicada a cambios de permisos.
-- Formularios: crear/copy URL/activar/desactivar/eliminar con confirmación; verificar RLS heredada amplia antes de asumir que solo admin puede mutarlos por Data API.
+- Formularios: crear/copy URL/activar/desactivar/eliminar con confirmación; RLS ya limita mutaciones a admin activo y conserva la lectura ciudadana de activos.
 - Zona horaria: clave `org.zona_horaria`, fallback America/Costa_Rica; GET para cualquier perfil activo, PUT admin, validación Intl. La configuración se usa en análisis/helpers conectados; no todos los widgets ni el motor QMS usan esa clave.
 
 ### Otros módulos
@@ -372,7 +373,7 @@ El resultado actualizado reemplaza el expediente abierto solo si conserva el mis
 - Reset mensual compara `tokens_updated_at`; incremento posterior por RPC `incrementar_tokens_proveedor`, exclusivo service role, JSON validado y fila bloqueada FOR UPDATE. No llamar ese RPC desde el navegador.
 - `.contexto_qms.txt` se descarga de Drive y se añade como contexto al prompt. El endpoint puede continuar sin él; no guarda evidencias en disco. Ese texto externo no es una autorización ni una protección infalible contra prompt injection.
 - IA visible en Mis Quejas: análisis automático, chat custom, lectura Markdown y textarea de edición. El resultado se mantiene en estado del panel; no hay historial IA persistente completo.
-- El gestor activo usa `/api/configuracion/ia` para leer/guardar, descubrir modelos, probar conexión y limpiar memoria. La API exige perfil activo admin, usa service role y responde sin claves guardadas (`api_key` vacío, `has_api_key` como indicador). La clave nueva que el admin teclea sí viaja al servidor al guardar/probar. **El aislamiento de DB sigue pendiente**: `configuraciones_sistema_select USING(true)` permite a authenticated leer directamente el registro IA y eludir esta API. No afirmar que todas las claves estén privadas hasta cerrar esa política y verificar los privilegios.
+- El gestor activo usa `/api/configuracion/ia` para leer/guardar, descubrir modelos, probar conexión y limpiar memoria. La API exige perfil activo admin, usa service role y responde sin claves guardadas (`api_key` vacío, `has_api_key` como indicador). La clave nueva que el admin teclea sí viaja al servidor al guardar/probar. **Aislamiento aplicado y probado**: se eliminó la lectura heredada y RLS rechaza acceso directo a `ai_*` para authenticated incluso admin; la API autorizada usa service role. Los propietarios del proyecto/roles privilegiados conservan acceso administrativo a la DB.
 
 ## 8. Esquema real de Supabase
 
@@ -551,7 +552,7 @@ No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL 
 
 | Prioridad | Pendiente confirmado |
 | --- | --- |
-| Alta | Restringir lectura heredada de configuraciones_sistema y aislar claves IA; máscara/admin guard frontend no es seguridad del Data API |
+| Cerrado en esta revisión | Configuraciones y ai_* aislados en DB; conservar API admin y no reabrir lectura directa desde clientes |
 | Alta | Alinear formularios públicos y tablas con ALL authenticated a permisos/estado reales; políticas permisivas antiguas siguen activas |
 | Alta | Reconciliar Catálogos con codigo/valor_interno y trigger que prohíbe DELETE/cambios estructurales; editor legacy conserva esas acciones |
 | Media | Integrar atributos nuevos de Quejas y actualizar tipo/interface/formularios; no confundir tipo del registro con categoría interna |
@@ -576,7 +577,7 @@ Esta actualización de AGENTS es documentación. No modifica esas capacidades, c
 ### Historial y fuentes
 
 - `supabase/001`–`017`, seeds, dumps y scripts de RLS en raíz contienen historia manual. No representan exactamente todo el esquema remoto.
-- Historial remoto observado: `20260917190526 add_missing_performance_indexes`, `20260917191058 add_trigram_index_for_search`, `20260923213259 etapas_versionadas`, `20260924043528 017_atributos_reales_quejas`, `20261006232152 seguridad_fases_1_3`.
+- Historial remoto observado: `20260917190526 add_missing_performance_indexes`, `20260917191058 add_trigram_index_for_search`, `20260923213259 etapas_versionadas`, `20260924043528 017_atributos_reales_quejas`, `20261006232152 seguridad_fases_1_3`, `20261008011901 auditoria_permisos_validacion`, `20261008012121 aislamiento_credenciales_ia`.
 - La migración reciente aplicada/local es `supabase/migrations/20261006232152_seguridad_fases_1_3.sql`: RLS/ACL de Usuarios/Documentos/Auditorías/Informes, identidad activa, RPC internos sin anon, estadísticas invoker, contador IA service-only y search_path.
 - `supabase/backups/seguridad_fases_1_3_antes.json` y `_despues.json` son metadatos de políticas/ACL/funciones, no backup de datos del negocio ni credenciales.
 - El DDL de etapas versionadas existe en remoto y no tiene una migración completa equivalente en la carpeta local actual; reconciliar esa historia antes de pretender recrear la DB desde el repo.
@@ -584,7 +585,7 @@ Esta actualización de AGENTS es documentación. No modifica esas capacidades, c
 - `supabase/schema-actual.txt`, dumps y el antiguo `rls-role-based.sql` son snapshots/referencias; no reaplicarlos como estado deseado.
 - `SUPABASE_PHASE3_RLS.sql` se incorporó al integrar commits remotos: es un borrador histórico incompatible con esta DB. No ejecutarlo ni convertirlo en migración sin corregir identidad Auth/perfil, permisos y duplicaciones.
 - `docs/auditoria-fases-1-3.md` conserva resultados/cambios anteriores y la corrección de AbortSignal/performance.
-- En esta actualización se releyeron metadatos por MCP, sin INSERT/UPDATE/DELETE ni migraciones: RLS 33/33; tres vistas invoker; legacy actualizar/transicionar sin EXECUTE para anon/authenticated; wrappers QMS para authenticated; contador IA solo service_role entre los roles de cliente; estadísticas sin anon. Se confirmaron las políticas `true` heredadas de Configuraciones/Formularios y ausencia de `cron.job`. La confirmación de estos puntos no sustituye revisar todas las políticas o ejecutar una auditoría exhaustiva nueva.
+- En la revisión histórica anterior al endurecimiento se releyeron metadatos por MCP, sin aplicar DDL: RLS 33/33; tres vistas invoker; legacy actualizar/transicionar sin EXECUTE para anon/authenticated; wrappers QMS para authenticated; contador IA solo service_role entre los roles de cliente; estadísticas sin anon. Ese snapshot registró políticas `true` de Configuraciones/Formularios, que las migraciones nuevas eliminaron, y ausencia de `cron.job`. La confirmación de estos puntos no sustituye revisar todas las políticas o ejecutar una auditoría exhaustiva nueva.
 - El esquema detallado de sección 8 y el resto de reglas de DB conservan el snapshot de la auditoría de octubre. No se extrajeron registros de personas, tokens, claves IA ni secretos para redactar esta guía.
 
 ### Variables y servicios externos
@@ -654,12 +655,21 @@ node --test --test-name-pattern="hover reutiliza|QueryProvider recupera|Quejas p
 
 - Informe vigente: [docs/auditoria-validada-2026-10-07.md](docs/auditoria-validada-2026-10-07.md). El porcentaje de preparación del informe externo no procede de un benchmark y no se adopta.
 - Dependencias: Next/eslint-config-next 16.3.6 y transitivas compatibles actualizadas. npm audit --omit=dev: 0 vulnerabilidades. Auditoría completa: 5 entradas high de la cadena de desarrollo ESLint → fast-glob → micromatch → braces; no representan cinco fallos distintos del runtime y no se forzaron versiones incompatibles.
-- Seis altas operativas: lock síncrono por ref, validación de campos obligatorios recortados, fechas/orden/escala según formulario, try/catch/finally, error accesible y borrador conservado. Escape/backdrop/cancelar no cierran durante la escritura. Un refresco fallido después de INSERT exitoso no presenta el alta como fallida ni invita a duplicarla. No sustituye validación en DB; las constraints propuestas no están aplicadas.
+- Seis altas operativas: lock síncrono por ref, validación de campos obligatorios recortados, fechas/orden/escala según formulario, try/catch/finally, error accesible y borrador conservado. Escape/backdrop/cancelar no cierran durante la escritura. Un refresco fallido después de INSERT exitoso no presenta el alta como fallida ni invita a duplicarla. La DB agrega 11 CHECK NOT VALID (enforce en INSERT/UPDATE) y un trigger de fechas de Auditorías. Se detectó una auditoría histórica con fechas invertidas: editar otros campos sigue permitido, cambiar fechas exige un orden válido. No se corrigieron ni reescribieron filas históricas.
 - Usuarios: validar cuerpo completo, rol/estado/tipos y UUID antes de efectos privilegiados; email normalizado, contraseña sin trim; email+contraseña en una sola petición Auth. Reset solo contraseña no envía UPDATE vacío a perfiles. Generación temporal con crypto.getRandomValues y Fisher-Yates; respuestas no-store y errores sanitizados. La protección de último admin sigue sin una transacción distribuida entre Auth y perfiles.
 - Configuración IA: claves permitidas y límite real de JSON de 1 MiB, respuestas no-store, URL HTTPS en allowlist compartida y sin credenciales/query/hash/puertos alternos; descubrimiento rechaza redirects. No reutilizar una clave almacenada en otro tipo/URL.
 - Guardado IA compatible con la DB existente: revisión explícita de configuración (excluye consumo), conservar claves vacías y contador actual, reset solo por IDs explícitos; UPDATE condicional compara xmin, la versión MVCC leída en la misma petición, sin secretos en filtros HTTP. Cambios de configuración o carreras de consumo producen 409 sin reintentar silenciosamente con una revisión nueva. No existe un RPC nuevo para este guardado.
 - El gestor IA conserva editor y revisión tras fallar, bloquea doble guardado y prueba el borrador actual. Las búsquedas de modelos y pruebas corren en servidor; no importa factory/discovery/memory desde UI. La carga inicial y el transporte del test se abortan al desmontar. Test limitado a 20 modelos: conserva los no probados, marca pendiente hasta el intento, no persiste resultados tras cancelar y termina loading incluso si guardar falla. modelTesting devuelve errores sanitizados.
-- No se construyó Seguridad y Estado, no se añadieron Sentry/Redis/PWA/virtualizador/DOMPurify ni se cambiaron los guards de sesión o skeletons. El estado local no demuestra publicación en Vercel.
+- No se construyó Seguridad y Estado, no se añadieron Sentry/Redis/PWA/virtualizador/DOMPurify ni se cambiaron los guards de sesión o skeletons. El frontend/API compatible está verificado en Vercel en 07763ff antes de aplicar las dos fases de DB.
 - Pruebas completas actuales: 199/222; 23 fallos también presentes en HEAD anterior. La comparación del commit anterior fue 119/156 con 37 fallos; se resolvieron 14 y no aparecieron fallos nuevos en esa suite. Restan contratos de prototipos/fixtures, cargas diferidas y aislamiento de respuestas en los paneles de quejas; no atribuir toda la deuda a pruebas visuales obsoletas.
 - Build de producción correcto, TypeScript correcto y lint con 0 errores/2 warnings históricos de .experiments. Capa visual: 114 archivos React verificados. Navegador Chrome temporal sin sesión real: URL privada → login y recarga correctas; HTML privado neutro en /, /quejas, /usuarios y /procesos; API de IA y Usuarios sin Bearer responden 401.
-- DB: esta auditoría solo releyó metadatos. Siguen políticas amplias en negocio, Configuraciones/Formularios/Catálogos/SLA. La revisión automática rechazó generar una migración que reemplazaba RLS en 13 tablas y agregaba constraints por falta de autorización suficientemente precisa. El usuario autorizó explícitamente completar el endurecimiento el 7 de octubre. Las migraciones A/B y su regresión están preparadas; su ejecución remota está pendiente de recuperar OAuth del MCP. No se ha aplicado SQL en esa continuación.
+- DB: el usuario autorizó explícitamente el endurecimiento. Migraciones 20261008011901_auditoria_permisos_validacion y 20261008012121_aislamiento_credenciales_ia aplicadas y verificadas. Se probaron fase A, A+B y el estado final con fixtures/ROLLBACK en la DB real; también el rollback de metadatos se comprobó dentro de ROLLBACK sin revertir el estado endurecido. No se extrajeron datos de personas ni claves reales.
+
+### Evidencia y límites del endurecimiento remoto
+
+- scripts/verificar-auditoria-db.sql verifica CRUD de las áreas, cuentas activas/inactivas, autoridad por perfil real, tareas propias, lectura pública/ACL, validaciones y consumo IA de fixture; termina en ROLLBACK y PASS. Las pruebas de flujo público no afirman envío ciudadano completo con evidencias.
+- Antes de DDL se inspeccionaron helpers/ACL/triggers y los conteos agregados de incompatibilidades. Había cero filas incompatibles para los 11 CHECK; una fecha de Auditoría invertida se conserva con validación selectiva del trigger.
+- Se preservaron firmas y cuerpos de helpers/derivación. Derivar SACP exige admin activo o staff activo con escritura de Quejas y SACP, mantiene lock/idempotencia y no agrega reintentos con revisión nueva. Nunca reabrir RPC legacy cerrados.
+- supabase/backups/auditoria_permisos_antes.json y _despues.json contienen solo metadatos; _validaciones_antes.json son conteos; _rpc_antes.json y _asesores_* documentan código/ACL/asesores. auditoria_permisos_rollback.sql es recuperación manual opcional, no una migración ni un archivo para ejecutar normalmente.
+- REST real: anon no puede consultar configuración (401); service role conserva xmin de ai_providers sin recuperar valores en la comprobación. La API IA de Vercel GET/PUT/POST rechaza token ficticio inválido con 401/no-store.
+- Asesores antes/después: se mantienen grupos de RLS sin policy en tablas internas, pg_trgm en public, SECURITY DEFINER públicos/auth intencionales y protección de contraseñas filtradas deshabilitada. No son funciones del futuro visor ni una garantía de seguridad total. Revisar wrappers públicos/ACL individualmente; mover extensiones o activar opciones Auth requiere plan compatible.

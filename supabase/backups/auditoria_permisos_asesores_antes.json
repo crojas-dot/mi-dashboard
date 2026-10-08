@@ -1,0 +1,658 @@
+{
+  "lints": [
+    {
+      "name": "rls_enabled_no_policy",
+      "title": "RLS Enabled No Policy",
+      "level": "INFO",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects cases where row level security (RLS) has been enabled on a table but no RLS policies have been created.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy",
+      "count": 2,
+      "findings": [
+        {
+          "detail": "Table \\`public.folios_quejas_anuales\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "folios_quejas_anuales",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Table \\`public.qms_deadline_notices\\` has RLS enabled, but no policies exist",
+          "metadata": {
+            "name": "qms_deadline_notices",
+            "type": "table",
+            "schema": "public"
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        }
+      ]
+    },
+    {
+      "name": "extension_in_public",
+      "title": "Extension in Public",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects extensions installed in the \\`public\\` schema.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public",
+      "count": 1,
+      "findings": [
+        {
+          "detail": "Extension \\`pg_trgm\\` is installed in the public schema. Move it to another schema.",
+          "metadata": {
+            "name": "pg_trgm",
+            "type": "extension",
+            "schema": "public"
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        }
+      ]
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "title": "Public Can Execute SECURITY DEFINER Function",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects `SECURITY DEFINER` functions that are callable without signing in. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if it is not meant to be public.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0028_anon_security_definer_function_executable",
+      "count": 17,
+      "findings": [
+        {
+          "detail": "Function `public.app_es_admin()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_admin`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_admin",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_es_colaborador()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_colaborador`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_colaborador",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_es_staff()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_staff`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_staff",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_mis_permisos()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_mis_permisos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_mis_permisos",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_tiene_permiso(p_modulo text, p_requiere_escribir boolean)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_tiene_permiso`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_tiene_permiso",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "p_modulo text, p_requiere_escribir boolean",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_usuario_actual_id()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_usuario_actual_id`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_usuario_actual_id",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica_con_atributos(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_area_afectada text, p_descripcion text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica_con_atributos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica_con_atributos",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_area_afectada text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica_con_atributos(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_descripcion text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica_con_atributos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica_con_atributos",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.current_rol()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/current_rol`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "current_rol",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.es_admin()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/es_admin`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "es_admin",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.notificar_queja_publica(p_folio text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/notificar_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "notificar_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_folio text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_catalog_guard()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_catalog_guard`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_catalog_guard",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_record_event()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_record_event`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_record_event",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_sync_queja()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_sync_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_sync_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.registrar_adjunto_queja_publica(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text)` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/registrar_adjunto_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "registrar_adjunto_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.rls_auto_enable()` can be executed by the `anon` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rls_auto_enable`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "rls_auto_enable",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        }
+      ]
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "title": "Signed-In Users Can Execute SECURITY DEFINER Function",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Detects `SECURITY DEFINER` functions that are callable by signed-in users. Revoke `EXECUTE`, switch the function to `SECURITY INVOKER`, or move it out of your exposed API schema if signed-in users should not call it.",
+      "remediation": "https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable",
+      "count": 33,
+      "findings": [
+        {
+          "detail": "Function `public.actualizar_atributos_queja(p_queja_id uuid, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/actualizar_atributos_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "actualizar_atributos_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.actualizar_mis_preferencias_notificacion(p_habilitadas boolean, p_sonido boolean, p_sonido_id text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/actualizar_mis_preferencias_notificacion`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "actualizar_mis_preferencias_notificacion",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_habilitadas boolean, p_sonido boolean, p_sonido_id text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.agregar_comentario_queja(p_queja_id uuid, p_comentario text, p_tipo text, p_visible_cliente boolean)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/agregar_comentario_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "agregar_comentario_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid, p_comentario text, p_tipo text, p_visible_cliente boolean",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_es_admin()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_admin`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_admin",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_es_colaborador()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_colaborador`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_colaborador",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_es_staff()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_es_staff`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_es_staff",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_mis_permisos()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_mis_permisos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_mis_permisos",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_tiene_permiso(p_modulo text, p_requiere_escribir boolean)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_tiene_permiso`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_tiene_permiso",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "p_modulo text, p_requiere_escribir boolean",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.app_usuario_actual_id()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/app_usuario_actual_id`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "app_usuario_actual_id",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_interna(p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_interna`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_interna",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_interna_con_atributos(p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_interna_con_atributos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_interna_con_atributos",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica_con_atributos(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_area_afectada text, p_descripcion text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica_con_atributos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica_con_atributos",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_area_afectada text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.crear_queja_publica_con_atributos(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_descripcion text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/crear_queja_publica_con_atributos`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "crear_queja_publica_con_atributos",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_tipo text, p_descripcion text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.current_rol()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/current_rol`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "current_rol",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.derivar_queja_a_sacp(p_queja_id uuid)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/derivar_queja_a_sacp`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "derivar_queja_a_sacp",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.es_admin()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/es_admin`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "es_admin",
+            "schema": "public",
+            "language": "sql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.generar_folio_auditoria()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/generar_folio_auditoria`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "generar_folio_auditoria",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.generar_folio_documento()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/generar_folio_documento`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "generar_folio_documento",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.generar_folio_queja()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/generar_folio_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "generar_folio_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.generar_folio_riesgo()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/generar_folio_riesgo`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "generar_folio_riesgo",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.generar_folio_sacp()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/generar_folio_sacp`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "generar_folio_sacp",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.notificar_queja_publica(p_folio text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/notificar_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "notificar_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_folio text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_catalog_guard()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_catalog_guard`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_catalog_guard",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_publish_calendar(p_expected bigint, p_weekdays integer[], p_holidays jsonb, p_reason text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_publish_calendar`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_publish_calendar",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_expected bigint, p_weekdays integer[], p_holidays jsonb, p_reason text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_publish_stage(p_stage text, p_expected bigint, p_duration integer, p_type text, p_alerts integer[], p_action text, p_reason text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_publish_stage`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_publish_stage",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_stage text, p_expected bigint, p_duration integer, p_type text, p_alerts integer[], p_action text, p_reason text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_record_event()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_record_event`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_record_event",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_sync_queja()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_sync_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_sync_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_transition(p_id uuid, p_expected bigint, p_state text, p_resolution text, p_justification text, p_owner uuid, p_reopen text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_transition`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_transition",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_id uuid, p_expected bigint, p_state text, p_resolution text, p_justification text, p_owner uuid, p_reopen text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.qms_update_details(p_id uuid, p_expected bigint, p_categoria text, p_prioridad text, p_owner uuid, p_notes text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/qms_update_details`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "qms_update_details",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_id uuid, p_expected bigint, p_categoria text, p_prioridad text, p_owner uuid, p_notes text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.registrar_adjunto_queja(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/registrar_adjunto_queja`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "registrar_adjunto_queja",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.registrar_adjunto_queja_publica(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text)` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/registrar_adjunto_queja_publica`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "registrar_adjunto_queja_publica",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        },
+        {
+          "detail": "Function `public.rls_auto_enable()` can be executed by the `authenticated` role as a `SECURITY DEFINER` function via `/rest/v1/rpc/rls_auto_enable`. Revoke `EXECUTE` or switch it to `SECURITY INVOKER` if that is not intentional.",
+          "metadata": {
+            "name": "rls_auto_enable",
+            "schema": "public",
+            "language": "plpgsql",
+            "arguments": "",
+            "security_definer": true
+          },
+          "observed_at": "2026-10-08T01:02:46.861Z"
+        }
+      ]
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "title": "Leaked Password Protection Disabled",
+      "level": "WARN",
+      "facing": "EXTERNAL",
+      "categories": [
+        "SECURITY"
+      ],
+      "description": "Leaked password protection is currently disabled.",
+      "remediation": "https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection",
+      "count": 1,
+      "findings": [
+        {
+          "detail": "Supabase Auth prevents the use of compromised passwords by checking against HaveIBeenPwned.org. Enable this feature to enhance security.",
+          "metadata": {
+            "type": "auth",
+            "entity": "Auth"
+          }
+        }
+      ]
+    }
+  ]
+}

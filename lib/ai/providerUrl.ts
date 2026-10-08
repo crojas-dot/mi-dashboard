@@ -35,4 +35,3 @@ export function validarBaseUrl(url: string): boolean {
   if (hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname === '169.254.169.254') return false
   return BASE_URL_ALLOWLIST.has(hostname)
 }
-
