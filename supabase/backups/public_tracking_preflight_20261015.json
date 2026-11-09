@@ -1,0 +1,566 @@
+{
+  "tables": [
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=arwd/postgres"
+      ],
+      "rls": true,
+      "table": "formularios_publicos"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arw/postgres"
+      ],
+      "rls": true,
+      "table": "public_form_submissions"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "table": "queja_adjuntos"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres"
+      ],
+      "rls": true,
+      "table": "queja_mail_outbox"
+    },
+    {
+      "acl": [
+        "postgres=arwdDxtm/postgres",
+        "service_role=arwdDxtm/postgres",
+        "authenticated=r/postgres"
+      ],
+      "rls": true,
+      "table": "quejas"
+    }
+  ],
+  "columns": [
+    {
+      "data_type": "uuid",
+      "table_name": "public_form_submissions",
+      "column_name": "form_id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "public_form_submissions",
+      "column_name": "submission_id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "public_form_submissions",
+      "column_name": "payload_hash"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "public_form_submissions",
+      "column_name": "queja_id"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "public_form_submissions",
+      "column_name": "created_at"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "public_form_submissions",
+      "column_name": "finalized_at"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "qms_stage_runs",
+      "column_name": "id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "qms_stage_runs",
+      "column_name": "case_id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "qms_stage_runs",
+      "column_name": "stage_id"
+    },
+    {
+      "data_type": "bigint",
+      "table_name": "qms_stage_runs",
+      "column_name": "rule_id"
+    },
+    {
+      "data_type": "bigint",
+      "table_name": "qms_stage_runs",
+      "column_name": "calendar_id"
+    },
+    {
+      "data_type": "jsonb",
+      "table_name": "qms_stage_runs",
+      "column_name": "snapshot"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "qms_stage_runs",
+      "column_name": "started_at"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "qms_stage_runs",
+      "column_name": "expires_at"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "qms_stage_runs",
+      "column_name": "attention_at"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "qms_stage_runs",
+      "column_name": "ended_at"
+    },
+    {
+      "data_type": "text",
+      "table_name": "qms_stage_runs",
+      "column_name": "end_event"
+    },
+    {
+      "data_type": "text",
+      "table_name": "qms_stage_runs",
+      "column_name": "provenance"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_adjuntos",
+      "column_name": "id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_adjuntos",
+      "column_name": "queja_id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "nombre_archivo"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "url_archivo"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "tipo_archivo"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "queja_adjuntos",
+      "column_name": "tamano"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_adjuntos",
+      "column_name": "subido_por"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_adjuntos",
+      "column_name": "fecha_subida"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "nombre"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "storage_path"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_adjuntos",
+      "column_name": "tipo_mime"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_adjuntos",
+      "column_name": "usuario_id"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_adjuntos",
+      "column_name": "created_at"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_mail_outbox",
+      "column_name": "id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_mail_outbox",
+      "column_name": "queja_id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "tipo"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "destinatario"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "folio"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "estado"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "numero_oficio"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "status"
+    },
+    {
+      "data_type": "integer",
+      "table_name": "queja_mail_outbox",
+      "column_name": "attempts"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_mail_outbox",
+      "column_name": "next_attempt_at"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_mail_outbox",
+      "column_name": "claim_token"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_mail_outbox",
+      "column_name": "lease_until"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_mail_outbox",
+      "column_name": "sent_at"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "safe_error"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_mail_outbox",
+      "column_name": "created_at"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "queja_mail_outbox",
+      "column_name": "updated_at"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_mail_outbox",
+      "column_name": "usuario_id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "queja_mail_outbox",
+      "column_name": "run_id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "queja_mail_outbox",
+      "column_name": "event_key"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "quejas",
+      "column_name": "id"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "folio"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "cliente_nombre"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "email_cliente"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "telefono"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "categoria"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "descripcion"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "prioridad"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "estado"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "quejas",
+      "column_name": "fecha_sla"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "quejas",
+      "column_name": "fecha"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "notas"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "resolucion"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "quejas",
+      "column_name": "responsable_id"
+    },
+    {
+      "data_type": "uuid",
+      "table_name": "quejas",
+      "column_name": "derivado_sacp_id"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "quejas",
+      "column_name": "fecha_cierre"
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "table_name": "quejas",
+      "column_name": "fecha_limite_investigacion"
+    },
+    {
+      "data_type": "boolean",
+      "table_name": "quejas",
+      "column_name": "reabierta"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "motivo_reapertura"
+    },
+    {
+      "data_type": "bigint",
+      "table_name": "quejas",
+      "column_name": "revision"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "tipo"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "area_afectada"
+    },
+    {
+      "data_type": "date",
+      "table_name": "quejas",
+      "column_name": "fecha_recepcion_gc"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "numero_oficio_resolucion"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "observaciones"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "resolucion_formato"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "notas_formato"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "justificacion_procede"
+    },
+    {
+      "data_type": "text",
+      "table_name": "quejas",
+      "column_name": "justificacion_procede_formato"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "app_es_staff()",
+      "roles": [
+        "public"
+      ],
+      "tablename": "queja_adjuntos",
+      "permissive": "PERMISSIVE",
+      "policyname": "Staff puede ver adjuntos",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(app_es_colaborador() AND (EXISTS ( SELECT 1\n FROM quejas q\n WHERE ((q.id = queja_adjuntos.queja_id) AND (q.responsable_id = app_usuario_actual_id())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "queja_adjuntos",
+      "permissive": "PERMISSIVE",
+      "policyname": "queja_adjuntos_colaborador_propias",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "app_es_staff()",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "queja_adjuntos",
+      "permissive": "PERMISSIVE",
+      "policyname": "queja_adjuntos_staff_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "queja_mail_outbox",
+      "permissive": "PERMISSIVE",
+      "policyname": "queja_mail_staff_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(app_es_colaborador() AND app_tiene_permiso('mis_quejas'::text, false) AND (responsable_id = app_usuario_actual_id()))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "quejas",
+      "permissive": "PERMISSIVE",
+      "policyname": "quejas_colaborador_propias",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "quejas",
+      "permissive": "PERMISSIVE",
+      "policyname": "quejas_staff_select",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "p_key_hash text, p_operation text, p_limit integer, p_window_seconds integer",
+      "name": "public_form_consume_rate",
+      "definition": "CREATE OR REPLACE FUNCTION public.public_form_consume_rate(p_key_hash text, p_operation text, p_limit integer, p_window_seconds integer)\n RETURNS jsonb\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_now timestamptz := clock_timestamp(); v_count integer; v_reset timestamptz;\nBEGIN\n IF p_key_hash IS NULL OR p_key_hash !~ '^[0-9a-f]{64}$' OR p_operation IS NULL\n OR p_operation NOT IN ('attempt','accepted','upload') OR p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 1000\n OR p_window_seconds IS NULL OR p_window_seconds NOT BETWEEN 60 AND 3600 THEN\n RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'PUBLIC_RATE_INPUT_INVALID';\n END IF;\n INSERT INTO public.public_form_rate_limits AS r (key_hash, operation, attempts, reset_at)\n VALUES (p_key_hash, p_operation, 1, v_now + make_interval(secs => p_window_seconds))\n ON CONFLICT (key_hash, operation) DO UPDATE\n SET attempts = CASE WHEN r.reset_at <= v_now THEN 1 ELSE least(r.attempts + 1, p_limit + 1) END,\n reset_at = CASE WHEN r.reset_at <= v_now THEN v_now + make_interval(secs => p_window_seconds) ELSE r.reset_at END\n RETURNING attempts, reset_at INTO v_count, v_reset;\n -- Limpieza acotada: no esperar por contadores usados por otra petición.\n DELETE FROM public.public_form_rate_limits WHERE (key_hash, operation) IN (\n SELECT key_hash, operation FROM public.public_form_rate_limits WHERE reset_at < v_now - interval '1 day'\n ORDER BY reset_at LIMIT 100 FOR UPDATE SKIP LOCKED\n );\n RETURN jsonb_build_object('allowed', v_count <= p_limit, 'retry_after',\n CASE WHEN v_count <= p_limit THEN 0 ELSE greatest(1,ceil(extract(epoch FROM v_reset - v_now))::integer) END);\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "p_form_id uuid, p_submission_id uuid, p_queja_id uuid",
+      "name": "public_form_finalize_submission",
+      "definition": "CREATE OR REPLACE FUNCTION public.public_form_finalize_submission(p_form_id uuid, p_submission_id uuid, p_queja_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_submission public.public_form_submissions%ROWTYPE; v_folio text;\nBEGIN\n SELECT s.* INTO v_submission FROM public.public_form_submissions s WHERE s.form_id = p_form_id AND s.submission_id = p_submission_id AND s.queja_id = p_queja_id FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'PUBLIC_SUBMISSION_UNAVAILABLE'; END IF;\n SELECT folio INTO STRICT v_folio FROM public.quejas WHERE id = p_queja_id;\n IF v_submission.finalized_at IS NOT NULL THEN RETURN jsonb_build_object('folio',v_folio,'finalized',true); END IF;\n PERFORM 1 FROM public.formularios_publicos WHERE id = p_form_id AND activo AND modulo = 'quejas' FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'PUBLIC_FORM_UNAVAILABLE'; END IF;\n IF EXISTS (SELECT 1 FROM public.public_form_uploads WHERE form_id = p_form_id AND submission_id = p_submission_id AND status = 'reserved') THEN\n RAISE EXCEPTION USING ERRCODE = '23505', MESSAGE = 'PUBLIC_UPLOAD_PENDING';\n END IF;\n -- Marca y notificaciones/mail_queue se confirman juntas bajo el mismo lock.\n PERFORM public.notificar_queja_publica(v_folio);\n UPDATE public.public_form_submissions SET finalized_at = now() WHERE form_id = p_form_id AND submission_id = p_submission_id;\n RETURN jsonb_build_object('folio',v_folio,'finalized',true);\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "p_limit integer, p_lease_seconds integer, p_run_nonce uuid, p_issued_at bigint",
+      "name": "qms_mail_claim_batch_v2",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_mail_claim_batch_v2(p_limit integer, p_lease_seconds integer, p_run_nonce uuid, p_issued_at bigint)\n RETURNS TABLE(id uuid, claim_token uuid, tipo text, destinatario text, folio text, estado text, numero_oficio text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE inserted integer; moment bigint:=floor(extract(epoch FROM now()))::bigint;\r\nBEGIN\r\n IF p_limit IS NULL OR p_limit NOT BETWEEN 0 AND 5 OR p_lease_seconds IS NULL OR p_lease_seconds NOT BETWEEN 60 AND 600\r\n OR p_run_nonce IS NULL OR p_issued_at IS NULL OR p_issued_at<moment-300 OR p_issued_at>moment+30 THEN\r\n RAISE EXCEPTION 'Solicitud de worker inválida.' USING ERRCODE='22023';\r\n END IF;\r\n DELETE FROM public.queja_mail_run_nonces WHERE nonce IN\r\n (SELECT n.nonce FROM public.queja_mail_run_nonces n WHERE n.expires_at<now() ORDER BY n.expires_at LIMIT 1000);\r\n INSERT INTO public.queja_mail_run_nonces VALUES(p_run_nonce,now()+interval '10 minutes') ON CONFLICT(nonce) DO NOTHING;\r\n GET DIAGNOSTICS inserted=ROW_COUNT;\r\n IF inserted=0 THEN RETURN; END IF;\r\n PERFORM public.qms_process_notices();\r\n -- Sin cuota/diario de MailApp el poll sigue produciendo campanas, sin reservar envíos.\r\n IF p_limit=0 THEN RETURN; END IF;\r\n -- Nunca se reenvía una reserva incierta, tampoco si el destinatario ya cambió.\r\n UPDATE public.queja_mail_outbox SET status='uncertain',safe_error='lease_expired',updated_at=now()\r\n WHERE status='leased' AND lease_until<=now();\r\n UPDATE public.queja_mail_outbox SET status='failed',safe_error='attempt_limit',updated_at=now()\r\n WHERE status IN ('pending','retry') AND attempts>=12;\r\n UPDATE public.queja_mail_outbox o SET status='skipped',safe_error='obsolete_notice',updated_at=now()\r\n WHERE o.tipo LIKE 'interno_%' AND o.status IN ('pending','retry')\r\n AND NOT public.qms_internal_delivery_eligible(o.id);\r\n RETURN QUERY WITH candidates AS (\r\n SELECT o.id FROM public.queja_mail_outbox o WHERE o.status IN ('pending','retry')\r\n AND o.next_attempt_at<=now() AND o.attempts<12\r\n AND (o.tipo LIKE 'interno_%' OR NOT EXISTS (\r\n SELECT 1 FROM public.queja_mail_outbox prior WHERE prior.queja_id=o.queja_id\r\n AND prior.tipo IN ('recibido','investigacion','final') AND prior.status<>'sent'\r\n AND CASE prior.tipo WHEN 'recibido' THEN 1 WHEN 'investigacion' THEN 2 ELSE 3 END\r\n < CASE o.tipo WHEN 'recibido' THEN 1 WHEN 'investigacion' THEN 2 ELSE 3 END))\r\n ORDER BY o.next_attempt_at,o.id LIMIT p_limit FOR UPDATE SKIP LOCKED\r\n ), claimed AS (\r\n UPDATE public.queja_mail_outbox o SET status='leased',claim_token=gen_random_uuid(),\r\n lease_until=now()+make_interval(secs=>p_lease_seconds),attempts=o.attempts+1,updated_at=now()\r\n FROM candidates c WHERE o.id=c.id RETURNING o.*\r\n ) SELECT c.id,c.claim_token,c.tipo,c.destinatario,c.folio,c.estado,c.numero_oficio FROM claimed c;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "p_id uuid, p_expected bigint, p_state text, p_resolution text, p_justification text, p_owner uuid, p_reopen text, p_office_number text, p_resolution_format text, p_justification_format text",
+      "name": "qms_transition_complaint",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_transition_complaint(p_id uuid, p_expected bigint, p_state text, p_resolution text DEFAULT NULL::text, p_justification text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_reopen text DEFAULT NULL::text, p_office_number text DEFAULT NULL::text, p_resolution_format text DEFAULT NULL::text, p_justification_format text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE q public.quejas; own_revision bigint; office text; staff boolean;\nBEGIN\n SELECT * INTO q FROM public.quejas WHERE id = p_id FOR UPDATE;\n staff := coalesce(public.app_es_admin(), false)\n OR (coalesce(public.app_es_staff(), false) AND coalesce(public.app_tiene_permiso('quejas', true), false));\n IF auth.uid() IS NULL OR NOT (staff OR (coalesce(public.app_es_colaborador(), false)\n AND coalesce(public.app_tiene_permiso('mis_quejas', true), false)\n AND coalesce(q.responsable_id = public.app_usuario_actual_id(), false))) THEN\n RAISE EXCEPTION 'No autorizado.' USING ERRCODE = '42501';\n END IF;\n IF q.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada.' USING ERRCODE = 'P0002'; END IF;\n IF p_expected IS NULL OR q.revision IS DISTINCT FROM p_expected THEN\n RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE = '40001';\n END IF;\n IF NOT EXISTS (SELECT 1 FROM public.catalogos WHERE modulo = 'quejas' AND tipo = 'estado_queja'\n AND codigo = p_state AND coalesce(activo, true)) THEN\n RAISE EXCEPTION 'Estado no reconocido.' USING ERRCODE = '22023';\n END IF;\n IF p_resolution_format IS NOT NULL AND (p_resolution IS NULL OR p_resolution_format NOT IN ('plain','markdown'))\n OR p_justification_format IS NOT NULL AND (p_justification IS NULL OR p_justification_format NOT IN ('plain','markdown'))\n OR length(coalesce(p_resolution, '')) > 10000 OR length(coalesce(p_justification, '')) > 10000\n OR length(coalesce(p_reopen, '')) > 10000 THEN\n RAISE EXCEPTION 'Texto o formato inválido.' USING ERRCODE = '22023';\n END IF;\n office := coalesce(nullif(btrim(p_office_number), ''), q.numero_oficio_resolucion);\n IF length(office) > 120 OR (p_state IN ('rejected','resolved','finished') AND office IS NULL) THEN\n RAISE EXCEPTION 'La respuesta final necesita un número de oficio válido.' USING ERRCODE = '22023';\n END IF;\n IF p_owner IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.usuarios WHERE id = p_owner AND estado = 'activo') THEN\n RAISE EXCEPTION 'Seleccioná un responsable activo.' USING ERRCODE = '22023';\n END IF;\n -- Se valida la revisión original ANTES de nuestra escritura bajo el mismo lock.\n -- La revisión enviada al motor es exclusivamente la producida por esta operación.\n UPDATE public.quejas SET numero_oficio_resolucion = office,\n resolucion_formato = CASE WHEN p_resolution IS NULL THEN resolucion_formato ELSE coalesce(p_resolution_format, 'plain') END,\n justificacion_procede = CASE WHEN p_justification IS NULL THEN justificacion_procede ELSE nullif(btrim(p_justification), '') END,\n justificacion_procede_formato = CASE WHEN p_justification IS NULL THEN justificacion_procede_formato ELSE coalesce(p_justification_format, 'plain') END\n WHERE id = p_id RETURNING revision INTO own_revision;\n PERFORM public.qms_transition(p_id, own_revision, p_state, p_resolution, p_justification, p_owner, p_reopen);\n RETURN (SELECT to_jsonb(v) FROM public.qms_quejas v WHERE v.id = p_id);\nEND;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "args": "p_actor_id uuid, p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text",
+      "name": "registrar_adjunto_queja_servidor",
+      "definition": "CREATE OR REPLACE FUNCTION public.registrar_adjunto_queja_servidor(p_actor_id uuid, p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint, p_tipo_mime text)\n RETURNS queja_adjuntos\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE\n v_actor public.usuarios;\n v_queja public.quejas;\n v_adjunto public.queja_adjuntos;\n v_nombre text := btrim(coalesce(p_nombre, ''));\n v_path text := btrim(coalesce(p_storage_path, ''));\n v_mime text := btrim(coalesce(p_tipo_mime, ''));\n v_count bigint;\n v_bytes bigint;\n v_reserved_count bigint;\n v_reserved_bytes bigint;\nBEGIN\n -- Mantiene rol/actividad mientras se confirma: un evento Auth tardío no puede elevar actor.\n SELECT * INTO v_actor FROM public.usuarios\n WHERE id = p_actor_id AND estado = 'activo' AND auth_id IS NOT NULL\n FOR SHARE;\n IF NOT FOUND THEN\n RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'DRIVE_ATTACHMENT_FORBIDDEN';\n END IF;\n\n -- Comparte el lock del expediente con el gateway público antes de contar su cuota.\n SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n IF NOT FOUND OR NOT (\n v_actor.rol IN ('admin', 'calidad')\n OR (v_actor.rol = 'colaborador' AND v_queja.responsable_id IS NOT DISTINCT FROM v_actor.id)\n ) THEN\n RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'DRIVE_ATTACHMENT_FORBIDDEN';\n END IF;\n\n IF char_length(v_nombre) NOT BETWEEN 1 AND 255\n OR v_nombre ~ '[[:cntrl:]/\\\\]'\n OR v_path !~ '^[A-Za-z0-9_-]{10,200}$'\n OR p_tamano IS NULL OR p_tamano NOT BETWEEN 1 AND 4194304\n OR char_length(v_mime) NOT BETWEEN 3 AND 127\n OR v_mime !~ '^[A-Za-z0-9][A-Za-z0-9.+_-]*/[A-Za-z0-9][A-Za-z0-9.+_-]*$'\n THEN\n RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'DRIVE_ATTACHMENT_INVALID';\n END IF;\n\n -- Con respuesta perdida, confirmar el mismo archivo retorna la misma fila y no repite auditoría.\n SELECT * INTO v_adjunto FROM public.queja_adjuntos\n WHERE queja_id = p_queja_id AND storage_path = v_path\n ORDER BY created_at, id LIMIT 1;\n IF FOUND THEN\n IF v_adjunto.usuario_id IS DISTINCT FROM p_actor_id\n OR v_adjunto.nombre IS DISTINCT FROM v_nombre\n OR v_adjunto.tamano IS DISTINCT FROM p_tamano\n OR v_adjunto.tipo_mime IS DISTINCT FROM v_mime\n THEN\n RAISE EXCEPTION USING ERRCODE = '23505', MESSAGE = 'DRIVE_ATTACHMENT_CONFLICT';\n END IF;\n RETURN v_adjunto;\n END IF;\n\n SELECT count(*), coalesce(sum(greatest(coalesce(tamano, 0), 0)), 0)\n INTO v_count, v_bytes FROM public.queja_adjuntos WHERE queja_id = p_queja_id;\n SELECT count(*), coalesce(sum(u.tamano), 0)\n INTO v_reserved_count, v_reserved_bytes\n FROM public.public_form_submissions s\n JOIN public.public_form_uploads u\n ON u.form_id = s.form_id AND u.submission_id = s.submission_id\n WHERE s.queja_id = p_queja_id AND u.status = 'reserved';\n IF v_count + v_reserved_count >= 10\n OR v_bytes + v_reserved_bytes + p_tamano > 41943040\n THEN\n RAISE EXCEPTION USING ERRCODE = '54000', MESSAGE = 'DRIVE_ATTACHMENT_QUOTA';\n END IF;\n\n INSERT INTO public.queja_adjuntos (\n queja_id, nombre, nombre_archivo, storage_path, url_archivo,\n tamano, tipo_mime, usuario_id, created_at\n ) VALUES (\n p_queja_id, v_nombre, v_nombre, v_path, v_path,\n p_tamano::integer, v_mime, p_actor_id, now()\n ) RETURNING * INTO v_adjunto;\n INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n VALUES (now(), p_actor_id, 'adjunto', 'quejas',\n 'Adjunto registrado por servidor en la queja ' || p_queja_id);\n RETURN v_adjunto;\nEND;\n$function$\n"
+    }
+  ]
+}

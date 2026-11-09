@@ -7,6 +7,16 @@ import Modal from '@/components/Modal'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
+import Input from '@/components/ui/Input'
+import Field from '@/components/ui/Field'
+import Tabs from '@/components/ui/Tabs'
+
+import RichTextEditor from '@/components/ui/RichTextEditor'
+import RichTextContent from '@/components/ui/RichTextContent'
+import AreaQuejaControl from '@/app/quejas/components/AreaQuejaControl'
+import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel'
+import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
+import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
 import type { Queja } from '@/lib/types'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
@@ -14,102 +24,67 @@ import { useQuejaComentarios, useCrearQuejaComentario } from '@/lib/queries/useQ
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import {
   actualizarDetallesQueja,
+  actualizarRegistroQueja,
+
   derivarQuejaASACP,
   transicionarQueja,
+  esOficioPublicableQueja,
+  resolverQuejaConDocumento,
+  revisarResolucionQueja,
+  type RegistroQuejaInput,
+  type PublicacionQuejaInput,
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { estadoVariant } from '@/lib/constants/estados'
-import { Send, GitBranch, Upload, RotateCcw } from 'lucide-react'
+import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
+import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
+import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
+import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
+import { CASE_ACTIONS, caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
+import { CaseSection, CaseCycle, CaseAction, CaseMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
+import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
 
 interface Props {
   queja: Queja | null
   onClose: () => void
   onUpdated: (updated?: Queja, isCurrent?: () => boolean) => void
-  prioridades: { valor: string; color: string }[]
-  categorias: { valor: string; color: string }[]
+  onPrevious?: () => void
+  onNext?: () => void
+  onNavigationLockChange?: (locked: boolean) => void
 }
 
-const colorMap: Record<string, string> = {
-  red: '#dc3545', amber: '#e0a800', green: '#198754',
-  blue: '#0d6efd', orange: '#fd7e14', purple: '#6f42c1', gray: '#6c757d',
-}
+export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPrevious, onNext, onNavigationLockChange }: Props) {
+  const [expanded, setExpanded] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(false)
+  const [informeOpen, setInformeOpen] = useState(false)
+  const [decisionOpen, setDecisionOpen] = useState(false)
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [motivoDevolucion, setMotivoDevolucion] = useState('')
+  const [respuestaCase, setRespuestaCase] = useState<Queja | null>(null)
 
-const ESTADOS_FLUJO = ['Recibido', 'No Procede', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
-
-interface BuscadorResponsableProps {
-  responsables: Usuario[]
-  value: Usuario | null
-  onChange: (u: Usuario | null) => void
-}
-
-function BuscadorResponsable({ responsables, value, onChange }: BuscadorResponsableProps) {
-  const [busqueda, setBusqueda] = useState('')
-  const [abierto, setAbierto] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const onClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setAbierto(false)
-    }
-    document.addEventListener('mousedown', onClickOutside)
-    return () => document.removeEventListener('mousedown', onClickOutside)
-  }, [])
-
-  const filtrados = responsables.filter((u) => u.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
-  const texto = abierto ? busqueda : (value?.nombre ?? '')
-
-  return (
-    <div ref={ref} className="relative w-full">
-      <input
-        type="text"
-        className="ui-field w-full px-3 py-2 text-sm"
-        placeholder="Buscar responsable..."
-        value={texto}
-        onChange={(e) => {
-          setBusqueda(e.target.value)
-          setAbierto(true)
-          if (value && e.target.value !== value.nombre) onChange(null)
-        }}
-        onFocus={() => { setBusqueda(value?.nombre ?? ''); setAbierto(true) }}
-        onKeyDown={(e) => { if (e.key === 'Escape') { setAbierto(false); setBusqueda(value?.nombre ?? '') } }}
-      />
-      {abierto && (
-        filtrados.length > 0 ? (
-          <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-lg">
-            {filtrados.map((u) => (
-              <li key={u.id}>
-                <button
-                  type="button"
-                  className="w-full px-3 py-2 text-left hover:bg-gray-100"
-                  onClick={() => { onChange(u); setAbierto(false) }}
-                >
-                  <span className="block text-sm text-gray-800">{u.nombre}</span>
-                  <span className="block text-xs capitalize text-gray-400">{u.rol}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-400 shadow-lg">
-            Sin resultados para «{busqueda}»
-          </div>
-        )
-      )}
-    </div>
-  )
-}
-
-export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridades }: Props) {
   const [decisionProcedencia, setDecisionProcedencia] = useState<'procede' | 'no_procede' | null>(null)
   const [justificacion, setJustificacion] = useState('')
+  const [justificacionFormato, setJustificacionFormato] = useState<'plain' | 'markdown'>('plain')
   const [responsableSeleccionado, setResponsableSeleccionado] = useState<Usuario | null>(null)
+  const [responsableError, setResponsableError] = useState(false)
+  const [responsableOpenRequest, setResponsableOpenRequest] = useState(0)
   const [resolucionAbierta, setResolucionAbierta] = useState(false)
   const [resolucion, setResolucion] = useState('')
+  const [resolucionFormato, setResolucionFormato] = useState<'plain' | 'markdown'>('plain')
+  const [oficioWorkflow, setOficioWorkflow] = useState('')
+  const [respuestaPublica, setRespuestaPublica] = useState('')
+  const [oficioAdjuntoId, setOficioAdjuntoId] = useState('')
+  const [documentTab, setDocumentTab] = useState<'interno' | 'cliente'>('interno')
+  const [publicacionError, setPublicacionError] = useState<string | null>(null)
+  const [workflowRevision, setWorkflowRevision] = useState<number | null>(null)
+  const [registroDraft, setRegistroDraft] = useState<RegistroQuejaInput | null>(null)
+  const [guardandoRegistro, setGuardandoRegistro] = useState(false)
   const [loading, setLoading] = useState(false)
   const [derivando, setDerivando] = useState(false)
   const [nuevoComentario, setNuevoComentario] = useState('')
@@ -121,10 +96,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   const [agregandoComentario, setAgregandoComentario] = useState(false)
   const draftVersions = useRef({ workflow: 0, comentario: 0 })
   const quejaId = queja?.id ?? ''
-  const { data: comentarios = [], isLoading: comentariosLoading } = useQuejaComentarios(quejaId)
-  const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
+  const { data: comentarios = [], isLoading: comentariosLoading, error: comentariosError, refetch: refetchComentarios } = useQuejaComentarios(quejaId, activityOpen)
+  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen)
+  const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
+  const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
-  const { data: usuarios = [] } = useUsuarios({ estado: 'activo' }, !!queja)
+  const { data: usuarios = [], isLoading: usuariosLoading, error: usuariosError } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)
   const scope = useEntityRequestGuard(queja?.id ?? null)
   const {
@@ -138,16 +115,45 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     [usuarios],
   )
   const estadoActual = queja?.estado ?? ''
+  const analysis = queja ? getQuejaAnalysis(queja) : null
   const esStaff = user?.rol === 'admin' || user?.rol === 'calidad'
+  const puedeEditarArea = esStaff && estadoActual === 'Recibido'
+  const [prevPuedeEditarArea, setPrevPuedeEditarArea] = useState(puedeEditarArea)
+  if (prevPuedeEditarArea !== puedeEditarArea) {
+    setPrevPuedeEditarArea(puedeEditarArea)
+    if (!puedeEditarArea) setRegistroDraft(null)
+  }
+  const publicacion = usePublicacionQuejasDisponible(esStaff && !!queja)
+  const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && activityOpen)
 
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
     setPrevQuejaId(queja?.id ?? null)
+    if (!queja || !prevQuejaId) setExpanded(false)
+
     setDecisionProcedencia(null)
+    setActivityOpen(false)
+    setInformeOpen(false)
+    setDecisionOpen(false)
+    setReviewOpen(false)
+    setMotivoDevolucion('')
+    setRespuestaCase(null)
     setJustificacion('')
+    setJustificacionFormato('plain')
     setResponsableSeleccionado(null)
+    setResponsableError(false)
+    setResponsableOpenRequest(0)
     setResolucionAbierta(false)
     setResolucion('')
+    setResolucionFormato('plain')
+    setOficioWorkflow('')
+    setRespuestaPublica('')
+    setOficioAdjuntoId('')
+    setDocumentTab('interno')
+    setPublicacionError(null)
+    setWorkflowRevision(null)
+    setRegistroDraft(null)
+    setGuardandoRegistro(false)
     setReaperturaAbierta(false)
     setMotivoReapertura('')
     setLoading(false)
@@ -159,17 +165,53 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     setVisibleCliente(false)
   }
 
+  const navigationDisabled = informeOpen || !!respuestaCase || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
+  useEffect(() => {
+    // La tabla permanece operativa, pero no puede descartar una edición/subida en curso.
+    onNavigationLockChange?.(!!queja && navigationDisabled)
+  }, [onNavigationLockChange, queja, navigationDisabled])
+
   if (!queja) return null
 
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
-  const responsableValue = responsableSeleccionado ?? responsableActual ?? null
+  const responsableValue = responsableSeleccionado ? responsables.find(u => u.id === responsableSeleccionado.id) ?? null : responsableActual ?? null
+  const workflowQueja = { ...queja, revision: workflowRevision ?? queja.revision }
+  const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || eliminandoAdjunto != null
+  const publicacionDisponible = publicacion.data === true
+  const publicacionVerificada = !publicacion.isLoading && !publicacion.error && typeof publicacion.data === 'boolean'
+  const oficiosPublicables = adjuntos.filter(adjunto => esOficioPublicableQueja(adjunto, queja.id))
 
-  const getColor = (items: { valor: string; color: string }[], valor: string) => {
-    const found = items.find((i) => i.valor === valor)
-    return found ? colorMap[found.color] || '#6c757d' : '#6c757d'
+  const resetPublicacion = () => {
+    setRespuestaPublica(''); setOficioAdjuntoId(''); setPublicacionError(null); setDocumentTab('interno')
+  }
+
+  const prepararPublicacion = (estado: PublicacionQuejaInput['estado'], value?: string | null,
+    format?: 'plain' | 'markdown'): PublicacionQuejaInput | 'legacy' | null => {
+    if (!esStaff) { showError(null, 'La comunicación final debe aprobarla Gestión de Calidad.'); return null }
+    if (!publicacionVerificada) { showError(null, 'Comprobá la publicación de la respuesta antes de guardar.'); return null }
+    // Solo false confirmado conserva el contrato anterior. Un error de red nunca
+    // convierte la publicación obligatoria en una transición legacy.
+    if (!publicacionDisponible) return 'legacy'
+    const archivo = oficiosPublicables.find(adjunto => adjunto.id === oficioAdjuntoId) ?? null
+    const error = !respuestaPublica.trim() || respuestaPublica.trim().length > 10000
+      ? 'Escribí la respuesta al cliente, de hasta 10.000 caracteres.'
+      : !oficioWorkflow.trim() ? 'Registrá el número del oficio emitido por ECA.'
+        : !archivo ? 'Seleccioná o adjuntá el oficio definitivo de este expediente.' : null
+    if (error) { setPublicacionError(error); setDocumentTab('cliente'); showError(null, error); return null }
+    return { estado, respuestaPublica, numeroOficio: oficioWorkflow, adjunto: archivo, resolucion: value, resolucionFormato: format }
+  }
+
+  const beginWorkflowDraft = () => {
+    draftVersions.current.workflow++
+    // Reabrir un editor conserva la revisión del borrador que aún no se guardó.
+    if (workflowRevision !== null) return
+    setWorkflowRevision(queja.revision)
+    setOficioWorkflow(queja.numero_oficio_resolucion ?? '')
   }
 
   const handleClose = () => {
+    if (informeOpen || respuestaCase) return
+    setExpanded(false)
     scope.invalidate()
     onClose()
   }
@@ -179,7 +221,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     write: () => Promise<Queja>,
     successMessage: string,
     errorMessage: string,
-    onCurrentDraft?: () => void,
+    onCurrentDraft?: (updated: Queja) => void,
     setPending = setLoading,
   ) => {
     const operation = scope.start('workflow')
@@ -194,7 +236,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
       if (isContextCurrent()) onUpdated(updated, operation.isCurrent)
       if (operation.isCurrent()) {
         showSuccess(successMessage)
-        if (draftVersions.current.workflow === draftVersion) onCurrentDraft?.()
+        if (draftVersions.current.workflow === draftVersion) {
+          onCurrentDraft?.(updated)
+          setWorkflowRevision(null)
+        }
       }
     } catch (error) {
       if (operation.isCurrent()) showError(error, confirmed
@@ -207,50 +252,72 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
   }
 
   const handleGuardarNoProcede = async () => {
+    if (workflowPending) return
     if (!justificacion.trim()) {
       showError(null, 'La justificación / resolución es obligatoria para marcar como No Procede')
       return
     }
+    // El documento interno (justificación) ya ES la respuesta al cliente al declarar
+    // No Procede: se comparte la fuente, sin redactar un texto paralelo en el panel.
+    if (!respuestaPublica.trim()) setRespuestaPublica(justificacion)
+    const publication = prepararPublicacion('No Procede', justificacion, justificacionFormato)
+    if (!publication) return
+    if (!oficioWorkflow.trim()) { showError(null, 'Registrá el número del oficio explicativo antes de marcar como No Procede'); return }
     await runCaseUpdate(
-      () => transicionarQueja(queja, 'No Procede', { resolucion: justificacion }),
+      () => publication === 'legacy'
+        ? transicionarQueja(workflowQueja, 'No Procede', { resolucion: justificacion, resolucionFormato: justificacionFormato, numeroOficio: oficioWorkflow })
+        : resolverQuejaConDocumento(workflowQueja, publication),
       'Queja marcada como No Procede', 'No se pudo marcar la queja como No Procede',
-      () => { setDecisionProcedencia(null); setJustificacion('') },
+      () => { setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion(''); resetPublicacion() },
     )
   }
 
   const handleGuardarProcede = async () => {
     const responsable = responsableValue
+    if (!responsable) {
+      setResponsableError(true)
+      setResponsableOpenRequest(request => request + 1)
+      showError(null, 'Debés asignar un responsable antes de guardar.')
+      return
+    }
     if (!justificacion.trim()) {
       showError(null, 'La justificación es obligatoria para iniciar la investigación')
       return
     }
-    if (!responsable) {
-      showError(null, 'Seleccioná un responsable antes de iniciar la investigación')
-      return
-    }
     await runCaseUpdate(
-      () => transicionarQueja(queja, 'En Investigación', {
-        justificacionProcede: justificacion, responsableId: responsable.id,
+      () => transicionarQueja(workflowQueja, 'En Investigación', {
+        justificacionProcede: justificacion, justificacionFormato, responsableId: responsable.id,
       }),
-      'Queja en investigación. Plazo: 15 días.', 'No se pudo iniciar la investigación',
-      () => { setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) },
+      'Queja en investigación. Plazo: 15 días hábiles.', 'No se pudo iniciar la investigación',
+      () => { setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) },
     )
   }
 
   const handleConfirmarResolucion = async () => {
+    if (workflowPending) return
     if (!resolucion.trim()) {
       showError(null, 'Escribí el análisis / resolución final antes de resolver la queja')
       return
     }
+    // La resolución interna ES la respuesta al cliente al publicarla: se comparte la
+    // fuente desde el editor, sin redactar un texto paralelo en el panel de publicación.
+    if (!respuestaPublica.trim()) setRespuestaPublica(resolucion)
+    const publication = prepararPublicacion('Resuelto', resolucion, resolucionFormato)
+    if (!publication) return
+    if (!oficioWorkflow.trim()) { showError(null, 'Registrá el número del oficio de resolución antes de resolver'); return }
     await runCaseUpdate(
-      () => transicionarQueja(queja, 'Resuelto', { resolucion }),
+      () => publication === 'legacy'
+        ? transicionarQueja(workflowQueja, 'Resuelto', { resolucion, resolucionFormato, numeroOficio: oficioWorkflow })
+        : resolverQuejaConDocumento(workflowQueja, publication),
       'Queja resuelta', 'No se pudo resolver la queja',
-      () => { setResolucionAbierta(false); setResolucion('') },
+      () => { setResolucionAbierta(false); setResolucion(''); resetPublicacion() },
     )
   }
 
   const handleSeleccionarResponsable = async (usuario: Usuario | null) => {
     draftVersions.current.workflow++
+    setResponsableError(false)
+    setResponsableOpenRequest(0)
     setResponsableSeleccionado(usuario)
     if (!usuario || estadoActual === 'Recibido' || usuario.id === queja.responsable_id) return
     await runCaseUpdate(
@@ -259,19 +326,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     )
   }
 
-  const handleFinalizar = () => runCaseUpdate(
-    () => transicionarQueja(queja, 'Finalizado'),
-    'Queja finalizada', 'No se pudo finalizar la queja',
-  )
-
   const handleReabrir = async () => {
     if (!motivoReapertura.trim()) {
       showError(null, 'Escribí el motivo antes de reabrir la queja')
       return
     }
     await runCaseUpdate(
-      () => transicionarQueja(queja, 'En Investigación', { motivoReapertura }),
-      'Queja reabierta. Nuevo plazo: 15 días.', 'No se pudo reabrir la queja',
+      () => transicionarQueja(workflowQueja, 'En Investigación', { motivoReapertura }),
+      'Queja reabierta. Nuevo plazo: 15 días hábiles.', 'No se pudo reabrir la queja',
       () => { setReaperturaAbierta(false); setMotivoReapertura('') }, setReabriendo,
     )
   }
@@ -281,15 +343,35 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
     return user?.rol === 'admin' || user?.rol === 'calidad' || queja.responsable_id === user?.id
   }
 
-  const handleAprobarResolucion = () => runCaseUpdate(
-    () => transicionarQueja(queja, 'Resuelto'),
-    'Resolución aprobada. Queja resuelta.', 'No se pudo aprobar la resolución',
-  )
+  const handleAprobarResolucion = () => {
+    if (workflowPending) return
+    beginWorkflowDraft()
+    return runCaseUpdate(
+      () => revisarResolucionQueja(workflowQueja, 'approved'),
+      'Resolución aprobada. Prepará la respuesta al cliente.', 'No se pudo aprobar la resolución',
+      updated => { setReviewOpen(false); setRespuestaCase(updated) },
+    )
+  }
 
-  const handleDevolverInvestigacion = () => runCaseUpdate(
-    () => transicionarQueja(queja, 'En Investigación'),
-    'Queja devuelta a investigación', 'No se pudo devolver la queja',
-  )
+  const handleEditarRegistro = () => {
+    if (!puedeEditarArea) return
+    draftVersions.current.workflow++
+    // El RPC actualiza los tres campos juntos: editar el área conserva oficio y
+    // observaciones históricas desde el mismo snapshot y su revisión esperada.
+    setRegistroDraft({ quejaId: queja.id, revision: queja.revision, area: queja.area_afectada ?? '', numeroOficio: queja.numero_oficio_resolucion ?? '', observaciones: queja.observaciones ?? '' })
+  }
+  const handleGuardarRegistro = (nextDraft?: RegistroQuejaInput) => {
+    if (!registroDraft || !puedeEditarArea) return
+    const captured = { ...registroDraft, area: nextDraft?.area ?? registroDraft.area }
+    return runCaseUpdate(() => actualizarRegistroQueja(captured), 'Área afectada guardada', 'No se pudo guardar el área afectada', () => setRegistroDraft(null), setGuardandoRegistro)
+  }
+
+  const handleDevolverInvestigacion = () => {
+    if (!motivoDevolucion.trim()) { showError(null, 'Escribí el motivo de devolución.'); return }
+    return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion),
+      'Queja devuelta a investigación', 'No se pudo devolver la queja',
+      () => { setReviewOpen(false); setMotivoDevolucion('') })
+  }
 
   const handleDerivarSACP = async () => {
     const operation = scope.start('workflow')
@@ -324,389 +406,171 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, prioridad
         quejaId: queja.id, comentario: nuevoComentario, tipo: comentarioTipo, visibleCliente, isContextCurrent,
       })
       if (operation.isCurrent()) {
-        showSuccess('Comentario agregado')
+        showSuccess('Observación agregada')
         if (draftVersions.current.comentario === draftVersion) setNuevoComentario('')
       }
     } catch (error) {
-      if (operation.isCurrent()) showError(error, 'No se pudo agregar el comentario')
+      if (operation.isCurrent()) showError(error, 'No se pudo agregar la observación')
     } finally {
       if (operation.isCurrent()) setAgregandoComentario(false)
       operation.finish()
     }
   }
 
-  return (
-    <>
-      <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
-      <Modal open={!!queja} onClose={handleClose} title={`Queja ${queja.folio}`} size="lg">
-      <div className="space-y-5 select-text">
-        {/* Sección 1: Datos de la queja */}
-        <div className="space-y-6">
-          <p className="text-base font-semibold text-gray-800 mb-2">Datos de la queja</p>
+  const action = CASE_ACTIONS[estadoActual]
+  // El responsable propone desde Mis Quejas; la comunicación final exige Calidad.
+  const canAct = esStaff
+  const deadline = caseDeadline(queja, runs)
+  const editing = !!respuestaCase || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
+  const openAction = () => {
+    if (!canAct || workflowPending || registroDraft) return
+    if (estadoActual === 'Resuelto') { setRespuestaCase(queja); return }
+    beginWorkflowDraft()
+    if (estadoActual === 'Recibido') { setResponsableError(false); setResponsableOpenRequest(0); setDecisionOpen(true) }
+    if (estadoActual === 'En Investigación') setResolucionAbierta(true)
+  }
+  const closeEditor = () => {
+    if (workflowPending) return
+    draftVersions.current.workflow++
+    setDecisionOpen(false); setResolucionAbierta(false); setReviewOpen(false); setReaperturaAbierta(false)
+    // Cerrar conserva el borrador; solo un guardado confirmado lo limpia.
+  }
+  const volverAElegirDecision = () => {
+    if (workflowPending) return
+    draftVersions.current.workflow++
+    setResponsableError(false)
+    setResponsableOpenRequest(0)
+    setDocumentTab('interno')
+    // Cancelar vuelve a la elección sin cerrar el documento ni perder el borrador.
+    setDecisionProcedencia(null)
+  }
+  const files = <div className="space-y-3">
+    {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las evidencias. <Button size="sm" variant="link" onClick={() => refetchAdjuntos()}>Reintentar</Button></p> : !adjuntos.length ? <p className="text-sm text-qms-muted">Sin archivos adjuntos.</p> : <ListaAdjuntos layout="cards" adjuntos={adjuntos} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={puedeEliminarAdjunto} onEliminar={a => setConfirmarEliminacion(a.id)} />}
+    {(estadoActual === 'En Investigación' || esStaff && publicacionDisponible && ['Recibido', 'Pendiente de Revisión GC'].includes(estadoActual)) && <div className="flex flex-wrap items-center gap-2"><label className="ui-button ui-button-secondary ui-button-sm cursor-pointer"><Upload className="size-4" /> Subir archivo<input type="file" className="sr-only" disabled={workflowPending || editing} aria-label="Subir evidencia" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleSubirAdjunto(file) }} /></label>{subiendoAdjunto && <span role="status" className="text-sm text-qms-muted">Subiendo…</span>}</div>}
+  </div>
+  const editorOpen = decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
+  const qualityReview = estadoActual === 'Pendiente de Revisión GC'
+  const requestDocument = <>
+    <CaseSection variant="document" title="Descripción" headerActions={<AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
+{queja.justificacion_procede && <CaseSection variant="document" source="Gestión de Calidad" title="Evaluación de procedencia"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></CaseSection>}
+  </>
+  const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</CaseSection>
+  const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
+  const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
+  const clienteTab = terminalDocument && publicacionDisponible && documentTab === 'cliente'
+  const publicationPanel = <QuejaPublicacionPanel id={queja.id} respuesta={respuestaPublica}
+    onRespuestaChange={value => { draftVersions.current.workflow++; setRespuestaPublica(value); setPublicacionError(null) }}
+    oficio={oficioWorkflow} onOficioChange={value => { draftVersions.current.workflow++; setOficioWorkflow(value); setPublicacionError(null) }}
+    adjuntos={oficiosPublicables} adjuntoId={oficioAdjuntoId} onAdjuntoChange={value => { draftVersions.current.workflow++; setOficioAdjuntoId(value); setPublicacionError(null) }}
+    archivosLoading={adjuntosLoading} archivosError={!!adjuntosError} onReintentar={() => { void refetchAdjuntos() }}
+    onSubir={file => { if (esStaff && !workflowPending) void handleSubirAdjunto(file) }}
+    subiendo={subiendoAdjunto} disabled={workflowPending} error={publicacionError} />
 
-          {/* Sub-sección A: Información del Solicitante (solo lectura) */}
-          <div className="p-4 border-l-4 border-sky-300">
-            <h4 className="text-sm font-medium text-slate-600 mb-3">Información del Solicitante</h4>
-            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Cliente</p>
-                <p className="text-sm font-medium text-gray-900">{queja.cliente_nombre}</p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-0.5">Fecha de creación</p>
-                <p className="text-sm text-gray-900">{new Date(queja.fecha).toLocaleString('es-ES')}</p>
-              </div>
-              {queja.descripcion && (
-                <div className="col-span-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Descripción original</p>
-                  <div className="bg-slate-100 text-slate-700 text-sm p-3 rounded-md leading-relaxed whitespace-pre-wrap">
-                    {queja.descripcion}
-                  </div>
-                </div>
-              )}
+  // Los estados y el vencimiento pertenecen al panel de acciones, no al encabezado
+  // del flujo. El panel lateral conserva sus detalles en todas las etapas.
+  const statusBadges = <div className="flex flex-wrap items-center gap-2"><Badge variant={queja.estado_color || 'gray'}>{queja.estado_nombre || estadoActual}</Badge><Badge variant={deadline.variant} title={deadline.vence ? `${deadline.stageTitle} · ${caseDate(deadline.vence)}` : undefined}>{deadline.label}</Badge>{plazosError && <span role="alert" className="text-xs text-qms-muted">Sin detalle del calendario</span>}</div>
+  // Mantener un alto mínimo común y dejar que los botones crezcan si el texto envuelve.
+  const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
+  const workflowActions = canAct && action?.action && (qualityReview ? <>
+    <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
+    <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
+  </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
+
+  return <>
+    <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
+      headerActions={<>
+        {esStaff && <Button size="sm" variant="link" aria-label="Generar expediente" title="Generar expediente editable" disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}><FileText className="size-5" /><span className="hidden @min-[700px]/workspace:inline">Generar expediente</span></Button>}
+        {(onPrevious || onNext) && <div className="hidden items-center gap-1 @min-[600px]/workspace:flex"><Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationDisabled} onClick={onPrevious}><ChevronLeft className="size-5" /></Button><Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationDisabled} onClick={onNext}><ChevronRight className="size-5" /></Button></div>}
+        <Button size="sm" variant="link" className="h-10 [&:not(:disabled):hover]:bg-transparent" onClick={() => setActivityOpen(true)} aria-label="Ver actividad" title="Actividad del expediente"><History className="size-5" /><span className="hidden @min-[600px]/workspace:inline">Actividad</span></Button>
+        <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} aria-pressed={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}</Button>
+      </>}>
+      {!esStaff && !expanded && <CaseRequestHeader key={queja.id} queja={queja} showReceivedAt={qualityReview} />}
+      <CaseWorkspace documentKey={`${queja.id}:${qualityReview ? 'review' : 'detail'}`} expanded={expanded} cyclePlacement={esStaff ? 'top' : 'side'} request={esStaff ? <CaseRequestHeader key={queja.id} queja={queja} variant="panel" showReceivedAt={qualityReview} /> : undefined} compact={<>
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">{statusBadges}<div className={`grid min-w-0 w-full gap-2 sm:w-auto ${qualityReview ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>{workflowActions}</div></div>
+          <CaseCycle queja={queja} audience="quality" compact line />
+        </>}
+        cycle={esStaff ? <CaseCycle queja={queja} audience="quality" compact line variant="plain" /> : <CaseCycle queja={queja} audience="quality" variant="plain" />}
+        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} variant="plain" heading={qualityReview ? 'Acciones' : undefined}><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm font-medium">{responsableActual?.nombre || 'Sin asignar'}</p><div className="mt-4 flex min-w-0 max-w-full flex-col items-stretch gap-2">{workflowActions}</div></CaseAction>}>
+            {qualityReview ? <>
+              <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
+                {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}
+              </CaseSection>
+              <details key={queja.id} data-case-review-context>
+                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
+                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><RichTextContent value={analysis.value} format={analysis.format} /></CaseSection>}</div>
+              </details>
+            </> : <>{requestDocument}{investigationDocument}</>}
+      </CaseWorkspace>
+    </Modal>
+
+    <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size="xl" variant="document" height={reviewOpen ? 'content' : 'fill'} dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
+      headerActions={decisionOpen && decisionProcedencia ? <>
+        {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
+        <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label={`Cambiar decisión: ${decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}`} title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>{decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}</Button>
+      </> : undefined}
+      footer={decisionOpen && !decisionProcedencia ? undefined : <div className="flex flex-wrap items-center justify-end gap-2">
+      {!reviewOpen && <Button variant="ghost" onClick={decisionOpen ? volverAElegirDecision : closeEditor} disabled={workflowPending}>Cancelar</Button>}
+      {decisionOpen && decisionProcedencia && <Button variant={decisionProcedencia === 'no_procede' ? 'danger' : 'primary'} disabled={workflowPending || (decisionProcedencia === 'procede' ? usuariosLoading || !!usuariosError : !publicacionVerificada)} onClick={decisionProcedencia === 'procede' ? handleGuardarProcede : handleGuardarNoProcede} loading={loading}>{decisionProcedencia === 'no_procede' && publicacionDisponible ? 'Publicar no procedencia' : 'Guardar'}</Button>}
+      {resolucionAbierta && <Button onClick={handleConfirmarResolucion} loading={loading} disabled={workflowPending || !publicacionVerificada}>{publicacionDisponible ? 'Publicar y resolver' : 'Confirmar resolución'}</Button>}
+      {reviewOpen && <><Button variant="secondary" onClick={closeEditor} disabled={workflowPending}>Cancelar devolución</Button><Button onClick={handleDevolverInvestigacion} loading={loading} disabled={workflowPending}>Confirmar devolución</Button></>}
+      {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo}>Confirmar reapertura</Button>}
+    </div>}>
+      <div className="flex min-h-0 flex-1 flex-col bg-qms-surface select-text">
+        {terminalDocument && !publicacionVerificada && <div className="shrink-0 border-b border-qms-border px-4 py-2 text-sm text-qms-muted">
+          {publicacion.error ? <p role="alert">No se pudo comprobar la publicación. <Button size="sm" variant="link" onClick={() => { void publicacion.refetch() }}>Reintentar</Button></p> : <p role="status">Comprobando comunicación al cliente…</p>}
+        </div>}
+        {terminalDocument && publicacionDisponible && <Tabs id={`queja-documento-${queja.id}`} label="Documento y comunicación"
+          items={[{ id: 'interno', label: 'Documento interno' }, { id: 'cliente', label: 'Respuesta al cliente' }]}
+          value={documentTab} onChange={value => setDocumentTab(value === 'cliente' ? 'cliente' : 'interno')} />}
+        {clienteTab && <div role="tabpanel" id={`queja-documento-${queja.id}-panel-cliente`} aria-labelledby={`queja-documento-${queja.id}-tab-cliente`} className="flex min-h-0 flex-1 flex-col">{publicationPanel}</div>}
+        <div role={terminalDocument && publicacionDisponible ? 'tabpanel' : undefined} id={`queja-documento-${queja.id}-panel-interno`}
+          aria-labelledby={terminalDocument && publicacionDisponible ? `queja-documento-${queja.id}-tab-interno` : undefined}
+          hidden={clienteTab} className={`${clienteTab ? 'hidden' : 'flex'} min-h-0 flex-1 flex-col`}>
+        {decisionOpen && <>
+          {!decisionProcedencia && <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-8 text-center">
+            <div><h3 className="text-base font-semibold text-qms-dark">Seleccioná una decisión</h3><p className="mt-2 text-sm text-qms-muted">Después podés redactar su justificación y guardar.</p></div>
+            <div role="group" aria-label="Decisión" className="grid w-full max-w-md grid-cols-2 gap-3">
+              <Button variant="primary" className="min-h-11 min-w-0 text-base" disabled={workflowPending} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('procede') }}>Procede</Button>
+              <Button variant="danger" className="min-h-11 min-w-0 bg-qms-danger! text-base text-white!" disabled={workflowPending} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('no_procede') }}>No Procede</Button>
             </div>
+          </div>}
+          {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
+          <div hidden={!decisionProcedencia} className={`${decisionProcedencia ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
+          <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder="Escribí la justificación de la decisión…" value={justificacion} format={justificacionFormato} variant="document" layout="fill" autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
+          {decisionProcedencia === 'no_procede' && !publicacionDisponible && <div className="h-[108px] shrink-0 overflow-y-auto border-t border-qms-border px-4 py-3"><Field id={'queja-oficio-rechazo-' + queja.id} label="N.º de oficio explicativo"><Input id={'queja-oficio-rechazo-' + queja.id} required maxLength={REGISTRO_QUEJA_LIMITES.oficio} value={oficioWorkflow} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setOficioWorkflow(event.target.value) }} /></Field></div>}
           </div>
+        </>}
+        {resolucionAbierta && <>
+          <p className="shrink-0 px-4 py-3 text-sm text-qms-muted">Responsable: {responsableActual?.nombre || 'Sin asignar'}. Registrá la conclusión{publicacionDisponible ? ' interna. La respuesta al cliente se redacta por separado.' : ' y el oficio emitido por ECA.'}</p>
+          <RichTextEditor id={'queja-resolucion-' + queja.id} label="Resolución interna de Calidad" placeholder="Escribí la conclusión y sus fundamentos…" value={resolucion} format={resolucionFormato} variant="document" layout="fill" required disabled={workflowPending} onChange={(value, format) => { draftVersions.current.workflow++; setResolucion(value); setResolucionFormato(format) }} />
+          {!publicacionDisponible && <div className="h-[108px] shrink-0 overflow-y-auto border-t border-qms-border px-4 py-3"><Field id={'queja-oficio-resolucion-' + queja.id} label="N.º de oficio de resolución"><Input id={'queja-oficio-resolucion-' + queja.id} required maxLength={REGISTRO_QUEJA_LIMITES.oficio} value={oficioWorkflow} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setOficioWorkflow(event.target.value) }} /></Field></div>}
 
-          {/* Sub-sección B: Detalles de Gestión Interna */}
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-            <h4 className="text-sm font-medium text-slate-600 mb-3">Detalles de Gestión Interna</h4>
-            <div className="grid grid-cols-1 gap-x-5 gap-y-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Estado</p>
-                <Badge variant={estadoVariant[estadoActual] || 'gray'}>{estadoActual}</Badge>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Prioridad</p>
-                <p className="text-sm font-medium" style={{ color: getColor(prioridades, queja.prioridad) }}>
-                  {queja.prioridad || '—'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Categoría</p>
-                <p className="text-sm text-gray-900">{queja.categoria || '—'}</p>
-              </div>
-              {estadoActual !== 'Recibido' && (
-                <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Responsable</p>
-                  <p className="text-sm text-gray-900">{responsableActual?.nombre ?? 'Sin asignar'}</p>
-                </div>
-              )}
-              {queja.fecha_limite_investigacion && (
-                <div className="col-span-2 sm:col-span-1">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Fecha límite de investigación</p>
-                  <p className="text-sm text-gray-900">{new Date(queja.fecha_limite_investigacion).toLocaleDateString('es-ES')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Evidencias adjuntas: visibles en TODOS los estados (incluye las
-            enviadas desde el formulario público, usuario_id NULL). La subida
-            interna se mantiene solo en «En Investigación»; el RPC
-            registrar_adjunto_queja limita quién puede subir. */}
-        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-base font-semibold text-gray-800">Evidencias adjuntas</p>
-            <span className="text-xs text-gray-400">{adjuntos.length} archivo(s)</span>
-          </div>
-          {adjuntosLoading ? (
-            <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} />
-          ) : adjuntos.length === 0 ? (
-            <p className="text-sm text-gray-400">
-              {estadoActual === 'Recibido'
-                ? 'Sin evidencias todavía. Los archivos enviados desde el formulario público aparecerán aquí.'
-                : 'Sin adjuntos todavía.'}
-            </p>
-          ) : (
-            <ListaAdjuntos
-              adjuntos={adjuntos}
-              onPreview={(a) => setPreviewAdjunto(a)}
-              onDownload={(a) => handleDescargarAdjunto(a)}
-              puedeEliminar={puedeEliminarAdjunto}
-              onEliminar={(a) => setConfirmarEliminacion(a.id)}
-            />
-          )}
-          {estadoActual === 'En Investigación' && (
-            <div className="flex items-center gap-2 pt-1">
-              <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                <Upload className="h-3.5 w-3.5" /> Subir archivo
-                <input
-                  type="file"
-                  className="hidden"
-                  disabled={subiendoAdjunto}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    e.target.value = ''
-                    if (f) handleSubirAdjunto(f)
-                  }}
-                />
-              </label>
-              {subiendoAdjunto && <span className="text-xs text-gray-500">Subiendo...</span>}
-            </div>
-          )}
-        </div>
-
-        {/* Sección 2: Análisis / Resolución (oculto en Recibido; en En Investigación solo al presionar Resolver) */}
-        {estadoActual !== 'Recibido' && estadoActual !== 'En Investigación' && (
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-            <p className="text-base font-semibold text-gray-800 mb-2">Análisis / Resolución</p>
-            <textarea
-              placeholder="Escribe el oficio o la resolución requerida para la siguiente transición..."
-              rows={3}
-              className="ui-textarea w-full px-3 py-2 text-sm"
-              value={resolucion}
-              onChange={(e) => { draftVersions.current.workflow++; setResolucion(e.target.value) }}
-            />
-            {queja.resolucion && (
-              <p className="mt-2 text-sm text-gray-700 bg-white rounded-lg p-3 border border-gray-200 whitespace-pre-wrap">{queja.resolucion}</p>
-            )}
-          </div>
-        )}
-
-        {/* Sección 3: Decisión y flujo */}
-        {ESTADOS_FLUJO.includes(estadoActual) && (
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
-            <p className="text-base font-semibold text-gray-800 mb-2">
-              {estadoActual === 'Recibido' ? 'Decisión de procedencia' : 'Flujo de atención'}
-            </p>
-
-            {/* ── RECIBIDO: solo admin/calidad decide ── */}
-            {estadoActual === 'Recibido' && (
-              esStaff ? (
-                decisionProcedencia === null ? (
-                  <>
-                    <div className="rounded-lg border border-blue-200 bg-qms-primary-soft p-3">
-                      <p className="text-sm font-semibold text-blue-900 leading-relaxed">¿La queja procede?</p>
-                      <p className="text-xs text-blue-900 leading-relaxed mt-0.5">Elegí si la queja procede y pasa a investigación, o no procede y se cierra.</p>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Button onClick={() => setDecisionProcedencia('procede')}>Procede</Button>
-                      <Button variant="danger" onClick={() => setDecisionProcedencia('no_procede')}>No Procede</Button>
-                    </div>
-                  </>
-                ) : decisionProcedencia === 'no_procede' ? (
-                  <>
-                    <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                      <p className="text-sm font-semibold text-red-900 leading-relaxed">Marcar como No Procede</p>
-                      <p className="text-xs text-red-900 leading-relaxed mt-0.5">La queja se cerrará como «No Procede». La justificación / resolución es obligatoria.</p>
-                    </div>
-                    <textarea
-                      placeholder="Justificación / Resolución (Obligatorio)"
-                      rows={4}
-                      className="ui-textarea w-full px-3 py-2 text-sm"
-                      value={justificacion}
-                      onChange={(e) => { draftVersions.current.workflow++; setJustificacion(e.target.value) }}
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button variant="danger" onClick={handleGuardarNoProcede} loading={loading}>Guardar</Button>
-                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia(null); setJustificacion('') }}>Volver</Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="rounded-lg border border-blue-200 bg-qms-primary-soft p-3">
-                      <p className="text-sm font-semibold text-blue-900 leading-relaxed">Asignar responsable</p>
-                      <p className="text-xs text-blue-900 leading-relaxed mt-0.5">La justificación es obligatoria. Seleccioná quién investigará la queja; al guardar inicia el plazo de 15 días.</p>
-                    </div>
-                    <textarea
-                      placeholder="Justificación (Obligatorio)"
-                      rows={3}
-                      className="ui-textarea w-full px-3 py-2 text-sm"
-                      value={justificacion}
-                      onChange={(e) => { draftVersions.current.workflow++; setJustificacion(e.target.value) }}
-                    />
-                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-                      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider sm:w-36 shrink-0">Responsable *</label>
-                      <BuscadorResponsable responsables={responsables} value={responsableValue} onChange={handleSeleccionarResponsable} />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button onClick={handleGuardarProcede} loading={loading}>Guardar</Button>
-                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) }}>Volver</Button>
-                    </div>
-                  </>
-                )
-              ) : (
-                <p className="text-sm text-gray-500">Solo el personal de calidad puede decidir la procedencia de la queja.</p>
-              )
-            )}
-
-            {/* ── EN INVESTIGACIÓN: adjuntos + resolver ── */}
-            {estadoActual === 'En Investigación' && (
-              <>
-                <div className="rounded-lg border border-gray-200 bg-white p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Responsable</p>
-                    <p className="text-sm font-medium text-gray-900">{responsableActual?.nombre ?? 'Sin asignar'}</p>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-400">El responsable queda fijo durante la investigación. No se puede modificar.</p>
-                </div>
-
-                {!resolucionAbierta ? (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button onClick={() => { draftVersions.current.workflow++; setResolucionAbierta(true) }}>Resolver</Button>
-                    {!queja.derivado_sacp_id && (
-                      <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando}>
-                        <GitBranch className="h-3.5 w-3.5" /> Derivar a SACP
-                      </Button>
-                    )}
-                    {queja.derivado_sacp_id && <Badge variant="blue">Derivada a SACP</Badge>}
-                  </div>
-                ) : (
-                  <>
-                    <textarea
-                      placeholder="Análisis / Resolución Final (Obligatorio)"
-                      rows={4}
-                      className="ui-textarea w-full px-3 py-2 text-sm"
-                      value={resolucion}
-                      onChange={(e) => { draftVersions.current.workflow++; setResolucion(e.target.value) }}
-                    />
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button onClick={handleConfirmarResolucion} loading={loading}>Confirmar resolución</Button>
-                      <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setResolucionAbierta(false); setResolucion('') }}>Volver</Button>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* ── PENDIENTE DE REVISIÓN GC (expedientes heredados) ── */}
-            {estadoActual === 'Pendiente de Revisión GC' && (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-purple-200 bg-purple-50 p-3">
-                  <p className="text-sm font-semibold text-purple-900 leading-relaxed">Resolución enviada a revisión</p>
-                  <p className="text-xs text-purple-900 leading-relaxed mt-0.5">El responsable envió su resolución. Aprobalo para resolver la queja o devolvela a investigación.</p>
-                </div>
-                {queja.resolucion && (
-                  <div className="rounded-lg border border-gray-200 bg-white p-3">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Resolución del colaborador</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{queja.resolucion}</p>
-                  </div>
-                )}
-                {esStaff && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button onClick={handleAprobarResolucion} loading={loading}>Aprobar resolución</Button>
-                    <Button variant="secondary" onClick={handleDevolverInvestigacion} loading={loading}>Devolver a investigación</Button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── RESUELTO ── */}
-            {estadoActual === 'Resuelto' && (
-              esStaff ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button onClick={handleFinalizar} loading={loading}>Finalizar</Button>
-                  <Button variant="secondary" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(true) }}>
-                    <RotateCcw className="h-3.5 w-3.5" /> Reabrir queja
-                  </Button>
-                  {!queja.derivado_sacp_id && (
-                    <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando}>
-                      <GitBranch className="h-3.5 w-3.5" /> Derivar a SACP
-                    </Button>
-                  )}
-                  {queja.derivado_sacp_id && <Badge variant="blue">Derivada a SACP</Badge>}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">La queja está resuelta. Solo el personal de calidad puede finalizarla o reabrirla.</p>
-              )
-            )}
-
-            {/* ── FINALIZADO ── */}
-            {estadoActual === 'Finalizado' && (
-              esStaff ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button variant="secondary" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(true) }}>
-                    <RotateCcw className="h-3.5 w-3.5" /> Reabrir queja
-                  </Button>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">Queja finalizada.</p>
-              )
-            )}
-
-            {(estadoActual === 'No Procede' || estadoActual === 'Finalizado') && (
-              <p className="text-sm text-gray-500">
-                {estadoActual === 'No Procede'
-                  ? 'Queja cerrada como No Procede.'
-                  : 'Queja finalizada.'}
-                {queja.fecha_cierre && <> Cierre: {new Date(queja.fecha_cierre).toLocaleDateString('es-ES')}.</>}
-              </p>
-            )}
-
-            {reaperturaAbierta && esStaff && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
-                <p className="text-sm font-semibold text-amber-900">Reabrir queja</p>
-                <p className="text-xs text-amber-900">La queja volverá a «En Investigación» con un nuevo plazo de 15 días. El motivo es obligatorio y quedará en las notas.</p>
-                <textarea
-                  placeholder="Motivo de la reapertura..."
-                  rows={2}
-                  className="ui-textarea w-full px-3 py-2 text-sm"
-                  value={motivoReapertura}
-                  onChange={(e) => { draftVersions.current.workflow++; setMotivoReapertura(e.target.value) }}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button onClick={handleReabrir} loading={reabriendo}>Confirmar reapertura</Button>
-                  <Button variant="ghost" onClick={() => { draftVersions.current.workflow++; setReaperturaAbierta(false) }}>Cancelar</Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Sección 4: Comentarios y notas internas */}
-        <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 space-y-3">
-          <p className="text-base font-semibold text-gray-800 mb-2">Comentarios y notas internas</p>
-
-          <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
-            {comentariosLoading ? <LoadingSkeleton variant="list" label="Cargando comentarios…" framed={false} /> : comentarios.length === 0 ? (
-              <p className="text-sm text-gray-400">Sin comentarios todavía.</p>
-            ) : comentarios.map((c) => (
-              <div key={c.id} className="rounded-lg border border-gray-200 p-2.5 bg-white">
-                <div className="flex items-center gap-2 mb-1">
-                  <Badge variant={c.tipo === 'cliente' ? 'blue' : 'gray'}>{c.tipo === 'cliente' ? 'Cliente' : 'Interno'}</Badge>
-                  {c.visible_cliente && <Badge variant="green">Visible al quejoso</Badge>}
-                  <span className="text-xs text-gray-400">{new Date(c.fecha).toLocaleString('es-ES')}</span>
-                </div>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{c.comentario}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <textarea
-              placeholder="Nuevo comentario..."
-              rows={2}
-              className="ui-textarea w-full px-3 py-2 text-sm"
-              value={nuevoComentario}
-              onChange={(e) => { draftVersions.current.comentario++; setNuevoComentario(e.target.value) }}
-            />
-            <div className="flex flex-col gap-1.5 shrink-0">
-              <Select className="w-full" value={comentarioTipo} onChange={(e) => { draftVersions.current.comentario++; setComentarioTipo(e.target.value as 'interno' | 'cliente') }}>
-                <option value="interno">Interno</option>
-                <option value="cliente">Cliente</option>
-              </Select>
-              <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
-                <input type="checkbox" checked={visibleCliente} onChange={(e) => { draftVersions.current.comentario++; setVisibleCliente(e.target.checked) }} />
-                Visible al quejoso
-              </label>
-              <Button size="sm" onClick={handleAgregarComentario} loading={agregandoComentario} disabled={!nuevoComentario.trim()}><Send className="h-3 w-3" /> Agregar</Button>
-            </div>
-          </div>
+        </>}
+        {reviewOpen && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
+          <Field id={'queja-devolucion-' + queja.id} label="Motivo de devolución"><textarea id={'queja-devolucion-' + queja.id} required maxLength={10000} rows={4} className="ui-textarea w-full px-3 py-2 text-base" value={motivoDevolucion} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoDevolucion(event.target.value) }} /><p className="mt-2 text-xs text-qms-muted">El motivo quedará registrado. Se conserva el plazo de investigación original.</p></Field>
+        </div>}
+        {reaperturaAbierta && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
+          <p className="text-sm text-qms-muted">La queja vuelve a investigación con un nuevo plazo. El motivo quedará registrado.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} placeholder="Motivo de la reapertura..." rows={5} className="ui-textarea w-full px-3 py-2 text-base" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
+        </div>}
         </div>
       </div>
     </Modal>
 
-    <ConfirmDialog
-      open={confirmarEliminacion !== null}
-      title="Eliminar adjunto"
-      message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer."
-      confirmLabel="Eliminar"
-      danger
-      loading={eliminandoAdjunto !== null}
-      onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)}
-      onCancel={() => setConfirmarEliminacion(null)}
-    />
-    </>
-  )
+    <Modal open={activityOpen} onClose={() => setActivityOpen(false)} title={'Actividad · ' + queja.folio} variant="sheet" size="sm">
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-qms-hover-bg p-4">
+        <CaseSection title="Observaciones">
+          <div className="space-y-3 border-b border-qms-border pb-4"><textarea aria-label="Nueva observación" placeholder="Escribí una observación…" rows={5} className="ui-textarea w-full px-3 py-2 text-sm" value={nuevoComentario} onChange={event => { draftVersions.current.comentario++; setNuevoComentario(event.target.value) }} /><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2"><Select aria-label="Tipo de observación" value={comentarioTipo} onChange={event => setComentarioTipo(event.target.value as 'interno' | 'cliente')}><option value="interno">Interna</option><option value="cliente">Del cliente</option></Select><Button onClick={handleAgregarComentario} loading={agregandoComentario} disabled={!nuevoComentario.trim()}><Send className="size-4" />Agregar</Button></div><label className="flex items-center gap-2 text-xs text-qms-muted"><input type="checkbox" checked={visibleCliente} onChange={event => setVisibleCliente(event.target.checked)} />Visible al quejoso</label></div>
+          <div className="mt-4 space-y-3">{queja.observaciones && <article className="border-b border-qms-border pb-3"><p className="mb-2 text-xs text-qms-muted">Observación anterior</p><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.observaciones}</p></article>}{comentariosLoading ? <LoadingSkeleton variant="list" label="Cargando observaciones…" framed={false} /> : comentariosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las observaciones. <Button variant="link" size="sm" onClick={() => refetchComentarios()}>Reintentar</Button></p> : !comentarios.length && !queja.observaciones ? <p className="text-sm text-qms-muted">Sin observaciones todavía.</p> : comentarios.map(c => <article key={c.id} className="border-b border-qms-border pb-3"><div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant={c.tipo === 'cliente' ? 'blue' : 'gray'}>{c.tipo === 'cliente' ? 'Del cliente' : 'Interna'}</Badge>{c.visible_cliente && <Badge variant="green">Visible al quejoso</Badge>}<time className="text-xs text-qms-muted">{caseDate(c.fecha)}</time></div><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{c.comentario}</p></article>)}</div>
+        </CaseSection>
+        <CaseSection title="Historial de cambios">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} /> : actividadError ? <p role="alert" className="text-sm text-qms-danger">No se pudo cargar la actividad. <Button size="sm" variant="link" onClick={() => refetchActividad()}>Reintentar</Button></p> : !actividad.length ? <p className="text-sm text-qms-muted">No hay cambios registrados.</p> : <ol className="space-y-4">{actividad.map(event => <li key={event.id} className="border-l-2 border-qms-border pl-3"><p className="whitespace-pre-wrap break-words text-sm">{event.descripcion}</p><p className="mt-1 text-xs text-qms-muted">{caseDate(event.created_at)}{event.usuario_id && ' · ' + (usuarios.find(u => u.id === event.usuario_id)?.nombre || 'Usuario registrado')}</p></li>)}</ol>}</CaseSection>
+        {esStaff && (correosLoading ? <LoadingSkeleton variant="list" label="Cargando comunicaciones…" /> : correosError ? <CaseSection title="Comunicaciones"><p role="alert" className="text-sm text-qms-danger">No se pudieron cargar los estados. <Button size="sm" variant="link" onClick={() => refetchCorreos()}>Reintentar</Button></p></CaseSection> : <CaseMailStatus messages={correos} />)}
+        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{estadoActual !== 'Finalizado' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || !!registroDraft}><GitBranch className="size-4" />Derivar a SACP</Button>}{queja.derivado_sacp_id && <Badge variant="blue">Derivada a SACP</Badge>}</div></CaseSection>}
+      </div>
+    </Modal>
+    <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
+    {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id} queja={respuestaCase} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
+      onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={() => setRespuestaCase(null)} />}
+    {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'} onClose={() => setInformeOpen(false)} />}
+    <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
+  </>
 }

@@ -1,50 +1,28 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { Paperclip, X } from 'lucide-react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { Upload, X } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import Field from '@/components/ui/Field'
+import Input from '@/components/ui/Input'
+import Select from '@/components/ui/Select'
+import Textarea from '@/components/ui/Textarea'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import Spinner from '@/components/ui/Spinner'
-import { supabase } from '@/lib/supabase'
-import { showError, showSuccess } from '@/lib/services/errorToast'
+import { useFormularioPublico } from '@/lib/queries/useFormularioPublico'
+import { CATEGORIAS_PUBLICAS, PUBLIC_FILE_ACCEPT, MAX_PUBLIC_FILES, PublicRequestError, publicErrorMessage, type PublicQuejaField } from '@/lib/services/publicQuejasClient'
+import { usePublicQuejaForm } from '@/app/q/components/usePublicQuejaForm'
 
-const CATEGORIAS_PUBLICAS = ['Queja', 'Denuncia', 'Sugerencia', 'Reclamo', 'Felicitación']
+// Mantener el mismo ancho al cargar, enviar y confirmar evita saltos de tamaño.
+const PUBLIC_FORM_WIDTH = 'w-full max-w-[896px]'
 
-import { MAX_FILE_BYTES as MAX_ADJUNTO_BYTES } from '@/lib/constants/adjuntos'
-const EXTENSIONES_PERMITIDAS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt']
-const ACCEPT_ADJUNTOS = 'image/jpeg,image/png,image/webp,.pdf,.doc,.docx,.xls,.xlsx,.txt'
-
-interface FormularioPublico {
-  id: string
-  modulo: string
-  nombre: string
-  token: string
-  activo: boolean
-}
-
-interface EstadoForm {
-  status: 'cargando' | 'ok' | 'invalid'
-  formulario?: FormularioPublico
-}
-
-interface RespuestaUpload {
-  drive_file_id: string
-  name?: string
-  mimeType?: string
-  folder_id?: string
-  queja_id: string
-}
-
-interface ResumenEvidencias {
-  total: number
-  subidos: number
-  fallidos: string[]
-}
-
-function esFormatoPermitido(file: File): boolean {
-  if (['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return true
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
-  return EXTENSIONES_PERMITIDAS.includes(ext)
+function PublicField({ field, label, error, hint, children }: {
+  field: PublicQuejaField; label: string; error?: string; hint?: string; children: ReactNode
+}) {
+  return <Field id={`public-${field}`} label={label} hint={hint}>
+    {children}
+    {error && <p id={`public-${field}-error`} className="mt-1.5 text-xs text-qms-danger">{error}</p>}
+  </Field>
 }
 
 function formatBytes(bytes: number): string {
@@ -55,295 +33,174 @@ function formatBytes(bytes: number): string {
 
 export default function FormularioQuejaPublicaPage() {
   const params = useParams<{ token: string }>()
-  const token = params?.token ?? ''
+  const token = params.token ?? ''
+  // Un token nuevo es otra visita y otro borrador; la respuesta anterior no puede modificarlo.
+  return <FormularioQuejaPublica key={token} token={token} />
+}
 
-  const [estado, setEstado] = useState<EstadoForm>({ status: 'cargando' })
-  const [nombre, setNombre] = useState('')
-  const [email, setEmail] = useState('')
-  const [telefono, setTelefono] = useState('')
-  const [categoria, setCategoria] = useState('')
-  const [descripcion, setDescripcion] = useState('')
-  const [archivos, setArchivos] = useState<File[]>([])
-  const [enviando, setEnviando] = useState(false)
-  const [etapaEnvio, setEtapaEnvio] = useState('')
-  const [folioRegistrado, setFolioRegistrado] = useState<string | null>(null)
-  const [resumenEvidencias, setResumenEvidencias] = useState<ResumenEvidencias | null>(null)
+function FormularioQuejaPublica({ token }: { token: string }) {
+  const consulta = useFormularioPublico(token)
+  const form = usePublicQuejaForm(token)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    let alive = true
-    async function verificar() {
-      if (!token) {
-        setEstado({ status: 'invalid' })
-        return
-      }
-      const { data, error } = await supabase
-        .from('formularios_publicos')
-        .select('*')
-        .eq('token', token)
-        .eq('activo', true)
-        .maybeSingle()
-      if (!alive) return
-      if (error || !data) {
-        setEstado({ status: 'invalid' })
-        return
-      }
-      setEstado({ status: 'ok', formulario: data as FormularioPublico })
-    }
-    verificar()
-    return () => { alive = false }
-  }, [token])
+    if (!form.invalidField || form.enviando || form.confirmationPending) return
+    const input = document.getElementById(`public-${form.invalidField.field}`)
+    input?.focus({ preventScroll: true })
+    input?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+  }, [form.invalidField, form.enviando, form.confirmationPending])
 
-  if (estado.status === 'cargando') {
-    return (
-      <div className="flex min-h-dvh items-center justify-center px-4 py-8">
-        <LoadingSkeleton variant="form" label="Cargando formulario…" className="w-full max-w-2xl" />
-      </div>
-    )
+  const fieldError = (field: PublicQuejaField) => form.invalidField?.field === field ? form.error : undefined
+  const fieldAttributes = (field: PublicQuejaField) => ({
+    'aria-invalid': !!fieldError(field),
+    'aria-describedby': [field === 'descripcion' ? 'public-descripcion-hint' : '', fieldError(field) ? `public-${field}-error` : ''].filter(Boolean).join(' ') || undefined,
+  })
+
+  if (!form.receipt && token && consulta.isPending) {
+    return <div className="flex min-h-dvh items-start justify-center px-4 py-6">
+      <LoadingSkeleton variant="form" label="Cargando formulario…" className={PUBLIC_FORM_WIDTH} />
+    </div>
   }
 
-  if (estado.status === 'invalid') {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-card border border-qms-border bg-qms-surface p-8 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-qms-danger text-xl font-bold text-white">!</div>
-          <h2 className="m-0 text-[1.15rem] font-bold text-qms-dark">Enlace no válido</h2>
-          <p className="mt-2 text-sm text-qms-muted">Este enlace no es válido o ya no está disponible.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const agregarArchivos = (lista: FileList | null) => {
-    if (!lista || lista.length === 0) return
-    const rechazados: string[] = []
-    const aceptados: File[] = []
-    for (const f of Array.from(lista)) {
-      if (!esFormatoPermitido(f)) {
-        rechazados.push(`${f.name} (formato no permitido)`)
-        continue
-      }
-      if (f.size > MAX_ADJUNTO_BYTES) {
-        rechazados.push(`${f.name} (supera el límite de 4 MB)`)
-        continue
-      }
-      aceptados.push(f)
-    }
-    setArchivos((prev) => {
-      const claves = new Set(prev.map((p) => `${p.name}:${p.size}`))
-      const nuevos = aceptados.filter((a) => {
-        const k = `${a.name}:${a.size}`
-        if (claves.has(k)) return false
-        claves.add(k)
-        return true
-      })
-      return [...prev, ...nuevos]
-    })
-    if (rechazados.length > 0) {
-      showError(null, `No se adjuntaron ${rechazados.length} archivo(s): ${rechazados.join(', ')}`)
-    }
-  }
-
-  const quitarArchivo = (index: number) => {
-    setArchivos((prev) => prev.filter((_, i) => i !== index))
-  }
-
-  const subirEvidencias = async (folioNuevo: string): Promise<{ subidos: number; fallidosNombres: string[] }> => {
-    let subidos = 0
-    const fallidosNombres: string[] = []
-    for (let i = 0; i < archivos.length; i++) {
-      const f = archivos[i]
-      try {
-        const fd = new FormData()
-        fd.append('file', f)
-        fd.append('folio', folioNuevo)
-        fd.append('token', token)
-        const res = await fetch('/api/drive/upload-public', { method: 'POST', body: fd })
-        if (!res.ok) {
-          const errData = await res.json().catch(() => null)
-          throw new Error(errData?.error || 'Error al procesar el archivo')
-        }
-        const respuesta = (await res.json()) as RespuestaUpload
-        if (!respuesta?.drive_file_id || !respuesta?.queja_id) {
-          throw new Error('Respuesta inválida del servidor de subida')
-        }
-        const { error: rpcError } = await supabase.rpc('registrar_adjunto_queja_publica', {
-          p_queja_id: respuesta.queja_id,
-          p_nombre: f.name,
-          p_storage_path: respuesta.drive_file_id,
-          p_tamano: f.size,
-          p_tipo_mime: f.type || 'application/octet-stream',
-        })
-        if (rpcError) {
-          console.error('[RPC registrar_adjunto_queja_publica]', rpcError)
-          throw new Error(rpcError.message || 'Error al vincular evidencia en BD')
-        }
-        subidos++
-      } catch (err) {
-        console.error('[evidencia fallida]', f.name, err)
-        fallidosNombres.push(f.name)
-        // No mostramos error aquí para acumular todos los fallos; se mostrarán al final
-      }
-    }
-    return { subidos, fallidosNombres }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setEnviando(true)
-    setEtapaEnvio('Registrando queja...')
-    setResumenEvidencias(null)
-    try {
-      const { data, error } = await supabase.rpc('crear_queja_publica', {
-        p_token: token,
-        p_cliente_nombre: nombre.trim(),
-        p_email_cliente: email.trim(),
-        p_telefono: telefono.trim(),
-        p_categoria: categoria.trim(),
-        p_descripcion: descripcion.trim(),
-      })
-      if (error) { showError(error, 'No se pudo registrar la queja'); return }
-      const res = (data ?? {}) as { folio?: string } | string
-      const folioNuevo = typeof res === 'string' ? res : res?.folio ?? ''
-      if (!folioNuevo) throw new Error('La respuesta del servidor no incluyó el folio')
-
-      // Subir todos los adjuntos primero, luego notificar y mostrar el folio
-      let resumen: ResumenEvidencias | null = null
-      if (archivos.length > 0) {
-        const r = await subirEvidencias(folioNuevo)
-        resumen = { total: archivos.length, subidos: r.subidos, fallidos: r.fallidosNombres }
-      }
-
-      // Disparar la notificación al staff solo después de que los adjuntos
-      // estén registrados, para que la campana suene con la queja completa.
-      const { error: notifError } = await supabase.rpc('notificar_queja_publica', {
-        p_folio: folioNuevo,
-      })
-      if (notifError) {
-        console.error('[RPC notificar_queja_publica]', notifError)
-      }
-
-      // Solo después de que todos los adjuntos estén procesados, mostramos el folio
-      setFolioRegistrado(folioNuevo)
-      setResumenEvidencias(resumen)
-      setArchivos([])
-      showSuccess('Queja registrada correctamente')
-    } catch (err) {
-      showError(err instanceof Error ? err : null, 'No se pudo registrar la queja')
-    } finally {
-      setEnviando(false)
-      setEtapaEnvio('')
-    }
-  }
-
-  if (folioRegistrado) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="w-full max-w-md rounded-card border border-qms-border bg-qms-surface p-8 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-qms-success text-xl font-bold text-white">✓</div>
-          <h2 className="m-0 text-[1.15rem] font-bold text-qms-dark">Queja registrada</h2>
-          <p className="mt-2 text-sm text-qms-muted">
-            Tu queja fue registrada con el número{' '}
-            <strong className="font-mono text-qms-primary">{folioRegistrado}</strong>.
-            Guardalo para dar seguimiento.
-          </p>
-          {resumenEvidencias && resumenEvidencias.subidos > 0 && (
-            <p className="m-0 mt-3 text-sm font-medium text-qms-success">
-              Se adjuntaron {resumenEvidencias.subidos} de {resumenEvidencias.total} evidencia(s) correctamente.
-            </p>
-          )}
-          {resumenEvidencias && resumenEvidencias.fallidos.length > 0 && (
-            <p className="m-0 mt-2 text-xs leading-relaxed text-qms-danger">
-              No se pudieron subir: {resumenEvidencias.fallidos.join(', ')}. Podés reportarlo citando tu folio.
-            </p>
-          )}
-        </div>
-      </div>
-    )
-  }
-
-  const campoDeshabilitado = enviando
-
-  return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-card border border-qms-border bg-qms-surface p-8 shadow-sm">
-        <div className="mb-5 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-card bg-qms-primary text-xl font-bold text-white">E</div>
-          <h2 className="m-0 text-xl font-bold text-qms-dark">Registro de queja</h2>
-          <p className="mt-1 text-[0.85rem] text-qms-muted">{estado.formulario?.nombre || 'Formulario de quejas'}</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Nombre *</label>
-            <input required disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={nombre} onChange={(e) => setNombre(e.target.value)} />
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-qms-dark">Correo electrónico *</label>
-              <input type="email" required disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-qms-dark">Teléfono</label>
-              <input disabled={campoDeshabilitado} className="ui-field w-full px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Categoría *</label>
-            <select required disabled={campoDeshabilitado} className="w-full rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm outline-none focus:border-qms-primary focus:ring-1 focus:ring-qms-primary disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={categoria} onChange={(e) => setCategoria(e.target.value)}>
-              <option value="">Seleccionar categoría</option>
-              {CATEGORIAS_PUBLICAS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Descripción *</label>
-            <textarea required rows={4} disabled={campoDeshabilitado} className="ui-textarea w-full resize-none px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-gray-50 disabled:opacity-70" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm font-medium text-qms-dark">Evidencias (opcional)</label>
-            <label className={`flex cursor-pointer items-center gap-2 rounded-button border border-dashed border-qms-border px-3 py-2.5 text-sm transition-colors hover:bg-gray-50 ${enviando ? 'pointer-events-none opacity-60' : ''}`}>
-              <Paperclip className="h-4 w-4 shrink-0 text-qms-muted" />
-              <span className="text-qms-muted">
-                {archivos.length > 0 ? `${archivos.length} archivo(s) seleccionado(s)` : 'Adjuntar imágenes, PDF, texto u Office (máx. 4 MB c/u)'}
-              </span>
-              <input
-                type="file"
-                multiple
-                accept={ACCEPT_ADJUNTOS}
-                className="hidden"
-                disabled={enviando}
-                onChange={(e) => {
-                  agregarArchivos(e.target.files)
-                  e.target.value = ''
-                }}
-              />
-            </label>
-            {archivos.length > 0 && (
-              <ul className="mt-2 space-y-1">
-                {archivos.map((f, i) => (
-                  <li key={`${f.name}-${i}`} className="flex select-text items-center gap-2 rounded-md border border-qms-border px-2 py-1">
-                    <span className="min-w-0 flex-1 truncate text-xs text-qms-dark">{f.name}</span>
-                    <span className="whitespace-nowrap text-xs text-qms-muted">{formatBytes(f.size)}</span>
-                    <button type="button" onClick={() => quitarArchivo(i)} disabled={enviando} title="Quitar archivo" className="shrink-0 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 text-qms-muted">
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <button
-            type="submit"
-            disabled={enviando}
-            aria-busy={enviando}
-            className="ui-button ui-button-primary ui-button-sm flex w-full items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-50"
-          >
-            {enviando && <Spinner />}
-            {enviando ? (etapaEnvio || 'Enviando...') : 'Enviar queja'}
-          </button>
-        </form>
+  if (!form.receipt && (!token || !consulta.data || consulta.error)) {
+    const invalid = !token || consulta.error instanceof PublicRequestError && [404, 410].includes(consulta.error.status)
+    return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
+      <div className={`${PUBLIC_FORM_WIDTH} rounded-card border border-qms-border bg-qms-surface p-6 text-center shadow-sm sm:p-8`}>
+        <h1 className="m-0 text-xl font-bold text-qms-dark">{invalid ? 'Enlace no válido' : 'Servicio no disponible'}</h1>
+        <p role={invalid ? undefined : 'alert'} className="mt-2 text-sm text-qms-muted">
+          {invalid ? 'Este enlace no es válido o ya no está disponible.' : publicErrorMessage(consulta.error, 'No se pudo cargar el formulario. Intentá de nuevo más tarde.')}
+        </p>
+        {!invalid && <Button className="mt-4 min-h-11" variant="secondary" loading={consulta.isFetching} loadingLabel="Cargando formulario…" onClick={() => void consulta.refetch()}>Reintentar</Button>}
       </div>
     </div>
-  )
+  }
+
+  const disabled = form.enviando || form.confirmationPending || !!form.receipt
+  const uploaded = form.archivos.filter(entry => entry.status === 'subido').length
+  const failed = form.archivos.filter(entry => entry.status === 'fallido').length
+  const completed = !!form.receipt && form.finalized && uploaded === form.archivos.length
+  const fileStatus = { pendiente: 'Pendiente', subiendo: 'Subiendo…', subido: 'Adjuntado', fallido: 'No adjuntado' }
+
+  // Recibir el folio no significa que los adjuntos y la finalización hayan terminado.
+  if (completed && !form.enviando && form.receipt) {
+    return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
+      <div role="status" aria-atomic="true" className={`${PUBLIC_FORM_WIDTH} rounded-card border border-qms-border bg-qms-surface`}>
+        <div className="flex items-center gap-3 border-b border-qms-border px-5 py-4 sm:px-6">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button bg-qms-primary text-lg font-semibold leading-none text-white">
+            E
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-qms-dark">QMS ECA</p>
+            <p className="text-xs text-qms-muted">Gestión de Calidad</p>
+          </div>
+        </div>
+        <div className="px-5 py-5 sm:px-6 sm:py-6">
+          <h1 className="m-0 text-xl font-semibold text-qms-dark">Queja registrada</h1>
+          <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-qms-border pb-4 text-sm text-qms-muted">
+            Número de registro
+            <strong className="min-w-0 select-text break-all text-lg font-semibold text-qms-primary">{form.receipt.folio}</strong>
+          </p>
+          <p className="mt-5 text-base text-qms-dark">Recibimos tu información correctamente. Gestión de Calidad revisará tu queja y te comunicará el resultado.</p>
+          <p className="mt-3 text-sm text-qms-muted">El correo de confirmación puede tardar unos minutos.</p>
+          {form.trackingUrl && <div className="mt-5">
+            <a className="ui-button ui-button-primary min-h-11 w-full sm:w-auto" href={form.trackingUrl} referrerPolicy="no-referrer">Consultar mi trámite</a>
+            <p className="mt-3 text-xs text-qms-muted">El enlace abre tu trámite directamente, sin contraseña. Guardalo y compartilo solo con personas de confianza.</p>
+          </div>}
+          {form.trackingState === 'pending' && <div className="mt-5 space-y-3">
+            <div>
+              <h2 className="text-sm font-semibold text-qms-dark">Seguimiento privado</h2>
+              <p className="mt-1 text-sm text-qms-muted">Tu queja ya está registrada. Podés volver a obtener el enlace sin repetir el envío ni los adjuntos.</p>
+            </div>
+            {form.error && <p role="alert" className="text-sm text-qms-danger">{form.error}</p>}
+            <Button className="min-h-11 w-full sm:w-auto" variant="secondary" loading={form.retryingTracking} loadingLabel="Obteniendo enlace…" onClick={() => void form.retryTracking()}>Obtener enlace de seguimiento</Button>
+          </div>}
+        </div>
+        <div className="space-y-1 border-t border-qms-border px-5 py-3 text-xs text-qms-muted sm:px-6">
+          {form.archivos.length > 0 && <p>Evidencias adjuntadas: {uploaded} de {form.archivos.length}.</p>}
+          <p>Conservalo para tus consultas con Gestión de Calidad.</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
+    <div className={`${PUBLIC_FORM_WIDTH} flex max-h-[calc(100dvh-48px)] flex-col rounded-card border border-qms-border bg-qms-surface p-4 pb-0 shadow-sm sm:p-6 sm:pb-0`}>
+      <div className="mb-3 shrink-0 border-b border-qms-border pb-3">
+        <h1 className="m-0 text-xl font-semibold text-qms-dark">Registro de queja</h1>
+        <p className="mt-1 text-sm text-qms-muted">{consulta.data?.nombre || 'Formulario de quejas'}</p>
+      </div>
+      {/* El validador compartido también cubre required/email y permite enfocar el error dentro del scroll. */}
+      <form noValidate onSubmit={(event) => { event.preventDefault(); void form.submit() }} className="flex min-h-0 flex-col">
+        {/* El contenido se acorta en pantallas bajas; el envío conserva su espacio sin tapar campos. */}
+        <div className="-mx-1 min-h-0 space-y-4 overflow-y-auto overscroll-contain px-1 pb-4 pt-1 [scrollbar-gutter:stable]">
+        <div aria-hidden="true" hidden>
+          <label htmlFor="public-website">Sitio web</label>
+          <input id="public-website" name="qms-contact-check" type="text" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore value={form.honeypot} onChange={(event) => form.setHoneypot(event.target.value)} />
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <PublicField field="nombre" label="Nombre *" error={fieldError('nombre')}>
+            <Input id="public-nombre" name="nombre" autoComplete="name" required maxLength={150} disabled={disabled} value={form.draft.nombre} onChange={(event) => form.updateField('nombre', event.target.value)} className="w-full" {...fieldAttributes('nombre')} />
+          </PublicField>
+          <PublicField field="email" label="Correo electrónico *" error={fieldError('email')}>
+            <Input id="public-email" name="email" autoComplete="email" type="email" required maxLength={254} disabled={disabled} value={form.draft.email} onChange={(event) => form.updateField('email', event.target.value)} className="w-full" {...fieldAttributes('email')} />
+          </PublicField>
+          <PublicField field="telefono" label="Teléfono (opcional)" error={fieldError('telefono')}>
+            <Input id="public-telefono" name="telefono" autoComplete="tel" type="tel" maxLength={40} disabled={disabled} value={form.draft.telefono} onChange={(event) => form.updateField('telefono', event.target.value)} className="w-full" {...fieldAttributes('telefono')} />
+          </PublicField>
+          <PublicField field="categoria" label="Tipo *" error={fieldError('categoria')}>
+            <Select id="public-categoria" name="categoria" required disabled={disabled} value={form.draft.categoria} onChange={(event) => form.updateField('categoria', event.target.value)} {...fieldAttributes('categoria')}>
+              <option value="">Seleccionar tipo</option>
+              {CATEGORIAS_PUBLICAS.map((categoria) => <option key={categoria} value={categoria}>{categoria}</option>)}
+            </Select>
+          </PublicField>
+        </div>
+        <PublicField field="descripcion" label="Descripción *" hint="Hasta 10000 caracteres." error={fieldError('descripcion')}>
+          <Textarea id="public-descripcion" name="descripcion" required rows={5} maxLength={10000} disabled={disabled} value={form.draft.descripcion} onChange={(event) => form.updateField('descripcion', event.target.value)} className="w-full resize-y [@media(min-width:640px)_and_(max-height:680px)]:h-28" {...fieldAttributes('descripcion')} />
+        </PublicField>
+        {(consulta.data?.uploadsAllowed || form.archivos.length > 0) && <Field id="public-archivos" label="Evidencias (opcional)" hint={`PDF, JPEG o PNG. Hasta ${MAX_PUBLIC_FILES} archivos, de 4 MB por archivo.`}>
+          <input ref={fileInputRef} id="public-archivos-input" type="file" hidden
+            aria-label="Seleccionar evidencias" multiple accept={PUBLIC_FILE_ACCEPT} disabled={disabled}
+            onChange={(event) => {
+              form.agregarArchivos(event.target.files)
+              event.target.value = ''
+            }} />
+          <div className="min-w-0">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+              <Button id="public-archivos" variant="secondary" disabled={disabled} className="min-h-11 px-3 text-qms-primary"
+                aria-describedby="public-archivos-hint public-archivos-count" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="h-4 w-4" aria-hidden="true" /> Adjuntar archivos
+              </Button>
+              <span id="public-archivos-count" className="text-xs text-qms-muted" aria-live="polite">
+                {form.archivos.length > 0 ? `${form.archivos.length} de ${MAX_PUBLIC_FILES} archivos` : 'Sin archivos adjuntos'}
+              </span>
+            </div>
+            {/* La lista crece solo hasta dos filas; el pie de envío conserva su propio espacio. */}
+            {form.archivos.length > 0 && <ul aria-label="Evidencias seleccionadas" tabIndex={0} className="mt-2 max-h-26 min-w-0 divide-y divide-qms-border overflow-y-auto overscroll-contain rounded-button border border-qms-border [scrollbar-gutter:stable]">
+                {form.archivos.map((entry) => <li key={entry.uploadId} className="flex min-h-13 items-center gap-2 px-3 py-1">
+                  <div className="min-w-0 flex-1 break-words text-xs text-qms-dark">
+                    <span className="block select-text truncate" title={entry.file.name}>{entry.file.name}</span>
+                    {form.receipt && <p className={entry.status === 'fallido' ? 'mt-1 text-qms-danger' : entry.status === 'subido' ? 'mt-1 text-qms-success' : 'mt-1 text-qms-muted'}>{entry.error || fileStatus[entry.status]}</p>}
+                  </div>
+                  <span className="shrink-0 text-xs text-qms-muted">{formatBytes(entry.file.size)}</span>
+                  {!form.receipt && <Button size="icon" variant="ghost" disabled={disabled} className="min-h-11 min-w-11 shrink-0" aria-label={`Quitar ${entry.file.name}`} title="Quitar archivo" onClick={() => form.quitarArchivo(entry.uploadId)}><X className="h-4 w-4" aria-hidden="true" /></Button>}
+                </li>)}
+              </ul>}
+          </div>
+        </Field>}
+        </div>
+        <div className="-mx-4 shrink-0 space-y-3 rounded-b-card border-t border-qms-border bg-qms-surface px-4 pb-4 pt-4 sm:-mx-6 sm:px-6 sm:pb-6">
+          {(form.confirmationPending || form.error || form.receipt) && <div className="space-y-2" aria-live="polite" aria-atomic="true">
+            {form.receipt && <p className="text-sm text-qms-dark">Queja registrada. Tu folio es <strong className="font-mono text-qms-primary">{form.receipt.folio}</strong>. Guardalo para dar seguimiento.</p>}
+            <p role={form.error ? 'alert' : 'status'} className={form.error ? 'text-sm text-qms-danger' : completed ? 'text-sm text-qms-success' : 'text-sm text-qms-muted'}>
+              {form.error || (form.enviando ? form.etapa : completed ? 'Envío completado.' : form.receipt ? (failed ? 'La queja conserva su folio. Podés reintentar únicamente las evidencias pendientes.' : 'La queja está registrada; falta confirmar la finalización.') : 'Tus datos se conservaron. Reintentá el mismo envío sin crear otra queja.')}
+            </p>
+            {form.receipt && form.archivos.length > 0 && <p className="text-xs text-qms-muted">{uploaded} de {form.archivos.length} evidencias adjuntadas.</p>}
+          </div>}
+          {form.receipt ? <Button type="button" className="min-h-11 w-full" loading={form.enviando} loadingLabel={form.etapa || 'Enviando…'} disabled={completed} onClick={() => void form.retryPending()}>
+            {form.enviando ? form.etapa : completed ? 'Envío completado' : failed ? 'Reintentar evidencias pendientes' : 'Reintentar finalización'}
+          </Button> : <Button type="submit" className="h-11 w-full" loading={form.enviando} loadingLabel={form.etapa || 'Enviando…'}>{form.enviando ? form.etapa : form.confirmationPending ? 'Reintentar el mismo envío' : 'Enviar queja'}</Button>}
+        </div>
+      </form>
+    </div>
+  </div>
 }

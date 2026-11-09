@@ -15,6 +15,7 @@ import {
   UsersRound, Settings2, ChartNoAxesCombined, ChevronLeft, ChevronRight,
   X, type LucideIcon,
 } from 'lucide-react'
+import EmpresaLogo from '@/components/EmpresaLogo'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso } from '@/lib/permisos'
@@ -79,11 +80,11 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
     <aside
       className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-[250px]'} bg-qms-dark ${className}`}
     >
-      <div className={`flex shrink-0 items-center justify-between px-3 ${expanded ? 'h-14 border-b border-white/10' : 'pt-3 pb-1'}`}>
+      <div className={`flex h-14 shrink-0 items-center justify-between px-3 ${expanded ? 'border-b border-white/10' : ''}`}>
         {!collapsed ? (
           <>
             <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-card bg-qms-primary text-xs font-bold text-white">E</div>
+              <EmpresaLogo className="h-10 w-10 text-sm" />
               <div className="text-[17px] font-bold text-white">ECA-QMS</div>
             </Link>
             <button
@@ -100,16 +101,16 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
           <button
             onClick={toggle}
             title="Expandir menú"
-            className="mx-auto mt-3 mb-1 flex h-7 w-7 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
+            className="mx-auto flex h-7 w-7 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
       </div>
 
-      {!expanded && <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />}
+      {!expanded && <hr className="mx-3 border-0 border-t border-white/10" />}
 
-       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 ${expanded ? 'py-3' : ''}`}>
+       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pt-3 ${expanded ? 'pb-3' : ''}`}>
          {sections.map((section) => {
            const linksVisibles = section.links.filter((link) => tienePermiso(permisos, link.id, false, user?.rol))
            if (linksVisibles.length === 0) return null

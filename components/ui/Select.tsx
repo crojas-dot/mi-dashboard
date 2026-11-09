@@ -10,7 +10,7 @@ interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className = '', wrapperClassName = '', children, style, ...props }, ref) => {
     return (
-      <div className={`relative w-full min-w-0 ${wrapperClassName}`}>
+      <div className={`relative min-w-0 ${wrapperClassName || 'w-full'}`}>
         <select
           ref={ref}
           className={`ui-field appearance-none pr-9 ${className}`}

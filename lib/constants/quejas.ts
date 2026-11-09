@@ -1,9 +1,11 @@
-// El tipo del registro es distinto de categoria (clasificación interna).
-// Mantener esta lista sincronizada con la validación de la RPC pública en
-// supabase/017_atributos_reales_quejas.sql.
+// categoria conserva el nombre del contrato de alta; tipo es su lectura automática.
+// El catálogo de cliente ya no ofrece 'Denuncia'; las listas válidas DB aplicadas
+// siguen aceptándola como valor histórico y no se editan para simular su retiro.
 export const TIPOS_REGISTRO_QUEJA = [
-  'Queja', 'Observación', 'Sugerencia', 'Denuncia', 'Reclamo', 'Felicitación',
+  'Queja', 'Observación', 'Sugerencia', 'Reclamo', 'Felicitación',
 ] as const
+
+export const REGISTRO_QUEJA_LIMITES = { area: 150, oficio: 120, observaciones: 10_000 } as const
 
 // El código se envía al workflow; la variante pinta la UI y no concede autorización.
 export const ESTADOS_QUEJA = {
@@ -17,6 +19,13 @@ export const ESTADOS_QUEJA = {
 export const CODIGOS_ESTADO_QUEJA: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(ESTADOS_QUEJA).map(([estado, config]) => [estado, config.codigo]),
 )
+/** Los filtros envían IDs históricos; la etiqueta y el color pueden configurarse. */
+export function opcionesEstadoQueja(catalogo: readonly { valor: string; color?: string; codigo?: string; valor_interno?: string }[]) {
+  return Object.entries(ESTADOS_QUEJA).map(([valor, config]) => {
+    const row = catalogo.find(item => item.codigo === config.codigo || item.valor_interno === valor)
+    return { valor, etiqueta: row?.valor ?? valor, color: row?.color ?? config.variante }
+  })
+}
 /** Regla del indicador SLA legacy: cambiar un color nunca cambia la resolución. */
 export function esQuejaResuelta(estado: string): boolean { return estado === 'Resuelto' }
 

@@ -1,0 +1,71 @@
+{
+  "captured_at": "2026-10-09T03:33:18.167Z",
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "scope": "public_forms_gateway",
+  "applied_migrations": [
+    {
+      "file": "20261008224037_public_forms_gateway.sql",
+      "sha256": "78556393d11c3529515dbef10a3d793780365e3e371643c7921130e71c766f8a"
+    },
+    {
+      "file": "20261009031934_public_forms_drive_path.sql",
+      "sha256": "b8f0497652ea69c530ff54d81d426b68525cfca4f87fa5d321bfaaac6b2359fd"
+    }
+  ],
+  "remote_metadata": {
+    "rls_tables": 36,
+    "gateway_functions": 6,
+    "gateway_security_invoker": true,
+    "gateway_search_path_empty": true,
+    "gateway_client_execute": false,
+    "gateway_client_table_grants": false,
+    "gateway_client_policies": 0,
+    "service_role_access": true,
+    "legacy_drive_id_compatible": true,
+    "legacy_signatures_client_executable": 5
+  },
+  "vercel": {
+    "project": "mi-dashboard",
+    "waf": {
+      "id": "rule_formularios_publicos_limite_de_entrada_OKQXW8",
+      "active": true,
+      "method": "POST",
+      "paths": [
+        "/api/public/quejas",
+        "/api/drive/upload-public",
+        "/api/public/quejas/finalizar"
+      ],
+      "requests": 90,
+      "window_seconds": 600,
+      "key": "ip",
+      "algorithm": "fixed_window",
+      "pending_changes": 0
+    },
+    "gateway_deployment": "pending_environment_authorization",
+    "botid_production_verified": false
+  },
+  "verification": {
+    "node_tests_passed": 363,
+    "node_tests_failed": 0,
+    "postgres_local_assertions_passed": 73,
+    "build": true,
+    "lint": true,
+    "structure": true,
+    "visual_layer": true,
+    "production_dependency_vulnerabilities": 0,
+    "playwright": {
+      "synthetic_only": true,
+      "production_writes": 0,
+      "mobile_overflow": false,
+      "retry_same_submission": true,
+      "retry_failed_attachment": true,
+      "uncaught_errors": 0
+    }
+  },
+  "pending": [
+    "Authorized Vercel environment configuration",
+    "Production gateway deployment and probes",
+    "Legacy RPC and metadata policy cutover"
+  ],
+  "private_records_exported": false
+}

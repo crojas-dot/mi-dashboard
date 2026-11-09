@@ -1,0 +1,36 @@
+{
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "activation_date_costa_rica": "2026-11-03",
+  "migration_version_utc": "20261104001552",
+  "migration_name": "queja_informes_editables",
+  "authorization": "explicit_owner_request_and_oauth_reconnection",
+  "preflight": {
+    "quejas_id": "uuid",
+    "quejas_revision": "bigint",
+    "usuarios_id": "uuid",
+    "existing_policies_and_grants_reviewed": true,
+    "report_table_previously_absent": true
+  },
+  "verification": {
+    "rls_enabled": true,
+    "client_policies": 0,
+    "anon_table_access": false,
+    "authenticated_table_access": false,
+    "service_role_select": true,
+    "service_role_insert": true,
+    "service_role_update_delete_truncate": false,
+    "service_role_rest_status": 200,
+    "append_two_versions_and_read_in_transaction": true,
+    "duplicate_version_rejected": true,
+    "rollback_verified": true,
+    "private_api_user_session_acceptance_pending": true
+  },
+  "advisor_for_new_table": {
+    "name": "rls_enabled_no_policy",
+    "level": "INFO",
+    "expected": true,
+    "reason": "Server-only table with no anon/authenticated grants"
+  },
+  "persistent_test_business_writes": false,
+  "web_deployed": false
+}

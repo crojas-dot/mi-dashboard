@@ -1,0 +1,98 @@
+{
+  "rules": [
+    {
+      "id": 1,
+      "alerts": [
+        1
+      ],
+      "day_type": "calendar_days",
+      "duration": 3,
+      "stage_id": "quejas.evaluation",
+      "created_at": "2026-09-23T21:32:59.422514+00:00",
+      "created_by": null,
+      "expiration_action": "notify_quality"
+    },
+    {
+      "id": 2,
+      "alerts": [
+        3,
+        1
+      ],
+      "day_type": "business_days",
+      "duration": 15,
+      "stage_id": "quejas.investigation",
+      "created_at": "2026-09-23T21:32:59.422514+00:00",
+      "created_by": null,
+      "expiration_action": "notify_quality"
+    },
+    {
+      "id": 3,
+      "alerts": [
+        1
+      ],
+      "day_type": "business_days",
+      "duration": 3,
+      "stage_id": "quejas.evaluation",
+      "created_at": "2026-10-11T04:43:03.318291+00:00",
+      "created_by": null,
+      "expiration_action": "notify_quality"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.crear_queja_interna(p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE q public.quejas;\nBEGIN\n IF auth.uid() IS NULL OR NOT (coalesce(public.app_es_admin(), false)\n OR (coalesce(public.app_es_staff(), false) AND coalesce(public.app_tiene_permiso('quejas', true), false))) THEN\n RAISE EXCEPTION 'No autorizado.' USING ERRCODE = '42501';\n END IF;\n -- El trigger valida también llamadas directas y calcula tipo/recepción/plazo.\n INSERT INTO public.quejas(folio,cliente_nombre,email_cliente,categoria,descripcion,estado,fecha)\n VALUES(public.generar_folio_queja(),btrim(p_cliente_nombre),btrim(p_email_cliente),\n btrim(p_categoria),btrim(p_descripcion),'Recibido',now()) RETURNING * INTO q;\n INSERT INTO public.logs(fecha,usuario_id,accion,modulo,detalle)\n VALUES(now(),public.app_usuario_actual_id(),'crear','quejas','Queja interna ' || q.folio || ' creada');\n RETURN q;\nEND;\n$function$\n",
+      "name": "crear_queja_interna"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.public_form_finalize_submission(p_form_id uuid, p_submission_id uuid, p_queja_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$\nDECLARE v_submission public.public_form_submissions%ROWTYPE; v_folio text;\nBEGIN\n SELECT s.* INTO v_submission FROM public.public_form_submissions s WHERE s.form_id = p_form_id AND s.submission_id = p_submission_id AND s.queja_id = p_queja_id FOR UPDATE;\n IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'PUBLIC_SUBMISSION_UNAVAILABLE'; END IF;\n SELECT folio INTO STRICT v_folio FROM public.quejas WHERE id = p_queja_id;\n IF v_submission.finalized_at IS NOT NULL THEN RETURN jsonb_build_object('folio',v_folio,'finalized',true); END IF;\n PERFORM 1 FROM public.formularios_publicos WHERE id = p_form_id AND activo AND modulo = 'quejas' FOR SHARE;\n IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'PUBLIC_FORM_UNAVAILABLE'; END IF;\n IF EXISTS (SELECT 1 FROM public.public_form_uploads WHERE form_id = p_form_id AND submission_id = p_submission_id AND status = 'reserved') THEN\n RAISE EXCEPTION USING ERRCODE = '23505', MESSAGE = 'PUBLIC_UPLOAD_PENDING';\n END IF;\n -- Marca y notificaciones/mail_queue se confirman juntas bajo el mismo lock.\n PERFORM public.notificar_queja_publica(v_folio);\n UPDATE public.public_form_submissions SET finalized_at = now() WHERE form_id = p_form_id AND submission_id = p_submission_id;\n RETURN jsonb_build_object('folio',v_folio,'finalized',true);\nEND;\n$function$\n",
+      "name": "public_form_finalize_submission"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.qms_transition_complaint(p_id uuid, p_expected bigint, p_state text, p_resolution text DEFAULT NULL::text, p_justification text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_reopen text DEFAULT NULL::text, p_office_number text DEFAULT NULL::text, p_resolution_format text DEFAULT NULL::text, p_justification_format text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE q public.quejas; own_revision bigint; office text; staff boolean;\nBEGIN\n SELECT * INTO q FROM public.quejas WHERE id = p_id FOR UPDATE;\n staff := coalesce(public.app_es_admin(), false)\n OR (coalesce(public.app_es_staff(), false) AND coalesce(public.app_tiene_permiso('quejas', true), false));\n IF auth.uid() IS NULL OR NOT (staff OR (coalesce(public.app_es_colaborador(), false)\n AND coalesce(public.app_tiene_permiso('mis_quejas', true), false)\n AND coalesce(q.responsable_id = public.app_usuario_actual_id(), false))) THEN\n RAISE EXCEPTION 'No autorizado.' USING ERRCODE = '42501';\n END IF;\n IF q.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada.' USING ERRCODE = 'P0002'; END IF;\n IF p_expected IS NULL OR q.revision IS DISTINCT FROM p_expected THEN\n RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE = '40001';\n END IF;\n IF NOT EXISTS (SELECT 1 FROM public.catalogos WHERE modulo = 'quejas' AND tipo = 'estado_queja'\n AND codigo = p_state AND coalesce(activo, true)) THEN\n RAISE EXCEPTION 'Estado no reconocido.' USING ERRCODE = '22023';\n END IF;\n IF p_resolution_format IS NOT NULL AND (p_resolution IS NULL OR p_resolution_format NOT IN ('plain','markdown'))\n OR p_justification_format IS NOT NULL AND (p_justification IS NULL OR p_justification_format NOT IN ('plain','markdown'))\n OR length(coalesce(p_resolution, '')) > 10000 OR length(coalesce(p_justification, '')) > 10000\n OR length(coalesce(p_reopen, '')) > 10000 THEN\n RAISE EXCEPTION 'Texto o formato inválido.' USING ERRCODE = '22023';\n END IF;\n office := coalesce(nullif(btrim(p_office_number), ''), q.numero_oficio_resolucion);\n IF length(office) > 120 OR (p_state IN ('rejected','resolved','finished') AND office IS NULL) THEN\n RAISE EXCEPTION 'La respuesta final necesita un número de oficio válido.' USING ERRCODE = '22023';\n END IF;\n IF p_owner IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.usuarios WHERE id = p_owner AND estado = 'activo') THEN\n RAISE EXCEPTION 'Seleccioná un responsable activo.' USING ERRCODE = '22023';\n END IF;\n -- Se valida la revisión original ANTES de nuestra escritura bajo el mismo lock.\n -- La revisión enviada al motor es exclusivamente la producida por esta operación.\n UPDATE public.quejas SET numero_oficio_resolucion = office,\n resolucion_formato = CASE WHEN p_resolution IS NULL THEN resolucion_formato ELSE coalesce(p_resolution_format, 'plain') END,\n justificacion_procede = CASE WHEN p_justification IS NULL THEN justificacion_procede ELSE nullif(btrim(p_justification), '') END,\n justificacion_procede_formato = CASE WHEN p_justification IS NULL THEN justificacion_procede_formato ELSE coalesce(p_justification_format, 'plain') END\n WHERE id = p_id RETURNING revision INTO own_revision;\n PERFORM public.qms_transition(p_id, own_revision, p_state, p_resolution, p_justification, p_owner, p_reopen);\n RETURN (SELECT to_jsonb(v) FROM public.qms_quejas v WHERE v.id = p_id);\nEND;\n$function$\n",
+      "name": "qms_transition_complaint"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.qms_update_details(p_id uuid, p_expected bigint, p_categoria text DEFAULT NULL::text, p_prioridad text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_notes text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE q quejas;\nBEGIN\n IF auth.uid() IS NULL OR NOT (coalesce(public.app_es_admin(),false) OR (coalesce(public.app_es_staff(),false) AND coalesce(public.app_tiene_permiso('quejas',true),false))) THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n SELECT * INTO q FROM quejas WHERE id=p_id FOR UPDATE;\n IF p_expected IS NULL OR q.revision IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n PERFORM public.actualizar_detalles_queja(p_id,p_categoria,p_prioridad,p_owner,p_notes);\n RETURN (SELECT to_jsonb(v) FROM qms_quejas v WHERE id=p_id);\nEND; $function$\n",
+      "name": "qms_update_details"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.transicionar_queja(p_queja_id uuid, p_nuevo_estado text, p_resolucion text DEFAULT NULL::text, p_justificacion_procede text DEFAULT NULL::text, p_responsable_id uuid DEFAULT NULL::uuid, p_motivo_reapertura text DEFAULT NULL::text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n v_queja public.quejas;\n v_usuario_id uuid;\n v_es_staff boolean;\n v_es_responsable boolean;\n v_destino record;\n v_mensaje text;\nBEGIN\n v_usuario_id := public.app_usuario_actual_id();\n IF v_usuario_id IS NULL THEN RAISE EXCEPTION 'No autorizado'; END IF;\n\n SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n\n v_es_staff := public.app_es_staff();\n v_es_responsable := (v_queja.responsable_id = v_usuario_id);\n IF NOT (v_es_staff OR (public.app_es_colaborador() AND v_es_responsable)) THEN\n RAISE EXCEPTION 'No autorizado';\n END IF;\n\n IF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'En Investigación' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede iniciar la investigación'; END IF;\n UPDATE public.quejas\n SET estado = p_nuevo_estado,\n fecha_limite_investigacion = now() + interval '15 days',\n responsable_id = COALESCE(p_responsable_id, responsable_id),\n notas = CASE WHEN btrim(COALESCE(p_justificacion_procede, '')) <> ''\n THEN COALESCE(notas, '') || E'\\n[Procede] ' || btrim(p_justificacion_procede)\n ELSE notas END\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'No Procede' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede marcar como No Procede'; END IF;\n UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion), fecha_cierre = now()\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Pendiente de Revisión GC' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Resuelto' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede resolver directamente'; END IF;\n UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'Resuelto' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede aprobar la resolución'; END IF;\n UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'En Investigación' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede devolver la queja'; END IF;\n UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = NULL\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado = 'Resuelto' AND p_nuevo_estado = 'Finalizado' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede finalizar la queja'; END IF;\n UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSIF v_queja.estado IN ('Resuelto', 'Finalizado') AND p_nuevo_estado = 'En Investigación' AND btrim(COALESCE(p_motivo_reapertura, '')) <> '' THEN\n IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede reabrir la queja'; END IF;\n UPDATE public.quejas\n SET estado = 'En Investigación',\n fecha_limite_investigacion = now() + interval '15 days',\n resolucion = NULL,\n notas = COALESCE(notas, '') || E'\\n[Reapertura] ' || btrim(p_motivo_reapertura)\n WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n ELSE\n RAISE EXCEPTION 'Transición no permitida: % → %', v_queja.estado, p_nuevo_estado;\n END IF;\n\n v_mensaje := 'La queja ' || v_queja.folio || ' cambió a ' || v_queja.estado || '.';\n FOR v_destino IN\n SELECT id FROM public.usuarios\n WHERE (id = v_queja.responsable_id OR rol IN ('admin', 'calidad'))\n AND estado = 'activo'\n AND id IS DISTINCT FROM v_usuario_id\n LOOP\n INSERT INTO public.notificaciones (usuario_id, fecha, tipo, mensaje, enlace, origen_id)\n VALUES (v_destino.id, now(), 'queja_estado', v_mensaje, '/quejas', v_queja.id);\n END LOOP;\n\n INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n VALUES (now(), v_usuario_id, 'transición', 'quejas', v_mensaje);\n RETURN v_queja;\nEND;\n$function$\n",
+      "name": "transicionar_queja"
+    }
+  ],
+  "calendar_summary": [
+    {
+      "id": 1,
+      "weekdays": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "verified_at_utc": "2026-10-09T23:03:44Z",
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "production_before": "dpl_9kM6KN4ufzkPn1USHnAncL7GPccV",
+  "candidate": "https://mi-dashboard-2gu0i3o69-eca-s-projects2.vercel.app",
+  "oidc_enabled": true,
+  "waf": "90/IP/600 seconds; three public POST routes",
+  "legacy_public_signatures_open": 5,
+  "legacy_private_registry_authenticated_execute": true,
+  "storage_bucket_private": true,
+  "storage_bucket_objects": 0,
+  "storage_policies_before": [
+    "Staff puede leer archivos",
+    "Staff puede subir archivos"
+  ],
+  "business_data_included": false,
+  "authorized_production_activation": true
+}

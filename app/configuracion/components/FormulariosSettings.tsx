@@ -13,6 +13,8 @@ import ErrorState from '@/components/ui/ErrorState'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import Modal from '@/components/Modal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
+import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
+import SeguimientoFormularioModal from '@/app/configuracion/components/SeguimientoFormularioModal'
 
 export default function FormulariosSettings({ active }: { active: boolean }) {
   const user = useAuthStore(state => state.user)
@@ -23,6 +25,13 @@ export default function FormulariosSettings({ active }: { active: boolean }) {
   const [nuevo, setNuevo] = useState(false)
   const [nombre, setNombre] = useState('')
   const [eliminar, setEliminar] = useState<FormularioPublico | null>(null)
+  const [seguimiento, setSeguimiento] = useState<FormularioPublico | null>(null)
+  const publicacion = usePublicacionQuejasDisponible(active)
+  const [wasActive, setWasActive] = useState(active)
+  if (wasActive !== active) {
+    setWasActive(active)
+    if (!active) setSeguimiento(null)
+  }
   const urlDe = (token: string) => `${typeof window !== 'undefined' ? window.location.origin : ''}/q/${token}`
 
   const copiar = async (token: string) => {
@@ -45,11 +54,13 @@ export default function FormulariosSettings({ active }: { active: boolean }) {
         <td><div className="flex flex-wrap gap-1">
           <Button size="sm" variant="link" onClick={() => void copiar(formulario.token)} aria-label={`Copiar enlace de ${formulario.nombre}`}><Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copiar</Button>
           <a className="ui-button ui-button-link ui-button-sm" href={urlDe(formulario.token)} target="_blank" rel="noopener noreferrer" aria-label={`Abrir ${formulario.nombre}`}><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Abrir</a>
+          {formulario.modulo === 'quejas' && <Button size="sm" variant="link" onClick={() => setSeguimiento(formulario)} aria-label={`Seguimiento de ${formulario.nombre}`}>Seguimiento</Button>}
           <Button size="sm" variant="secondary" disabled={toggle.isPending || borrar.isPending} onClick={async () => { try { await toggle.mutateAsync({ id: formulario.id, activo: !formulario.activo }); showSuccess(formulario.activo ? 'Enlace desactivado' : 'Enlace activado') } catch (error) { showError(error as Error, 'No se pudo cambiar el estado') } }}>{formulario.activo ? 'Desactivar' : 'Activar'}</Button>
           <Button size="sm" variant="danger" disabled={borrar.isPending || toggle.isPending} onClick={() => setEliminar(formulario)} aria-label={`Eliminar enlace de ${formulario.nombre}`}>Eliminar</Button>
         </div></td>
       </tr>) : <tr><td colSpan={4} className="py-10! text-center text-qms-muted">No hay enlaces públicos. Creá uno para empezar a recibir quejas.</td></tr>}</tbody>
     </table></div>
+    {active && seguimiento && <SeguimientoFormularioModal key={seguimiento.id} formulario={seguimiento} enabled={publicacion.data === true} checking={publicacion.isPending} unavailable={!!publicacion.error} onRetry={() => void publicacion.refetch()} onClose={() => setSeguimiento(null)} />}
     <Modal open={nuevo} onClose={() => { if (!crear.isPending) setNuevo(false) }} title="Crear enlace público" size="sm">
       <form className="space-y-4" onSubmit={async event => {
         event.preventDefault()
@@ -61,7 +72,7 @@ export default function FormulariosSettings({ active }: { active: boolean }) {
         <div className="flex justify-end gap-2"><Button variant="secondary" disabled={crear.isPending} onClick={() => setNuevo(false)}>Cancelar</Button><Button type="submit" loading={crear.isPending} disabled={!nombre.trim()}>Crear enlace</Button></div>
       </form>
     </Modal>
-    <ConfirmDialog open={!!eliminar} title="Eliminar enlace público" message={<>Se eliminará «{eliminar?.nombre}». Las quejas ya enviadas se conservan.</>} confirmLabel="Eliminar enlace" danger loading={borrar.isPending} onCancel={() => setEliminar(null)} onConfirm={async () => {
+    <ConfirmDialog open={!!eliminar} title="Eliminar enlace público" message={<>Se eliminará «{eliminar?.nombre}». Si tiene envíos registrados, desactivalo para conservar su trazabilidad.</>} confirmLabel="Eliminar enlace" danger loading={borrar.isPending} onCancel={() => setEliminar(null)} onConfirm={async () => {
       if (!eliminar || borrar.isPending) return
       try { await borrar.mutateAsync(eliminar.id); setEliminar(null); showSuccess('Enlace eliminado') }
       catch (error) { showError(error as Error, 'No se pudo eliminar el enlace') }

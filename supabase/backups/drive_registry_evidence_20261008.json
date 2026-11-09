@@ -1,0 +1,57 @@
+{
+  "captured_at": "2026-10-09T03:48:52.426Z",
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "local_tests": 56,
+  "registry_migration": "20261009034402",
+  "cutover_pending": true,
+  "quota_explain": "Index Scan submissions queja_id UNIQUE -> Index Scan uploads PK form/submission",
+  "indexes": [
+    {
+      "name": "public_form_submissions_pkey",
+      "table": "public_form_submissions",
+      "definition": "CREATE UNIQUE INDEX public_form_submissions_pkey ON public.public_form_submissions USING btree (form_id, submission_id)"
+    },
+    {
+      "name": "public_form_submissions_queja_id_key",
+      "table": "public_form_submissions",
+      "definition": "CREATE UNIQUE INDEX public_form_submissions_queja_id_key ON public.public_form_submissions USING btree (queja_id)"
+    },
+    {
+      "name": "public_form_uploads_pkey",
+      "table": "public_form_uploads",
+      "definition": "CREATE UNIQUE INDEX public_form_uploads_pkey ON public.public_form_uploads USING btree (form_id, submission_id, upload_id)"
+    },
+    {
+      "name": "public_form_uploads_adjunto_id_key",
+      "table": "public_form_uploads",
+      "definition": "CREATE UNIQUE INDEX public_form_uploads_adjunto_id_key ON public.public_form_uploads USING btree (adjunto_id)"
+    },
+    {
+      "name": "idx_queja_adjuntos_queja_id",
+      "table": "queja_adjuntos",
+      "definition": "CREATE INDEX idx_queja_adjuntos_queja_id ON public.queja_adjuntos USING btree (queja_id)"
+    },
+    {
+      "name": "queja_adjuntos_pkey",
+      "table": "queja_adjuntos",
+      "definition": "CREATE UNIQUE INDEX queja_adjuntos_pkey ON public.queja_adjuntos USING btree (id)"
+    },
+    {
+      "name": "idx_queja_adjuntos_usuario",
+      "table": "queja_adjuntos",
+      "definition": "CREATE INDEX idx_queja_adjuntos_usuario ON public.queja_adjuntos USING btree (usuario_id)"
+    }
+  ],
+  "function": {
+    "anon": false,
+    "invoker": true,
+    "service": true,
+    "authenticated": false,
+    "null_safe_owner": true,
+    "real_quota_join": true
+  },
+  "migration": {
+    "name": "drive_attachment_public_quota_scope",
+    "version": "20261009034819"
+  }
+}

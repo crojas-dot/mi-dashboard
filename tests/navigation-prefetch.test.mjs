@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { loadModule, fakeDatabase } from './load-module.mjs'
 
 function navigation(permisos, id = 'perfil-propio') {
-  const db = fakeDatabase({ quejas: [{ id: 'propia', responsable_id: id, fecha: '2026-10-06' }, { id: 'ajena', responsable_id: 'otro', fecha: '2026-10-06' }] })
+  const db = fakeDatabase({ qms_quejas: [{ id: 'propia', responsable_id: id, fecha: '2026-10-06' }, { id: 'ajena', responsable_id: 'otro', fecha: '2026-10-06' }] })
   const preloads = []
   const Sidebar = loadModule('components/Sidebar.tsx', {
     'next/link': { default: 'a' },

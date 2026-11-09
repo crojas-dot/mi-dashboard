@@ -21,6 +21,7 @@ interface NotificationDropdownProps {
   onMarkRead: (notification: NotificationItem) => void
   onArchive: (notification: NotificationItem) => void
   onNavigate: (notification: NotificationItem) => void
+  onTestSound?: () => void
 }
 
 export default function NotificationDropdown({
@@ -33,6 +34,7 @@ export default function NotificationDropdown({
   onMarkRead,
   onArchive,
   onNavigate,
+  onTestSound,
 }: NotificationDropdownProps) {
   return (
     <div className="relative">
@@ -43,9 +45,9 @@ export default function NotificationDropdown({
         aria-haspopup="dialog"
         aria-controls={open ? 'notification-panel' : undefined}
         onClick={onToggle}
-        className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-button border-0 bg-transparent text-qms-muted transition-colors hover:bg-qms-hover-bg"
+        className="relative flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-qms-muted transition-colors hover:bg-qms-hover-bg"
       >
-        <Bell aria-hidden="true" className="h-5 w-5" />
+        <Bell aria-hidden="true" className="h-6 w-6" />
         {unreadCount > 0 && <span aria-hidden="true" className="absolute -right-1 top-0 flex min-h-[18px] min-w-[18px] items-center justify-center rounded-full border-2 border-qms-surface bg-qms-danger px-1 text-[0.625rem] leading-none font-semibold text-white">{unreadCount > 99 ? '99+' : unreadCount}</span>}
       </button>
       {open && <div id="notification-panel" role="dialog" aria-label="Notificaciones" className="fixed inset-x-3 top-16 z-50 flex max-h-[calc(100dvh-5rem)] flex-col rounded-card border border-qms-border bg-qms-surface shadow-md sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[25rem]">
@@ -56,6 +58,7 @@ export default function NotificationDropdown({
             {notifications.length > 0 && <button type="button" onClick={onArchiveAll} className="min-h-8 cursor-pointer rounded-button border-0 bg-transparent px-1 text-xs text-qms-muted hover:text-qms-danger hover:underline">Vaciar</button>}
           </div>
         </div>
+        {onTestSound && <div className="flex shrink-0 items-center justify-between gap-3 border-b border-qms-border px-4 py-2 text-xs text-qms-muted"><span>Sonido de nuevos avisos</span><button type="button" onClick={onTestSound} className="min-h-8 cursor-pointer rounded-button border-0 bg-transparent px-1 text-xs text-qms-primary hover:underline">Activar y probar sonido</button></div>}
         <div className="min-h-0 max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-4 py-8 text-center"><Inbox aria-hidden="true" className="mb-2 h-6 w-6 text-qms-muted" /><p className="text-xs text-qms-muted">No hay notificaciones</p></div>

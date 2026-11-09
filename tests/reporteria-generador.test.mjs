@@ -11,22 +11,23 @@ const filtros = { fechaDesde: '', fechaHasta: '', estado: '', prioridad: '', tip
 function lecturas(tables = {}, failures = {}) {
   const calls = []
   const supabase = { from(table) {
-    const call = { table, filters: [], start: 0, end: Infinity }
+    const call = { table, filters: [], orders: [], start: 0, end: Infinity }
     calls.push(call)
     const predicates = []
     const query = {
       select(columns, options) { call.columns = columns; call.options = options; return query },
       eq(column, value) { call.filters.push(['eq', column, value]); predicates.push(row => row[column] === value); return query },
+      in(column, values) { call.filters.push(['in', column, values]); predicates.push(row => values.includes(row[column])); return query },
       gte(column, value) { call.filters.push(['gte', column, value]); predicates.push(row => String(row[column]) >= value); return query },
       lt(column, value) { call.filters.push(['lt', column, value]); predicates.push(row => String(row[column]) < value); return query },
       or(value) { call.active = value; predicates.push(row => row.activo == null || row.activo === true); return query },
-      order(column) { call.order = column; return query },
+      order(column) { call.order = column; call.orders.push(column); return query },
       range(start, end) { call.start = start; call.end = end; return query },
       abortSignal(signal) { call.signal = signal; return query },
       then(resolve, reject) {
         const rows = (tables[table] ?? []).filter(row => predicates.every(filter => filter(row)))
-          .sort((a, b) => String(a[call.order]).localeCompare(String(b[call.order])))
-        return Promise.resolve({ data: rows.slice(call.start, call.end + 1), count: rows.length, error: failures[call.start] ?? null }).then(resolve, reject)
+          .sort((a, b) => { for (const key of call.orders) { const comparison = String(a[key]).localeCompare(String(b[key])); if (comparison) return comparison } return 0 })
+        return Promise.resolve({ data: rows.slice(call.start, call.end + 1), count: rows.length, error: failures[`${table}:${call.start}`] ?? failures[call.start] ?? null }).then(resolve, reject)
       },
     }
     return query
@@ -41,10 +42,10 @@ test('fechas filtran el día final completo, incluida la transición de febrero 
     { id: 'c', fecha: '2024-03-01T00:00:00Z', estado: 'Recibido', prioridad: 'Alta' },
     { id: 'd', fecha: '2024-02-29T12:00:00Z', estado: 'Recibido', prioridad: 'Baja' },
   ]
-  const api = lecturas({ quejas: rows })
+  const api = lecturas({ qms_quejas: rows })
   const result = await api.fetchFilasInforme('quejas', { ...filtros, fechaDesde: '2024-02-29', fechaHasta: '2024-02-29', estado: 'Recibido', prioridad: 'Alta' })
-  assert.deepEqual(clone(result.map(row => row.id)), ['b'])
-  assert.deepEqual(api.calls[0].filters, [['gte', 'fecha', '2024-02-29'], ['lt', 'fecha', '2024-03-01'], ['eq', 'estado', 'Recibido'], ['eq', 'prioridad', 'Alta']])
+  assert.deepEqual(clone(result.map(row => row.id)), ['b', 'd'])
+  assert.deepEqual(api.calls[0].filters, [['gte', 'fecha', '2024-02-29'], ['lt', 'fecha', '2024-03-01'], ['eq', 'estado', 'Recibido']])
 })
 
 test('lectura por lotes conserva todas las filas de un informe de 5000, con orden estable', async () => {
@@ -62,17 +63,17 @@ test('lectura por lotes conserva todas las filas de un informe de 5000, con orde
 
 test('un informe superior al tope y un fallo en un lote no devuelven datos truncados', async () => {
   const rows = Array.from({ length: 5001 }, (_, index) => ({ id: String(index), estado: 'Abierto' }))
-  const excessive = lecturas({ quejas: rows })
+  const excessive = lecturas({ qms_quejas: rows })
   await assert.rejects(excessive.fetchFilasInforme('quejas', filtros), /supera 5000/)
   assert.equal(excessive.calls.length, 1)
-  const failed = lecturas({ quejas: rows.slice(0, 501) }, { 500: new Error('synthetic-network-error') })
+  const failed = lecturas({ qms_quejas: rows.slice(0, 501) }, { 500: new Error('synthetic-network-error') })
   await assert.rejects(failed.fetchFilasInforme('quejas', filtros), /synthetic-network-error/)
   assert.equal(failed.calls.length, 2)
 })
 
-test('cada módulo conserva su tabla/fecha y prioridad solo filtra Quejas', async () => {
+test('cada módulo conserva su tabla/fecha y Quejas ignora prioridades históricas', async () => {
   const expected = {
-    quejas: ['quejas', 'fecha'], sacp: ['acciones', 'fecha_apertura'], documentos: ['documentos', 'created_at'],
+    quejas: ['qms_quejas', 'fecha'], sacp: ['acciones', 'fecha_apertura'], documentos: ['documentos', 'created_at'],
     riesgos: ['riesgos', 'fecha_identificacion'], auditorias: ['auditorias', 'fecha_inicio'], revision_direccion: ['reuniones', 'fecha_programada'],
   }
   for (const [modulo, [table, fecha]] of Object.entries(expected)) {
@@ -80,23 +81,102 @@ test('cada módulo conserva su tabla/fecha y prioridad solo filtra Quejas', asyn
     await api.fetchFilasInforme(modulo, { ...filtros, fechaDesde: '2026-10-01', fechaHasta: '2026-10-07', prioridad: 'Alta', tipo: 'Interna' })
     assert.equal(api.calls[0].table, table)
     assert.deepEqual(api.calls[0].filters.slice(0, 2), [['gte', fecha, '2026-10-01'], ['lt', fecha, '2026-10-08']])
-    assert.equal(api.calls[0].filters.some(filter => filter[1] === 'prioridad'), modulo === 'quejas')
+    assert.equal(api.calls[0].filters.some(filter => filter[1] === 'prioridad'), false)
     assert.ok(api.calls[0].filters.some(filter => filter[1] === 'tipo'))
   }
 })
 
+test('Observaciones reúne el texto histórico y comentarios permitidos con fecha y orden estable', async () => {
+  const rows = [
+    { id: 'expediente-a', estado: 'Recibido', observaciones: 'Registro histórico\nconservado.' },
+    { id: 'expediente-b', estado: 'Recibido', observaciones: null },
+  ]
+  const api = lecturas({ qms_quejas: rows, quejas_comentarios: [
+    { id: 'c', queja_id: 'expediente-a', comentario: 'Última entrada', tipo: 'interno', fecha: '2026-10-13T16:00:00Z' },
+    { id: 'b', queja_id: 'expediente-a', comentario: 'Segunda entrada', tipo: 'cliente', fecha: '2026-10-12T16:00:00Z' },
+    { id: 'a', queja_id: 'expediente-a', comentario: 'Primera entrada', tipo: 'interno', fecha: '2026-10-12T16:00:00Z' },
+    { id: 'foreign', queja_id: 'fuera-del-informe', comentario: 'No incluir', tipo: 'interno', fecha: '2026-10-10T16:00:00Z' },
+  ] })
+  const result = await api.fetchFilasInforme('quejas', filtros)
+  assert.match(result[0].observaciones, /^Registro histórico\nconservado\.\n\n/)
+  assert.match(result[0].observaciones, /Interno\] Primera entrada/)
+  assert.match(result[0].observaciones, /Cliente\] Segunda entrada/)
+  assert.ok(result[0].observaciones.indexOf('Primera entrada') < result[0].observaciones.indexOf('Segunda entrada'))
+  assert.ok(result[0].observaciones.indexOf('Segunda entrada') < result[0].observaciones.indexOf('Última entrada'))
+  assert.doesNotMatch(result[0].observaciones, /No incluir/)
+  assert.equal(result[1].observaciones, null)
+  assert.equal(rows[0].observaciones, 'Registro histórico\nconservado.', 'el dato persistido no se modifica')
+  const comments = api.calls.filter(call => call.table === 'quejas_comentarios')
+  assert.equal(comments.length, 1)
+  assert.deepEqual(comments[0].orders, ['fecha', 'id'])
+  assert.equal(comments[0].columns, 'id,queja_id,comentario,tipo,fecha')
+})
+
+test('Observaciones pagina comentarios y agrupa IDs sin una consulta por expediente', async () => {
+  const rows = Array.from({ length: 101 }, (_, index) => ({ id: `expediente-${String(index).padStart(3, '0')}`, estado: 'Recibido' }))
+  const notes = Array.from({ length: 501 }, (_, index) => ({
+    id: String(index).padStart(4, '0'), queja_id: rows[0].id, comentario: `Entrada-${index}`, tipo: 'interno', fecha: '2026-10-12T16:00:00Z',
+  }))
+  const api = lecturas({ qms_quejas: rows, quejas_comentarios: notes })
+  const controller = new AbortController()
+  const result = await api.fetchFilasInforme('quejas', filtros, controller.signal)
+  assert.equal(result[0].observaciones.match(/Entrada-/g).length, 501)
+  assert.ok(result[0].observaciones.endsWith('Entrada-500'))
+  const comments = api.calls.filter(call => call.table === 'quejas_comentarios')
+  assert.equal(comments.length, 3, 'dos páginas del primer lote y una del siguiente')
+  assert.deepEqual(comments.map(call => call.start), [0, 500, 0])
+  assert.deepEqual(comments.map(call => call.filters[0][2].length), [100, 100, 1])
+  assert.ok(comments.every(call => call.signal === controller.signal && call.end - call.start + 1 === 500))
+})
+
+test('resumen sin tabla, módulos distintos y Quejas vacías no consultan comentarios', async () => {
+  for (const [modulo, tables, include] of [
+    ['quejas', { qms_quejas: [{ id: 'fixture', estado: 'Recibido', observaciones: 'Histórica' }] }, false],
+    ['quejas', { qms_quejas: [] }, true],
+    ['sacp', { acciones: [{ id: 'fixture', estado: 'Abierta' }] }, true],
+  ]) {
+    const api = lecturas(tables)
+    const rows = await api.fetchFilasInforme(modulo, filtros, undefined, include)
+    assert.equal(api.calls.some(call => call.table === 'quejas_comentarios'), false)
+    if (rows[0]?.observaciones) assert.equal(rows[0].observaciones, 'Histórica')
+  }
+})
+
+test('errores y exceso de observaciones rechazan el informe completo en vez de omitir entradas', async () => {
+  const rows = [{ id: 'fixture', estado: 'Recibido', observaciones: 'Histórica' }]
+  const failed = lecturas({ qms_quejas: rows }, { 'quejas_comentarios:0': new Error('synthetic-comments-failure') })
+  await assert.rejects(failed.fetchFilasInforme('quejas', filtros), /synthetic-comments-failure/)
+  const notes = Array.from({ length: 5001 }, (_, index) => ({ id: String(index), queja_id: 'fixture', comentario: 'Entrada', tipo: 'interno', fecha: '2026-10-12T16:00:00Z' }))
+  const excessive = lecturas({ qms_quejas: rows, quejas_comentarios: notes })
+  await assert.rejects(excessive.fetchFilasInforme('quejas', filtros), /supera 5000 observaciones/)
+  assert.equal(excessive.calls.filter(call => call.table === 'quejas_comentarios').length, 1, 'el count evita leer todos los comentarios excesivos')
+})
+
+test('el límite de observaciones es global, aunque cada lote de expedientes tenga menos de 5000', async () => {
+  const rows = Array.from({ length: 101 }, (_, index) => ({ id: `expediente-${String(index).padStart(3, '0')}`, estado: 'Recibido' }))
+  const notes = Array.from({ length: 5001 }, (_, index) => ({
+    id: String(index).padStart(5, '0'), queja_id: index < 2501 ? rows[0].id : rows.at(-1).id,
+    comentario: 'Entrada', tipo: 'interno', fecha: '2026-10-12T16:00:00Z',
+  }))
+  const api = lecturas({ qms_quejas: rows, quejas_comentarios: notes })
+  await assert.rejects(api.fetchFilasInforme('quejas', filtros), /supera 5000 observaciones/)
+  const comments = api.calls.filter(call => call.table === 'quejas_comentarios')
+  assert.equal(comments.length, 7)
+  assert.equal(comments.at(-1).filters[0][2].length, 1)
+})
+
 test('catálogos conservan activos/NULL, orden y scope de cada selector sin leer todo al abrir', async () => {
   const api = lecturas({ catalogos: [
-    { valor: 'Recibido', color: 'blue', tipo: 'estado_queja', modulo: 'quejas', activo: true, orden: 1 },
+    { codigo: 'received', valor_interno: 'Recibido', valor: 'Recibida por GC', color: 'blue', tipo: 'estado_queja', modulo: 'quejas', activo: true, orden: 1 },
     { valor: 'Legacy', color: 'gray', tipo: 'estado_queja', modulo: 'quejas', activo: null, orden: 2 },
     { valor: 'Oculto', color: 'gray', tipo: 'estado_queja', modulo: 'quejas', activo: false, orden: 3 },
     { valor: 'Alta', color: 'orange', tipo: 'prioridad', modulo: 'quejas', activo: true, orden: 1 },
     { valor: 'Ajeno', color: 'gray', tipo: 'estado_sacp', modulo: 'sacp', activo: true, orden: 1 },
   ] })
   const result = await api.fetchCatalogosInforme('quejas')
-  assert.deepEqual(clone(result.estados.map(row => row.valor)), ['Recibido', 'Legacy'])
-  assert.deepEqual(clone(result.prioridades.map(row => row.valor)), ['Alta'])
-  assert.deepEqual(clone(result.tipos), [])
+  assert.deepEqual(clone(result.estados.map(row => row.valor)), ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede'])
+  assert.deepEqual(clone(result.prioridades.map(row => row.valor)), [])
+  assert.deepEqual(clone(result.tipos.map(row => row.valor)), ['Queja','Observación','Sugerencia','Reclamo','Felicitación'])
   assert.equal(api.calls.length, 2)
   assert.ok(api.calls.every(call => call.active === 'activo.is.null,activo.eq.true' && call.order === 'orden'))
   const none = lecturas()
@@ -134,7 +214,7 @@ test('vista de impresión escapa filas como texto y conserva controles y estado 
   assert.match(html, /Cerrar/)
   assert.match(html, /Informe de Quejas/)
   const empty = renderToStaticMarkup(createElement(Vista, { ...props, resultados: [] }))
-  assert.match(empty, /colSpan="6"|colspan="6"/)
+  assert.match(empty, /colSpan="8"|colspan="8"/)
   assert.match(empty, /Sin registros/)
 })
 
@@ -208,6 +288,41 @@ function reportSdk(fetch) {
   })
 }
 
+test('cancelar el enriquecimiento aborta la petición real y no publica solo las observaciones históricas', async () => {
+  const controller = new AbortController()
+  const requests = []
+  const supabase = reportSdk((url, options) => {
+    const parsed = new URL(url)
+    requests.push({ parsed, options })
+    if (parsed.pathname.endsWith('/qms_quejas')) return Promise.resolve(Response.json([{ id: 'fixture', estado: 'Recibido', observaciones: 'Histórica' }], { headers: { 'Content-Range': '0-0/1' } }))
+    return new Promise((_resolve, reject) => options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true }))
+  })
+  const api = loadModule('app/reporteria/components/generador/consultas.ts', { '@/lib/supabase': { supabase } })
+  const pending = api.fetchFilasInforme('quejas', filtros, controller.signal)
+  await new Promise(setImmediate)
+  assert.equal(requests.length, 2)
+  assert.equal(requests[1].parsed.searchParams.get('queja_id'), 'in.(fixture)')
+  assert.equal(requests[1].parsed.searchParams.get('order'), 'fecha.asc,id.asc')
+  assert.equal(requests[1].options.signal, controller.signal)
+  controller.abort()
+  await assert.rejects(pending, error => error.name === 'AbortError')
+})
+
+test('un aborto al recibir comentarios impide solicitar la siguiente página', async () => {
+  const controller = new AbortController()
+  const requests = []
+  const supabase = reportSdk(async url => {
+    const parsed = new URL(url)
+    requests.push(parsed)
+    if (parsed.pathname.endsWith('/qms_quejas')) return Response.json([{ id: 'fixture', estado: 'Recibido' }], { headers: { 'Content-Range': '0-0/1' } })
+    controller.abort()
+    return Response.json(Array.from({ length: 500 }, (_, index) => ({ id: String(index), queja_id: 'fixture', comentario: 'Entrada', tipo: 'interno', fecha: '2026-10-12T16:00:00Z' })), { headers: { 'Content-Range': '0-499/501' } })
+  })
+  const api = loadModule('app/reporteria/components/generador/consultas.ts', { '@/lib/supabase': { supabase } })
+  await assert.rejects(api.fetchFilasInforme('quejas', filtros, controller.signal), error => error.name === 'AbortError')
+  assert.equal(requests.length, 2)
+})
+
 test('un fallo de catálogos conserva el error remoto en vez de convertirlo en filtros vacíos', async () => {
   const supabase = reportSdk(async () => Response.json({ code: '42501', message: 'denegado' }, { status: 403 }))
   const { fetchCatalogosInforme } = loadModule('app/reporteria/components/generador/consultas.ts', { '@/lib/supabase': { supabase } })
@@ -268,17 +383,17 @@ function reportHarness() {
     useEffect: effect,
     useLayoutEffect: effect,
   }
-  function request(kind, modulo, signal, filters) {
+  function request(kind, modulo, signal, filters, includeObservations) {
     let resolve, reject
     const promise = new Promise((ok, fail) => { resolve = ok; reject = fail })
-    requests.push({ kind, modulo, signal, filters, resolve, reject })
+    requests.push({ kind, modulo, signal, filters, includeObservations, resolve, reject })
     return promise
   }
   const { useGeneradorInforme: reportHook } = loadModule('app/reporteria/components/generador/useGeneradorInforme.ts', {
     react,
     './consultas': {
       fetchCatalogosInforme: (modulo, signal) => request('catalogos', modulo, signal),
-      fetchFilasInforme: (modulo, filters, signal) => request('filas', modulo, signal, clone(filters)),
+      fetchFilasInforme: (modulo, filters, signal, includeObservations) => request('filas', modulo, signal, clone(filters), includeObservations),
     },
     sonner: { toast: { error: message => toasts.push(message) } },
   }, { console: { warn: (...args) => warnings.push(args) } })
@@ -358,5 +473,50 @@ test('generación bloquea doble envío, cancela la visita anterior y no finaliza
   assert.equal(state.loading, false)
   assert.equal(state.paso, 3)
   assert.deepEqual(clone(state.resultados), [{ id: 'actual', estado: 'Abierta' }])
+  view.unmount()
+})
+
+
+test('seleccionar otro módulo limpia sus filtros propios y conserva fechas e inclusiones', () => {
+  const view = reportHarness()
+  view.render(); let state = view.select('quejas')
+  state.setFilterEstado('Recibido'); state.setFilterPrioridad('Alta'); state.setFilterTipo('Queja'); state.setFechaDesde('2026-10-01')
+  state = view.render(); state.setModulo('quejas')
+  assert.equal(view.render().filterEstado, 'Recibido')
+  state.setModulo('sacp'); state = view.render()
+  assert.equal(state.filterEstado, ''); assert.equal(state.filterPrioridad, ''); assert.equal(state.filterTipo, '')
+  assert.equal(state.fechaDesde, '2026-10-01'); assert.equal(state.incluir.tabla, true)
+  view.unmount()
+})
+
+test('cambiar filtros durante una lectura descarta el resultado anterior y permite generar el nuevo', async () => {
+  const view = reportHarness(); view.render(); let state = view.select('quejas')
+  const old = state.generarInforme(); state = view.render(); state.setFilterEstado('Resuelto'); state = view.render()
+  assert.equal(state.loading, false)
+  const request = view.requests.find(value => value.kind === 'filas')
+  assert.equal(request.signal.aborted, true)
+  request.resolve([{ id: 'anterior' }]); await old; state = view.render()
+  assert.equal(state.paso, 2); assert.deepEqual(clone(state.resultados), [])
+  const current = state.generarInforme(); const next = view.requests.filter(value => value.kind === 'filas').at(-1)
+  assert.equal(next.filters.estado, 'Resuelto'); next.resolve([{ id: 'actual' }]); await current
+  assert.deepEqual(clone(view.render().resultados), [{ id: 'actual' }]); view.unmount()
+})
+
+test('activar tabla durante un resumen cancela su lectura y pide observaciones para la nueva generación', async () => {
+  const view = reportHarness()
+  view.render(); let state = view.select('quejas')
+  state.setIncluir(current => ({ ...current, tabla: false })); state = view.render()
+  const previous = state.generarInforme(); state = view.render()
+  const first = view.requests.find(request => request.kind === 'filas')
+  assert.equal(first.includeObservations, false)
+  state.setIncluir(current => ({ ...current, tabla: true })); state = view.render()
+  assert.equal(first.signal.aborted, true)
+  first.resolve([{ id: 'anterior', observaciones: 'Solo histórica' }]); await previous
+  assert.equal(view.render().paso, 2)
+  const current = state.generarInforme()
+  const next = view.requests.filter(request => request.kind === 'filas').at(-1)
+  assert.equal(next.includeObservations, true)
+  next.resolve([{ id: 'actual', observaciones: 'Histórica y actuales' }]); await current
+  assert.equal(view.render().resultados[0].observaciones, 'Histórica y actuales')
   view.unmount()
 })

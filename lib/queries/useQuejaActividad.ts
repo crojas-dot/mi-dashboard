@@ -18,6 +18,7 @@ export function quejaActividadKey(quejaId: string) {
 }
 
 export async function fetchQuejaActividad(quejaId: string, signal?: AbortSignal): Promise<QuejaActividad[]> {
+  if (!quejaId) return []
   const query = supabase
     .from('quejas_actividad')
     .select('*')
@@ -28,11 +29,11 @@ export async function fetchQuejaActividad(quejaId: string, signal?: AbortSignal)
   return (data as QuejaActividad[]) ?? []
 }
 
-export function useQuejaActividad(quejaId: string) {
+export function useQuejaActividad(quejaId: string, enabled = true) {
   return useQuery({
     queryKey: quejaActividadKey(quejaId),
     queryFn: ({ signal }) => fetchQuejaActividad(quejaId, signal),
-    enabled: !!quejaId,
+    enabled: enabled && !!quejaId,
     staleTime: 30_000,
   })
 }

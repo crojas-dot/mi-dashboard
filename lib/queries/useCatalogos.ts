@@ -12,6 +12,8 @@ export interface CatalogoValor {
   color: string
   orden: number
   activo: boolean | null
+  codigo?: string
+  valor_interno?: string
 }
 
 export const catalogosKey = queryKeys.catalogos
@@ -40,17 +42,17 @@ export async function fetchCatalogoTipo(
   tipo: string,
   modulo?: string,
   signal?: AbortSignal,
-): Promise<{ valor: string; color: string }[]> {
+): Promise<Pick<CatalogoValor, 'valor' | 'color' | 'codigo' | 'valor_interno'>[]> {
   let query = supabase
     .from('catalogos')
-    .select('valor, color')
+    .select('valor, color, codigo, valor_interno')
     .eq('tipo', tipo)
     .or('activo.is.null,activo.eq.true')
     .order('orden')
   if (modulo) query = query.eq('modulo', modulo)
   const { data, error } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
-  return (data as { valor: string; color: string }[]) ?? []
+  return (data as Pick<CatalogoValor, 'valor' | 'color' | 'codigo' | 'valor_interno'>[]) ?? []
 }
 
 export function useCatalogoTipo(tipo: string, modulo?: string) {

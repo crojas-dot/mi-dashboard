@@ -1,0 +1,1355 @@
+[
+  {
+    "section": "columns",
+    "data": [
+      {
+        "data_type": "uuid",
+        "table_name": "catalogos",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "tipo",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "valor",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "color",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "integer",
+        "table_name": "catalogos",
+        "column_name": "orden",
+        "is_nullable": "YES",
+        "column_default": "0",
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "boolean",
+        "table_name": "catalogos",
+        "column_name": "activo",
+        "is_nullable": "YES",
+        "column_default": "true",
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "modulo",
+        "is_nullable": "NO",
+        "column_default": "'general'::text",
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "codigo",
+        "is_nullable": "NO",
+        "column_default": "(gen_random_uuid())::text",
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "text",
+        "table_name": "catalogos",
+        "column_name": "valor_interno",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "mail_queue",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "mail_queue",
+        "column_name": "destinatario",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "mail_queue",
+        "column_name": "asunto",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "mail_queue",
+        "column_name": "cuerpo",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "text",
+        "table_name": "mail_queue",
+        "column_name": "estado",
+        "is_nullable": "YES",
+        "column_default": "'Pendiente'::text",
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "integer",
+        "table_name": "mail_queue",
+        "column_name": "intentos",
+        "is_nullable": "YES",
+        "column_default": "0",
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "text",
+        "table_name": "mail_queue",
+        "column_name": "error",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "mail_queue",
+        "column_name": "fecha_envio",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "mail_queue",
+        "column_name": "created_at",
+        "is_nullable": "YES",
+        "column_default": "now()",
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "qms_calendars",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "ARRAY",
+        "table_name": "qms_calendars",
+        "column_name": "weekdays",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "qms_calendars",
+        "column_name": "holidays",
+        "is_nullable": "NO",
+        "column_default": "'[]'::jsonb",
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_calendars",
+        "column_name": "timezone",
+        "is_nullable": "NO",
+        "column_default": "'America/Costa_Rica'::text",
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_calendars",
+        "column_name": "created_at",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_calendars",
+        "column_name": "created_by",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_quejas",
+        "column_name": "id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "folio",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "cliente_nombre",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "email_cliente",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "telefono",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "categoria",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "descripcion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "prioridad",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "estado",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_quejas",
+        "column_name": "fecha_sla",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 10
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_quejas",
+        "column_name": "fecha",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 11
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "notas",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 12
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "resolucion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 13
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_quejas",
+        "column_name": "responsable_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 14
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_quejas",
+        "column_name": "derivado_sacp_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 15
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_quejas",
+        "column_name": "fecha_cierre",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 16
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_quejas",
+        "column_name": "fecha_limite_investigacion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 17
+      },
+      {
+        "data_type": "boolean",
+        "table_name": "qms_quejas",
+        "column_name": "reabierta",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 18
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "motivo_reapertura",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 19
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "qms_quejas",
+        "column_name": "revision",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 20
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "estado_codigo",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 21
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "estado_nombre",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 22
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "estado_color",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 23
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_quejas",
+        "column_name": "plazo_vence",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 24
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "plazo_etapa",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 25
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_quejas",
+        "column_name": "plazo_situacion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 26
+      },
+      {
+        "data_type": "integer",
+        "table_name": "qms_quejas",
+        "column_name": "plazo_dias",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 27
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_stage_runs",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_stage_runs",
+        "column_name": "case_id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_runs",
+        "column_name": "stage_id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "qms_stage_runs",
+        "column_name": "rule_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "qms_stage_runs",
+        "column_name": "calendar_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "jsonb",
+        "table_name": "qms_stage_runs",
+        "column_name": "snapshot",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_stage_runs",
+        "column_name": "started_at",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_stage_runs",
+        "column_name": "expires_at",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_stage_runs",
+        "column_name": "attention_at",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_stage_runs",
+        "column_name": "ended_at",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 10
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_runs",
+        "column_name": "end_event",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 11
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_runs",
+        "column_name": "provenance",
+        "is_nullable": "NO",
+        "column_default": "'configured'::text",
+        "ordinal_position": 12
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "qms_stage_versions",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_versions",
+        "column_name": "stage_id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "integer",
+        "table_name": "qms_stage_versions",
+        "column_name": "duration",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_versions",
+        "column_name": "day_type",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "ARRAY",
+        "table_name": "qms_stage_versions",
+        "column_name": "alerts",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stage_versions",
+        "column_name": "expiration_action",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_stage_versions",
+        "column_name": "created_at",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_stage_versions",
+        "column_name": "created_by",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stages",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stages",
+        "column_name": "process_id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stages",
+        "column_name": "name",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stages",
+        "column_name": "start_event",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_stages",
+        "column_name": "end_event",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "qms_work_items",
+        "column_name": "id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "module",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "folio",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "title",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "categoria",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "state",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "color",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "prioridad",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "qms_work_items",
+        "column_name": "due",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "situation",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 10
+      },
+      {
+        "data_type": "integer",
+        "table_name": "qms_work_items",
+        "column_name": "days",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 11
+      },
+      {
+        "data_type": "text",
+        "table_name": "qms_work_items",
+        "column_name": "stage",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 12
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "folio",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "cliente_nombre",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "email_cliente",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "telefono",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "categoria",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 6
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "descripcion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 7
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "prioridad",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 8
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "estado",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 9
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "quejas",
+        "column_name": "fecha_sla",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 10
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "quejas",
+        "column_name": "fecha",
+        "is_nullable": "YES",
+        "column_default": "now()",
+        "ordinal_position": 11
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "notas",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 12
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "resolucion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 13
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas",
+        "column_name": "responsable_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 14
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas",
+        "column_name": "derivado_sacp_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 15
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "quejas",
+        "column_name": "fecha_cierre",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 16
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "quejas",
+        "column_name": "fecha_limite_investigacion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 17
+      },
+      {
+        "data_type": "boolean",
+        "table_name": "quejas",
+        "column_name": "reabierta",
+        "is_nullable": "YES",
+        "column_default": "false",
+        "ordinal_position": 18
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "motivo_reapertura",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 19
+      },
+      {
+        "data_type": "bigint",
+        "table_name": "quejas",
+        "column_name": "revision",
+        "is_nullable": "NO",
+        "column_default": "0",
+        "ordinal_position": 34
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "tipo",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 35
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "area_afectada",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 36
+      },
+      {
+        "data_type": "date",
+        "table_name": "quejas",
+        "column_name": "fecha_recepcion_gc",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 37
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "numero_oficio_resolucion",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 38
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas",
+        "column_name": "observaciones",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 39
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas_actividad",
+        "column_name": "id",
+        "is_nullable": "NO",
+        "column_default": "gen_random_uuid()",
+        "ordinal_position": 1
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas_actividad",
+        "column_name": "queja_id",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 2
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas_actividad",
+        "column_name": "tipo",
+        "is_nullable": "NO",
+        "column_default": "'nota'::text",
+        "ordinal_position": 3
+      },
+      {
+        "data_type": "text",
+        "table_name": "quejas_actividad",
+        "column_name": "descripcion",
+        "is_nullable": "NO",
+        "column_default": null,
+        "ordinal_position": 4
+      },
+      {
+        "data_type": "uuid",
+        "table_name": "quejas_actividad",
+        "column_name": "usuario_id",
+        "is_nullable": "YES",
+        "column_default": null,
+        "ordinal_position": 5
+      },
+      {
+        "data_type": "timestamp with time zone",
+        "table_name": "quejas_actividad",
+        "column_name": "created_at",
+        "is_nullable": "NO",
+        "column_default": "now()",
+        "ordinal_position": 6
+      }
+    ]
+  },
+  {
+    "section": "triggers",
+    "data": [
+      {
+        "name": "qms_catalog_audit",
+        "table": "catalogos",
+        "function": "CREATE OR REPLACE FUNCTION public.qms_catalog_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n IF TG_OP='DELETE' THEN RAISE EXCEPTION 'Desactiva el valor para conservar su historial'; END IF;\n IF TG_OP='UPDATE' AND (NEW.modulo IS DISTINCT FROM OLD.modulo OR NEW.tipo IS DISTINCT FROM OLD.tipo) THEN RAISE EXCEPTION 'El catálogo interno no puede cambiar de módulo o tipo'; END IF;\n IF TG_OP='INSERT' AND NEW.tipo LIKE 'estado_%' THEN RAISE EXCEPTION 'Los estados pertenecen al flujo definido en código. Edita su nombre y color.'; END IF;\n IF TG_OP='UPDATE' AND (NEW.codigo IS DISTINCT FROM OLD.codigo OR NEW.valor_interno IS DISTINCT FROM OLD.valor_interno) THEN RAISE EXCEPTION 'El identificador interno es inmutable'; END IF;\n IF TG_OP='INSERT' THEN NEW.valor_interno:=NEW.valor; END IF;\n IF TG_OP='UPDATE' AND OLD.tipo LIKE 'estado_%' AND NEW.activo=false THEN RAISE EXCEPTION 'Los estados del flujo no se pueden desactivar'; END IF;\n INSERT INTO qms_config_audit(entity,old_value,new_value,actor_id) VALUES('catalogos',CASE WHEN TG_OP='UPDATE' THEN to_jsonb(OLD) END,to_jsonb(NEW),app_usuario_actual_id());\n RETURN NEW;\nEND; $function$\n",
+        "definition": "CREATE TRIGGER qms_catalog_audit BEFORE INSERT OR DELETE OR UPDATE ON public.catalogos FOR EACH ROW EXECUTE FUNCTION qms_catalog_guard()"
+      },
+      {
+        "name": "qms_queja_event",
+        "table": "quejas",
+        "function": "CREATE OR REPLACE FUNCTION public.qms_record_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE module text:=TG_ARGV[0]; is_closed boolean; was_closed boolean;\nBEGIN\n IF TG_OP='INSERT' THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'opened',now());\n ELSE\n   is_closed:=NEW.estado=ANY(string_to_array(TG_ARGV[1],','));\n   was_closed:=OLD.estado=ANY(string_to_array(TG_ARGV[1],','));\n   IF is_closed AND NOT was_closed THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'closed',now()); END IF;\n   IF was_closed AND NOT is_closed THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'opened',now()); END IF;\n   IF module='quejas' AND NEW.estado='Resuelto' AND OLD.estado IS DISTINCT FROM NEW.estado THEN\n     INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'resolved',now());\n   END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+        "definition": "CREATE TRIGGER qms_queja_event AFTER INSERT OR UPDATE OF estado ON public.quejas FOR EACH ROW EXECUTE FUNCTION qms_record_event('quejas', 'Finalizado,No Procede,Cerrada')"
+      },
+      {
+        "name": "qms_queja_stage",
+        "table": "quejas",
+        "function": "CREATE OR REPLACE FUNCTION public.qms_sync_queja()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE stage text; active_run qms_stage_runs; rule qms_stage_versions; cal bigint; run uuid; due timestamptz; alert integer; attention timestamptz;\nBEGIN\n IF TG_OP='UPDATE' THEN\n   NEW.revision:=OLD.revision+1;\n   IF NEW.estado IS NOT DISTINCT FROM OLD.estado THEN\n     SELECT * INTO active_run FROM qms_stage_runs WHERE case_id=NEW.id AND ended_at IS NULL;\n     NEW.fecha_sla:=OLD.fecha_sla;\n     NEW.fecha_limite_investigacion:=OLD.fecha_limite_investigacion;\n     RETURN NEW;\n   END IF;\n   UPDATE qms_stage_runs SET ended_at=now(),end_event=NEW.estado WHERE case_id=NEW.id AND ended_at IS NULL;\n END IF;\n stage:=CASE NEW.estado WHEN 'Recibido' THEN 'quejas.evaluation' WHEN 'En Investigación' THEN 'quejas.investigation' END;\n IF stage IS NULL THEN RETURN NEW; END IF;\n PERFORM pg_advisory_xact_lock_shared(hashtextextended('qms.config',0));\n SELECT * INTO rule FROM qms_stage_versions WHERE stage_id=stage ORDER BY id DESC LIMIT 1;\n SELECT id INTO cal FROM qms_calendars ORDER BY id DESC LIMIT 1;\n due:=qms_due(now(),rule.duration,rule.day_type,cal);\n SELECT ((due AT TIME ZONE 'America/Costa_Rica')::date-max(a)+time '06:00') AT TIME ZONE 'America/Costa_Rica' INTO attention FROM unnest(rule.alerts) a;\n INSERT INTO qms_stage_runs(case_id,stage_id,rule_id,calendar_id,snapshot,started_at,expires_at,attention_at)\n VALUES(NEW.id,stage,rule.id,cal,jsonb_build_object('rule',to_jsonb(rule),'calendar',(SELECT to_jsonb(c) FROM qms_calendars c WHERE c.id=cal)),now(),due,attention) RETURNING id INTO run;\n FOREACH alert IN ARRAY rule.alerts LOOP\n   INSERT INTO qms_deadline_notices(run_id,offset_days,due_at)\n   VALUES(run,alert,((due AT TIME ZONE 'America/Costa_Rica')::date-alert+time '06:00') AT TIME ZONE 'America/Costa_Rica');\n END LOOP;\n IF rule.expiration_action='notify_quality' THEN INSERT INTO qms_deadline_notices(run_id,offset_days,due_at) VALUES(run,0,due+interval '1 microsecond'); END IF;\n IF stage='quejas.evaluation' THEN NEW.fecha_sla:=due; ELSE NEW.fecha_limite_investigacion:=due; END IF;\n RETURN NEW;\nEND; $function$\n",
+        "definition": "CREATE TRIGGER qms_queja_stage BEFORE INSERT OR UPDATE ON public.quejas FOR EACH ROW EXECUTE FUNCTION qms_sync_queja()"
+      }
+    ]
+  },
+  {
+    "section": "constraints",
+    "data": [
+      {
+        "name": "catalogo_semantic_color",
+        "table": "catalogos",
+        "validated": true,
+        "definition": "CHECK ((color = ANY (ARRAY['primary'::text, 'info'::text, 'success'::text, 'warning'::text, 'danger'::text, 'secondary'::text])))"
+      },
+      {
+        "name": "catalogos_pkey",
+        "table": "catalogos",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "qms_stage_runs_calendar_id_fkey",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "FOREIGN KEY (calendar_id) REFERENCES qms_calendars(id)"
+      },
+      {
+        "name": "qms_stage_runs_case_id_fkey",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "FOREIGN KEY (case_id) REFERENCES quejas(id) DEFERRABLE INITIALLY DEFERRED"
+      },
+      {
+        "name": "qms_stage_runs_pkey",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "qms_stage_runs_provenance_check",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "CHECK ((provenance = ANY (ARRAY['configured'::text, 'legacy_unknown'::text])))"
+      },
+      {
+        "name": "qms_stage_runs_rule_id_fkey",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "FOREIGN KEY (rule_id) REFERENCES qms_stage_versions(id)"
+      },
+      {
+        "name": "qms_stage_runs_stage_id_fkey",
+        "table": "qms_stage_runs",
+        "validated": true,
+        "definition": "FOREIGN KEY (stage_id) REFERENCES qms_stages(id)"
+      },
+      {
+        "name": "quejas_folio_key",
+        "table": "quejas",
+        "validated": true,
+        "definition": "UNIQUE (folio)"
+      },
+      {
+        "name": "quejas_pkey",
+        "table": "quejas",
+        "validated": true,
+        "definition": "PRIMARY KEY (id)"
+      },
+      {
+        "name": "quejas_responsable_id_fkey",
+        "table": "quejas",
+        "validated": true,
+        "definition": "FOREIGN KEY (responsable_id) REFERENCES usuarios(id)"
+      }
+    ]
+  },
+  {
+    "section": "policies",
+    "data": [
+      {
+        "cmd": "SELECT",
+        "qual": "(( SELECT app_usuario_actual_id() AS app_usuario_actual_id) IS NOT NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "catalogos",
+        "policyname": "catalogos_active_select",
+        "with_check": null
+      },
+      {
+        "cmd": "ALL",
+        "qual": "( SELECT app_es_admin() AS app_es_admin)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "catalogos",
+        "policyname": "catalogos_admin_write",
+        "with_check": "( SELECT app_es_admin() AS app_es_admin)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "((modulo = 'quejas'::text) AND (tipo = 'categoria_queja'::text) AND ((activo IS NULL) OR activo))",
+        "roles": [
+          "anon"
+        ],
+        "tablename": "catalogos",
+        "policyname": "catalogos_public_quejas_select",
+        "with_check": null
+      },
+      {
+        "cmd": "INSERT",
+        "qual": null,
+        "roles": [
+          "public"
+        ],
+        "tablename": "mail_queue",
+        "policyname": "authenticated_insert_mail_queue",
+        "with_check": "(auth.role() = 'authenticated'::text)"
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(auth.uid() IS NOT NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "qms_calendars",
+        "policyname": "qms_calendar_read",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(EXISTS ( SELECT 1\n   FROM quejas q\n  WHERE (q.id = qms_stage_runs.case_id)))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "qms_stage_runs",
+        "policyname": "qms_run_read",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(auth.uid() IS NOT NULL)",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "qms_stage_versions",
+        "policyname": "qms_version_read",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "app_es_staff()",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "quejas",
+        "policyname": "quejas_staff_select",
+        "with_check": null
+      },
+      {
+        "cmd": "SELECT",
+        "qual": "(app_es_colaborador() AND app_tiene_permiso('mis_quejas'::text, false) AND (responsable_id = app_usuario_actual_id()))",
+        "roles": [
+          "authenticated"
+        ],
+        "tablename": "quejas",
+        "policyname": "quejas_colaborador_propias",
+        "with_check": null
+      }
+    ]
+  },
+  {
+    "section": "views",
+    "data": [
+      {
+        "name": "qms_quejas",
+        "options": [
+          "security_invoker=true"
+        ],
+        "definition": " SELECT q.id,\n    q.folio,\n    q.cliente_nombre,\n    q.email_cliente,\n    q.telefono,\n    q.categoria,\n    q.descripcion,\n    q.prioridad,\n    q.estado,\n    q.fecha_sla,\n    q.fecha,\n    q.notas,\n    q.resolucion,\n    q.responsable_id,\n    q.derivado_sacp_id,\n    q.fecha_cierre,\n    q.fecha_limite_investigacion,\n    q.reabierta,\n    q.motivo_reapertura,\n    q.revision,\n    c.codigo AS estado_codigo,\n    COALESCE(c.valor, q.estado) AS estado_nombre,\n    COALESCE(c.color, 'secondary'::text) AS estado_color,\n    r.expires_at AS plazo_vence,\n    r.stage_id AS plazo_etapa,\n        CASE\n            WHEN r.id IS NULL THEN 'completed'::text\n            ELSE qms_classify(r.expires_at, r.attention_at)\n        END AS plazo_situacion,\n        CASE\n            WHEN r.expires_at IS NULL THEN NULL::integer\n            ELSE (r.expires_at AT TIME ZONE 'America/Costa_Rica'::text)::date - (now() AT TIME ZONE 'America/Costa_Rica'::text)::date\n        END AS plazo_dias\n   FROM quejas q\n     LEFT JOIN LATERAL ( SELECT catalogos.codigo,\n            catalogos.valor,\n            catalogos.color\n           FROM catalogos\n          WHERE catalogos.modulo = 'quejas'::text AND catalogos.tipo = 'estado_queja'::text AND catalogos.valor_interno = q.estado\n          ORDER BY catalogos.orden, catalogos.id\n         LIMIT 1) c ON true\n     LEFT JOIN qms_stage_runs r ON r.case_id = q.id AND r.ended_at IS NULL;"
+      },
+      {
+        "name": "qms_work_items",
+        "options": [
+          "security_invoker=true"
+        ],
+        "definition": " SELECT qms_quejas.id,\n    'quejas'::text AS module,\n    qms_quejas.folio,\n    qms_quejas.cliente_nombre AS title,\n    qms_quejas.categoria,\n    qms_quejas.estado_nombre AS state,\n    qms_quejas.estado_color AS color,\n    qms_quejas.prioridad,\n    qms_quejas.plazo_vence AS due,\n    qms_quejas.plazo_situacion AS situation,\n    qms_quejas.plazo_dias AS days,\n    qms_quejas.plazo_etapa AS stage\n   FROM qms_quejas\n  WHERE qms_quejas.estado <> ALL (ARRAY['Finalizado'::text, 'No Procede'::text, 'Cerrada'::text])\nUNION ALL\n SELECT acciones.id,\n    'sacp'::text AS module,\n    acciones.folio,\n    acciones.descripcion AS title,\n    acciones.tipo AS categoria,\n    acciones.estado AS state,\n    'primary'::text AS color,\n    acciones.prioridad,\n    acciones.fecha_limite AS due,\n    qms_classify(acciones.fecha_limite::date + ('23:59:59.999999'::time without time zone AT TIME ZONE 'America/Costa_Rica'::text), NULL::timestamp with time zone) AS situation,\n    acciones.fecha_limite::date - (now() AT TIME ZONE 'America/Costa_Rica'::text)::date AS days,\n    NULL::text AS stage\n   FROM acciones\n  WHERE acciones.estado <> 'Cerrada'::text\nUNION ALL\n SELECT documentos.id,\n    'documentos'::text AS module,\n    NULL::text AS folio,\n    documentos.titulo AS title,\n    NULL::text AS categoria,\n    documentos.estado AS state,\n    'secondary'::text AS color,\n    NULL::text AS prioridad,\n    NULL::timestamp with time zone AS due,\n    'unconfigured'::text AS situation,\n    NULL::integer AS days,\n    NULL::text AS stage\n   FROM documentos\n  WHERE documentos.estado = ANY (ARRAY['Borrador'::text, 'En Revisión'::text])\nUNION ALL\n SELECT riesgos.id,\n    'riesgos'::text AS module,\n    riesgos.folio,\n    riesgos.descripcion AS title,\n    NULL::text AS categoria,\n    riesgos.estado AS state,\n    'warning'::text AS color,\n    NULL::text AS prioridad,\n    NULL::timestamp with time zone AS due,\n    'unconfigured'::text AS situation,\n    NULL::integer AS days,\n    NULL::text AS stage\n   FROM riesgos\n  WHERE riesgos.estado = 'Activo'::text;"
+      }
+    ]
+  },
+  {
+    "section": "functions",
+    "data": [
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.generar_folio_queja()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE\r\n  v_anio integer := extract(year FROM timezone('America/Costa_Rica', now()))::integer;\r\n  v_ultimo integer;\r\nBEGIN\r\n  INSERT INTO public.folios_quejas_anuales (anio, ultimo)\r\n  VALUES (v_anio, 1)\r\n  ON CONFLICT (anio) DO UPDATE\r\n  SET ultimo = public.folios_quejas_anuales.ultimo + 1\r\n  RETURNING ultimo INTO v_ultimo;\r\n\r\n  -- A partir de 1000 no truncar el número a tres caracteres.\r\n  RETURN v_anio::text || '-' || CASE\r\n    WHEN length(v_ultimo::text) >= 3 THEN v_ultimo::text\r\n    ELSE lpad(v_ultimo::text, 3, '0')\r\n  END;\r\nEND;\r\n$function$\n",
+        "name": "generar_folio_queja"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_modulo text, p_requiere_escribir boolean",
+        "body": "CREATE OR REPLACE FUNCTION public.app_tiene_permiso(p_modulo text, p_requiere_escribir boolean DEFAULT false)\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.permisos p\r\n    JOIN public.usuarios u ON u.rol = p.rol\r\n    WHERE u.auth_id = auth.uid()\r\n      AND u.estado = 'activo'\r\n      AND p.modulo = p_modulo\r\n      AND p.leer = true\r\n      AND (NOT p_requiere_escribir OR p.escribir = true)\r\n  );\r\n$function$\n",
+        "name": "app_tiene_permiso"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.app_es_colaborador()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.usuarios\r\n    WHERE auth_id = auth.uid()\r\n      AND estado = 'activo'\r\n      AND rol = 'colaborador'\r\n  );\r\n$function$\n",
+        "name": "app_es_colaborador"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.app_usuario_actual_id()\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\n  SELECT id FROM public.usuarios WHERE auth_id = (SELECT auth.uid()) AND estado = 'activo' LIMIT 1;\n$function$\n",
+        "name": "app_usuario_actual_id"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.app_es_staff()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.usuarios\r\n    WHERE auth_id = auth.uid()\r\n      AND estado = 'activo'\r\n      AND rol IN ('admin', 'calidad')\r\n  );\r\n$function$\n",
+        "name": "app_es_staff"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.app_es_admin()\n RETURNS boolean\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\n  SELECT EXISTS (\r\n    SELECT 1\r\n    FROM public.usuarios\r\n    WHERE auth_id = auth.uid()\r\n      AND estado = 'activo'\r\n      AND rol = 'admin'\r\n  );\r\n$function$\n",
+        "name": "app_es_admin"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_queja_id uuid, p_nuevo_estado text, p_resolucion text, p_justificacion_procede text, p_responsable_id uuid, p_motivo_reapertura text",
+        "body": "CREATE OR REPLACE FUNCTION public.transicionar_queja(p_queja_id uuid, p_nuevo_estado text, p_resolucion text DEFAULT NULL::text, p_justificacion_procede text DEFAULT NULL::text, p_responsable_id uuid DEFAULT NULL::uuid, p_motivo_reapertura text DEFAULT NULL::text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja          public.quejas;\n  v_usuario_id     uuid;\n  v_es_staff       boolean;\n  v_es_responsable boolean;\n  v_destino        record;\n  v_mensaje        text;\nBEGIN\n  v_usuario_id := public.app_usuario_actual_id();\n  IF v_usuario_id IS NULL THEN RAISE EXCEPTION 'No autorizado'; END IF;\n\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n\n  v_es_staff := public.app_es_staff();\n  v_es_responsable := (v_queja.responsable_id = v_usuario_id);\n  IF NOT (v_es_staff OR (public.app_es_colaborador() AND v_es_responsable)) THEN\n    RAISE EXCEPTION 'No autorizado';\n  END IF;\n\n  IF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'En Investigación' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede iniciar la investigación'; END IF;\n    UPDATE public.quejas\n    SET estado = p_nuevo_estado,\n        fecha_limite_investigacion = now() + interval '15 days',\n        responsable_id = COALESCE(p_responsable_id, responsable_id),\n        notas = CASE WHEN btrim(COALESCE(p_justificacion_procede, '')) <> ''\n          THEN COALESCE(notas, '') || E'\\n[Procede] ' || btrim(p_justificacion_procede)\n          ELSE notas END\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Recibido' AND p_nuevo_estado = 'No Procede' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede marcar como No Procede'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion), fecha_cierre = now()\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Pendiente de Revisión GC' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'En Investigación' AND p_nuevo_estado = 'Resuelto' AND btrim(COALESCE(p_resolucion, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede resolver directamente'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = btrim(p_resolucion)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'Resuelto' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede aprobar la resolución'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Pendiente de Revisión GC' AND p_nuevo_estado = 'En Investigación' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede devolver la queja'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, resolucion = NULL\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado = 'Resuelto' AND p_nuevo_estado = 'Finalizado' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede finalizar la queja'; END IF;\n    UPDATE public.quejas SET estado = p_nuevo_estado, fecha_cierre = COALESCE(fecha_cierre, now())\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSIF v_queja.estado IN ('Resuelto', 'Finalizado') AND p_nuevo_estado = 'En Investigación' AND btrim(COALESCE(p_motivo_reapertura, '')) <> '' THEN\n    IF NOT v_es_staff THEN RAISE EXCEPTION 'Solo el personal de calidad puede reabrir la queja'; END IF;\n    UPDATE public.quejas\n    SET estado = 'En Investigación',\n        fecha_limite_investigacion = now() + interval '15 days',\n        resolucion = NULL,\n        notas = COALESCE(notas, '') || E'\\n[Reapertura] ' || btrim(p_motivo_reapertura)\n    WHERE id = p_queja_id RETURNING * INTO v_queja;\n\n  ELSE\n    RAISE EXCEPTION 'Transición no permitida: % → %', v_queja.estado, p_nuevo_estado;\n  END IF;\n\n  v_mensaje := 'La queja ' || v_queja.folio || ' cambió a ' || v_queja.estado || '.';\n  FOR v_destino IN\n    SELECT id FROM public.usuarios\n    WHERE (id = v_queja.responsable_id OR rol IN ('admin', 'calidad'))\n      AND estado = 'activo'\n      AND id IS DISTINCT FROM v_usuario_id\n  LOOP\n    INSERT INTO public.notificaciones (usuario_id, fecha, tipo, mensaje, enlace, origen_id)\n    VALUES (v_destino.id, now(), 'queja_estado', v_mensaje, '/quejas', v_queja.id);\n  END LOOP;\n\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n  VALUES (now(), v_usuario_id, 'transición', 'quejas', v_mensaje);\n  RETURN v_queja;\nEND;\n$function$\n",
+        "name": "transicionar_queja"
+      },
+      {
+        "acl": [
+          "=X/postgres",
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_day date, p_calendar bigint",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_business_day(p_day date, p_calendar bigint)\n RETURNS boolean\n LANGUAGE sql\n STABLE\n SET search_path TO 'public'\nAS $function$\n SELECT extract(isodow FROM p_day)::int=ANY(weekdays) AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(holidays) h WHERE (h->>'date')::date=p_day)\n FROM qms_calendars WHERE id=p_calendar;\n$function$\n",
+        "name": "qms_business_day"
+      },
+      {
+        "acl": [
+          "=X/postgres",
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_start timestamp with time zone, p_days integer, p_type text, p_calendar bigint",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_due(p_start timestamp with time zone, p_days integer, p_type text, p_calendar bigint)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n STABLE\n SET search_path TO 'public'\nAS $function$\nDECLARE d date := (p_start AT TIME ZONE 'America/Costa_Rica')::date; n integer:=0; safety integer:=0;\nBEGIN\n IF p_days<1 OR p_days>3660 OR p_type NOT IN ('business_days','calendar_days') THEN RAISE EXCEPTION 'Plazo inválido'; END IF;\n IF NOT EXISTS(SELECT 1 FROM qms_calendars WHERE id=p_calendar) THEN RAISE EXCEPTION 'Calendario no encontrado'; END IF;\n WHILE n<p_days LOOP\n   d:=d+1; safety:=safety+1;\n   IF p_type='calendar_days' OR qms_business_day(d,p_calendar) THEN n:=n+1; END IF;\n   IF safety>30000 THEN RAISE EXCEPTION 'El calendario no permite calcular el vencimiento'; END IF;\n END LOOP;\n WHILE NOT qms_business_day(d,p_calendar) LOOP\n   d:=d+1; safety:=safety+1;\n   IF safety>30000 THEN RAISE EXCEPTION 'El calendario no permite calcular el vencimiento'; END IF;\n END LOOP;\n RETURN (d+1)::timestamp AT TIME ZONE 'America/Costa_Rica' - interval '1 microsecond';\nEND; $function$\n",
+        "name": "qms_due"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_sync_queja()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE stage text; active_run qms_stage_runs; rule qms_stage_versions; cal bigint; run uuid; due timestamptz; alert integer; attention timestamptz;\nBEGIN\n IF TG_OP='UPDATE' THEN\n   NEW.revision:=OLD.revision+1;\n   IF NEW.estado IS NOT DISTINCT FROM OLD.estado THEN\n     SELECT * INTO active_run FROM qms_stage_runs WHERE case_id=NEW.id AND ended_at IS NULL;\n     NEW.fecha_sla:=OLD.fecha_sla;\n     NEW.fecha_limite_investigacion:=OLD.fecha_limite_investigacion;\n     RETURN NEW;\n   END IF;\n   UPDATE qms_stage_runs SET ended_at=now(),end_event=NEW.estado WHERE case_id=NEW.id AND ended_at IS NULL;\n END IF;\n stage:=CASE NEW.estado WHEN 'Recibido' THEN 'quejas.evaluation' WHEN 'En Investigación' THEN 'quejas.investigation' END;\n IF stage IS NULL THEN RETURN NEW; END IF;\n PERFORM pg_advisory_xact_lock_shared(hashtextextended('qms.config',0));\n SELECT * INTO rule FROM qms_stage_versions WHERE stage_id=stage ORDER BY id DESC LIMIT 1;\n SELECT id INTO cal FROM qms_calendars ORDER BY id DESC LIMIT 1;\n due:=qms_due(now(),rule.duration,rule.day_type,cal);\n SELECT ((due AT TIME ZONE 'America/Costa_Rica')::date-max(a)+time '06:00') AT TIME ZONE 'America/Costa_Rica' INTO attention FROM unnest(rule.alerts) a;\n INSERT INTO qms_stage_runs(case_id,stage_id,rule_id,calendar_id,snapshot,started_at,expires_at,attention_at)\n VALUES(NEW.id,stage,rule.id,cal,jsonb_build_object('rule',to_jsonb(rule),'calendar',(SELECT to_jsonb(c) FROM qms_calendars c WHERE c.id=cal)),now(),due,attention) RETURNING id INTO run;\n FOREACH alert IN ARRAY rule.alerts LOOP\n   INSERT INTO qms_deadline_notices(run_id,offset_days,due_at)\n   VALUES(run,alert,((due AT TIME ZONE 'America/Costa_Rica')::date-alert+time '06:00') AT TIME ZONE 'America/Costa_Rica');\n END LOOP;\n IF rule.expiration_action='notify_quality' THEN INSERT INTO qms_deadline_notices(run_id,offset_days,due_at) VALUES(run,0,due+interval '1 microsecond'); END IF;\n IF stage='quejas.evaluation' THEN NEW.fecha_sla:=due; ELSE NEW.fecha_limite_investigacion:=due; END IF;\n RETURN NEW;\nEND; $function$\n",
+        "name": "qms_sync_queja"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_catalog_guard()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nBEGIN\n IF TG_OP='DELETE' THEN RAISE EXCEPTION 'Desactiva el valor para conservar su historial'; END IF;\n IF TG_OP='UPDATE' AND (NEW.modulo IS DISTINCT FROM OLD.modulo OR NEW.tipo IS DISTINCT FROM OLD.tipo) THEN RAISE EXCEPTION 'El catálogo interno no puede cambiar de módulo o tipo'; END IF;\n IF TG_OP='INSERT' AND NEW.tipo LIKE 'estado_%' THEN RAISE EXCEPTION 'Los estados pertenecen al flujo definido en código. Edita su nombre y color.'; END IF;\n IF TG_OP='UPDATE' AND (NEW.codigo IS DISTINCT FROM OLD.codigo OR NEW.valor_interno IS DISTINCT FROM OLD.valor_interno) THEN RAISE EXCEPTION 'El identificador interno es inmutable'; END IF;\n IF TG_OP='INSERT' THEN NEW.valor_interno:=NEW.valor; END IF;\n IF TG_OP='UPDATE' AND OLD.tipo LIKE 'estado_%' AND NEW.activo=false THEN RAISE EXCEPTION 'Los estados del flujo no se pueden desactivar'; END IF;\n INSERT INTO qms_config_audit(entity,old_value,new_value,actor_id) VALUES('catalogos',CASE WHEN TG_OP='UPDATE' THEN to_jsonb(OLD) END,to_jsonb(NEW),app_usuario_actual_id());\n RETURN NEW;\nEND; $function$\n",
+        "name": "qms_catalog_guard"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_record_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE module text:=TG_ARGV[0]; is_closed boolean; was_closed boolean;\nBEGIN\n IF TG_OP='INSERT' THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'opened',now());\n ELSE\n   is_closed:=NEW.estado=ANY(string_to_array(TG_ARGV[1],','));\n   was_closed:=OLD.estado=ANY(string_to_array(TG_ARGV[1],','));\n   IF is_closed AND NOT was_closed THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'closed',now()); END IF;\n   IF was_closed AND NOT is_closed THEN INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'opened',now()); END IF;\n   IF module='quejas' AND NEW.estado='Resuelto' AND OLD.estado IS DISTINCT FROM NEW.estado THEN\n     INSERT INTO qms_case_events(module,case_id,kind,occurred_at) VALUES(module,NEW.id,'resolved',now());\n   END IF;\n END IF;\n RETURN NEW;\nEND $function$\n",
+        "name": "qms_record_event"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_queja_id uuid, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text",
+        "body": "CREATE OR REPLACE FUNCTION public.actualizar_atributos_queja(p_queja_id uuid, p_tipo text, p_area_afectada text, p_fecha_recepcion_gc date, p_numero_oficio_resolucion text, p_observaciones text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE\r\n  v_queja public.quejas;\r\nBEGIN\r\n  IF NOT public.app_es_staff() THEN RAISE EXCEPTION 'No autorizado'; END IF;\r\n  IF btrim(coalesce(p_tipo, '')) = '' OR btrim(coalesce(p_area_afectada, '')) = '' THEN\r\n    RAISE EXCEPTION 'Tipo y área afectada son obligatorios';\r\n  END IF;\r\n\r\n  UPDATE public.quejas SET\r\n    tipo = btrim(p_tipo),\r\n    area_afectada = btrim(p_area_afectada),\r\n    fecha_recepcion_gc = p_fecha_recepcion_gc,\r\n    numero_oficio_resolucion = nullif(btrim(p_numero_oficio_resolucion), ''),\r\n    observaciones = nullif(btrim(p_observaciones), '')\r\n  WHERE id = p_queja_id\r\n  RETURNING * INTO v_queja;\r\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\r\n\r\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\r\n  VALUES (now(), public.app_usuario_actual_id(), 'actualizar', 'quejas',\r\n    'Atributos del registro ' || v_queja.folio || ' actualizados');\r\n  RETURN v_queja;\r\nEND;\r\n$function$\n",
+        "name": "actualizar_atributos_queja"
+      },
+      {
+        "acl": [
+          "=X/postgres",
+          "postgres=X/postgres",
+          "anon=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_due timestamp with time zone, p_attention timestamp with time zone, p_now timestamp with time zone",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_classify(p_due timestamp with time zone, p_attention timestamp with time zone, p_now timestamp with time zone DEFAULT now())\n RETURNS text\n LANGUAGE sql\n STABLE\n SET search_path TO ''\nAS $function$\n SELECT CASE WHEN p_due IS NULL THEN 'unconfigured' WHEN p_due<p_now THEN 'overdue'\n WHEN (p_due AT TIME ZONE 'America/Costa_Rica')::date=(p_now AT TIME ZONE 'America/Costa_Rica')::date THEN 'today'\n WHEN p_attention IS NOT NULL AND p_now>=p_attention THEN 'soon' ELSE 'within' END;\n$function$\n",
+        "name": "qms_classify"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_id uuid, p_expected bigint, p_state text, p_resolution text, p_justification text, p_owner uuid, p_reopen text",
+        "body": "CREATE OR REPLACE FUNCTION public.qms_transition(p_id uuid, p_expected bigint, p_state text, p_resolution text DEFAULT NULL::text, p_justification text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_reopen text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE q quejas; target text;\nBEGIN\n SELECT * INTO q FROM quejas WHERE id=p_id FOR UPDATE;\n IF auth.uid() IS NULL OR NOT (coalesce(app_es_staff(),false) OR (coalesce(app_es_colaborador(),false) AND coalesce(q.responsable_id=app_usuario_actual_id(),false))) THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n IF q.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n IF p_expected IS NULL OR q.revision<>p_expected THEN RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza el expediente antes de guardar.' USING ERRCODE='40001'; END IF;\n SELECT valor_interno INTO target FROM catalogos WHERE modulo='quejas' AND tipo='estado_queja' AND codigo=p_state LIMIT 1;\n IF target IS NULL THEN RAISE EXCEPTION 'Estado no reconocido'; END IF;\n IF q.estado='Recibido' AND target='En Investigación' AND\n (nullif(btrim(p_justification),'') IS NULL OR coalesce(p_owner,q.responsable_id) IS NULL) THEN RAISE EXCEPTION 'Selecciona un responsable y escribe la justificación'; END IF;\n PERFORM public.transicionar_queja(p_id,target,p_resolution,p_justification,p_owner,p_reopen);\n RETURN (SELECT to_jsonb(v) FROM qms_quejas v WHERE id=p_id);\nEND; $function$\n",
+        "name": "qms_transition"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "authenticated=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text",
+        "body": "CREATE OR REPLACE FUNCTION public.crear_queja_interna(p_cliente_nombre text, p_email_cliente text, p_categoria text, p_descripcion text, p_prioridad text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja public.quejas;\n  v_dias integer;\nBEGIN\n  IF NOT public.app_es_staff() THEN\n    RAISE EXCEPTION 'No autorizado';\n  END IF;\n  IF btrim(COALESCE(p_cliente_nombre, '')) = '' OR btrim(COALESCE(p_categoria, '')) = '' OR btrim(COALESCE(p_prioridad, '')) = '' THEN\n    RAISE EXCEPTION 'Cliente, categoría y prioridad son obligatorios';\n  END IF;\n\n  SELECT dias_vencimiento INTO v_dias\n  FROM public.sla_config\n  WHERE proceso = 'quejas' AND prioridad = btrim(p_prioridad)\n  LIMIT 1;\n\n  INSERT INTO public.quejas (\n    folio, cliente_nombre, email_cliente, categoria, descripcion,\n    prioridad, estado, fecha, fecha_sla\n  ) VALUES (\n    public.generar_folio_queja(), btrim(p_cliente_nombre), nullif(btrim(p_email_cliente), ''),\n    btrim(p_categoria), nullif(btrim(p_descripcion), ''), btrim(p_prioridad),\n    'Recibido', now(), now() + make_interval(days => COALESCE(v_dias, 7))\n  ) RETURNING * INTO v_queja;\n\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\n  VALUES (now(), public.app_usuario_actual_id(), 'crear', 'quejas', 'Queja interna ' || v_queja.folio || ' creada');\n\n  RETURN v_queja;\nEND;\n$function$\n",
+        "name": "crear_queja_interna"
+      },
+      {
+        "name": "crear_queja_publica",
+        "body": "CREATE OR REPLACE FUNCTION public.crear_queja_publica(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_form formularios_publicos;\n  v_folio text;\nBEGIN\n  SELECT * INTO v_form\n  FROM formularios_publicos\n  WHERE token = p_token AND activo = true\n  LIMIT 1;\n\n  IF v_form.id IS NULL THEN\n    RAISE EXCEPTION 'El enlace no es válido o ya no está disponible';\n  END IF;\n\n  IF p_cliente_nombre IS NULL OR btrim(p_cliente_nombre) = '' THEN\n    RAISE EXCEPTION 'El nombre del quejoso es obligatorio';\n  END IF;\n\n  v_folio := generar_folio_queja();\n\n  INSERT INTO quejas (\n    folio, cliente_nombre, email_cliente, telefono,\n    categoria, descripcion, estado, fecha\n  ) VALUES (\n    v_folio,\n    btrim(p_cliente_nombre),\n    p_email_cliente,\n    p_telefono,\n    p_categoria,\n    p_descripcion,\n    'Recibido',\n    now()\n  );\n\n  RETURN v_folio;\nEND;\n$function$\n"
+      },
+      {
+        "acl": [
+          "postgres=X/postgres",
+          "service_role=X/postgres"
+        ],
+        "args": "p_queja_id uuid, p_categoria text, p_prioridad text, p_responsable_id uuid, p_notas text",
+        "body": "CREATE OR REPLACE FUNCTION public.actualizar_detalles_queja(p_queja_id uuid, p_categoria text DEFAULT NULL::text, p_prioridad text DEFAULT NULL::text, p_responsable_id uuid DEFAULT NULL::uuid, p_notas text DEFAULT NULL::text)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_queja public.quejas;\n  v_dias integer;\nBEGIN\n  IF NOT public.app_es_staff() THEN RAISE EXCEPTION 'No autorizado'; END IF;\n\n  SELECT * INTO v_queja FROM public.quejas WHERE id = p_queja_id FOR UPDATE;\n  IF v_queja.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada'; END IF;\n\n  IF p_prioridad IS NOT NULL THEN\n    SELECT dias_vencimiento INTO v_dias\n    FROM public.sla_config WHERE proceso = 'quejas' AND prioridad = btrim(p_prioridad) LIMIT 1;\n  END IF;\n\n  UPDATE public.quejas\n  SET categoria = COALESCE(nullif(btrim(p_categoria), ''), categoria),\n      prioridad = COALESCE(nullif(btrim(p_prioridad), ''), prioridad),\n      responsable_id = COALESCE(p_responsable_id, responsable_id),\n      notas = COALESCE(p_notas, notas),\n      fecha_sla = CASE WHEN p_prioridad IS NULL THEN fecha_sla\n        ELSE COALESCE(fecha, now()) + make_interval(days => COALESCE(v_dias, 7)) END\n  WHERE id = p_queja_id\n  RETURNING * INTO v_queja;\n\n  RETURN v_queja;\nEND;\n$function$\n",
+        "name": "actualizar_detalles_queja"
+      }
+    ]
+  }
+]

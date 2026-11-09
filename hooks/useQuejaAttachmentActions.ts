@@ -30,10 +30,11 @@ export function useQuejaAttachmentActions(quejaId: string | null, scope: EntityR
     const isContextCurrent = scope.captureContext()
     setSubiendoAdjunto(true)
     try {
-      await subirAdjuntoQueja(quejaId, file)
+      const adjunto = await subirAdjuntoQueja(quejaId, file)
       // La escritura pertenece al expediente capturado, aunque la vista ya esté en otro.
       if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(quejaId) })
       if (operation.isCurrent()) showSuccess('Adjunto subido')
+      if (operation.isCurrent()) return adjunto
     } catch (error) {
       if (operation.isCurrent()) showError(error, 'No se pudo subir el adjunto')
     } finally {

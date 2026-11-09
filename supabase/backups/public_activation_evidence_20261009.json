@@ -1,0 +1,152 @@
+{
+  "verified_at_utc": "2026-10-10T02:54:18.503Z",
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "production_deployment": "dpl_5RVFbd1Dd4xBtK9HTh4UMGY3St8G",
+  "production_url": "https://mi-dashboard-iota.vercel.app",
+  "deployment_url": "https://mi-dashboard-2gu0i3o69-eca-s-projects2.vercel.app",
+  "authorized_activation": true,
+  "migrations": [
+    {
+      "version": "20261009230746",
+      "name": "public_storage_access_hardening"
+    },
+    {
+      "version": "20261009231000",
+      "name": "public_forms_drive_access_cutover"
+    }
+  ],
+  "acl": {
+    "legacy_public_client_execute": 0,
+    "legacy_private_registry_client_execute": false,
+    "new_gateway_client_execute": 0,
+    "new_gateway_service_execute": 6,
+    "anonymous_form_metadata_select": false,
+    "attachment_client_writes": 0,
+    "attachment_authenticated_select": true,
+    "client_column_grants": 0
+  },
+  "storage": {
+    "private_bucket": true,
+    "broad_policies_removed": true,
+    "guarded_select_policy": "quejas_adjuntos_legacy_select",
+    "client_write_policies": 0,
+    "managed_grantor": "supabase_storage_admin",
+    "postgres_can_set_owner": false,
+    "extra_grants_revoked": false,
+    "note": "Managed owner retains internal TRUNCATE/REFERENCES/TRIGGER grants; REST only exposes CRUD and file access is controlled by verified RLS. Do not claim these grants were removed.",
+    "anonymous_and_profileless_read_check": true
+  },
+  "waf": {
+    "live": true,
+    "public_post_routes": 3,
+    "requests_per_ip": 90,
+    "window_seconds": 600,
+    "metadata_get_prefix": "/api/public/formularios/",
+    "has_draft": false,
+    "condition_groups": 4,
+    "metadata_all_methods": true
+  },
+  "oidc_enabled": true,
+  "production_checks": [
+    {
+      "method": "GET",
+      "route": "/q/[synthetic-token]",
+      "status": 200,
+      "expected": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/public/formularios/[synthetic-token]",
+      "status": 404,
+      "expected": 404,
+      "code": "public_form_unavailable",
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/public/quejas",
+      "status": 403,
+      "expected": 403,
+      "code": "verification_failed",
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/drive/upload-public",
+      "status": 403,
+      "expected": 403,
+      "code": "verification_failed",
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/public/quejas/finalizar",
+      "status": 403,
+      "expected": 403,
+      "code": "verification_failed",
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/usuarios",
+      "status": 401,
+      "expected": 401,
+      "code": null,
+      "passed": true
+    },
+    {
+      "method": "GET",
+      "route": "/api/drive/download",
+      "status": 401,
+      "expected": 401,
+      "code": null,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/drive/upload",
+      "status": 401,
+      "expected": 401,
+      "code": null,
+      "passed": true
+    },
+    {
+      "method": "POST",
+      "route": "/api/drive/delete",
+      "status": 401,
+      "expected": 401,
+      "code": null,
+      "passed": true
+    }
+  ],
+  "local_checks": {
+    "node": 417,
+    "public_db": 73,
+    "drive_storage_and_atomic_cutover": 148,
+    "final_scripts_aligned": true
+  },
+  "business_test_writes": 0,
+  "advisors": {
+    "info": 5,
+    "warning_groups": [
+      "extension_in_public",
+      "anon_security_definer_function_executable",
+      "authenticated_security_definer_function_executable",
+      "auth_leaked_password_protection"
+    ],
+    "note": "Remaining platform/project-wide advisories recorded; not a claim of zero security findings."
+  },
+  "limits": [
+    "No antivirus",
+    "No advanced bot analysis",
+    "No login MFA in this scope",
+    "No automatic reconciliation worker",
+    "Positive end-to-end citizen submission not performed in production"
+  ],
+  "dependency_audit": {
+    "production_vulnerabilities": 0
+  },
+  "pending_cutover_scripts_removed": true
+}

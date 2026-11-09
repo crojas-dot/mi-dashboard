@@ -1,5 +1,6 @@
 import 'server-only'
 import { after } from 'next/server'
+import { logger } from '@/lib/utils/logger'
 
 export function programarContextoDrive(folderId: string) {
   const url = process.env.APPS_SCRIPT_WEBAPP_URL
@@ -18,7 +19,7 @@ export function programarContextoDrive(folderId: string) {
         await response.body?.cancel()
         return
       } catch (error) {
-        console.error('[drive/contexto]', { folderId, intento: intento + 1 }, error)
+        logger.error('No se pudo actualizar el contexto de Drive', { module: 'drive', action: 'context' }, error)
         if (intento < 2) await new Promise((resolve) => setTimeout(resolve, 500 * (intento + 1)))
       }
     }

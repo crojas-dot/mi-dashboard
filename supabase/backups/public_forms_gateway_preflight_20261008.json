@@ -1,0 +1,175 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "observed_at": "2026-10-08",
+  "functions": [
+    {
+      "proname": "crear_queja_publica",
+      "definition": "CREATE OR REPLACE FUNCTION public.crear_queja_publica(p_token text, p_cliente_nombre text, p_email_cliente text, p_telefono text, p_categoria text, p_descripcion text)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_form formularios_publicos;\n  v_folio text;\nBEGIN\n  SELECT * INTO v_form\n  FROM formularios_publicos\n  WHERE token = p_token AND activo = true\n  LIMIT 1;\n\n  IF v_form.id IS NULL THEN\n    RAISE EXCEPTION 'El enlace no es válido o ya no está disponible';\n  END IF;\n\n  IF p_cliente_nombre IS NULL OR btrim(p_cliente_nombre) = '' THEN\n    RAISE EXCEPTION 'El nombre del quejoso es obligatorio';\n  END IF;\n\n  v_folio := generar_folio_queja();\n\n  INSERT INTO quejas (\n    folio, cliente_nombre, email_cliente, telefono,\n    categoria, descripcion, estado, fecha\n  ) VALUES (\n    v_folio,\n    btrim(p_cliente_nombre),\n    p_email_cliente,\n    p_telefono,\n    p_categoria,\n    p_descripcion,\n    'Recibido',\n    now()\n  );\n\n  RETURN v_folio;\nEND;\n$function$\n"
+    },
+    {
+      "proname": "generar_folio_queja",
+      "definition": "CREATE OR REPLACE FUNCTION public.generar_folio_queja()\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE\r\n  v_anio integer := extract(year FROM timezone('America/Costa_Rica', now()))::integer;\r\n  v_ultimo integer;\r\nBEGIN\r\n  INSERT INTO public.folios_quejas_anuales (anio, ultimo)\r\n  VALUES (v_anio, 1)\r\n  ON CONFLICT (anio) DO UPDATE\r\n  SET ultimo = public.folios_quejas_anuales.ultimo + 1\r\n  RETURNING ultimo INTO v_ultimo;\r\n\r\n  -- A partir de 1000 no truncar el número a tres caracteres.\r\n  RETURN v_anio::text || '-' || CASE\r\n    WHEN length(v_ultimo::text) >= 3 THEN v_ultimo::text\r\n    ELSE lpad(v_ultimo::text, 3, '0')\r\n  END;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "proname": "notificar_queja_publica",
+      "definition": "CREATE OR REPLACE FUNCTION public.notificar_queja_publica(p_folio text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_queja_id uuid;\r\n  v_categoria text;\r\n  v_staff record;\r\nBEGIN\r\n  SELECT id, categoria INTO v_queja_id, v_categoria\r\n  FROM quejas\r\n  WHERE folio = p_folio\r\n  LIMIT 1;\r\n\r\n  IF v_queja_id IS NULL THEN\r\n    RAISE EXCEPTION 'Queja no encontrada para el folio %', p_folio;\r\n  END IF;\r\n\r\n  -- Evitar notificaciones duplicadas si el frontend reintenta.\r\n  IF EXISTS (\r\n    SELECT 1 FROM public.notificaciones\r\n    WHERE tipo = 'queja_nueva' AND origen_id = v_queja_id::text\r\n  ) THEN\r\n    RETURN;\r\n  END IF;\r\n\r\n  FOR v_staff IN\r\n    SELECT id, email FROM public.usuarios\r\n    WHERE rol IN ('admin', 'calidad')\r\n      AND (estado IS NULL OR estado = 'activo')\r\n  LOOP\r\n    INSERT INTO public.notificaciones (usuario_id, fecha, tipo, mensaje, enlace, origen_id)\r\n    VALUES (\r\n      v_staff.id,\r\n      now(),\r\n      'queja_nueva',\r\n      'Nueva queja ' || p_folio || ' registrada: ' || COALESCE(v_categoria, ''),\r\n      '/quejas',\r\n      v_queja_id::text\r\n    );\r\n\r\n    INSERT INTO public.mail_queue (destinatario, asunto, cuerpo, estado, intentos, created_at)\r\n    SELECT v_staff.email, 'Nueva queja ' || p_folio, 'Se recibió una nueva queja con folio ' || p_folio || '.', 'pendiente', 0, now()\r\n    WHERE v_staff.email IS NOT NULL;\r\n  END LOOP;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "proname": "registrar_adjunto_queja_publica",
+      "definition": "CREATE OR REPLACE FUNCTION public.registrar_adjunto_queja_publica(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint DEFAULT NULL::bigint, p_tipo_mime text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_adjunto_id uuid;\r\n  v_estado     text;\r\nBEGIN\r\n  IF btrim(COALESCE(p_nombre, '')) = '' OR btrim(COALESCE(p_storage_path, '')) = '' THEN\r\n    RAISE EXCEPTION 'Nombre y ruta del adjunto son obligatorios';\r\n  END IF;\r\n\r\n  SELECT estado INTO v_estado FROM public.quejas WHERE id = p_queja_id;\r\n  IF v_estado IS NULL THEN\r\n    RAISE EXCEPTION 'Queja no encontrada';\r\n  END IF;\r\n  IF v_estado <> 'Recibido' THEN\r\n    RAISE EXCEPTION 'Solo se pueden adjuntar evidencias mientras la queja está en estado «Recibido»';\r\n  END IF;\r\n\r\n  IF (SELECT count(*) FROM public.queja_adjuntos WHERE queja_id = p_queja_id) >= 10 THEN\r\n    RAISE EXCEPTION 'Límite de 10 evidencias por queja alcanzado';\r\n  END IF;\r\n\r\n  -- Mapeo explícito: p_nombre alimenta ambas columnas de nombre\r\n  -- (legacy nombre_archivo NOT NULL + estándar nombre) y p_storage_path\r\n  -- alimenta storage_path + url_archivo legacy\r\n  INSERT INTO public.queja_adjuntos (\r\n    queja_id,\r\n    nombre,\r\n    nombre_archivo,\r\n    storage_path,\r\n    url_archivo,\r\n    tamano,\r\n    tipo_mime,\r\n    usuario_id,\r\n    created_at\r\n  ) VALUES (\r\n    p_queja_id,\r\n    btrim(p_nombre),\r\n    btrim(p_nombre),\r\n    btrim(p_storage_path),\r\n    btrim(p_storage_path),\r\n    COALESCE(p_tamano, 0),\r\n    COALESCE(nullif(btrim(COALESCE(p_tipo_mime, '')), ''), 'application/octet-stream'),\r\n    NULL,\r\n    now()\r\n  )\r\n  RETURNING id INTO v_adjunto_id;\r\n\r\n  RETURN v_adjunto_id;\r\nEND;\r\n$function$\n"
+    }
+  ],
+  "notes": "Solo definiciones y ACL; no filas privadas. Snapshot de referencia, no migracion.",
+  "form_grants": [
+    {
+      "grantee": "postgres",
+      "privilege": "INSERT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "SELECT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "UPDATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "DELETE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "REFERENCES"
+    },
+    {
+      "grantee": "postgres",
+      "privilege": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "privilege": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "privilege": "SELECT"
+    }
+  ],
+  "form_policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "(activo = true)",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "formularios_publicos",
+      "permissive": "PERMISSIVE",
+      "policyname": "formularios_publicos_active_select",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "( SELECT app_es_admin() AS app_es_admin)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "formularios_publicos",
+      "permissive": "PERMISSIVE",
+      "policyname": "formularios_publicos_admin_write",
+      "schemaname": "public",
+      "with_check": "( SELECT app_es_admin() AS app_es_admin)"
+    }
+  ],
+  "function_acls": [
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "signature": "crear_queja_publica(text,text,text,text,text,text)",
+      "configuration": [
+        "search_path=public"
+      ],
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "signature": "crear_queja_publica_con_atributos(text,text,text,text,text,text)",
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "signature": "crear_queja_publica_con_atributos(text,text,text,text,text,text,text)",
+      "configuration": [
+        "search_path=\"\""
+      ],
+      "security_definer": true
+    },
+    {
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "signature": "notificar_queja_publica(text)",
+      "configuration": [
+        "search_path=public"
+      ],
+      "security_definer": true
+    },
+    {
+      "acl": "{postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+      "owner": "postgres",
+      "signature": "registrar_adjunto_queja_publica(uuid,text,text,bigint,text)",
+      "configuration": [
+        "search_path=public"
+      ],
+      "security_definer": true
+    }
+  ]
+}

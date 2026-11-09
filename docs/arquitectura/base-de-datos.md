@@ -1,19 +1,48 @@
 # Base de datos: esquema, políticas y motor QMS
 
-> Referencia vigente del código y del snapshot remoto del 7 de octubre de 2026. Consultar solo el tema que se modifica; una nota histórica no demuestra el estado de un despliegue nuevo.
+4 noviembre, aplicada y verificada en ECA-QMS: migración
+`20261104202558_quejas_revision_y_respuesta_separadas.sql`. Añade historial GC
+inmutable y borradores internos con CAS; aprobación sin publicación y publicación
+atómica a Finalizado. Puentes invoker, implementación privada y RLS de lectura staff.
+[Contrato, compatibilidad y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
+El cliente nuevo sigue local, sin despliegue web.
+
+19 octubre, **activado y verificado** en `fykhrrpeoehwqznccmfp`:
+`20261015223440_quejas_public_tracking.sql` está aplicada y registrada; agrega
+capacidades solo de servidor, publicación de respuesta/oficio y reserva de borrado.
+`closed_at/expires_at` del acceso se fijan solo en el primer
+cierre No Procede/Finalizado, con ventana exacta de 30 días naturales. Abierto conserva
+ambas nulas; consultas, reaperturas y correos no renuevan. Consulta/descarga/emisión
+comprueban revocación/vigencia. Helper con lock del expediente evita carreras con cierre;
+las capacidades y snapshots firmados v2 contienen solo expediente/nonce.
+No cambia el retorno de claim v2; v3 añade el snapshot opcional y es el usado por
+la Edge activa con seguimiento habilitado. El wrapper publica y transiciona con
+la revisión original en una transacción. Tras verificar el cliente compatible
+publicado, se aplicaron `scripts/activar-publicacion-quejas.sql` y
+`scripts/cerrar-workflow-quejas.sql`: `publication_cut_active=true` y
+`legacy_client_can_execute=false`. Resolver/No Procede exige publicación; los
+expedientes históricos sin respuesta/oficio publicados deben completarse antes
+de finalizar. No hubo relleno de snapshots ni reenvío de correos históricos.
+La lectura remota de esquema/policies/grants precedió la aplicación. **208/208**
+comprobaciones PostgreSQL aisladas cubren caducidad, carreras y rollback; son
+evidencia distinta de la confirmación remota de aplicación/corte.
+Ver [contrato y activación](../quejas-seguimiento-y-publicacion-2026-10-16.md) y
+[`public_tracking_activation_20261019.json`](../../supabase/backups/public_tracking_activation_20261019.json).
+
+> Contratos de código revisados el 8 de octubre de 2026; el inventario general conserva el snapshot remoto del 7 de octubre, con la ampliación pública indicada abajo. El estado de producción se registra por separado en [la guía del formulario público](../seguridad-formularios-publicos.md).
 
 > Este inventario describe metadatos, no registros privados. Antes de cambiar la DB, releer esquema, políticas, grants y funciones efectivos mediante herramientas autorizadas. No ejecutar SQL histórico como estado deseado.
 
 ### RLS real, verificada en el servidor
 
-Las **33 tablas públicas** tienen RLS habilitada. Su alcance efectivo es desigual:
+El snapshot general contenía **33 tablas públicas** con RLS. La aditiva pública aplicada el 8 de octubre añadió tres: **36 en ese inventario fechado**. La migración del 19 incorpora otras tres tablas con RLS; esto no constituye un inventario general remoto actualizado. RLS habilitada no demuestra por sí sola autorización correcta:
 
 | Área | Autorización real actual |
 | --- | --- |
 | Usuarios | Propio (también inactivo para que login lea el motivo), staff activo y lectura de módulo; colaboradores pueden ver autores de comentarios de sus quejas visibles. UPDATE propio solo activo y por columnas seguras |
 | Columnas de Usuarios | Cliente puede cambiar nombre, teléfono, avatar, último acceso y preferencias; no `rol`, `estado`, `auth_id`, `id`, email, departamento ni created_at. Administración por API/service role |
 | Quejas/comentarios | SELECT staff admin/calidad activos; colaborador activo con `mis_quejas` y responsable propio. Mutaciones del workflow mediante RPC |
-| Adjuntos | SELECT staff o colaborador responsable. **Existe además una política heredada INSERT para staff**; no afirmar que RLS prohíbe todo INSERT directo, aunque la aplicación use RPC |
+| Adjuntos | SELECT staff o colaborador responsable; el corte 20261009231000 retiró la escritura directa cliente. Registro y borrado usan los flujos autorizados |
 | Actividad de quejas | Lectura/escritura por permiso `quejas`, o por `mis_quejas` y queja propia |
 | Permisos | Lectura staff activo; escrituras admin activo |
 | Documentos/Auditorías | SELECT por lectura del módulo; INSERT/UPDATE/DELETE por lectura+escritura; admin activo conserva autoridad |
@@ -21,7 +50,9 @@ Las **33 tablas públicas** tienen RLS habilitada. Su alcance efectivo es desigu
 | Notificaciones | SELECT/UPDATE propias, usando la identidad operativa activa |
 | Catálogos/SLA | Lectura por perfil activo y escritura por admin activo; anon solo categorías de quejas activas o legacy NULL. Se preservan códigos/estados protegidos por el trigger y colores semánticos |
 | Configuraciones | Datos ordinarios solo admin activo. Claves con prefijo exacto `ai_` sin lectura/escritura por cliente authenticated, incluso admin; backend service role conserva acceso. API IA valida admin antes de usar ese privilegio |
-| Formularios públicos | Anon y authenticated leen activos como flujo ciudadano; admin activo ve también inactivos y administra. INSERT/UPDATE/DELETE amplios se eliminaron |
+| Formularios públicos | Admin activo administra. Lectura ciudadana directa cerrada por 20261009231000; el cliente lee metadata por API |
+| Gateway público | public_form_submissions/public_form_uploads/public_form_rate_limits: RLS sin policies cliente, grants solo service role; sin datos de envío/cuotas por Data API cliente |
+| Seguimiento y publicación | queja_public_access/queja_attachment_deletions: solo servidor; queja_public_resolutions conserva SELECT authenticated sujeto a política de expediente. Sin escritura directa cliente; capacidades y borrados reservados se verifican en servidor |
 | Acciones, Riesgos, Procesos, Reuniones, Hallazgos y versiones/solicitudes documentales | Perfil activo y lectura/escritura del módulo correspondiente, con override de admin activo. UPDATE verifica USING y WITH CHECK |
 | Tareas | Admin activo administra; responsables activos leen solo sus propias tareas. No hay un módulo UI integrado |
 | Logs/mail_queue | Políticas INSERT para authenticated; no hay lectura general por cliente |
@@ -46,6 +77,9 @@ Este inventario incluye columnas y PK verificadas, no datos de personas ni secre
 | `documentos` | `(id)` | id uuid NOT NULL, codigo_doc text, titulo text NOT NULL, version_actual text, estado text, drive_file_id text, drive_file_id_borrador text, fecha_publicacion timestamp with time zone, created_at timestamp with time zone |
 | `folios_quejas_anuales` | `(anio)` | anio integer NOT NULL, ultimo integer NOT NULL |
 | `formularios_publicos` | `(id)` | id uuid NOT NULL, modulo text NOT NULL, nombre text NOT NULL, token text NOT NULL, activo boolean NOT NULL, creado_por uuid, created_at timestamp with time zone NOT NULL |
+| `public_form_submissions` | `(form_id, submission_id)` | form_id FK RESTRICT a formulario, submission_id uuid, payload_hash, queja_id UNIQUE/FK, created_at, finalized_at |
+| `public_form_uploads` | `(form_id, submission_id, upload_id)` | FK al envío, hash y metadata de archivo, reservation_id, status reserved/committed/released, adjunto_id UNIQUE/FK, storage_path, created_at/updated_at |
+| `public_form_rate_limits` | `(key_hash, operation)` | HMAC de IP, operation attempt/accepted/upload, attempts, reset_at; índice de limpieza en reset_at |
 | `hallazgos` | `(id)` | id uuid NOT NULL, auditoria_id uuid, tipo text, descripcion text, evidencia text, requisito text, estado text, responsable_id uuid, derivado_sacp_id uuid, created_at timestamp with time zone |
 | `informes_config` | `(id)` | id uuid NOT NULL, nombre text NOT NULL, modulo text NOT NULL, filtros jsonb, columnas jsonb, creado_por uuid, created_at timestamp with time zone |
 | `logs` | `(id)` | id uuid NOT NULL, fecha timestamp with time zone, usuario_id uuid, accion text, modulo text, detalle text |
@@ -106,16 +140,22 @@ Esta capa se aplicó en la migración remota `etapas_versionadas`. **Existe y ej
 
 - `qms_stages` define etapas de proceso con eventos de inicio/fin. Etapas de quejas actuales: evaluación (`Recibido`) e investigación (`En Investigación`).
 - `qms_publish_stage` y `qms_publish_calendar` solo admin autenticado, con advisory lock, `p_expected` y conflicto SQLSTATE 40001. Agregan nuevas versiones y auditoría en `qms_config_audit`, no reemplazan silenciosamente la historia.
+- Migración aplicada `20261015171835`: calendarios/reglas/auditoría conservan SELECT/RLS,
+  sin INSERT/UPDATE/DELETE/TRUNCATE/REFERENCES/TRIGGER para anon/authenticated. RPC
+  autenticados y permisos de service_role se conservaron. El [editor del calendario](../calendario-qms-2026-10-15.md),
+  publicado con la web compatible del 19, usa esos publishers; la DB sigue sin
+  feriados institucionales registrados.
 - Duración 1–3660; tipo business_days/calendar_days; alertas únicas positivas dentro de duración; acción notify_quality/mark_only. Calendario: días ISO 1–7 sin duplicados, feriados fecha+descripción, máximo 1000.
 - `qms_due` cuenta desde el día posterior al inicio, usa calendario y días laborables/naturales, desplaza el vencimiento hasta un día permitido y devuelve el fin de ese día (un microsegundo antes del siguiente) en **America/Costa_Rica**. No confundir con simples N×24 horas.
 - Trigger `qms_queja_stage BEFORE INSERT OR UPDATE` llama `qms_sync_queja`. Cada UPDATE incrementa revision; si no cambia estado conserva fecha_sla/fecha_limite_investigacion anteriores.
 - Al cambiar estado cierra runs anteriores. Para Recibido/En Investigación toma la última regla/calendario, guarda snapshot inmutable en `qms_stage_runs` y calcula expires_at/attention_at/notices.
 - Evaluación escribe fecha_sla; investigación escribe fecha_limite_investigacion. Cambiar prioridad/notas sin cambiar estado **no recalcula** esos plazos por sla_config: el trigger conserva el snapshot vigente.
-- Alertas se programan a las 06:00 locales según offsets y, para notify_quality, al vencer. `qms_process_notices` procesa hasta 250 pendientes con FOR UPDATE/SKIP LOCKED, solo runs abiertos, notifica staff activo y responsable y marca processed_at.
-- `qms_process_notices` y el procesador legacy `procesar_alertas_quejas` están reservados a postgres/service role. La comprobación de octubre no encontró `cron.job` ni Edge Functions desplegadas; no afirmar que la ejecución automática está instalada.
+- Alertas se programan a las 06:00 locales según offsets y, para notify_quality, al vencer. Desde la migración `20261015011028`, `qms_process_notices` procesa hasta 250 avisos totales con FOR UPDATE/SKIP LOCKED y orden queja → aviso; usa etapas/calendarios hábiles conocidos, ventanas vigentes y destinatarios activos del [contrato interno](../avisos-internos-quejas-2026-10-14.md).
+- El poll existente de Apps Script usa la Edge HMAC cada cinco minutos; desde el 19 octubre, con seguimiento activo, esta llama `qms_mail_claim_batch_v3`. Conserva el procesamiento de avisos con límite 0, sin reclamar correo; v2 sigue siendo compatible. No se instaló pg_cron. Configuración privada con RLS, RPC nuevos sin EXECUTE cliente; `qms_set_internal_notices` solo owner/service_role activa con corte sin avalancha histórica. Columnas usuario/run/event_key del outbox no se conceden a authenticated.
+- Campana y outbox se insertan atómicamente y deduplican por evento/usuario; una fila por destinatario. El directorio debe tener correo válido para recibir ambos; la activación comprobó cero perfiles activos con correo inválido. `qms_mail_authorize` comprueba lease/token, rol, actividad, correo congelado, generación de asignación y etapa justo antes de MailApp. `skipped/obsolete_notice` solo interno; uncertain nunca se reenvía a ciegas. El claim anterior conserva únicamente correos ciudadanos.
 - Triggers `qms_*_event` en quejas, acciones, documentos y riesgos registran aperturas/cierres (y Resuelto en quejas) en qms_case_events. No afirmar que esos eventos son el mismo listado que quejas_actividad.
 - `qms_catalog_audit` audita catálogos y protege códigos/estructura/historia.
-- `qms_transition` y `qms_update_details` exigen revisión de la fila y aplican autorización staff/responsable; resuelven códigos del catálogo y retornan datos de qms_quejas.
+- `qms_transition_complaint` y `qms_update_details` exigen revisión de la fila y aplican autorización por módulo/staff/responsable; resuelven códigos del catálogo y retornan datos de qms_quejas.
 - `qms_dashboard(text)` agrega buckets, estados/categorías, etapas, cronología y atención con vistas invoker. **No es el RPC usado por la página `/` actual.**
 
 El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha_sla en la UI son una capa anterior. Antes de cambiarlos, reconciliar visualización y escritura con estos snapshots; no ajustar el trigger para mantener una UI vieja engañosa.
@@ -133,12 +173,13 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 | RPC | Cliente actual / DB |
 | --- | --- |
 | `crear_queja_interna` | Usado por alta interna; staff activo y folio/SLA legacy con trigger QMS vigente |
-| `crear_queja_publica` | Usado por formulario público; activo/token, devuelve folio, notif diferida |
+| `crear_queja_publica` | Legacy invocado por public_form_create_submission en servidor; EXECUTE cliente cerrado por 20261009231000 |
+| `public_form_*` | Seis RPC invoker/search_path vacío, exclusivos service role; alta, cuota, reserva/commit/liberación y finalización |
 | `*_con_atributos`, `actualizar_atributos_queja` | Existen en DB/017 para tipo/área/oficio/fecha/observaciones; no están integrados en los formularios actuales |
 | `actualizar_detalles_queja`, `transicionar_queja` | Funciones legacy internas cerradas para anon y authenticated; service/owner o wrappers internos |
-| `qms_update_details`, `qms_transition` | Wrappers usados por el cliente para editar, asignar responsable, transicionar y reabrir; autorización staff/responsable y revisión esperada |
+| `qms_update_details`, `qms_transition_complaint` | Cliente actual: editar/asignar, transicionar y reabrir con permisos y revisión esperada; qms_transition anterior sin EXECUTE cliente desde el corte del 19 octubre |
 | `derivar_queja_a_sacp`, `agregar_comentario_queja`, `registrar_adjunto_queja` | Usados, autenticados y con validación de dominio |
-| `registrar_adjunto_queja_publica`, `notificar_queja_publica` | Acceso público intencional para submit ciudadano |
+| `registrar_adjunto_queja_publica`, `notificar_queja_publica` | Helpers legacy usados dentro del gateway; EXECUTE cliente revocado por el corte 20261009231000 |
 | `actualizar_mis_preferencias_notificacion` | Propio activo, authenticated; retorna perfil |
 | `obtener_estadisticas_quejas` | Invoker, authenticated/service, conteos bajo RLS; usado por QuejasSummary |
 | `incrementar_tokens_proveedor` | Invoker, solo service_role, contador con bloqueo de fila; backend IA |
@@ -146,6 +187,23 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 | `qms_publish_*`, `qms_due`, `qms_business_day`, `qms_classify`, `qms_dashboard` | Motor/calendario/analítica de DB, integración de UI incompleta |
 
 No conservar overloads ambiguos con defaults para PostgREST. Revisar firmas/ACL en pg_proc, no asumir acceso porque la función aparece listada en el MCP.
+
+## Gateway público: ampliación del 8 de octubre
+
+Migración remota aplicada: **20261008224037 public_forms_gateway**. Añade tres tablas
+privadas para cliente y seis funciones public_form_*; la aditiva conserva ACL legacy
+para permitir un despliegue coordinado. No cerrar el acceso viejo antes de verificar
+el cliente/API nuevos en producción. Estado y operación en [la guía pública](../seguridad-formularios-publicos.md).
+
+- Creación reclama (form_id,submission_id) antes del folio y compara hash normalizado. Competidores esperan bajo lock: mismo envío devuelve misma queja; distinto contenido con el mismo ID produce 23505.
+- Cuota de altas nuevas 20/hora y creación viven en la misma transacción. Intentos/subidas usan contadores compartidos PostgreSQL con UPSERT; limpian hasta 100 contadores expirados por llamada, sin cron nuevo.
+- Reserva y commit bloquean envío/queja y revalidan formulario activo, estado Recibido y vínculo exacto. Cuenta archivos existentes más reservas, máximo diez y 40 MiB por expediente. Un intento paralelo no evade la cuota.
+- Una reserva no caduca sola. Timeout/crash puede dejar un archivo Drive creado: reconciliar y compensar antes de liberar. No hay worker automático de reconciliación.
+- Finalizar espera ausencia de reservas pendientes y registra timestamp bajo lock antes de devolver. Reintentos no repiten notificación. No representa correo entregado.
+- Parche de compatibilidad Drive aplicado: **20261009031934 public_forms_drive_path**. Reserva conserva drive:ID y queja_adjuntos almacena ID limpio para preview/descarga/eliminación existentes.
+- Cierre coordinado aplicado: supabase/migrations/20261009231000_public_forms_drive_access_cutover.sql revoca EXECUTE de cinco firmas públicas legacy y registro privado, retira lectura ciudadana de formularios_publicos y escritura directa de queja_adjuntos; conserva SELECT autenticado con RLS y service role. 20261009230746 restringe Storage histórico por archivo/expediente/perfil activo.
+- Bucket **branding** aplicado el 16 de octubre (20261016223929, `supabase/migrations/20261016223929_branding_logo_bucket.sql`): público a propósito para servir el logo del menú, con tope de 2 MiB y mime png/jpeg/webp. No tiene policies de INSERT/UPDATE/DELETE, así que solo la API con service role escribe; `org.logo_url` conserva la URL vigente y el objeto anterior se retira al reemplazarlo. El nombre del objeto es versionado porque una URL pública puede seguir sirviéndose desde caché después de borrar el archivo; así la clave siempre apunta al objeto vigente y nunca a una copia vieja.
+- Evidencia: supabase/backups/public_forms_gateway_preflight_20261008.json contiene metadatos; scripts/verificar-public-forms-gateway.sql y verificar-public-forms-cutover.sql son comprobaciones de lectura. No ejecutar scripts históricos que esperan ACL ciudadana como prueba del contrato nuevo.
 
 ## Migraciones y referencias
 
@@ -172,3 +230,18 @@ Hay 11 CHECK NOT VALID que se aplican a INSERT/UPDATE y un trigger de fechas de 
 `scripts/verificar-auditoria-db.sql` comprobó CRUD, roles activos/inactivos, tareas propias, lectura pública, ACL, validaciones y consumo IA con fixtures y ROLLBACK. Los archivos `supabase/backups/auditoria_permisos_*` contienen metadatos/conteos/código, no una copia de los datos. `auditoria_permisos_rollback.sql` es recuperación manual, no una migración para ejecutar normalmente.
 
 Persisten asesores sobre RLS sin policy en tablas internas, pg_trgm en public, SECURITY DEFINER intencionales y protección de contraseñas filtradas deshabilitada. No atribuirles una corrección automática. Evidencia y límites en [la auditoría validada](../auditoria-validada-2026-10-07.md).
+
+## Quejas aplicada el 10 octubre (timestamps UTC del 11)
+
+20261011044303: metadatos automáticos, formato plain/markdown, oficio único, RPC GC/
+workflow con expected, área reutilizable y plazos por etapa preservando snapshots.
+20261011044317: queja_mail_outbox + queja_mail_run_nonces, RLS y permisos mínimos;
+claims/ACK solo service role, lector GC sin destinatario/claim. No migrar mail_queue
+legacy a la nueva cola: no tiene consumidor activo ni equivale a envío ciudadano.
+20261011044810: folio directo y triggers internos cerrados; lectura/escritura GC por
+permisos de módulo y admin activo. Snapshot sin filas personales en
+supabase/backups/quejas_workflow_schema_20261010.json; evidencia aplicada separada.
+El workflow cliente actual usa qms_transition_complaint; qms_transition anterior
+conservó acceso temporal hasta el corte del 19 octubre, ya aplicado tras publicar
+el cliente compatible. crear_queja_interna_con_atributos también quedó sin EXECUTE cliente.
+No se alteraron los contadores 16/2066 ni los 130 casos; outbox inicial vacío.

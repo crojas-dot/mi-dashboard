@@ -1,0 +1,94 @@
+{
+  "checkedAt": "2026-10-20T20:32:51Z",
+  "projectRef": "fykhrrpeoehwqznccmfp",
+  "migration": "20261020163142_quejas_two_citizen_mails",
+  "applied": true,
+  "audit": {
+    "checked_at": "2026-10-20T20:30:15.223626+00:00",
+    "migration_recorded": true,
+    "rlsPreserved": true,
+    "tableAclPreserved": true,
+    "policiesPreserved": true,
+    "allFunctionAclPreserved": true,
+    "otherFunctionBodiesPreserved": true,
+    "queue": [
+      {
+        "tipo": "interno_asignacion",
+        "count": 3,
+        "status": "sent"
+      },
+      {
+        "tipo": "final",
+        "count": 3,
+        "status": "sent"
+      },
+      {
+        "tipo": "recibido",
+        "count": 11,
+        "status": "sent"
+      },
+      {
+        "tipo": "investigacion",
+        "count": 6,
+        "status": "sent"
+      }
+    ],
+    "live_leases": 0
+  },
+  "changedFunctionBodiesMatchMigration": true,
+  "edge": {
+    "publishedSourceReloadMatchesLocal": true,
+    "bundleSha256": "55a7c9fb6b81cb2de6cef99d708327dc1439181a1964e272d3e96fdae1b08776",
+    "legacyJwtVerificationEnabled": false,
+    "authentication": "existing scoped HMAC protocol preserved",
+    "signedHealthVerified": true,
+    "signedHealthEnabled": true
+  },
+  "appsScript": {
+    "savedSourceMatchesLocal": true,
+    "sourceSha256": "d304a9217fd0e0a150032f0ba8513fd3f67e2e05a01c6c432316ad5aa2a58460",
+    "mailEnabledRestored": true,
+    "triggerReinstalled": false,
+    "manualPollExecuted": false
+  },
+  "verification": {
+    "node": {
+      "passed": 795,
+      "total": 795
+    },
+    "focusedPublic": {
+      "passed": 107,
+      "total": 107
+    },
+    "isolatedPostgres": {
+      "passed": 137,
+      "total": 137
+    },
+    "isolatedEdgeBundle": {
+      "passed": 41,
+      "total": 41
+    },
+    "lint": true,
+    "buildAndTypecheck": true,
+    "structure": true,
+    "visualLayer": true,
+    "browserSynthetic": {
+      "syntheticOnly": true,
+      "records": 1,
+      "creationAttempts": 2,
+      "sameIdAndBody": true,
+      "finalized": 1,
+      "simulatedReceiptMails": 1,
+      "simulatedNotificationEvents": 1
+    }
+  },
+  "scope": {
+    "webFix": "local only",
+    "vercelPublished": false,
+    "realTestComplaintsCreated": false,
+    "realTestAttachmentsUploaded": false,
+    "realTestEmailsSent": false,
+    "historicalComplaintsMergedOrDeleted": false,
+    "inboxDeliveryVerified": false
+  }
+}

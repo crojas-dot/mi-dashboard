@@ -44,13 +44,21 @@ function panelHarness(kind = 'colaborador') {
     return pending.promise
   }
   const { default: Panel } = loadModule(kind === 'colaborador' ? 'app/mis-quejas/components/QuejaColaboradorPanel.tsx' : 'app/quejas/components/QuejaDetalleModal.tsx', {
+    '@/app/quejas/components/QuejaInformeModal': { default: 'Informe' },
+    '@/app/quejas/components/QuejaRespuestaClienteModal': { default: 'Response' },
     react,
     '@tanstack/react-query': { useQueryClient: () => queryClient },
     '@/lib/queries/queryContextScope': queryContexts,
     '@/components/Modal': { default: 'Modal' },
+    '@/app/quejas/components/AreaQuejaCatalogo': { default: 'AreaCatalog' },
     '@/components/ui/Select': { default: 'Select' },
+    '@/components/ui/RichTextEditor': { default: 'RichTextEditor' },
+    '@/components/quejas/RegistroQuejaGC': { default: 'Register' },
+    '@/app/quejas/components/AreaQuejaControl': { default: 'AreaControl' },
     '@/lib/queries/useUsuarios': { useUsuarios: () => ({ data: [{ id: 'owner', nombre: 'Responsable', rol: 'colaborador' }] }) },
-    '@/lib/queries/useQuejaComentarios': { useQuejaComentarios: () => ({}), useCrearQuejaComentario: () => ({ mutateAsync: (input) => request('comment', input) }) },    './QuejaColaboradorPanel.module.css': { default: {} },    '@/components/ui/Badge': { default: 'Badge' },
+    '@/lib/queries/useQuejaComentarios': { useQuejaComentarios: () => ({}), useCrearQuejaComentario: () => ({ mutateAsync: (input) => request('comment', input) }) },
+    './QuejaColaboradorPanel.module.css': { default: {} },
+    '@/components/ui/Badge': { default: 'Badge' },
     '@/components/ui/Button': { default: 'Button' },
     '@/components/quejas/AdjuntoPreviewModal': { default: 'Preview' },
     '@/components/quejas/ListaAdjuntos': { default: 'Attachments' },
@@ -59,10 +67,15 @@ function panelHarness(kind = 'colaborador') {
     '@/lib/services/errorToast': { showError: (...args) => toasts.push(args), showSuccess: (...args) => toasts.push(args) },
     '@/lib/store/auth-store': { useAuthStore: (select) => select({ user: { id: 'user', rol: kind === 'colaborador' ? 'colaborador' : 'admin' } }) },
     '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}), useCrearQuejaActividad: () => ({ mutateAsync: (input) => request('note', input) }) },
+    '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
+    '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => ({ data: false }) },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({}), quejaAdjuntosKey: (id) => ['attachments', id] },
     '@/lib/services/quejaWorkflowService': {
       transicionarQueja: (...input) => request('transition', input),
+      revisarResolucionQueja: (...input) => request('review', input),
       actualizarDetallesQueja: (...input) => request('details', input),
+      actualizarRegistroQueja: (...input) => request('register', input),
+      guardarAreaQueja: (...input) => request('area', input),
       derivarQuejaASACP: (...input) => request('derive', input),
       subirAdjuntoQueja: (...input) => request('upload', input),
       eliminarAdjuntoQueja: (...input) => request('delete', input),
@@ -85,30 +98,57 @@ function panelHarness(kind = 'colaborador') {
   }
   function visit(value) {
     if (Array.isArray(value)) return value.flatMap(visit)
-    return value?.props ? [value, ...visit(value.props.children)] : []
+    if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return []
+    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return visit(value.type(value.props))
+    // El workspace renderiza estas ranuras además del documento central.
+    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)] : []
   }
   const nodes = () => visit(tree)
   function text(value) {
     if (Array.isArray(value)) return value.map(text).join('')
-    return value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
+    if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return ''
+    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return text(value.type(value.props))
+    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) : typeof value === 'string' ? value : ''
   }
   const button = (label) => nodes().find((node) => ['Button', 'CButton'].includes(node.type) && text(node) === label)
   return {
     requests, updates, guards, invalidations, toasts, render, nodes, button, invalidateContext,
-    select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
+    select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
     tab(label) { nodes().find((node) => node.type === 'button' && text(node).trim() === label).props.onClick(); render() },
-    input(placeholder, value) { nodes().find((node) => node.type === 'textarea' && node.props.placeholder?.includes(placeholder)).props.onChange({ target: { value } }); render() },
+    assistance() { nodes().find(node => node.props['aria-label'] === 'Asistencia para la resolución').props.onClick(); render() },
+    activity() { nodes().find(node => node.props['aria-label'] === 'Ver actividad').props.onClick(); render() },
+    input(placeholder, value) { const node = nodes().find(node => ['textarea', 'RichTextEditor'].includes(node.type) && node.props.placeholder?.includes(placeholder)); node.props.onChange(node.type === 'RichTextEditor' ? value : { target: { value } }, 'markdown'); render() },
     contents: () => text(tree),
     unmount() { for (const slot of slots) slot?.cleanup?.() },
   }
 }
 
+for (const kind of ['detalle', 'colaborador']) {
+  test(`${kind}: la justificación explícita no vuelve a salir como análisis legacy`, () => {
+    const panel = panelHarness(kind)
+    panel.select('A', { notas: '\n[Procede] **Decisión sintética**\n\nPrueba', notas_formato: 'plain', justificacion_procede: '**Decisión sintética**\n\nPrueba', justificacion_procede_formato: 'markdown' })
+    assert.equal(panel.contents().split('Decisión sintética').length - 1, 1)
+    assert.doesNotMatch(panel.contents(), /\[Procede\]/)
+    panel.unmount()
+  })
+
+  test(`${kind}: separar la justificación conserva notas reales y su formato literal`, () => {
+    const panel = panelHarness(kind)
+    panel.select('A', { notas: 'Dato literal **sin formato**\n[Procede] Decisión sintética\n[Reapertura] Nuevo documento', notas_formato: 'plain', justificacion_procede: 'Decisión sintética' })
+    assert.equal(panel.contents().split('Decisión sintética').length - 1, 1)
+    assert.match(panel.contents(), /Dato literal \*\*sin formato\*\*/)
+    assert.match(panel.contents(), /\[Reapertura\] Nuevo documento/)
+    panel.unmount()
+  })
+}
+
 test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue siendo otra visita', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Análisis')
+  panel.select('A'); panel.tab('Resolución'); panel.assistance()
   const first = panel.button('Análisis IA').props.onClick()
   panel.select('B')
   panel.select('A')
+  panel.assistance()
   const current = panel.button('Análisis IA').props.onClick()
   panel.requests[0].resolve('RESPUESTA ANTIGUA')
   await first
@@ -125,9 +165,9 @@ test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue sien
 test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', async () => {
   for (const action of ['close', 'unmount']) {
     const panel = panelHarness()
-    panel.select('A'); panel.tab('Análisis')
+    panel.select('A'); panel.tab('Resolución'); panel.assistance()
     const pending = panel.button('Análisis IA').props.onClick()
-    if (action === 'close') panel.nodes().find((node) => node.props['aria-label'] === 'Cerrar panel de queja').props.onClick()
+    if (action === 'close') panel.nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace').props.onClose()
     else panel.unmount()
     panel.requests[0].reject(new Error('respuesta tardía'))
     await pending
@@ -137,9 +177,9 @@ test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', asyn
 
 test('fallo tardío del chat de A no elimina mensajes ni loading del chat de B', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Análisis'); panel.input('Hacé una pregunta', 'Pregunta A')
+  panel.select('A'); panel.tab('Resolución'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta A')
   const first = panel.button(' Enviar').props.onClick()
-  panel.select('B'); panel.input('Hacé una pregunta', 'Pregunta B')
+  panel.select('B'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta B')
   const current = panel.button(' Enviar').props.onClick()
   panel.requests[0].reject(new Error('falló A'))
   await first
@@ -161,7 +201,23 @@ test('la transición confirmada actualiza A aunque se abra B, sin limpiar la res
   await first
   panel.render()
   assert.deepEqual({ ...panel.updates[0] }, { id: 'A', estado: 'Pendiente de Revisión GC', resolucion: 'Resolución A' })
-  assert.equal(panel.nodes().find((node) => node.type === 'textarea').props.value, 'Borrador B')
+  assert.equal(panel.nodes().find((node) => node.type === 'RichTextEditor').props.value, 'Borrador B')
+})
+
+test('Quejas permite editar el área solo en Recibido y descarta el borrador al pasar a otro estado', () => {
+  const panel = panelHarness('detalle')
+  panel.select('A', { estado: 'Recibido' })
+  const areaControl = () => panel.nodes().find(node => node.type === 'AreaControl')
+  assert.equal(typeof areaControl().props.onEdit, 'function')
+  areaControl().props.onEdit()
+  panel.render()
+
+  panel.select('A', { estado: 'En Investigación' })
+  assert.equal(areaControl().props.onEdit, undefined)
+  assert.equal(areaControl().props.draft, null)
+  areaControl().props.onSave({ area: 'Área modificada' })
+  assert.equal(panel.requests.some(request => request.kind === 'register'), false)
+  panel.unmount()
 })
 
 test('subida tardía invalida adjuntos de A sin finalizar la subida que está activa en B', async () => {
@@ -278,7 +334,7 @@ test('la escritura de otra visita de A notifica el origen y entrega un guard que
   await pending; panel.render()
   assert.equal(panel.updates[0].id, 'A')
   assert.equal(panel.guards[0](), false)
-  assert.equal(panel.nodes().find(node => node.type === 'textarea').props.value, 'Nueva visita')
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Nueva visita')
 })
 
 for (const kind of ['colaborador', 'detalle']) {
@@ -331,7 +387,7 @@ test('un conflicto conserva resolución y revisión editadas sin reintentar ni d
   panel.requests[0].reject(Object.assign(new Error('conflicto'), { code: '40001' }))
   await Promise.all([first, duplicate]); panel.render()
   assert.equal(panel.requests.length, 1)
-  assert.equal(panel.nodes().find(node => node.type === 'textarea').props.value, 'Borrador')
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Borrador')
   assert.equal(panel.button('Enviar a Revisión GC').props.loading, false)
 })
 
@@ -340,8 +396,9 @@ for (const kind of ['colaborador', 'detalle']) {
     const panel = panelHarness(kind)
     panel.select('A')
     if (kind === 'colaborador') panel.tab('Análisis')
-    const placeholder = kind === 'colaborador' ? 'Registrá un avance' : 'Nuevo comentario'
-    const label = kind === 'colaborador' ? ' Agregar nota' : ' Agregar'
+    else panel.activity()
+    const placeholder = kind === 'colaborador' ? 'Registrá un avance' : 'Escribí una observación'
+    const label = kind === 'colaborador' ? ' Agregar nota' : 'Agregar'
     panel.input(placeholder, 'Mismo texto')
     const pending = panel.button(label).props.onClick()
     panel.input(placeholder, ''); panel.input(placeholder, 'Mismo texto')
@@ -354,36 +411,182 @@ for (const kind of ['colaborador', 'detalle']) {
 test('detalle: transición de A no limpia la resolución ni el loading de B', async () => {
   const panel = panelHarness('detalle')
   panel.select('A'); panel.button('Resolver').props.onClick(); panel.render()
-  panel.input('Análisis / Resolución Final', 'Resolución A')
+  panel.input('Escribí la conclusión y sus fundamentos', 'Resolución A')
   const first = panel.button('Confirmar resolución').props.onClick()
   panel.select('B'); panel.button('Resolver').props.onClick(); panel.render()
-  panel.input('Análisis / Resolución Final', 'Resolución B')
+  panel.input('Escribí la conclusión y sus fundamentos', 'Resolución B')
   const current = panel.button('Confirmar resolución').props.onClick()
   panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'Resuelto' })
   await first; panel.render()
   assert.equal(panel.updates[0].id, 'A')
   assert.equal(panel.guards[0](), false)
-  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('Análisis / Resolución Final')).props.value, 'Resolución B')
+  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('Escribí la conclusión y sus fundamentos')).props.value, 'Resolución B')
   assert.equal(panel.button('Confirmar resolución').props.loading, true)
   panel.requests[1].resolve({ id: 'B', revision: 5, estado: 'Resuelto' })
   await current; panel.render()
-  assert.equal(panel.button('Confirmar resolución').props.loading, false)
+  assert.equal(panel.button('Confirmar resolución'), undefined)
+  assert.equal(panel.updates.at(-1).id, 'B')
 })
 
 test('detalle: fallo tardío de comentario de A conserva el envío y borrador de B', async () => {
   const panel = panelHarness('detalle')
-  panel.select('A'); panel.input('Nuevo comentario', 'Comentario A')
-  const first = panel.button(' Agregar').props.onClick()
-  panel.select('B'); panel.input('Nuevo comentario', 'Comentario B')
-  const current = panel.button(' Agregar').props.onClick()
+  panel.select('A'); panel.activity(); panel.input('Escribí una observación', 'Comentario A')
+  const first = panel.button('Agregar').props.onClick()
+  panel.select('B'); panel.activity(); panel.input('Escribí una observación', 'Comentario B')
+  const current = panel.button('Agregar').props.onClick()
   panel.requests[0].reject(new Error('falló A'))
   await first; panel.render()
   assert.equal(panel.toasts.length, 0)
-  assert.equal(panel.button(' Agregar').props.loading, true)
-  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('Nuevo comentario')).props.value, 'Comentario B')
+  assert.equal(panel.button('Agregar').props.loading, true)
+  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('Escribí una observación')).props.value, 'Comentario B')
   panel.requests[1].resolve()
   await current; panel.render()
-  assert.equal(panel.button(' Agregar').props.loading, false)
+  assert.equal(panel.button('Agregar').props.loading, false)
+})
+
+test('editar solo el área conserva oficio, observación histórica y revisión capturada', async () => {
+  const panel = panelHarness('detalle')
+  const areaControl = () => panel.nodes().find(node => node.type === 'AreaControl')
+  panel.select('A', { estado: 'Recibido', revision: 17, area_afectada: 'Área anterior', observaciones: 'Seguimiento histórico', numero_oficio_resolucion: 'ECA-GC-2026-017' })
+  areaControl().props.onEdit(); panel.render()
+  // Una lectura concurrente no reemplaza el snapshot del editor.
+  panel.select('A', { estado: 'Recibido', revision: 99, observaciones: 'Otro seguimiento', numero_oficio_resolucion: 'ECA-GC-2026-099' })
+  const pending = areaControl().props.onSave({ ...areaControl().props.draft, area: 'Innovación y TI', revision: 99, observaciones: '', numeroOficio: '' })
+  assert.deepEqual({ ...panel.requests[0].input[0] }, { quejaId: 'A', revision: 17, area: 'Innovación y TI', numeroOficio: 'ECA-GC-2026-017', observaciones: 'Seguimiento histórico' })
+  panel.requests[0].reject(Object.assign(new Error('conflicto'), { code: '40001' }))
+  await pending; panel.render()
+  assert.equal(areaControl().props.draft.revision, 17)
+  assert.equal(areaControl().props.saving, false)
+  assert.equal(panel.requests.length, 1)
+})
+
+test('área guardada de una visita anterior no limpia el borrador de otra visita', async () => {
+  const panel = panelHarness('detalle')
+  const areaControl = () => panel.nodes().find(node => node.type === 'AreaControl')
+  panel.select('A', { estado: 'Recibido' }); areaControl().props.onEdit(); panel.render()
+  const first = areaControl().props.onSave({ ...areaControl().props.draft, area: 'Área A' })
+  panel.select('B', { estado: 'Recibido', area_afectada: 'Área B', revision: 13 }); areaControl().props.onEdit(); panel.render()
+  const second = areaControl().props.onSave({ ...areaControl().props.draft, area: 'SAL' }); panel.render()
+  panel.requests[0].resolve({ id: 'A', revision: 5, area_afectada: 'Área A' })
+  await first; panel.render()
+  assert.equal(areaControl().props.draft.area, 'Área B')
+  assert.equal(areaControl().props.draft.revision, 13)
+  assert.equal(areaControl().props.saving, true)
+  assert.equal(panel.guards[0](), false)
+  assert.equal(panel.toasts.length, 0)
+  panel.requests[1].resolve({ id: 'B', revision: 14, area_afectada: 'SAL' })
+  await second; panel.render()
+  assert.equal(areaControl().props.draft, null)
+})
+
+test('decisión conserva revisión del borrador al cerrar y volver a abrir con una lectura más nueva', async () => {
+  const panel = panelHarness('detalle')
+  panel.select('A', { estado: 'Recibido', revision: 17 })
+  panel.button('Tomar decisión').props.onClick(); panel.render()
+  panel.button('Procede').props.onClick(); panel.render()
+  panel.input('justificación', 'Decisión original')
+  const select = panel.nodes().find(node => node.props.id?.startsWith('queja-responsable-') && node.props.onSelect)
+  select.props.onSelect({ id: 'owner', nombre: 'Responsable', rol: 'colaborador' }); panel.render()
+  panel.nodes().find(node => node.type === 'Modal' && node.props.title.startsWith('Decisión de procedencia')).props.onClose(); panel.render()
+  panel.select('A', { estado: 'Recibido', revision: 99 })
+  panel.button('Tomar decisión').props.onClick(); panel.render()
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Decisión original')
+  const submit = panel.button('Guardar').props.onClick
+  const pending = submit(); submit()
+  assert.equal(panel.requests.length, 1)
+  assert.equal(panel.requests[0].input[0].revision, 17)
+  assert.equal(panel.requests[0].input[2].responsableId, 'owner')
+  panel.requests[0].reject(Object.assign(new Error('conflicto'), { code: '40001' }))
+  await pending; panel.render()
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Decisión original')
+  assert.equal(panel.button('Guardar').props.loading, false)
+  assert.equal(panel.requests.length, 1)
+})
+
+test('Procede sin responsable muestra error en el selector del encabezado antes de cualquier escritura', async () => {
+  const panel = panelHarness('detalle')
+  panel.select('A', { estado: 'Recibido', responsable_id: null })
+  panel.button('Tomar decisión').props.onClick(); panel.render()
+  panel.button('Procede').props.onClick(); panel.render()
+  await panel.button('Guardar').props.onClick(); panel.render()
+  const picker = () => panel.nodes().find(node => node.props.id?.startsWith('queja-responsable-') && node.props.onSelect)
+  assert.equal(panel.requests.length, 0)
+  assert.match(picker().props.validationMessage, /asignar un responsable/)
+  assert.equal(picker().props.openRequest, 1)
+  panel.input('justificación', 'Decisión documentada')
+  picker().props.onSelect({ id: 'owner', nombre: 'Responsable', rol: 'colaborador' }); panel.render()
+  assert.equal(picker().props.validationMessage, undefined)
+  assert.equal(picker().props.value.id, 'owner')
+  assert.equal(panel.requests.length, 0)
+  const pending = panel.button('Guardar').props.onClick()
+  assert.equal(panel.requests.length, 1)
+  assert.equal(panel.requests[0].input[2].responsableId, 'owner')
+  panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'En Investigación' })
+  await pending; panel.render()
+})
+
+test('Cancelar Procede o No Procede vuelve a elegir, conserva borrador y solo X cierra el documento', () => {
+  for (const choice of ['Procede', 'No Procede']) {
+    const panel = panelHarness('detalle')
+    panel.select('A', { estado: 'Recibido', revision: 17 })
+    panel.button('Tomar decisión').props.onClick(); panel.render()
+    panel.button(choice).props.onClick(); panel.render()
+    panel.input('justificación', 'Texto conservado')
+    panel.button('Cancelar').props.onClick(); panel.render()
+    const editorModal = () => panel.nodes().find(node => node.type === 'Modal' && node.props.variant === 'document')
+    assert.equal(editorModal().props.open, true)
+    assert.equal(editorModal().props.dismissOnEscape, false)
+    assert.equal(editorModal().props.dismissOnBackdrop, false)
+    assert.ok(panel.button('Procede')); assert.ok(panel.button('No Procede'))
+    assert.equal(panel.button('Guardar'), undefined)
+    panel.button(choice === 'Procede' ? 'No Procede' : 'Procede').props.onClick(); panel.render()
+    assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Texto conservado')
+    assert.equal(panel.requests.length, 0)
+    editorModal().props.onClose(); panel.render()
+    assert.equal(editorModal(), undefined)
+  }
+})
+
+test('No Procede exige oficio antes de transicionar y no mezcla otra visita', async () => {
+  const panel = panelHarness('detalle')
+  panel.select('A', { estado: 'Recibido', numero_oficio_resolucion: '' })
+  panel.button('Tomar decisión').props.onClick(); panel.render()
+  panel.button('No Procede').props.onClick(); panel.render()
+  panel.input('justificación', 'Motivo de no procedencia')
+  await panel.button('Guardar').props.onClick(); panel.render()
+  assert.equal(panel.requests.length, 0)
+  const oficio = panel.nodes().find(node => node.props.id?.startsWith('queja-oficio-rechazo-') && node.props.onChange)
+  oficio.props.onChange({ target: { value: 'ECA-GC-2026-009' } }); panel.render()
+  const pending = panel.button('Guardar').props.onClick()
+  assert.equal(panel.requests[0].input[1], 'No Procede')
+  assert.equal(panel.requests[0].input[2].numeroOficio, 'ECA-GC-2026-009')
+  panel.select('B', { estado: 'Recibido' })
+  panel.button('Tomar decisión').props.onClick(); panel.render()
+  panel.button('Procede').props.onClick(); panel.render()
+  panel.input('justificación', 'Borrador de B')
+  panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'No Procede' })
+  await pending; panel.render()
+  assert.equal(panel.updates[0].id, 'A')
+  assert.equal(panel.guards[0](), false)
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Borrador de B')
+})
+
+test('revisión GC devuelve con la revisión capturada aunque llegue una lectura más nueva', async () => {
+  const panel = panelHarness('detalle')
+  panel.select('A', { estado: 'Pendiente de Revisión GC', revision: 17 })
+  panel.button('Devolver a investigación').props.onClick(); panel.render()
+  panel.select('A', { estado: 'Pendiente de Revisión GC', revision: 99 })
+  panel.button('Devolver a investigación').props.onClick(); panel.render()
+  const reason = panel.nodes().find(node => node.props.id === 'queja-devolucion-A' && node.props.onChange)
+  reason.props.onChange({ target: { value: 'Verificar las evidencias.' } }); panel.render()
+  const pending = panel.button('Confirmar devolución').props.onClick()
+  assert.equal(panel.requests[0].input[0].revision, 17)
+  assert.equal(panel.requests[0].input[1], 'returned')
+  assert.equal(panel.requests[0].input[2], 'Verificar las evidencias.')
+  panel.requests[0].reject(Object.assign(new Error('conflicto'), { code: '40001' }))
+  await pending; panel.render()
+  assert.equal(panel.requests.length, 1)
+  assert.ok(panel.button('Confirmar devolución'))
 })
 
 test('notas y comentarios invalidan su origen al navegar y omiten ámbitos terminados', async () => {
@@ -396,8 +599,8 @@ test('notas y comentarios invalidan su origen al navegar y omiten ámbitos termi
       '@tanstack/react-query': { useQueryClient: () => client, useMutation: options => options },
       '@/lib/supabase': { supabase: { from: () => ({ insert: async () => ({ error: null }) }), rpc: async () => ({ data: {}, error: null }) } },
     }
-    const module = loadModule(kind === 'nota' ? 'lib/queries/useQuejaActividad.ts' : 'lib/queries/useQuejaComentarios.ts', mocks)
-    const mutation = kind === 'nota' ? module.useCrearQuejaActividad() : module.useCrearQuejaComentario()
+    const activityApi = loadModule(kind === 'nota' ? 'lib/queries/useQuejaActividad.ts' : 'lib/queries/useQuejaComentarios.ts', mocks)
+    const mutation = kind === 'nota' ? activityApi.useCrearQuejaActividad() : activityApi.useCrearQuejaComentario()
     const input = { quejaId: 'A', descripcion: 'Nota', comentario: 'Comentario', tipo: 'interno', visibleCliente: false, isContextCurrent }
     const result = await mutation.mutationFn(input)
     mutation.onSuccess(result, input)

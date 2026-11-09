@@ -1,0 +1,23 @@
+{
+  "triggers": null,
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.qms_publish_calendar(p_expected bigint, p_weekdays integer[], p_holidays jsonb, p_reason text DEFAULT NULL::text)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE previous qms_calendars; result bigint; h jsonb;\nBEGIN\n IF auth.uid() IS NULL OR NOT app_es_admin() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n PERFORM pg_advisory_xact_lock(hashtextextended('qms.config',0));\n SELECT * INTO previous FROM qms_calendars ORDER BY id DESC LIMIT 1;\n IF previous.id IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'El calendario cambió. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n IF p_weekdays IS NULL OR cardinality(p_weekdays) NOT BETWEEN 1 AND 7 OR NOT p_weekdays<@ARRAY[1,2,3,4,5,6,7]\n OR array_position(p_weekdays,NULL) IS NOT NULL OR cardinality(p_weekdays)<>(SELECT count(DISTINCT d) FROM unnest(p_weekdays) d)\n OR p_holidays IS NULL OR jsonb_typeof(p_holidays)<>'array' OR jsonb_array_length(p_holidays)>1000\n THEN RAISE EXCEPTION 'Calendario inválido' USING ERRCODE='22023'; END IF;\n FOR h IN SELECT * FROM jsonb_array_elements(p_holidays) LOOP\n IF coalesce(h->>'date','')!~'^\\d{4}-\\d{2}-\\d{2}$' OR nullif(btrim(h->>'description'),'') IS NULL THEN RAISE EXCEPTION 'Cada feriado necesita fecha y descripción'; END IF;\n PERFORM (h->>'date')::date;\n END LOOP;\n IF (SELECT count(DISTINCT item->>'date') FROM jsonb_array_elements(p_holidays) item)<>jsonb_array_length(p_holidays) THEN RAISE EXCEPTION 'Hay feriados duplicados'; END IF;\n INSERT INTO qms_calendars(weekdays,holidays,created_by) VALUES(p_weekdays,p_holidays,app_usuario_actual_id()) RETURNING id INTO result;\n INSERT INTO qms_config_audit(entity,old_value,new_value,reason,actor_id)\n SELECT 'calendar',to_jsonb(previous),to_jsonb(c),p_reason,app_usuario_actual_id() FROM qms_calendars c WHERE id=result;\n RETURN result;\nEND; $function$\n",
+      "name": "qms_publish_calendar"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "body": "CREATE OR REPLACE FUNCTION public.qms_publish_stage(p_stage text, p_expected bigint, p_duration integer, p_type text, p_alerts integer[], p_action text, p_reason text DEFAULT NULL::text)\n RETURNS bigint\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE previous qms_stage_versions; result bigint;\nBEGIN\n IF auth.uid() IS NULL OR NOT app_es_admin() THEN RAISE EXCEPTION 'No autorizado' USING ERRCODE='42501'; END IF;\n PERFORM pg_advisory_xact_lock(hashtextextended('qms.config',0));\n SELECT * INTO previous FROM qms_stage_versions WHERE stage_id=p_stage ORDER BY id DESC LIMIT 1;\n IF previous.id IS DISTINCT FROM p_expected THEN RAISE EXCEPTION 'La configuración cambió. Actualiza antes de guardar.' USING ERRCODE='40001'; END IF;\n IF p_duration IS NULL OR p_duration NOT BETWEEN 1 AND 3660 OR p_type IS NULL OR p_type NOT IN ('business_days','calendar_days')\n OR p_action IS NULL OR p_action NOT IN ('notify_quality','mark_only') OR p_alerts IS NULL\n OR EXISTS(SELECT 1 FROM unnest(p_alerts) a WHERE a IS NULL OR a<1 OR a>p_duration)\n OR cardinality(p_alerts)<>(SELECT count(DISTINCT a) FROM unnest(p_alerts) a)\n THEN RAISE EXCEPTION 'Revisa duración, tipo de días, acción y alertas: positivas, únicas y dentro del plazo.' USING ERRCODE='22023'; END IF;\n INSERT INTO qms_stage_versions(stage_id,duration,day_type,alerts,expiration_action,created_by)\n VALUES(p_stage,p_duration,p_type,p_alerts,p_action,app_usuario_actual_id()) RETURNING id INTO result;\n INSERT INTO qms_config_audit(entity,old_value,new_value,reason,actor_id)\n SELECT p_stage,to_jsonb(previous),to_jsonb(v),p_reason,app_usuario_actual_id() FROM qms_stage_versions v WHERE id=result;\n RETURN result;\nEND; $function$\n",
+      "name": "qms_publish_stage"
+    }
+  ]
+}

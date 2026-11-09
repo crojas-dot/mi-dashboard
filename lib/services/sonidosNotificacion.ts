@@ -80,6 +80,7 @@ function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer | null>
   const p = (async () => {
     try {
       const res = await fetch(url)
+      if (!res.ok) return null
       const arrayBuffer = await res.arrayBuffer()
       return await ctx.decodeAudioData(arrayBuffer)
     } catch {
@@ -87,23 +88,50 @@ function loadBuffer(ctx: AudioContext, url: string): Promise<AudioBuffer | null>
     }
   })()
   buffersCache.set(url, p)
+  // Un fallo temporal no debe dejar este sonido silenciado durante toda la sesión.
+  void p.then(buffer => { if (!buffer && buffersCache.get(url) === p) buffersCache.delete(url) })
   return p
 }
 
-export async function playNotificationSound(id?: string) {
+interface PreparedNotificationSound {
+  ready: () => boolean
+  play: () => void
+}
+
+/** Prepara antes del reclamo entre pestañas; el audio automático requiere un gesto previo. */
+export async function prepareNotificationSound(id?: string, isCurrent: () => boolean = () => true): Promise<PreparedNotificationSound | null> {
+  if (!isCurrent()) return null
+  // Un gesto anterior puede preceder a la carga del módulo o el navegador puede
+  // suspender el contexto al cambiar de pestaña. Recuperarlo con activación ya
+  // concedida evita descartar el aviso; nunca esperamos un gesto futuro.
+  if (!audioCtx || audioCtx.state !== 'running') {
+    if (typeof window === 'undefined' || !window.navigator?.userActivation?.hasBeenActive) return null
+    await unlockAudioContext()
+  }
+  if (!audioCtx || audioCtx.state !== 'running' || !isCurrent()) return null
+  const ctx = audioCtx
   const sonidoId = (id as SonidoNotificacionId) || SONIDO_DEFAULT
   const url = SONIDO_FILES[sonidoId] ?? SONIDO_FILES[SONIDO_DEFAULT]
-  const ctx = await unlockAudioContext()
-  if (!ctx || ctx.state !== 'running') return
-
   const buffer = await loadBuffer(ctx, url)
-  if (!buffer) return
+  // Un cierre de sesión durante fetch/decode no puede emitir el aviso de la cuenta anterior.
+  const ready = () => ctx.state === 'running' && isCurrent()
+  if (!buffer || !ready()) return null
 
-  const source = ctx.createBufferSource()
-  source.buffer = buffer
-  const gain = ctx.createGain()
-  gain.gain.setValueAtTime(0.9, 0)
-  source.connect(gain)
-  gain.connect(ctx.destination)
-  source.start()
+  return { ready, play() {
+    if (!ready()) return
+    const source = ctx.createBufferSource()
+    source.buffer = buffer
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.9, 0)
+    source.connect(gain)
+    gain.connect(ctx.destination)
+    source.start()
+  } }
+}
+
+export async function playNotificationSound(id?: string, isCurrent: () => boolean = () => true) {
+  if (!isCurrent()) return
+  await unlockAudioContext()
+  const prepared = await prepareNotificationSound(id, isCurrent)
+  prepared?.play()
 }

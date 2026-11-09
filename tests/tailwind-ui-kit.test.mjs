@@ -80,3 +80,22 @@ test('PostCSS compila una única entrada con los tokens de marca y un solo Prefl
   assert.match(result.css, /\.ui-button-primary\b/)
   assert.doesNotMatch(result.css, /\.tw\\:/)
 })
+
+test('el lienzo del expediente usa la barra nativa y queda fuera de ::-webkit-scrollbar', async () => {
+  const entry = path.resolve('app/globals.css')
+  const result = await postcss([tailwind({ optimize: false })]).process(fs.readFileSync(entry, 'utf8'), { from: entry })
+  // Una barra ::-webkit-scrollbar se pinta en el hilo principal y retrasa el
+  // desplazamiento del modal ampliado; el lienzo conserva la solid-color del compositor.
+  assert.match(result.css, /\[data-case-scroll\],\s*\[data-case-scroll\] \*\s*\{\s*scrollbar-width:\s*auto;\s*scrollbar-color:/)
+  const gated = []
+  postcss.parse(result.css).walkRules(rule => {
+    if (rule.selector.includes('::-webkit-scrollbar')) gated.push(rule)
+  })
+  assert.ok(gated.length > 0)
+  for (const rule of gated) {
+    for (const selector of rule.selectors) {
+      if (selector.startsWith('.monday-scroll')) continue
+      assert.match(selector, /:not\(\[data-case-scroll\]\)/, `${selector} debe excluir el lienzo del expediente`)
+    }
+  }
+})

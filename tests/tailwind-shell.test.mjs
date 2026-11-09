@@ -33,6 +33,7 @@ function sidebarFixture({ pathname = '/quejas', collapsed = false, permisos = [{
     useProcesos: { fetchProcesos() {}, procesosKey: ['procesos'] },
     useUsuarios: { fetchUsuarios() {}, usuariosQueryKey: () => ['usuarios'] },
     useDashboard: { dashboardPrefetchOptions: () => [] },
+    useLogoEmpresa: { useLogoEmpresa: () => ({ data: '' }) },
   }
   for (const [name, exports] of Object.entries(queryModules)) mocks['@/lib/queries/' + name] = exports
   const { default: Sidebar } = loadModule('components/Sidebar.tsx', mocks)

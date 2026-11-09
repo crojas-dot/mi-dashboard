@@ -37,7 +37,7 @@ export interface QuejasResult {
 
 export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSignal): Promise<QuejasResult> {
   const { page, pageSize, search, estado, prioridad, responsableId } = normalizeQuejasParams(params)
-  let query = supabase.from('quejas').select('*', { count: 'exact' })
+  let query = supabase.from('qms_quejas').select('*', { count: 'exact' })
   if (search) {
     const pattern = containsPattern(search)
     query = query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)

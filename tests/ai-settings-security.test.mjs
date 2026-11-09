@@ -108,7 +108,7 @@ test('descubrimiento rechaza destinos fuera de allowlist y no sigue redirects de
   assert.equal(calls[0].options.redirect, 'error')
 })
 test('gestor cliente usa únicamente la API IA y deja vacío el campo para conservar claves', () => {
-  const source = fs.readFileSync('components/configuracion/AIProvidersManager.tsx', 'utf8')
+  const source = ['components/configuracion/AIProvidersManager.tsx', 'components/configuracion/ia/ProviderEditorModal.tsx', 'components/configuracion/ia/ModuleRoutingEditor.tsx', 'components/configuracion/ia/ModelTestModal.tsx'].map(file => fs.readFileSync(file, 'utf8')).join('\n')
   assert.doesNotMatch(source, /supabase.from|modelDiscovery|modelMemory|modelTestingClient/)
   assert.match(source, /Dejar vacío para conservar la clave/)
 })

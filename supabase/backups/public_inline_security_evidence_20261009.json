@@ -1,0 +1,23 @@
+{
+  "captured_at": "2026-10-09T21:57:01.634Z",
+  "scope": "public_inline_progress_security",
+  "local_tests": 412,
+  "build": true,
+  "synthetic_browser": {
+    "same_form": true,
+    "same_fields": true,
+    "one_creation": true,
+    "retries_only_failed_files": true,
+    "production_writes": 0
+  },
+  "effective_db": {
+    "gateway_functions": 6,
+    "security_invoker": 6,
+    "client_execute": 0,
+    "service_execute": 6,
+    "legacy_anon_execute": 5,
+    "legacy_authenticated_execute": 5
+  },
+  "production_cutover": "pending_explicit_user_authorization",
+  "vercel_published_this_task": false
+}

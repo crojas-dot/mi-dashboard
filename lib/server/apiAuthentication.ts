@@ -9,9 +9,12 @@ export const API_WITH_ROUTE_AUTH: Record<string, readonly string[]> = {
   '/api/ai/test': ['POST'],
   '/api/configuracion/ia': ['GET', 'PUT', 'POST'],
   '/api/configuracion/zona-horaria': ['GET', 'PUT'],
+  '/api/configuracion/logo': ['GET', 'PUT', 'DELETE'],
   '/api/drive/upload': ['POST'],
   '/api/drive/download': ['GET'],
   '/api/drive/delete': ['DELETE'],
+  '/api/quejas/seguimiento': ['GET', 'POST'],
+  '/api/quejas/informe': ['GET', 'PUT'],
 }
 
 export function authenticatesInRoute(pathname: string, method: string): boolean {

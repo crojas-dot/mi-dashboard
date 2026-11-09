@@ -3,6 +3,7 @@
 import { useQueries, useQuery, type QueryFunctionContext } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys } from './queryKeys'
+import { getQuejaDeadlineDate, type QuejaConPlazo } from '@/lib/utils/quejaDeadline'
 
 export interface Indicador {
   label: string
@@ -22,12 +23,12 @@ export interface TareaPendiente {
 
 export const dashboardKey = queryKeys.dashboard
 
-type QuejaResumen = { id: string; folio: string; cliente_nombre: string; fecha_sla?: string | null; estado: string }
+type QuejaResumen = QuejaConPlazo & { id: string; folio: string; cliente_nombre: string }
 type AccionResumen = { id: string; folio?: string | null; tipo: string; descripcion?: string | null; fecha_limite?: string | null; estado: string }
 
 function organizarTareas(quejas: QuejaResumen[], acciones: AccionResumen[]): TareaPendiente[] {
   return ordenarTareas([
-    ...quejas.map((q) => ({ id: q.id, titulo: q.cliente_nombre || q.folio, tipo: 'Queja', entidad: 'Quejas', vence: q.fecha_sla || '', estado: q.estado })),
+    ...quejas.map((q) => ({ id: q.id, titulo: q.cliente_nombre || q.folio, tipo: 'Queja', entidad: 'Quejas', vence: getQuejaDeadlineDate(q) || '', estado: q.estado })),
     ...acciones.map((a) => ({ id: a.id, titulo: a.folio || a.descripcion?.slice(0, 60) || '', tipo: a.tipo, entidad: 'SACP', vence: a.fecha_limite || '', estado: a.estado })),
   ])
 }
@@ -42,7 +43,7 @@ function ordenarTareas(tareas: TareaPendiente[]): TareaPendiente[] {
 }
 
 const recursos = {
-  quejas: { label: 'Quejas Abiertas', color: '#dc3545', url: '/quejas', table: 'quejas' },
+  quejas: { label: 'Quejas Abiertas', color: '#dc3545', url: '/quejas', table: 'qms_quejas' },
   acciones: { label: 'SACP en Proceso', color: '#fd7e14', url: '/sacp', table: 'acciones' },
   documentos: { label: 'Docs. en Borrador', color: '#0d6efd', url: '/documentos', table: 'documentos' },
   riesgos: { label: 'Riesgos Activos', color: '#198754', url: '/riesgos', table: 'riesgos' },
@@ -55,11 +56,11 @@ interface DashboardResourceData { indicador: Indicador; tareas: TareaPendiente[]
 async function fetchDashboardResource(recurso: DashboardRecurso, signal?: AbortSignal): Promise<DashboardResourceData> {
   const config = recursos[recurso]
   const conTareas = recurso === 'quejas' || recurso === 'acciones'
-  const columns = recurso === 'quejas' ? 'id, folio, cliente_nombre, fecha_sla, estado'
+  const columns = recurso === 'quejas' ? 'id, folio, cliente_nombre, fecha_sla, fecha_limite_investigacion, plazo_vence, estado'
     : recurso === 'acciones' ? 'id, folio, tipo, descripcion, fecha_limite, estado' : 'id'
   let consulta = supabase.from(config.table).select(columns, { count: 'exact', head: !conTareas })
   if (recurso === 'quejas') consulta = consulta.not('estado', 'in', '(Finalizado,"No Procede",Cerrada)')
-    .order('fecha_sla', { ascending: true, nullsFirst: false }).order('id').limit(8)
+    .order('plazo_vence', { ascending: true, nullsFirst: false }).order('id').limit(8)
   if (recurso === 'acciones') consulta = consulta.neq('estado', 'Cerrada')
     .order('fecha_limite', { ascending: true, nullsFirst: false }).order('id').limit(8)
   if (recurso === 'documentos') consulta = consulta.eq('estado', 'Borrador')

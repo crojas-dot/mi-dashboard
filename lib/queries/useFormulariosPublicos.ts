@@ -68,7 +68,11 @@ export function useEliminarFormularioPublico() {
         .from('formularios_publicos')
         .delete()
         .eq('id', id)
-      if (error) throw error
+      if (error) {
+        // El ledger conserva el vínculo para recuperar envíos sin duplicar expedientes.
+        if (error.code === '23503') throw new Error('Este enlace tiene envíos registrados. Desactivalo para impedir nuevos envíos y conservar su trazabilidad.')
+        throw error
+      }
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: formulariosKey }),
   })

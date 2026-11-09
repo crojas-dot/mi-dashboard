@@ -1,0 +1,270 @@
+{
+  "captured_at": "2026-10-09T03:40:09.904Z",
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "grants": [
+    {
+      "grantee": "postgres",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "postgres",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "anon",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "authenticated",
+      "privilege_type": "TRIGGER"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "INSERT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "SELECT"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "UPDATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "DELETE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRUNCATE"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "REFERENCES"
+    },
+    {
+      "grantee": "service_role",
+      "privilege_type": "TRIGGER"
+    }
+  ],
+  "columns": [
+    {
+      "data_type": "uuid",
+      "column_name": "id",
+      "is_nullable": "NO",
+      "column_default": "gen_random_uuid()"
+    },
+    {
+      "data_type": "uuid",
+      "column_name": "queja_id",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "column_name": "nombre_archivo",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "column_name": "url_archivo",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "text",
+      "column_name": "tipo_archivo",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "integer",
+      "column_name": "tamano",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "uuid",
+      "column_name": "subido_por",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "column_name": "fecha_subida",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "data_type": "text",
+      "column_name": "nombre",
+      "is_nullable": "NO",
+      "column_default": "''::text"
+    },
+    {
+      "data_type": "text",
+      "column_name": "storage_path",
+      "is_nullable": "NO",
+      "column_default": "''::text"
+    },
+    {
+      "data_type": "text",
+      "column_name": "tipo_mime",
+      "is_nullable": "NO",
+      "column_default": "'application/octet-stream'::text"
+    },
+    {
+      "data_type": "uuid",
+      "column_name": "usuario_id",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "data_type": "timestamp with time zone",
+      "column_name": "created_at",
+      "is_nullable": "NO",
+      "column_default": "now()"
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "SELECT",
+      "qual": "app_es_staff()",
+      "roles": [
+        "public"
+      ],
+      "permissive": "PERMISSIVE",
+      "policyname": "Staff puede ver adjuntos",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "public"
+      ],
+      "permissive": "PERMISSIVE",
+      "policyname": "Staff puede subir adjuntos",
+      "with_check": "app_es_staff()"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "app_es_staff()",
+      "roles": [
+        "authenticated"
+      ],
+      "permissive": "PERMISSIVE",
+      "policyname": "queja_adjuntos_staff_select",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(app_es_colaborador() AND (EXISTS ( SELECT 1\n   FROM quejas q\n  WHERE ((q.id = queja_adjuntos.queja_id) AND (q.responsable_id = app_usuario_actual_id())))))",
+      "roles": [
+        "authenticated"
+      ],
+      "permissive": "PERMISSIVE",
+      "policyname": "queja_adjuntos_colaborador_propias",
+      "with_check": null
+    }
+  ],
+  "triggers": null,
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "anon": true,
+      "owner": "postgres",
+      "service": true,
+      "signature": "registrar_adjunto_queja_publica(uuid,text,text,bigint,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.registrar_adjunto_queja_publica(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint DEFAULT NULL::bigint, p_tipo_mime text DEFAULT NULL::text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_adjunto_id uuid;\r\n  v_estado     text;\r\nBEGIN\r\n  IF btrim(COALESCE(p_nombre, '')) = '' OR btrim(COALESCE(p_storage_path, '')) = '' THEN\r\n    RAISE EXCEPTION 'Nombre y ruta del adjunto son obligatorios';\r\n  END IF;\r\n\r\n  SELECT estado INTO v_estado FROM public.quejas WHERE id = p_queja_id;\r\n  IF v_estado IS NULL THEN\r\n    RAISE EXCEPTION 'Queja no encontrada';\r\n  END IF;\r\n  IF v_estado <> 'Recibido' THEN\r\n    RAISE EXCEPTION 'Solo se pueden adjuntar evidencias mientras la queja está en estado «Recibido»';\r\n  END IF;\r\n\r\n  IF (SELECT count(*) FROM public.queja_adjuntos WHERE queja_id = p_queja_id) >= 10 THEN\r\n    RAISE EXCEPTION 'Límite de 10 evidencias por queja alcanzado';\r\n  END IF;\r\n\r\n  -- Mapeo explícito: p_nombre alimenta ambas columnas de nombre\r\n  -- (legacy nombre_archivo NOT NULL + estándar nombre) y p_storage_path\r\n  -- alimenta storage_path + url_archivo legacy\r\n  INSERT INTO public.queja_adjuntos (\r\n    queja_id,\r\n    nombre,\r\n    nombre_archivo,\r\n    storage_path,\r\n    url_archivo,\r\n    tamano,\r\n    tipo_mime,\r\n    usuario_id,\r\n    created_at\r\n  ) VALUES (\r\n    p_queja_id,\r\n    btrim(p_nombre),\r\n    btrim(p_nombre),\r\n    btrim(p_storage_path),\r\n    btrim(p_storage_path),\r\n    COALESCE(p_tamano, 0),\r\n    COALESCE(nullif(btrim(COALESCE(p_tipo_mime, '')), ''), 'application/octet-stream'),\r\n    NULL,\r\n    now()\r\n  )\r\n  RETURNING id INTO v_adjunto_id;\r\n\r\n  RETURN v_adjunto_id;\r\nEND;\r\n$function$\n",
+      "authenticated": true
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "anon": false,
+      "owner": "postgres",
+      "service": true,
+      "signature": "registrar_adjunto_queja(uuid,text,text,bigint,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.registrar_adjunto_queja(p_queja_id uuid, p_nombre text, p_storage_path text, p_tamano bigint DEFAULT 0, p_tipo_mime text DEFAULT 'application/octet-stream'::text)\n RETURNS queja_adjuntos\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\r\nDECLARE\r\n  v_adjunto   public.queja_adjuntos;\r\n  v_usuario_id uuid;\r\nBEGIN\r\n  v_usuario_id := public.app_usuario_actual_id();\r\n  IF v_usuario_id IS NULL THEN RAISE EXCEPTION 'No autorizado'; END IF;\r\n\r\n  IF NOT public.app_es_staff() AND NOT (\r\n    public.app_es_colaborador()\r\n    AND EXISTS (\r\n      SELECT 1 FROM public.quejas q\r\n      WHERE q.id = p_queja_id AND q.responsable_id = v_usuario_id\r\n    )\r\n  ) THEN\r\n    RAISE EXCEPTION 'No autorizado';\r\n  END IF;\r\n\r\n  IF btrim(COALESCE(p_nombre, '')) = '' OR btrim(COALESCE(p_storage_path, '')) = '' THEN\r\n    RAISE EXCEPTION 'Nombre y ruta del adjunto son obligatorios';\r\n  END IF;\r\n\r\n  INSERT INTO public.queja_adjuntos (\r\n    queja_id,\r\n    nombre,\r\n    nombre_archivo,\r\n    storage_path,\r\n    url_archivo,\r\n    tamano,\r\n    tipo_mime,\r\n    usuario_id,\r\n    created_at\r\n  ) VALUES (\r\n    p_queja_id,\r\n    btrim(p_nombre),\r\n    btrim(p_nombre),\r\n    btrim(p_storage_path),\r\n    btrim(p_storage_path),\r\n    COALESCE(p_tamano, 0),\r\n    COALESCE(nullif(btrim(COALESCE(p_tipo_mime, '')), ''), 'application/octet-stream'),\r\n    v_usuario_id,\r\n    now()\r\n  )\r\n  RETURNING * INTO v_adjunto;\r\n\r\n  INSERT INTO public.logs (fecha, usuario_id, accion, modulo, detalle)\r\n  VALUES (now(), v_usuario_id, 'adjunto', 'quejas',\r\n    'Adjunto \"' || v_adjunto.nombre || '\" agregado a la queja ' || p_queja_id);\r\n\r\n  RETURN v_adjunto;\r\nEND;\r\n$function$\n",
+      "authenticated": true
+    }
+  ]
+}

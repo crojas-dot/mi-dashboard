@@ -6,7 +6,7 @@ import { loadModule } from './load-module.mjs'
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
 const rows = {
-  quejas: [{ id: 'q1', folio: 'Q-1', cliente_nombre: 'Caso', estado: 'En Investigación', fecha_sla: '2026-10-10' }],
+  qms_quejas: [{ id: 'q1', folio: 'Q-1', cliente_nombre: 'Caso', estado: 'En Investigación', plazo_vence: '2026-10-10' }],
   acciones: [{ id: 'a1', folio: 'SACP-1', tipo: 'Correctiva', estado: 'Abierta', fecha_limite: '2026-10-08' }],
 }
 
@@ -69,7 +69,7 @@ test('montar los dos bloques sin precarga tampoco duplica Quejas ni SACP', async
     for (const observer of observers) cleanups.push(observer.subscribe(() => {}))
     await Promise.all(h.api.dashboardPrefetchOptions().map((options) => h.client.fetchQuery(options)))
     assert.equal(h.requests.length, 4)
-    assert.equal(h.requests.filter((request) => request.table === 'quejas').length, 1)
+    assert.equal(h.requests.filter((request) => request.table === 'qms_quejas').length, 1)
     assert.equal(h.requests.filter((request) => request.table === 'acciones').length, 1)
     const tareas = observers[1].getCurrentResult().flatMap((result) => result.data.tareas)
     assert.equal(tareas.length, 2)

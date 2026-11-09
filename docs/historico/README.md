@@ -8,3 +8,5 @@ Estos archivos conservan decisiones y evidencia de etapas anteriores. No definen
 - [Guía anterior para Claude](claude-guia-anterior.md) y [plan anterior](implementation-plan-anterior.md), preservados desde Git.
 
 Los cuerpos archivados mantienen su evidencia original; algunas referencias a componentes retirados describen el estado de aquella fecha. Los resultados fechados no equivalen a ejecutar las verificaciones de hoy.
+
+- [Guía general extensa del commit 890a7de](guia-general-890a7de.md): snapshot anterior a la segunda revisión.

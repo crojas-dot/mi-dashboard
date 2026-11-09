@@ -1,0 +1,187 @@
+{
+  "verified_at": "2026-11-04T20:26:53.327Z",
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": {
+    "name": "quejas_revision_y_respuesta_separadas",
+    "version": "20261104202558"
+  },
+  "webPublished": false,
+  "businessTestWrites": 0,
+  "realMails": 0,
+  "remoteAuthGuardChecks": 3,
+  "remoteAuthGuardScope": "All three RPC denied an empty authenticated identity before case effects; transaction rolled back.",
+  "remoteCatalog": {
+    "tables": [
+      {
+        "rls": true,
+        "name": "queja_gc_revisiones",
+        "anon_read": false,
+        "auth_read": true,
+        "auth_write": false,
+        "service_write": false
+      },
+      {
+        "rls": true,
+        "name": "queja_response_drafts",
+        "anon_read": false,
+        "auth_read": true,
+        "auth_write": false,
+        "service_write": false
+      }
+    ],
+    "project": "fykhrrpeoehwqznccmfp",
+    "policies": [
+      {
+        "name": "gc_revisiones_staff_read",
+        "roles": [
+          "authenticated"
+        ],
+        "table": "queja_gc_revisiones",
+        "using": "(( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso)))",
+        "command": "SELECT"
+      },
+      {
+        "name": "response_drafts_staff_read",
+        "roles": [
+          "authenticated"
+        ],
+        "table": "queja_response_drafts",
+        "using": "(( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso)))",
+        "command": "SELECT"
+      }
+    ],
+    "functions": [
+      {
+        "name": "qms_quality_review_metadata",
+        "schema": "public",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": false
+      },
+      {
+        "name": "quality_case",
+        "schema": "qms_private",
+        "definer": true,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": false
+      },
+      {
+        "name": "quality_document",
+        "schema": "qms_private",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": false
+      },
+      {
+        "name": "review_resolution",
+        "schema": "qms_private",
+        "definer": true,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "save_response_draft",
+        "schema": "qms_private",
+        "definer": true,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "publish_response",
+        "schema": "qms_private",
+        "definer": true,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "qms_review_resolution",
+        "schema": "public",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "qms_save_response_draft",
+        "schema": "public",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "qms_publish_approved_response",
+        "schema": "public",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": true
+      },
+      {
+        "name": "qms_protect_quality_publication",
+        "schema": "public",
+        "definer": false,
+        "search_path": [
+          "search_path=\"\""
+        ],
+        "anon_execute": false,
+        "auth_execute": false
+      }
+    ],
+    "migration": {
+      "name": "quejas_revision_y_respuesta_separadas",
+      "version": "20261104202558"
+    }
+  },
+  "securityAdvisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "count": 10
+    },
+    {
+      "name": "extension_in_public",
+      "count": 1
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "count": 6
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "count": 24
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "count": 1
+    }
+  ],
+  "scope": "DDL applied and effective grants/RLS/functions verified. Workflow tests isolated; no real complaints created or altered.",
+  "isolatedDatabaseChecks": 71,
+  "syntheticBrowserChecks": 27,
+  "nodeChecks": 825,
+  "localChecks": ["TypeScript", "lint", "production build", "structure", "visual layer"]
+}

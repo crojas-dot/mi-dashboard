@@ -1,7 +1,9 @@
 'use client'
 
-import { FileText, Eye, Download, Trash2 } from 'lucide-react'
+import { preconnect } from 'react-dom'
+import { File, FileImage, FileSpreadsheet, FileText, Eye, Download, Trash2 } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
+import Button from '@/components/ui/Button'
 import { formatBytes } from '@/lib/utils/format'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 
@@ -11,6 +13,26 @@ interface ListaAdjuntosProps {
   onDownload: (a: QuejaAdjunto) => void
   puedeEliminar?: (a: QuejaAdjunto) => boolean
   onEliminar?: (a: QuejaAdjunto) => void
+  layout?: 'list' | 'cards'
+}
+
+function filePresentation(adjunto: QuejaAdjunto) {
+  const extension = adjunto.nombre.split('.').pop()?.toLowerCase() ?? ''
+  const mime = (adjunto.tipo_mime ?? '').toLowerCase()
+  if (mime === 'application/pdf' || extension === 'pdf') {
+    return { Icon: FileText, label: 'PDF', color: 'bg-soft-red-bg text-qms-danger' }
+  }
+  if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(extension)) {
+    const label = ['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(extension) ? extension.toUpperCase() : 'Imagen'
+    return { Icon: FileImage, label, color: 'bg-soft-purple-bg text-qms-purple' }
+  }
+  if (mime.includes('spreadsheet') || mime.includes('excel') || ['xls', 'xlsx', 'csv'].includes(extension)) {
+    return { Icon: FileSpreadsheet, label: extension === 'csv' ? 'CSV' : 'Excel', color: 'bg-soft-green-bg text-qms-success' }
+  }
+  if (mime.includes('word') || ['doc', 'docx', 'txt', 'odt'].includes(extension)) {
+    return { Icon: FileText, label: extension === 'txt' ? 'TXT' : 'Documento', color: 'bg-qms-primary-soft text-qms-primary' }
+  }
+  return { Icon: File, label: 'Archivo', color: 'bg-qms-hover-bg text-qms-muted' }
 }
 
 export default function ListaAdjuntos({
@@ -19,6 +41,7 @@ export default function ListaAdjuntos({
   onDownload,
   puedeEliminar,
   onEliminar,
+  layout = 'list',
 }: ListaAdjuntosProps) {
   const cliente = adjuntos.filter((a) => !a.usuario_id)
   const analisis = adjuntos.filter((a) => a.usuario_id)
@@ -28,11 +51,56 @@ export default function ListaAdjuntos({
     return (
       <div className="mt-3">
         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{titulo}</p>
-        <ul className="space-y-1">
-          {lista.map((a) => (
-            <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
+        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : 'space-y-1'}>
+          {lista.map((a) => {
+            const { Icon, label, color } = filePresentation(a)
+            const preparePreviewConnection = () => {
+              // Anticipar solo la conexión al origen: no descarga archivos ni guarda permisos.
+              if (!a.storage_path.includes('/')) preconnect('https://drive.google.com')
+            }
+            const previewIntent = {
+              onPointerEnter: preparePreviewConnection,
+              onFocus: preparePreviewConnection,
+              onPointerDown: preparePreviewConnection,
+            }
+            return layout === 'cards' ? (
+              <li key={a.id} className="group w-full min-w-0 max-w-56 overflow-hidden rounded-card border border-qms-border bg-qms-surface transition-colors hover:border-qms-primary/30 focus-within:border-qms-primary/30">
+                {/* Solo metadatos e iconos estáticos: listar archivos no descarga vistas previas. */}
+                <button
+                  {...previewIntent}
+                  type="button"
+                  onClick={() => onPreview(a)}
+                  className="flex w-full min-w-0 cursor-pointer items-center gap-2 px-2.5 py-2 text-left hover:bg-qms-hover-bg"
+                  title={a.nombre}
+                  aria-label={`Vista previa de ${a.nombre}`}
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-button ${color}`} aria-hidden="true">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm text-qms-dark">{a.nombre}</span>
+                    <span className="block truncate text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</span>
+                  </span>
+                </button>
+                <div className="flex items-center justify-end border-t border-qms-border/60 bg-qms-background/50 px-1 group-hover:bg-qms-hover-bg group-focus-within:bg-qms-hover-bg">
+                  <Button {...previewIntent} size="icon" variant="ghost" onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}>
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}>
+                    <Download className="h-4 w-4" aria-hidden="true" />
+                  </Button>
+                  {onEliminar && puedeEliminar?.(a) && (
+                    <Button size="icon" variant="ghost" onClick={() => onEliminar(a)} title="Eliminar adjunto" aria-label={`Eliminar ${a.nombre}`} className="text-qms-danger">
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  )}
+                </div>
+              </li>
+            ) : (
+              <li key={a.id} className="flex select-text items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2">
               <FileText className={`h-4 w-4 shrink-0 ${esAnalisis ? 'text-blue-500' : 'text-gray-400'}`} />
               <button
+                {...previewIntent}
                 type="button"
                 onClick={() => onPreview(a)}
                 className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-qms-primary-hover hover:underline"
@@ -42,7 +110,7 @@ export default function ListaAdjuntos({
               </button>
               {esAnalisis && <Badge variant="blue">Análisis</Badge>}
               <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-              <button type="button" onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Vista previa">
+              <button {...previewIntent} type="button" onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Vista previa">
                 <Eye className="h-4 w-4" />
               </button>
               <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">
@@ -56,8 +124,9 @@ export default function ListaAdjuntos({
                   <Trash2 className="h-4 w-4" />
                 </button>
               )}
-            </li>
-          ))}
+              </li>
+            )
+          })}
         </ul>
       </div>
     )

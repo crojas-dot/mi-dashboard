@@ -139,8 +139,8 @@ test('una consulta fresca se reutiliza y el remontaje recupera datos invalidados
 })
 
 test('las tareas cargan aunque fallen los conteos de documentos y conservan los vencimientos', async () => {
-  const db = fakeDatabase({ quejas: [
-    { id: 'q1', cliente_nombre: 'Caso', estado: 'En Investigación', fecha_sla: '2026-10-08' },
+  const db = fakeDatabase({ qms_quejas: [
+    { id: 'q1', cliente_nombre: 'Caso', estado: 'En Investigación', plazo_vence: '2026-10-08' },
     { id: 'q2', estado: 'Finalizado', fecha_sla: '2026-10-01' },
   ], acciones: [{ id: 'a1', folio: 'SACP-1', tipo: 'Correctiva', estado: 'Abierta', fecha_limite: '2026-10-07' }] },
   { documentos: new Error('Documentos inaccesibles') })

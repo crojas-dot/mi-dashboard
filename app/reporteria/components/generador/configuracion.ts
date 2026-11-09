@@ -19,16 +19,18 @@ export const CONFIG_INFORMES: Record<string, ConfiguracionInforme> = {
   quejas: {
     moduloRuta: 'quejas',
     iconKey: 'quejas',
-    tabla: 'quejas',
+    tabla: 'qms_quejas',
     campoFecha: 'fecha',
-    catalogos: { estado: 'estado_queja', prioridad: 'prioridad' },
-    campoDistribucion: 'categoria',
-    campoVencido: 'fecha_sla',
+    catalogos: { estado: 'estado_queja', tipo: 'tipo_queja' },
+    campoDistribucion: 'tipo',
+    campoVencido: 'plazo_vence',
     columnas: [
       { key: 'folio', label: 'Folio' },
       { key: 'cliente_nombre', label: 'Cliente' },
-      { key: 'categoria', label: 'Categoría' },
-      { key: 'prioridad', label: 'Prioridad' },
+      { key: 'tipo', label: 'Tipo' },
+      { key: 'area_afectada', label: 'Área afectada' },
+      { key: 'numero_oficio_resolucion', label: 'N.º de oficio' },
+      { key: 'observaciones', label: 'Observaciones' },
       { key: 'estado', label: 'Estado' },
       { key: 'fecha', label: 'Fecha' }
     ]

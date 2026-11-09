@@ -15,6 +15,11 @@ const PUBLIC_PATHS = ['/login', '/q']
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))
     || pathname === '/api/drive/upload-public'
+    || pathname === '/api/public/quejas'
+    || pathname === '/api/public/quejas/finalizar'
+    || pathname === '/api/public/seguimiento'
+    || pathname === '/api/public/seguimiento/documento'
+    || /^\/api\/public\/formularios\/[^/]+$/.test(pathname)
 }
 
 export async function proxy(request: NextRequest) {
@@ -22,6 +27,11 @@ export async function proxy(request: NextRequest) {
   // Un cliente nunca puede aportar identidad mediante estos encabezados.
   for (const name of ['x-user-id', 'x-user-role', 'x-user-email']) headers.delete(name)
   if (isPublicPath(request.nextUrl.pathname)) return NextResponse.next({ request: { headers } })
+  // Solo este POST usa HMAC de máquina en el handler, antes de service role.
+  // Los demás métodos/rutas conservan el guard Bearer existente.
+  if (request.nextUrl.pathname === '/api/quejas/correos' && request.method === 'POST') {
+    return NextResponse.next({ request: { headers } })
+  }
   if (!getAuthToken(request)) return NextResponse.json({ error: 'Sesión no válida' }, { status: 401 })
   if (authenticatesInRoute(request.nextUrl.pathname, request.method)) {
     // El handler hace la validación completa una sola vez. No confía en

@@ -5,25 +5,26 @@ import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import Markdown from 'react-markdown'
 import ts from 'typescript'
+import { loadModule } from './load-module.mjs'
 
-// The active renderer keeps react-markdown's URL filter and HTML escaping.
-// Plugins or URL overrides require a separate security review before use here.
-test('el análisis mantiene el filtro de URLs y no habilita HTML crudo', async () => {
+// El panel usa el lector canónico desde la integración de Tiptap; probar esa
+// frontera evita exigir un renderer inline que ya no forma parte de la vista.
+test('el análisis usa el lector seguro sin HTML ni recursos externos', async () => {
   const source = await readFile(new URL('../app/mis-quejas/components/QuejaColaboradorPanel.tsx', import.meta.url), 'utf8')
   const ast = ts.createSourceFile('panel.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const renderers = []
   function visit(node) {
-    if (ts.isJsxOpeningElement(node) && node.tagName.getText(ast) === 'ReactMarkdown') renderers.push(node)
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && node.tagName.getText(ast) === 'RichTextContent') renderers.push(node)
     ts.forEachChild(node, visit)
   }
   visit(ast)
-  assert.equal(renderers.length, 1)
-  const attributes = renderers[0].attributes.properties
-  assert.ok(attributes.every((attribute) => ts.isJsxAttribute(attribute)), 'No aceptar props Markdown sin revisar')
-  const names = attributes.map((attribute) => attribute.name.getText(ast))
-  for (const option of ['urlTransform', 'remarkPlugins', 'rehypePlugins', 'remarkRehypeOptions']) {
-    assert.ok(!names.includes(option), `${option} requiere una revisión específica de seguridad`)
-  }
+  assert.ok(renderers.length > 0)
+  assert.match(source, /import RichTextContent from '@\/components\/ui\/RichTextContent'/)
+  assert.doesNotMatch(source, /dangerouslySetInnerHTML|<ReactMarkdown/)
+  const { default: Reader } = loadModule('components/ui/RichTextContent.tsx')
+  const html = renderToStaticMarkup(React.createElement(Reader, { format: 'markdown', value: '**Conclusión**\n\n<script>alert(1)</script>\n\n[Referencia](https://example.test)\n\n![imagen](https://example.test/track.png)' }))
+  assert.match(html, /<strong>Conclusión<\/strong>/)
+  assert.doesNotMatch(html, /<(?:script|img|iframe|a)\b|\b(?:src|href)=/i)
 })
 
 function render(markdown) {

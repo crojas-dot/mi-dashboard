@@ -83,14 +83,14 @@ test('asignar y transicionar usa el wrapper vigente con la revisión editada y c
   const queja = { id: 'q1', revision: 7 }
   const updated = await api.transicionarQueja(queja, 'En Investigación', { responsableId: 'responsable', justificacionProcede: '  Procede  ' })
   assert.equal(updated.revision, 8)
-  assert.equal(api.calls[0].name, 'qms_transition')
-  assert.deepEqual(JSON.parse(JSON.stringify(api.calls[0].args)), { p_id: 'q1', p_expected: 7, p_state: 'investigation', p_resolution: null, p_justification: 'Procede', p_owner: 'responsable', p_reopen: null })
+  assert.equal(api.calls[0].name, 'qms_transition_complaint')
+  assert.deepEqual(JSON.parse(JSON.stringify(api.calls[0].args)), { p_id: 'q1', p_expected: 7, p_state: 'investigation', p_resolution: null, p_justification: 'Procede', p_owner: 'responsable', p_reopen: null, p_office_number: null, p_resolution_format: null, p_justification_format: 'plain' })
   await api.actualizarDetallesQueja({ quejaId: 'q1', revision: updated.revision, responsableId: 'otro' })
   assert.equal(api.calls[1].name, 'qms_update_details')
   assert.equal(api.calls[1].args.p_expected, 8)
   assert.equal(api.calls[1].args.p_owner, 'otro')
   await api.reabrirQueja({ id: 'q1', revision: 9 }, ' Motivo ')
-  assert.equal(api.calls[2].name, 'qms_transition')
+  assert.equal(api.calls[2].name, 'qms_transition_complaint')
   assert.equal(api.calls[2].args.p_reopen, 'Motivo')
 })
 

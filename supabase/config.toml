@@ -1,0 +1,3 @@
+[functions.quejas-mail-queue]
+# El endpoint de máquina verifica HMAC/purpose/nonce antes de leer credenciales o DB.
+verify_jwt = false

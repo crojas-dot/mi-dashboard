@@ -30,11 +30,11 @@ export async function fetchQuejaComentarios(quejaId: string, signal?: AbortSigna
   return (data as QuejaComentario[]) ?? []
 }
 
-export function useQuejaComentarios(quejaId: string) {
+export function useQuejaComentarios(quejaId: string, enabled = true) {
   return useQuery({
     queryKey: comentariosKey(quejaId),
     queryFn: ({ signal }) => fetchQuejaComentarios(quejaId, signal),
-    enabled: !!quejaId,
+    enabled: enabled && !!quejaId,
   })
 }
 

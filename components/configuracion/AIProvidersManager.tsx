@@ -9,7 +9,6 @@ import { esOpenRouter } from '@/lib/ai/providerDisplay'
 import { MODULOS_IA } from '@/lib/constants/modulos'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { AIProvider, AIRouting, ModeloTestResultado } from '@/lib/ai/types'
-import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/Modal'
 import ErrorState from '@/components/ui/ErrorState'
@@ -188,10 +187,8 @@ const [editingProvider, setEditingProvider] = useState<EditingProvider | null>(n
     }
   }
 
-  const getLimitePorTipo = limitePorTipo
-
   const abrirNuevo = () =>
-    setEditingProvider({ id: '', nombre: '', tipo: 'openai', base_url: '', api_key: '', modelos: [], tokens_usados: 0, limite_tokens: getLimitePorTipo('openai') } as AIProvider)
+    setEditingProvider({ id: '', nombre: '', tipo: 'openai', base_url: '', api_key: '', modelos: [], tokens_usados: 0, limite_tokens: limitePorTipo('openai') } as AIProvider)
 
   const abrirEditar = (p: AIProvider) =>
     setEditingProvider(p)

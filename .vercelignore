@@ -1,0 +1,25 @@
+# Exclusiones explícitas: secretos locales y artefactos nunca se suben al despliegue.
+.env*
+.performance/
+.ref-template/
+.agents/
+.codex/
+tmp/
+.git/
+node_modules/
+.next/
+coverage/
+*.pem
+*.tsbuildinfo
+npm-debug.log*
+
+# También excluir enlaces a directorios locales.
+.performance
+.agents
+.codex
+.ref-template
+node_modules
+.next
+tmp
+.git
+coverage

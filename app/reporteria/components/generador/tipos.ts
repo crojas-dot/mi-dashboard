@@ -1,5 +1,5 @@
 export interface FilaInforme { id: string; estado: string; [key: string]: unknown }
-export interface CatalogoItem { valor: string; color: string }
+export interface CatalogoItem { valor: string; color: string; etiqueta?: string; codigo?: string; valor_interno?: string }
 export interface ColumnaInforme { key: string; label: string }
 export interface IncluirInforme { tabla: boolean; resumen: boolean; vencidos: boolean; distribucion: boolean }
 export interface FiltrosInforme {

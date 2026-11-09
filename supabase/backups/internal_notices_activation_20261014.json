@@ -1,0 +1,83 @@
+{
+  "pre_activation": {
+    "enabled": false,
+    "quality_active": 0,
+    "active_invalid_email": 0,
+    "migration_registered": 1,
+    "private_settings_rls": true,
+    "new_rpc_client_grants": 0,
+    "client_private_column_grants": 0
+  },
+  "activation": {
+    "enabled": true,
+    "cutoff_at": "2026-10-15T03:40:57.91402+00:00",
+    "citizen_sent": 6,
+    "internal_rows": 0,
+    "quality_active": 0,
+    "future_known_notices": 4
+  },
+  "apps_script_source_verified": true,
+  "edge_source_verified": true,
+  "health": {
+    "reachable": true,
+    "enabled": true
+  },
+  "manual_poll": false,
+  "synthetic_remote_mail": false,
+  "frontend_published": false,
+  "verification": {
+    "rules": [
+      {
+        "alerts": [
+          1
+        ],
+        "day_type": "business_days",
+        "stage_id": "quejas.evaluation",
+        "expiration_action": "notify_quality"
+      },
+      {
+        "alerts": [
+          5,
+          3
+        ],
+        "day_type": "business_days",
+        "stage_id": "quejas.investigation",
+        "expiration_action": "notify_quality"
+      }
+    ],
+    "outbox": [
+      {
+        "tipo": "final",
+        "count": 2,
+        "status": "sent"
+      },
+      {
+        "tipo": "investigacion",
+        "count": 3,
+        "status": "sent"
+      },
+      {
+        "tipo": "recibido",
+        "count": 1,
+        "status": "sent"
+      }
+    ],
+    "enabled": true,
+    "cutoff_at": "2026-10-15T03:40:57.91402+00:00",
+    "checked_at": "2026-10-15T03:44:26.111037+00:00",
+    "quality_active": 0,
+    "tick_after_activation": true,
+    "last_authenticated_tick": "2026-10-15T03:44:25.518125+00:00"
+  },
+  "automatic_poll": {
+    "at_local": "2026-10-14 21:44:20 America/Costa_Rica",
+    "status": "completed",
+    "duration_seconds": 5.548,
+    "claimed": 0,
+    "sent": 0,
+    "retry": 0,
+    "uncertain": 0,
+    "failed": 0,
+    "skipped": 0
+  }
+}

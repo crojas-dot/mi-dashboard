@@ -17,7 +17,7 @@ export const CACHE_CONFIG = {
 
 export function getCacheConfig(queryKey: QueryKey) {
   const key = String(queryKey[0] ?? '')
-  if (['configuraciones_sistema', 'catalogos', 'sla_config', 'permisos'].includes(key)) return CACHE_CONFIG.configuraciones
+  if (['configuraciones_sistema', 'catalogos', 'sla_config', 'qms_calendar', 'permisos'].includes(key)) return CACHE_CONFIG.configuraciones
   if (key === 'quejas_actividad') return CACHE_CONFIG.quejas
   return CACHE_CONFIG[key as keyof typeof CACHE_CONFIG] ?? CACHE_CONFIG.default
 }

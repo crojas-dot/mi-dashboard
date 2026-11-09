@@ -1,17 +1,22 @@
+import { fechaLocalVisible } from '@/lib/constants/quejas'
 import type { FilaInforme } from './tipos'
 
 export const cellValue = (row: FilaInforme, key: string) => {
-  const v = row[key]
+  const v = key === 'estado' ? row.estado_nombre ?? row.estado : row[key]
   if (v == null || v === '') return '—'
   if (key === 'descripcion' && typeof v === 'string' && v.length > 60) return v.slice(0, 60) + '…'
   if (key === 'impacto' || key === 'probabilidad') return String(v)
-  if (typeof v === 'string' && v.includes('T')) return new Date(v).toLocaleDateString('es-ES')
+  if (typeof v === 'string' && (key.startsWith('fecha') || key === 'plazo_vence')) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaLocalVisible(v)
+    if (Number.isFinite(Date.parse(v))) return new Date(v).toLocaleDateString('es-CR', { timeZone: 'America/Costa_Rica' })
+  }
   return String(v)
 }
 
 export function contarEstados(resultados: FilaInforme[]): Record<string, number> {
   return resultados.reduce((acc: Record<string, number>, row) => {
-    acc[row.estado] = (acc[row.estado] || 0) + 1
+    const label = String(row.estado_nombre ?? row.estado)
+    acc[label] = (acc[label] || 0) + 1
     return acc
   }, {})
 }
@@ -28,6 +33,7 @@ export function contarDistribucion(resultados: FilaInforme[], campo: string): Re
 export function filtrarVencidos(resultados: FilaInforme[], campo: string, hoy = new Date()): FilaInforme[] {
   return resultados.filter(row => {
     const valor = row[campo]
+    if (campo === 'plazo_vence' && row.estado === 'Resuelto') return false
     if (!valor || ['Cerrada', 'Finalizado', 'No Procede'].includes(row.estado)) return false
     return new Date(String(valor)) < hoy
   })

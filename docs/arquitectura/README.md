@@ -6,6 +6,23 @@ Las rutas de código de estas tablas parten de la raíz del proyecto.
 
 ## Ruta rápida
 
+[Revisión GC y respuesta al cliente](../quejas-revision-y-respuesta-2026-11-04.md)
+ubica acciones directas, devolución con motivo, informe editable y selector Word/PDF,
+borrador persistente y publicación final atómica. También documenta el adjunto físico
+del emisor, conservando No Procede y los contratos del cliente anterior.
+
+Revisión local del 3 noviembre de Quejas: [claridad, sonido y acuse por evento](../quejas-claridad-y-acuse-2026-11-03.md).
+Ubica la presentación del expediente y el despertador de correo, cuya activación
+remota sigue pendiente. El resumen superior de resultado se retiró por petición
+del propietario. [Resolución y revisión GC](../quejas-resolucion-y-revision-gc-2026-11-03.md)
+ubica la edición compacta y la propuesta prioritaria durante revisión; los demás
+estados mantienen Descripción al principio.
+
+[Informe editable y Word](../quejas-informe-editable-word-2026-11-03.md) ubica
+Generar expediente, plantilla Tiptap, API y almacenamiento por versiones. Editor y
+exportación verificados en local; almacenamiento remoto activado el 3 noviembre,
+con publicación web pendiente.
+
 1. Busca el comportamiento en **Dónde editar** y abre primero el archivo de entrada indicado.
 2. Sigue sus imports hasta la fuente canónica; no edites una copia local si ya existe un registro, token o helper compartido.
 3. Lee solo el AGENTS.md de la capa y la referencia del tema que vas a tocar.
@@ -39,7 +56,14 @@ adáptalas explícitamente en la frontera.
 | Tablas, columnas, RLS, RPC, QMS y migraciones aplicadas | [Base de datos](base-de-datos.md) |
 | Queries, caché, precarga, cancelación, Realtime y errores | [Datos y rendimiento](datos-y-rendimiento.md) |
 | Qué hace cada página, reglas de Quejas y límites de producto | [Módulos y flujos](modulos-y-flujos.md) |
+| Preparación del primer lanzamiento de Quejas | [Evaluación y reglas confirmadas](../quejas-lanzamiento-2026-10-09.md) |
 | Usuarios, Drive, IA, endpoints y variables de entorno | [Integraciones](integraciones.md) |
+| Gateway ciudadano, BotID, cuotas, capacidad de adjuntos y activación | [Seguridad de formularios públicos](../seguridad-formularios-publicos.md) |
+| Avisos a Calidad/responsable, fechas y entrega independiente | [Avisos internos de Quejas](../avisos-internos-quejas-2026-10-14.md) |
+| Sonido, primera lectura y coordinación entre pestañas | [Notificaciones y audio](../notificaciones-audio-2026-10-14.md) |
+| Calendario versionado, días laborables y feriados | [Calendario QMS](../calendario-qms-2026-10-15.md) |
+| Mis Quejas, seguimiento privado, caducidad desde cierre y respuesta/oficio publicados | [Contrato y activación del 19 octubre](../quejas-seguimiento-y-publicacion-2026-10-16.md) |
+| Dos correos ciudadanos, retiro del intermedio y corrección local de reintentos | [Entrega del 20 octubre](../quejas-dos-correos-y-reintentos-2026-10-20.md) |
 | Tokens y puntos de entrada de apariencia | [Visual](visual.md) y [patrones del kit](../visual-patterns.md) |
 | Comandos, alcance de pruebas y trabajo pendiente | [Verificación y pendientes](verificacion-y-pendientes.md) |
 
@@ -64,13 +88,22 @@ adáptalas explícitamente en la frontera.
 | Alta operativa | app/<modulo>/components/Nueva*.tsx | [lib/utils/operationalFormValidation.ts](../../lib/utils/operationalFormValidation.ts); mantener doble envío y borrador protegidos |
 | Workflow/estado/responsable de Quejas | [lib/services/quejaWorkflowService.ts](../../lib/services/quejaWorkflowService.ts) | [lib/constants/quejas.ts](../../lib/constants/quejas.ts), [lib/queries/useQuejas.ts](../../lib/queries/useQuejas.ts), paneles de Quejas y wrappers QMS en DB |
 | Mis Quejas, análisis o resolución | [app/mis-quejas/](../../app/mis-quejas/) | Buscar QuejaColaboradorPanel.tsx y useEntityRequestGuard; no cambiar filtro de propietario |
+| Lectura de análisis y copia histórica de procedencia | [lib/utils/quejaContent.ts](../../lib/utils/quejaContent.ts) | Compartido por QuejaDetalleModal y QuejaColaboradorPanel; oculta solo la copia plain exacta del motor, sin modificar DB ni inferir formato |
+| Panel de expediente, actividad y plazos de Quejas | [app/quejas/components/QuejaDetalleModal.tsx](../../app/quejas/components/QuejaDetalleModal.tsx) | QuejaExpedientePanels.tsx, quejaExpedienteModel.ts, ResponsablePicker.tsx, AreaQuejaControl.tsx y lib/queries/useQuejaSeguimiento.ts; observaciones en useQuejaComentarios.ts; [contrato del 13 octubre](../quejas-panel-2026-10-13.md) |
+| Selección y catálogo de áreas afectadas | [AreaQuejaControl.tsx](../../app/quejas/components/AreaQuejaControl.tsx) | AreaQuejaCatalogo.tsx dentro de CaseRequestHeader y AreaCatalogoPicker.tsx para el desplegable con acciones por fila; [quejaAreaCatalogService.ts](../../lib/services/quejaAreaCatalogService.ts) para renombrar/activar con snapshot; altas por guardarAreaQueja y lecturas en useCatalogos.ts; no reescribir áreas históricas |
+| Correos automáticos de Quejas sin Vercel | [supabase/functions/quejas-mail-queue/](../../supabase/functions/quejas-mail-queue/) | message.ts canónico; diseño HTML en qmsMailHtml_ de integration/apps-script/quejas-mail/Codigo.gs; productor/claims en migración 20261020163142; [estado operativo](../correo-quejas-directo-2026-10-13.md) y [dos correos](../quejas-dos-correos-y-reintentos-2026-10-20.md) |
+| Destinatarios y recordatorios internos de Quejas | [migración de avisos](../../supabase/migrations/20261015011028_quejas_internal_notices.sql) | qms_process_notices/claim v2/authorize; [contrato y activación](../avisos-internos-quejas-2026-10-14.md); no cambiar snapshots/plazos para avisar |
+| Sonido de campana entre pestañas | [lib/hooks/useNotificationSound.ts](../../lib/hooks/useNotificationSound.ts) | [lib/utils/notificationSound.ts](../../lib/utils/notificationSound.ts), sonidosNotificacion.ts; IDs/fechas locales, sin contenido ni credenciales |
 | Secciones y editores de Configuración | [app/configuracion/page.tsx](../../app/configuracion/page.tsx) | [app/configuracion/components/](../../app/configuracion/components/); [lib/services/configuracionService.ts](../../lib/services/configuracionService.ts) |
+| Días laborables y feriados del motor QMS | [app/configuracion/components/CalendarioSettings.tsx](../../app/configuracion/components/CalendarioSettings.tsx) | useQmsCalendar.ts, qmsCalendarService.ts, lib/utils/qmsCalendar.ts; RPC qms_publish_calendar con CAS/auditoría, sin recalcular etapas abiertas |
 | CRUD/reset/último acceso de Usuarios | [app/api/usuarios/route.ts](../../app/api/usuarios/route.ts) | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts), ultimoAcceso.ts, [components/usuarios/](../../components/usuarios/) y [lib/services/usuariosService.ts](../../lib/services/usuariosService.ts), [lib/services/apiClient.ts](../../lib/services/apiClient.ts), useUsuarios.ts |
-| Proveedores/modelos/routing de IA | [components/configuracion/AIProvidersManager.tsx](../../components/configuracion/AIProvidersManager.tsx) | [lib/services/aiConfigService.ts](../../lib/services/aiConfigService.ts), [app/api/configuracion/ia/route.ts](../../app/api/configuracion/ia/route.ts), [lib/server/aiSettings.ts](../../lib/server/aiSettings.ts) |
+| Proveedores/modelos/routing de IA | [components/configuracion/AIProvidersManager.tsx](../../components/configuracion/AIProvidersManager.tsx) y [sus editores](../../components/configuracion/ia/) | [lib/services/aiConfigService.ts](../../lib/services/aiConfigService.ts), [app/api/configuracion/ia/route.ts](../../app/api/configuracion/ia/route.ts), [lib/server/aiSettings.ts](../../lib/server/aiSettings.ts) |
 | Ejecución/fallback/memoria de análisis IA | [app/api/ai/analizar/route.ts](../../app/api/ai/analizar/route.ts) | [lib/ai/](../../lib/ai/) y [lib/server/deadline.ts](../../lib/server/deadline.ts); conservar presupuesto y límites |
+| Formulario público, contrato API o protección de bots | [app/q/[token]/page.tsx](../../app/q/[token]/page.tsx) y [lib/services/publicQuejasClient.ts](../../lib/services/publicQuejasClient.ts) | [presentación del 14 octubre](../formulario-publico-visual-2026-10-14.md), [validador cliente/API](../../lib/utils/publicQuejaValidation.ts), [app/q/components/usePublicQuejaForm.ts](../../app/q/components/usePublicQuejaForm.ts), [lib/server/publicForms/](../../lib/server/publicForms/), [app/api/public/](../../app/api/public/), instrumentation-client.ts y next.config.ts |
 | Subir/descargar/eliminar evidencias | [app/api/drive/](../../app/api/drive/) | [lib/server/drive.ts](../../lib/server/drive.ts), [lib/constants/adjuntos.ts](../../lib/constants/adjuntos.ts), [components/quejas/](../../components/quejas/) y formulario público |
 | Zona horaria | [lib/timeZone.ts](../../lib/timeZone.ts) | [app/api/configuracion/zona-horaria/route.ts](../../app/api/configuracion/zona-horaria/route.ts); motor QMS conserva su calendario |
-| Imprimir un informe | [app/reporteria/page.tsx](../../app/reporteria/page.tsx) | [app/globals.css](../../app/globals.css): reglas de impresión; lotes limitados a 5000 filas |
+| Logo institucional del menú | [components/EmpresaLogo.tsx](../../components/EmpresaLogo.tsx) | [lib/constants/marca.ts](../../lib/constants/marca.ts), [lib/queries/useLogoEmpresa.ts](../../lib/queries/useLogoEmpresa.ts), [app/api/configuracion/logo/route.ts](../../app/api/configuracion/logo/route.ts) y [editores de Configuración](../../app/configuracion/components/); bucket público branding, recorte cuadrado en cliente y sin máscara circular al mostrarlo |
+| Imprimir un informe | [app/reporteria/page.tsx](../../app/reporteria/page.tsx) | [app/globals.css](../../app/globals.css): reglas de impresión; lotes limitados a 5000 filas; [observaciones de Quejas](../reporteria-observaciones-2026-10-13.md) en generador/consultas.ts |
 | Validación de API o headers falsificados | [lib/server/auth.ts](../../lib/server/auth.ts), proxy.ts | [lib/server/apiAuthentication.ts](../../lib/server/apiAuthentication.ts); cada método registrado conserva su guard |
 | Política, tabla, función o índice | [supabase/migrations/](../../supabase/migrations/) | Ver esquema efectivo y skills de Supabase; [scripts/verificar-auditoria-db.sql](../../scripts/verificar-auditoria-db.sql) no altera estado final |
 
@@ -101,3 +134,7 @@ El material en docs/historico/ conserva decisiones de etapas previas; sus import
 tokens y componentes pueden haber sido retirados. Revisar consumidores actuales.
 El [informe del 7 de octubre](../auditoria-validada-2026-10-07.md) documenta evidencia
 de aquella auditoría; resultados históricos no equivalen a ejecutar pruebas hoy.
+
+Activación pública verificada 9-oct: [corte canónico](../../supabase/migrations/20261009231000_public_forms_drive_access_cutover.sql), [Storage histórico](../../supabase/migrations/20261009230746_public_storage_access_hardening.sql) y [evidencia de producción](../../supabase/backups/public_activation_evidence_20261009.json). Consultar sus límites antes de restaurar un cliente anterior.
+
+Quejas: [entrega y pendientes](../quejas-lanzamiento-2026-10-09.md), [correo independiente](../seguridad-correos-quejas.md).

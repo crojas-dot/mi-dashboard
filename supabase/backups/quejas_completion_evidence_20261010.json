@@ -1,0 +1,108 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "verified_utc": "2026-10-11 04:55:09 UTC",
+  "before": [
+    {
+      "cases": 130,
+      "offices": 1,
+      "duplicate_offices": 0,
+      "counters": [
+        {
+          "anio": 2025,
+          "ultimo": 16
+        },
+        {
+          "anio": 2026,
+          "ultimo": 2066
+        }
+      ],
+      "outbox": null
+    }
+  ],
+  "after": [
+    {
+      "cases": 130,
+      "counters": [
+        {
+          "anio": 2025,
+          "ultimo": 16
+        },
+        {
+          "anio": 2026,
+          "ultimo": 2066
+        }
+      ],
+      "mail_events": 0,
+      "stage_rules": [
+        {
+          "day_type": "business_days",
+          "duration": 15,
+          "stage_id": "quejas.investigation"
+        },
+        {
+          "day_type": "business_days",
+          "duration": 3,
+          "stage_id": "quejas.evaluation"
+        }
+      ],
+      "view_options": [
+        "security_invoker=true"
+      ],
+      "client_direct_update": false,
+      "versioned_transition": true,
+      "anon_transition": false,
+      "client_mail_worker": false,
+      "client_mail_recipient": false,
+      "client_public_rpc": false
+    }
+  ],
+  "final_acl": [
+    {
+      "direct_folio": false,
+      "anon_internal_trigger": false,
+      "details_permission_guard": true,
+      "read_policy": "(( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso)))",
+      "cases": 130,
+      "queued": 0
+    }
+  ],
+  "migrations": [
+    {
+      "version": "20261011044303",
+      "name": "quejas_workflow_completion"
+    },
+    {
+      "version": "20261011044317",
+      "name": "quejas_mail_outbox"
+    },
+    {
+      "version": "20261011044810",
+      "name": "quejas_rpc_surface_hardening"
+    }
+  ],
+  "verification": {
+    "unit_tests": 457,
+    "postgres_isolated_checks": 48,
+    "visual_checks": 7,
+    "visual_data": "synthetic",
+    "types": true,
+    "lint": true,
+    "build": true,
+    "structure": true,
+    "visual_layer": true
+  },
+  "activation": {
+    "vercel_published": false,
+    "mail_enabled": false,
+    "apps_script_project": "new_separate_pending",
+    "actual_emails_sent": 0,
+    "deadline_cron_installed": false,
+    "holiday_list_configured": false,
+    "old_workflow_cutover": "pending new client deployment"
+  },
+  "advisor_notes": {
+    "new_private_nonce_table": "RLS without policies intentional; no client grants",
+    "new_definer_rpcs": "intentional authenticated APIs with active profile/module/expected-revision guards",
+    "existing_warnings": "pg_trgm in public, legacy definer ACLs, leaked password protection setting; this is not a full-system audit"
+  }
+}

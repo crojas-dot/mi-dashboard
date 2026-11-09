@@ -3,9 +3,9 @@ import assert from 'node:assert/strict'
 import { loadModule, fakeDatabase } from './load-module.mjs'
 
 test('dashboard excluye estados terminales y devuelve los ocho vencimientos más urgentes', async () => {
-  const quejas = Array.from({ length: 12 }, (_, i) => ({ id: `q${i}`, estado: 'En Investigación', fecha_sla: `2026-09-${String(20 - i).padStart(2, '0')}` }))
+  const quejas = Array.from({ length: 12 }, (_, i) => ({ id: `q${i}`, estado: 'En Investigación', plazo_vence: `2026-09-${String(20 - i).padStart(2, '0')}` }))
   quejas.push(...['Finalizado', 'No Procede', 'Cerrada'].map((estado) => ({ id: estado, estado, fecha_sla: '2020-01-01' })))
-  const db = fakeDatabase({ quejas, acciones: [], documentos: [], riesgos: [] })
+  const db = fakeDatabase({ qms_quejas: quejas, acciones: [], documentos: [], riesgos: [] })
   const { fetchDashboardIndicadores, fetchDashboardTareas } = loadModule('lib/queries/useDashboard.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
   const [indicadores, tareas] = await Promise.all([fetchDashboardIndicadores(), fetchDashboardTareas()])
   const result = { indicadores, tareas }
@@ -71,21 +71,27 @@ test('la espera aborta aunque un proveedor no resuelva su promesa', async () => 
 
 function deleteEndpoint(drive, dbError = null) {
   const events = []
-  const admin = { from(table) {
+  const admin = { rpc: async (name, args) => {
+    assert.equal(name, 'qms_claim_attachment_delete')
+    assert.equal(args.p_adjunto_id, 'a')
+    assert.equal(args.p_actor_id, 'u')
+    events.push('claim')
+    return { data: { id: 'a', queja_id: 'q', storage_path: 'driveId' }, error: null }
+  }, from(table) {
     let deleting = false
     const query = {
       select() { return query }, eq() { return query },
       delete() { deleting = true; events.push('delete-db'); return query },
-      maybeSingle: async () => ({ data: table === 'queja_adjuntos' ? { id: 'a', queja_id: 'q', usuario_id: null, storage_path: 'driveId' } : table === 'usuarios' ? { id: 'u' } : { responsable_id: 'u' } }),
+      maybeSingle: async () => ({ data: table === 'queja_adjuntos' ? { id: 'a', queja_id: 'q', usuario_id: null, storage_path: 'driveId' } : table === 'usuarios' ? { id: 'u' } : table === 'configuraciones_sistema' ? { valor: 'synthetic-root' } : { folio: 'Q-SYNTHETIC', responsable_id: 'u' } }),
       then(resolve, reject) { return Promise.resolve({ error: deleting ? dbError : null }).then(resolve, reject) },
     }
     return query
   } }
   const endpoint = loadModule('app/api/drive/delete/route.ts', {
     'next/server': { NextResponse: Response },
-    '@/lib/server/auth': { getCurrentUser: async () => ({ auth_id: 'auth', rol: 'admin' }) },
+    '@/lib/server/auth': { getCurrentUser: async () => ({ id: 'u', auth_id: 'auth', rol: 'admin' }) },
     '@/lib/server/supabase-admin': { createServiceClient: () => admin },
-    '@/lib/server/drive': { eliminarArchivoDrive: async () => { events.push('drive'); return drive() } },
+    '@/lib/server/drive': { getDriveClient: () => ({}), assertDriveCaseFile: async () => {}, eliminarArchivoDrive: async () => { events.push('drive'); return drive() } },
     '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'test' },
   })
   return { events, run: () => endpoint.DELETE(new Request('http://localhost/delete', { method: 'DELETE', body: JSON.stringify({ adjuntoId: 'a' }) })) }
@@ -94,13 +100,13 @@ function deleteEndpoint(drive, dbError = null) {
 test('si Drive falla, no se borra el registro y se puede reintentar', async () => {
   const endpoint = deleteEndpoint(async () => false)
   assert.equal((await endpoint.run()).status, 502)
-  assert.deepEqual(endpoint.events, ['drive'])
+  assert.deepEqual(endpoint.events, ['claim', 'drive'])
 })
 
 test('solo confirma eliminación después de Drive y de la base de datos', async () => {
   const endpoint = deleteEndpoint(async () => true)
   assert.equal((await endpoint.run()).status, 200)
-  assert.deepEqual(endpoint.events, ['drive', 'delete-db'])
+  assert.deepEqual(endpoint.events, ['claim', 'drive', 'delete-db'])
   const failed = deleteEndpoint(async () => true, new Error('BD caída'))
   assert.equal((await failed.run()).status, 500)
 })

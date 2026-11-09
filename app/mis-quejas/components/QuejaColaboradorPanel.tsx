@@ -1,43 +1,57 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { X, Info, Activity, CheckCircle, Send, Maximize, Edit, Eye as EyeIcon, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CircleHelp, Maximize, Minimize, Send, Upload } from 'lucide-react'
+import Modal from '@/components/Modal'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import Spinner from '@/components/ui/Spinner'
-import type { Queja } from '@/lib/types'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
+import Tabs from '@/components/ui/Tabs'
+import DeferredMount from '@/components/ui/DeferredMount'
+import RichTextEditor from '@/components/ui/RichTextEditor'
+import RichTextContent from '@/components/ui/RichTextContent'
+import type { Queja } from '@/lib/types'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { estadoVariant, prioridadVariant } from '@/lib/constants/estados'
 import { useQuejaActividad, useCrearQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { useQuejaPlazos } from '@/lib/queries/useQuejaSeguimiento'
 import { transicionarQueja } from '@/lib/services/quejaWorkflowService'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
+import { CaseCycle, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
+import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
-import ReactMarkdown from 'react-markdown'
 
 interface Props {
   queja: Queja | null
   onClose: () => void
   onUpdated: (updated?: Queja, isCurrent?: () => boolean) => void
+  onNavigationLockChange?: (locked: boolean) => void
+  onPrevious?: () => void
+  onNext?: () => void
 }
+type Tab = 'detalle' | 'resolucion'
+const tabs = [{ id: 'detalle', label: 'Análisis' }, { id: 'resolucion', label: 'Resolución' }]
+const DOCUMENT_LIMIT = 10000
+const RETURN_NOTE_PREFIX = 'Devuelta a investigación. Motivo: '
 
-type Tab = 'detalle' | 'actividad' | 'resolucion'
-
-const ESTADOS_ENVIADOS = ['Pendiente de Revisión GC', 'Resuelto', 'Finalizado']
-
-export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Props) {
-  const user = useAuthStore((s) => s.user)
+export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNavigationLockChange, onPrevious, onNext }: Props) {
+  const user = useAuthStore(s => s.user)
   const scope = useEntityRequestGuard(queja?.id ?? null)
   const draftVersions = useRef({ nota: 0, resolucion: 0 })
   const [activeTab, setActiveTab] = useState<Tab>('detalle')
   const [resolucion, setResolucion] = useState('')
+  const [resolucionFormato, setResolucionFormato] = useState<'plain' | 'markdown'>('plain')
+  const [resolucionRevision, setResolucionRevision] = useState<number | null>(null)
   const [nota, setNota] = useState('')
+  const [notaDevolucionAbierta, setNotaDevolucionAbierta] = useState(false)
+  const [assistanceOpen, setAssistanceOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [agregandoNota, setAgregandoNota] = useState(false)
@@ -47,48 +61,46 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     handleSubirAdjunto: handleSubirAdjuntoAnalisis, handleEliminarAdjunto, handleDescargarAdjunto,
   } = useQuejaAttachmentActions(queja?.id ?? null, scope)
   const {
-    aiAutoLoading, aiResult, setAiResult, chat, chatInput, setChatInput,
-    chatLoading, modoEdicion, setModoEdicion, handleAnalisisAuto, handleEnviarIA,
+    aiAutoLoading, aiResult, chat, chatInput, setChatInput,
+    chatLoading, handleAnalisisAuto, handleEnviarIA,
   } = useQuejaAssistant(queja?.id ?? null, scope)
-
   const quejaId = queja?.id ?? ''
-  const { data: actividad = [], isLoading: actividadLoading } = useQuejaActividad(quejaId)
+  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(activeTab === 'detalle' || queja?.estado === 'En Investigación' ? quejaId : '')
   const crearActividad = useCrearQuejaActividad()
-  const { data: adjuntos = [], isLoading: adjuntosLoading } = useQuejaAdjuntos(quejaId)
-
+  const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
+  const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
+  const navigationLocked = loading || subiendoAdjuntoAnalisis || agregandoNota || aiAutoLoading || chatLoading || !!resolucion.trim() || !!nota.trim() || !!aiResult.trim()
+  useEffect(() => {
+    onNavigationLockChange?.(!!queja && navigationLocked)
+    return () => onNavigationLockChange?.(false)
+  }, [queja, navigationLocked, onNavigationLockChange])
   const handleClose = useCallback(() => {
     scope.invalidate()
+    setIsExpanded(false)
+    setActiveTab('detalle')
+    setNotaDevolucionAbierta(false)
+    setAssistanceOpen(false)
+    onNavigationLockChange?.(false)
     onClose()
-  }, [scope, onClose])
-
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose()
-    }
-    if (queja) document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [queja, handleClose])
-
+  }, [scope, onClose, onNavigationLockChange])
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
     setPrevQuejaId(queja?.id ?? null)
-    setResolucion('')
-    setNota('')
-    setIsExpanded(false)
-    setLoading(false)
-    setAgregandoNota(false)
+    setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
+    setNota(''); setNotaDevolucionAbierta(false); setAssistanceOpen(false); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
   }
-
   if (!queja) return null
-
   const estado = queja.estado ?? ''
-  const resolucionEnviada = ESTADOS_ENVIADOS.includes(estado)
+  const canEdit = !!user && (user.rol === 'admin' || user.rol === 'calidad' || user.rol === 'colaborador' && queja.responsable_id === user.id)
+  const investigando = estado === 'En Investigación' && canEdit
+  const analysis = getQuejaAnalysis(queja)
+  const deadline = caseDeadline(queja, runs)
+  const notaDevolucion = [...actividad].reverse().find(item => item.tipo === 'nota' && item.descripcion.startsWith(RETURN_NOTE_PREFIX))
 
   const handleEnviarRevision = async () => {
-    if (!resolucion.trim()) {
-      showError(null, 'Escribí la conclusión antes de enviarla a revisión')
-      return
-    }
+    if (!investigando) { showError(null, 'Esta queja no está disponible para enviar a revisión.'); return }
+    if (!resolucion.trim()) { showError(null, 'Escribí la conclusión antes de enviarla a revisión'); return }
+    if (resolucion.length > DOCUMENT_LIMIT) { showError(null, 'La conclusión admite hasta 10.000 caracteres.'); return }
     const operation = scope.start('workflow')
     if (!operation) return
     const isContextCurrent = scope.captureContext()
@@ -96,25 +108,26 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
     setLoading(true)
     let confirmed = false
     try {
-      const updated = await transicionarQueja(queja, 'Pendiente de Revisión GC', { resolucion })
+      // La revisión se captura al editar: refrescar el expediente nunca fuerza el guardado.
+      const updated = await transicionarQueja({ ...queja, revision: resolucionRevision ?? queja.revision }, 'Pendiente de Revisión GC', { resolucion, resolucionFormato })
       confirmed = true
       if (isContextCurrent()) onUpdated(updated, operation.isCurrent)
       if (operation.isCurrent()) {
         showSuccess('Resolución enviada a Gestión de Calidad')
-        if (draftVersions.current.resolucion === draftVersion) setResolucion('')
+        if (draftVersions.current.resolucion === draftVersion) {
+          setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
+        }
       }
     } catch (error) {
-      if (operation.isCurrent()) showError(error, confirmed
-        ? 'La resolución se envió, pero no se pudo actualizar la vista'
-        : 'No se pudo enviar la resolución')
+      if (operation.isCurrent()) showError(error, confirmed ? 'La resolución se envió, pero no se pudo actualizar la vista' : 'No se pudo enviar la resolución')
     } finally {
       if (operation.isCurrent()) setLoading(false)
       operation.finish()
     }
   }
-
   const handleAgregarNota = async () => {
-    if (!nota.trim()) return
+    if (!canEdit || !nota.trim()) return
+    if (nota.length > DOCUMENT_LIMIT) { showError(null, 'La nota admite hasta 10.000 caracteres.'); return }
     const operation = scope.start('activity-note')
     if (!operation) return
     const isContextCurrent = scope.captureContext()
@@ -133,397 +146,60 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated }: Pro
       operation.finish()
     }
   }
+  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => adjunto.usuario_id === null ? user?.rol === 'admin' : canEdit
+  const plazo = <Badge variant={deadline.variant} title={deadline.vence ? `Fecha límite: ${caseDate(deadline.vence)}` : undefined}>{deadline.label}</Badge>
+  const action = investigando ? 'Registrá tus hallazgos y enviá la propuesta a Gestión de Calidad.' : estado === 'Pendiente de Revisión GC' ? 'Gestión de Calidad revisará la propuesta. Si requiere ajustes, volverá a investigación.' : 'El expediente conserva el trabajo y las evidencias registradas.'
 
-  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto): boolean => {
-    if (adjunto.usuario_id === null) return user?.rol === 'admin'
-    return user?.rol === 'admin' || user?.rol === 'calidad' || queja.responsable_id === user?.id
-  }
+  // El desplegable no participa en el flex de las pestañas: al abrirlo a todo
+  // el ancho las comprimía a cero y deformaba los controles de asistencia.
+  const assistance = <div id={`queja-${queja.id}-asistencia`} data-resolution-assistance role="region" aria-label="Asistencia para la resolución" hidden={!assistanceOpen || !investigando} className="min-w-0 border-b border-qms-border px-4 py-3"><div className="max-h-[45dvh] overflow-y-auto">
+                <p className="text-xs text-qms-muted">La sugerencia no se guarda ni se envía. Revisala antes de usarla en la resolución.</p>
+                <Button className="mt-3" size="sm" variant="ghost" onClick={handleAnalisisAuto} loading={aiAutoLoading} disabled={!investigando}>Análisis IA</Button>
+                {aiResult && <div className="mt-3 space-y-3"><RichTextContent value={aiResult} format="markdown" /><Button size="sm" variant="secondary" disabled={aiResult.length > DOCUMENT_LIMIT || !!resolucion.trim() || !investigando} onClick={() => { draftVersions.current.resolucion++; setResolucion(aiResult); setResolucionFormato('markdown'); if (resolucionRevision === null) setResolucionRevision(queja.revision) }}>Usar en resolución</Button></div>}
+                <details className="min-w-0 py-4"><summary className="cursor-pointer text-sm text-qms-muted">Consultar al asistente</summary><p className="mt-3 text-xs text-qms-muted">Solo consulta al proveedor configurado cuando enviás una pregunta.</p>
+                  <div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{chat.map(message => <div key={message.id} className={`rounded-card p-3 text-sm ${message.role === 'user' ? 'bg-qms-primary-soft' : 'bg-qms-hover-bg'}`}><p className="mb-1 text-xs font-medium text-qms-muted">{message.role === 'user' ? 'Tu consulta' : 'Asistente'}</p><p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p></div>)}</div>
+                  <div className="mt-4 flex flex-wrap items-end gap-2"><textarea aria-label="Pregunta al asistente" rows={2} maxLength={DOCUMENT_LIMIT} placeholder="Hacé una pregunta sobre esta queja..." className="ui-textarea min-w-0 flex-[1_1_12rem] resize-none px-3 py-2 text-sm" value={chatInput} onChange={event => setChatInput(event.target.value)} disabled={chatLoading || !investigando} /><Button size="sm" variant="secondary" onClick={handleEnviarIA} loading={chatLoading} disabled={!chatInput.trim() || !investigando}><Send className="size-4" /> Enviar</Button></div>
+                </details>
+              </div></div>
 
-  const tabs: { key: Tab; label: string; icon: typeof Info }[] = [
-    { key: 'detalle', label: 'Detalle', icon: Info },
-    { key: 'actividad', label: 'Análisis', icon: Activity },
-    { key: 'resolucion', label: 'Resolución', icon: CheckCircle },
-  ]
+  return <>
+    <Modal open onClose={handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerActions={<>
+      <Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationLocked} onClick={onPrevious}><ArrowLeft className="size-5" /></Button>
+      <Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationLocked} onClick={onNext}><ArrowRight className="size-5" /></Button>
+      <Button size="icon" variant="ghost" aria-label={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} title={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} onClick={() => setIsExpanded(value => !value)}>{isExpanded ? <Minimize className="size-5" /> : <Maximize className="size-5" />}</Button>
+    </>}>
+      <CaseWorkspace documentKey={`${queja.id}:${activeTab}`} expanded={isExpanded} cyclePlacement="top" request={<CaseRequestHeader key={queja.id} queja={queja} variant="panel" showReceivedAt={activeTab === 'resolucion'} />} compact={<>
+          <div className="flex flex-wrap items-center justify-between gap-2"><Badge variant={queja.estado_color || 'gray'}>{queja.estado_nombre || estado}</Badge>{plazo}</div>
+          <CaseCycle queja={queja} audience="investigator" compact line />
+        </>} cycle={<CaseCycle queja={queja} audience="investigator" compact line variant="plain" />} action={<CaseSection title="Acción actual" variant="plain"><Badge variant={queja.estado_color || 'gray'}>{queja.estado_nombre || estado}</Badge><p className="mt-4 text-sm leading-relaxed text-qms-muted">{action}</p><div className="mt-5 border-t border-qms-border pt-4"><p className="mb-2 text-xs text-qms-muted">{deadline.stageTitle}</p>{plazo}{plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}</div>{investigando && <><Button className="mt-5 w-full" variant="secondary" onClick={() => setActiveTab(activeTab === 'resolucion' ? 'detalle' : 'resolucion')}>{activeTab === 'resolucion' ? 'Volver al análisis' : 'Preparar resolución'}</Button>{(notaDevolucion || actividadLoading || actividadError || notaDevolucionAbierta) && <Button className="mt-2 w-full" variant="ghost" aria-expanded={notaDevolucionAbierta} aria-controls={`queja-${queja.id}-nota-devolucion`} onClick={() => setNotaDevolucionAbierta(open => !open)}>{notaDevolucionAbierta ? 'Ocultar nota de devolución' : 'Ver nota de devolución'}</Button>}{notaDevolucionAbierta && <div id={`queja-${queja.id}-nota-devolucion`} className="mt-3 rounded-card border border-qms-border bg-qms-surface p-3 text-sm">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando nota de devolución…" framed={false} /> : actividadError ? <div role="alert"><p className="text-xs text-qms-muted">No se pudo cargar la nota.</p><Button size="sm" variant="ghost" onClick={() => refetchActividad()}>Reintentar</Button></div> : notaDevolucion ? <><div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-qms-muted"><span>Motivo de devolución</span><time dateTime={notaDevolucion.created_at}>{caseDate(notaDevolucion.created_at)}</time></div><p className="whitespace-pre-wrap break-words leading-relaxed">{notaDevolucion.descripcion.slice(RETURN_NOTE_PREFIX.length).trim()}</p></> : <p className="text-xs text-qms-muted">No hay una nota de devolución registrada.</p>}</div>}</>}</CaseSection>}>
+            <div data-resolution-header className="sticky top-0 z-10 flex min-w-0 items-center rounded-t-card border-b border-qms-border bg-qms-surface"><div className="min-w-0 flex-1 [&>[role=tablist]]:border-b-0"><Tabs id={`mis-queja-${queja.id}`} items={tabs} value={activeTab} onChange={value => setActiveTab(value as Tab)} label="Procesar mi queja" /></div>{activeTab === 'resolucion' && investigando && <Button className="mr-2" size="sm" variant="ghost" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" /><span className="hidden sm:inline">Asistencia</span></Button>}</div>
+            <section role="tabpanel" id={`mis-queja-${queja.id}-panel-detalle`} aria-labelledby={`mis-queja-${queja.id}-tab-detalle`} hidden={activeTab !== 'detalle'} className="divide-y divide-qms-border">
+              <CaseSection title="Descripción" variant="document" headerActions={<span className="max-w-full break-words text-sm text-qms-muted">Área afectada: {queja.area_afectada || 'Sin indicar'}</span>}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción.'}</p></CaseSection>
+              {queja.justificacion_procede && <CaseSection title="Evaluación de procedencia" source="Gestión de Calidad" variant="document"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></CaseSection>}
+              {analysis && <CaseSection title="Análisis registrado" source="Gestión interna" variant="document"><RichTextContent value={analysis.value} format={analysis.format} /></CaseSection>}
+                <CaseSection title="Archivos del expediente" variant="document">
+                  <p className="mb-3 text-xs text-qms-muted">Evidencias del cliente e investigación interna, identificadas por su origen.</p>
+                  {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias de análisis…" framed={false} /> : adjuntosError ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar los archivos.</p><Button size="sm" variant="ghost" onClick={() => refetchAdjuntos()}>Reintentar archivos</Button></div> : adjuntos.length ? <ListaAdjuntos adjuntos={adjuntos} layout="cards" onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={puedeEliminarAdjunto} onEliminar={a => setConfirmarEliminacion(a.id)} /> : <p className="text-sm text-qms-muted">Sin evidencias de investigación todavía.</p>}
+                  {investigando && <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-qms-border pt-3"><label className={`ui-button ui-button-secondary ui-button-sm relative cursor-pointer ${subiendoAdjuntoAnalisis ? 'pointer-events-none opacity-60' : ''}`}><Upload className="size-4" />Adjuntar evidencia<input aria-label="Adjuntar evidencia de investigación" type="file" className="absolute inset-0 h-full w-full cursor-pointer opacity-0" disabled={subiendoAdjuntoAnalisis} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) handleSubirAdjuntoAnalisis(file) }} /></label>{subiendoAdjuntoAnalisis && <span role="status" className="inline-flex items-center gap-2 text-xs text-qms-muted"><Spinner size="sm" />Subiendo…</span>}</div>}
+                </CaseSection>
+                <CaseSection title="Notas de investigación" variant="document">
+                  <textarea aria-label="Nueva nota de investigación" rows={4} maxLength={DOCUMENT_LIMIT} placeholder="Registrá un avance o comentario de tu investigación..." className="ui-textarea w-full px-3 py-2 text-sm" value={nota} disabled={!canEdit} onChange={event => { draftVersions.current.nota++; setNota(event.target.value) }} />
+                  <div className="mt-3 flex justify-end"><Button size="sm" onClick={handleAgregarNota} disabled={!nota.trim() || !canEdit} loading={agregandoNota}><Send className="size-4" /> Agregar nota</Button></div>
+                  <div className="mt-4 border-t border-qms-border pt-4">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} /> : actividadError ? <div role="alert"><p className="text-sm text-qms-muted">No se pudo cargar la actividad.</p><Button size="sm" variant="ghost" onClick={() => refetchActividad()}>Reintentar actividad</Button></div> : actividad.length === 0 ? <p className="text-sm text-qms-muted">Sin actividad registrada todavía.</p> : <ol className="space-y-4">{actividad.map(item => <li key={item.id} className="border-l-2 border-qms-border pl-4"><div className="flex flex-wrap justify-between gap-2 text-xs text-qms-muted"><span>{item.tipo}</span><time dateTime={item.created_at}>{caseDate(item.created_at)}</time></div><p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{item.descripcion}</p></li>)}</ol>}</div>
+                </CaseSection>
+              {queja.observaciones && <CaseSection title="Observación anterior" variant="document"><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.observaciones}</p></CaseSection>}
+            </section>
 
-  return (
-    <aside
-      className={`fixed top-0 right-0 z-50 flex h-dvh w-full max-w-full flex-col bg-white border-l border-gray-200 shadow-2xl transition-[width] duration-300 ease-in-out ${isExpanded ? '' : 'lg:w-[500px]'}`}
-    >
-      {/* Top bar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-4 py-2.5">
-        <div className="flex min-w-0 items-center text-sm">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="cursor-pointer rounded px-2 py-1 font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-          >
-            Mis Quejas
-          </button>
-          <span className="mx-1 text-gray-300">/</span>
-          <span className="truncate px-2 py-1 font-medium text-gray-900">{queja.folio}</span>
-        </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            onClick={() => setIsExpanded((v) => !v)}
-            title={isExpanded ? 'Reducir panel' : 'Expandir panel'}
-            className={`hidden cursor-pointer rounded p-1 transition-colors hover:bg-gray-100 lg:block ${isExpanded ? 'text-qms-primary' : 'text-gray-400 hover:text-gray-700'}`}
-          >
-            <Maximize className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={handleClose}
-            title="Cerrar panel"
-            aria-label="Cerrar panel de queja"
-            className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Underline tabs */}
-      <nav className="flex shrink-0 justify-between gap-2 border-b border-gray-200 px-3 sm:justify-start sm:gap-6 sm:px-6">
-        {tabs.map((t) => {
-          const Icon = t.icon
-          const isActive = activeTab === t.key
-          return (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`-mb-px flex cursor-pointer items-center gap-1.5 border-b-2 px-1 py-2.5 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'border-qms-primary text-qms-primary'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Icon className="h-4 w-4" /> {t.label}
-            </button>
-          )
-        })}
-      </nav>
-
-      {/* Blank-page content */}
-      <div className="min-h-0 flex-1 select-text overflow-y-auto px-4 py-4 sm:px-8 sm:py-6">
-        {activeTab === 'detalle' && (
-          <div className="mx-auto max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{queja.folio}</h1>
-            <p className="mt-1 text-sm text-gray-500">{queja.cliente_nombre}</p>
-
-            <div className="mt-3 flex items-center gap-2">
-              <Badge variant={estadoVariant[estado] || 'gray'}>{estado}</Badge>
-              <Badge variant={prioridadVariant[queja.prioridad] || 'gray'}>{queja.prioridad}</Badge>
-            </div>
-
-            <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <dl className="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">Folio</dt>
-                  <dd className="mt-0.5 font-mono text-sm font-medium text-gray-900">{queja.folio}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">Cliente</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900">{queja.cliente_nombre}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">Fecha de creación</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900">{new Date(queja.fecha).toLocaleString('es-ES')}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">Categoría</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900">{queja.categoria}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">SLA</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900">
-                    {queja.fecha_sla ? new Date(queja.fecha_sla).toLocaleDateString('es-ES') : '—'}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium uppercase tracking-wider text-gray-500">Límite de investigación</dt>
-                  <dd className="mt-0.5 text-sm font-medium text-gray-900">
-                    {queja.fecha_limite_investigacion ? new Date(queja.fecha_limite_investigacion).toLocaleDateString('es-ES') : '—'}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-
-            <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Descripción</h2>
-              {queja.descripcion ? (
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{queja.descripcion}</p>
-              ) : (
-                <p className="mt-2 text-sm text-gray-400">Sin descripción.</p>
-              )}
-            </div>
-
-            {queja.notas && (
-              <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-5">
-                <h2 className="text-xs font-medium uppercase tracking-wider text-amber-700">Justificación de Gestión de Calidad</h2>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-amber-900">{queja.notas}</p>
-              </div>
-            )}
-
-            <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Evidencias adjuntas</h2>
-              {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntos.length === 0 ? (
-                <p className="mt-2 text-sm text-gray-400">Sin evidencias todavía.</p>
-              ) : (
-                <ListaAdjuntos
-                  adjuntos={adjuntos}
-                  onPreview={(a) => setPreviewAdjunto(a)}
-                  onDownload={handleDescargarAdjunto}
-                  puedeEliminar={puedeEliminarAdjunto}
-                  onEliminar={(a) => setConfirmarEliminacion(a.id)}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'actividad' && (
-          <div className="mx-auto max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Análisis</h1>
-            <p className="mt-1 text-sm text-gray-500">Registrá avances y comentarios de tu investigación.</p>
-
-            <div className="mb-6 rounded-xl border border-blue-200 bg-qms-primary-soft p-5">
-              <div className="flex items-center gap-2">
-                <h2 className="text-xs font-medium uppercase tracking-wider text-qms-primary">Asistente IA</h2>
-              </div>
-              <p className="mt-1 text-xs text-blue-900/70">Analizá la queja con el proveedor configurado en Configuración → IA.</p>
-              <div className="mt-3 flex items-center gap-2">
-                <Button size="sm" onClick={handleAnalisisAuto} loading={aiAutoLoading}>
-                  Análisis IA
-                </Button>
-              </div>
-              {aiAutoLoading && (
-                <p className="mt-2 flex items-center gap-1.5 text-xs text-qms-primary-hover">
-                  <Spinner size="sm" /> Obteniendo contexto y consultando a la IA…
-                </p>
-              )}
-              {aiResult && (
-                <div className="mt-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-medium text-gray-500">Resultado del análisis</h3>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setModoEdicion(!modoEdicion)}
-                      className="gap-1.5"
-                    >
-                      {modoEdicion ? (
-                        <span className="flex items-center gap-1.5">
-                          <EyeIcon className="h-3.5 w-3.5" />
-                          Vista Lectura
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <Edit className="h-3.5 w-3.5" />
-                          Editar
-                        </span>
-                      )}
-                    </Button>
-                  </div>
-                  {modoEdicion ? (
-                    <textarea
-                      className="ui-textarea w-full min-h-[500px] p-6 resize-y shadow-sm font-sans leading-relaxed whitespace-pre-wrap"
-                      value={aiResult}
-                      onChange={(e) => setAiResult(e.target.value)}
-                      placeholder="El análisis de la IA aparecerá aquí..."
-                    />
-                  ) : (
-                    <div className="prose prose-blue max-w-none min-h-[400px] p-6 bg-white border border-gray-200 rounded-lg shadow-sm font-sans leading-relaxed text-gray-800">
-                      <ReactMarkdown
-                        components={{
-                          a: ({ href, children }) => (
-                            <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
-                          ),
-                        }}
-                      >
-                        {aiResult}
-                      </ReactMarkdown>
-                    </div>
-                  )}
-                </div>
-              )}
-              {chat.length > 0 && (
-                <div className="mt-4 space-y-2">
-                  {chat.map((m) => (
-                    <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                      <div className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${m.role === 'user' ? 'bg-qms-primary text-white' : 'border border-gray-200 bg-white text-gray-800'}`}>
-                        <span className="whitespace-pre-wrap">{m.content}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {chatLoading && (
-                <div className="mt-2 flex justify-start">
-                  <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-500">
-                    <Spinner size="sm" /> Analizando…
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-4 flex items-end gap-2">
-                <textarea
-                  rows={2}
-                  placeholder="Hacé una pregunta sobre esta queja..."
-                  className="ui-textarea flex-1 resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  disabled={chatLoading}
-                />
-                <Button size="sm" onClick={handleEnviarIA} loading={chatLoading} disabled={!chatInput.trim()}>
-                  <Send className="h-3.5 w-3.5" /> Enviar
-                </Button>
-              </div>
-            </div>
-
-            <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Agregar nota</h2>
-              <textarea
-                rows={2}
-                placeholder="Registrá un avance o comentario de tu investigación..."
-                className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400"
-                value={nota}
-                onChange={(e) => { draftVersions.current.nota++; setNota(e.target.value) }}
-              />
-              <div className="mt-2 flex justify-end">
-                <Button size="sm" onClick={handleAgregarNota} disabled={!nota.trim()} loading={agregandoNota}>
-                  <Send className="h-3 w-3" /> Agregar nota
-                </Button>
-              </div>
-            </div>
-
-            <div className="mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Evidencias de análisis</h2>
-                <span className="text-xs text-gray-400">{adjuntos.filter((a) => a.usuario_id).length} archivo(s)</span>
-              </div>
-              <p className="mt-1 text-xs text-gray-400">Archivos internos de investigación. Solo visibles para staff y responsable.</p>
-              
-              {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias de análisis…" framed={false} /> : adjuntos.filter((a) => a.usuario_id).length === 0 ? (
-                <p className="mt-2 text-sm text-gray-400">Sin evidencias de análisis todavía.</p>
-              ) : (
-                <ListaAdjuntos
-                  adjuntos={adjuntos.filter((a) => a.usuario_id)}
-                  onPreview={(a) => setPreviewAdjunto(a)}
-                  onDownload={handleDescargarAdjunto}
-                  puedeEliminar={puedeEliminarAdjunto}
-                  onEliminar={(a) => setConfirmarEliminacion(a.id)}
-                />
-              )}
-              
-              {estado === 'En Investigación' && (
-                <div className="flex items-center gap-2 pt-3 mt-3 border-t border-gray-200">
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">
-                    <Upload className="h-3.5 w-3.5" /> Subir evidencia de análisis
-                    <input
-                      type="file"
-                      className="hidden"
-                      disabled={subiendoAdjuntoAnalisis}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0]
-                        e.target.value = ''
-                        if (f) handleSubirAdjuntoAnalisis(f)
-                      }}
-                    />
-                  </label>
-                  {subiendoAdjuntoAnalisis && (
-                    <span className="flex items-center gap-1.5 text-xs text-gray-500">
-                      <Spinner size="sm" /> Subiendo…
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {actividadLoading ? (
-              <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} />
-            ) : actividad.length === 0 ? (
-              <p className="py-10 text-sm text-gray-400">Sin actividad registrada todavía.</p>
-            ) : (
-              <div className="relative mb-6 space-y-5">
-                {actividad.map((a, i) => (
-                  <div key={a.id} className="relative flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gray-300" />
-                      {i < actividad.length - 1 && <span className="w-px flex-1 bg-gray-100" />}
-                    </div>
-                    <div className="flex-1 pb-1">
-                      <div className="mb-0.5 flex items-baseline justify-between gap-3">
-                        <span className="text-xs font-medium text-gray-500">{a.tipo}</span>
-                        <span className="shrink-0 text-xs text-gray-400">{new Date(a.created_at).toLocaleString('es-ES')}</span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap leading-relaxed text-gray-700">{a.descripcion}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'resolucion' && (
-          <div className="mx-auto max-w-2xl">
-            <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Resolución</h1>
-            <p className="mt-1 text-sm text-gray-500">Documentá la conclusión de tu investigación.</p>
-
-            <div className="mt-6 mb-6 rounded-xl border border-gray-200 bg-slate-50 p-5">
-              <h2 className="text-xs font-medium uppercase tracking-wider text-gray-500">Conclusión de la investigación</h2>
-              <textarea
-                rows={7}
-                placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
-                className="ui-textarea mt-2 w-full resize-none px-3 py-2 text-sm transition-colors placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400"
-                value={resolucion}
-                onChange={(e) => { draftVersions.current.resolucion++; setResolucion(e.target.value) }}
-                disabled={estado === 'Recibido' || resolucionEnviada}
-              />
-
-              {resolucionEnviada && (
-                <div className="mt-3 rounded-md bg-purple-50 px-3 py-2.5">
-                  <p className="text-sm font-medium text-purple-900">Resolución enviada a Calidad</p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-purple-900">
-                    La queja está en «Pendiente de Revisión GC». Esperá la aprobación o devolución de Gestión de Calidad.
-                  </p>
-                </div>
-              )}
-
-              {queja.resolucion && (
-                <div className="mt-4 border-t border-gray-100 pt-4">
-                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Resolución enviada</p>
-                  <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{queja.resolucion}</p>
-                </div>
-              )}
-
-              <div className="mt-4 flex justify-end">
-                {estado === 'En Investigación' ? (
-                  <Button onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim()}>
-                    Enviar a Revisión GC
-                  </Button>
-                ) : (
-                  <Button disabled>Enviar a Revisión GC</Button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
-
-      <ConfirmDialog
-        open={confirmarEliminacion !== null}
-        title="Eliminar adjunto"
-        message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer."
-        confirmLabel="Eliminar"
-        danger
-        loading={eliminandoAdjunto !== null}
-        onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)}
-        onCancel={() => setConfirmarEliminacion(null)}
-      />
-    </aside>
-  )
+            <section role="tabpanel" id={`mis-queja-${queja.id}-panel-resolucion`} aria-labelledby={`mis-queja-${queja.id}-tab-resolucion`} hidden={activeTab !== 'resolucion'}>{assistance}<DeferredMount key={queja.id} active={activeTab === 'resolucion'}>
+              {investigando ? <>
+                <div className="flex h-[max(360px,calc(100dvh-22rem))] min-w-0 flex-col"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Conclusión de la investigación" placeholder="Documentá la conclusión y los hallazgos de tu investigación..." value={resolucion} format={resolucionFormato} onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }} variant="document" layout="fill" maxLength={DOCUMENT_LIMIT} required disabled={loading} className="mis-quejas-resolution-editor" /></div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-qms-border px-4 py-3 sm:px-5"><p className="text-xs text-qms-muted">Se envía a Calidad para revisión; no notifica al cliente.</p><Button onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim()}>Enviar a Revisión GC</Button></div>
+              </> : <p className="px-4 py-3 text-sm leading-relaxed text-qms-muted sm:px-5">{action}</p>}
+              {(queja.resolucion || queja.numero_oficio_resolucion) && <details key={queja.id} data-resolution-history open={!investigando} className="border-t border-qms-border"><summary className="cursor-pointer px-4 py-3 text-sm text-qms-muted sm:px-5">{investigando ? 'Propuesta anterior registrada' : 'Documento registrado'}</summary><CaseSection source={['Resuelto', 'Finalizado', 'No Procede'].includes(estado) ? 'Gestión de Calidad' : 'Responsable'} title={['Resuelto', 'Finalizado', 'No Procede'].includes(estado) ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad'} variant="document" headerActions={queja.numero_oficio_resolucion && <span className="max-w-full break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</span>}>{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}</CaseSection></details>}
+            </DeferredMount></section>
+      </CaseWorkspace>
+    </Modal>
+    <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
+    <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
+  </>
 }

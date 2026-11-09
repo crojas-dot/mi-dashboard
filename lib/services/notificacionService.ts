@@ -24,33 +24,6 @@ export async function listarNotificaciones(userId: string, signal?: AbortSignal)
   return (data as Notificacion[]) ?? []
 }
 
-export async function crearNotificacion(input: {
-  usuario_id: string
-  tipo: string
-  mensaje: string
-  enlace?: string
-  origen_id?: string
-}): Promise<Notificacion | null> {
-  const { data, error } = await supabase
-    .from('notificaciones')
-    .insert([{
-      usuario_id: input.usuario_id,
-      fecha: new Date().toISOString(),
-      tipo: input.tipo,
-      mensaje: input.mensaje,
-      leida: false,
-      enlace: input.enlace ?? null,
-      origen_id: input.origen_id ?? null,
-    }])
-    .select()
-    .single()
-  if (error) {
-    console.error('Error al crear notificación:', error)
-    return null
-  }
-  return (data as Notificacion) ?? null
-}
-
 export async function marcarLeida(id: string) {
   // Una fila oculta por RLS tampoco confirma un guardado individual.
   const { error } = await supabase.from('notificaciones').update({ leida: true }).eq('id', id).select('id').single()

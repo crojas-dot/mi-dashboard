@@ -16,7 +16,7 @@ import ErrorState from '@/components/ui/ErrorState'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
-const procesos = ['quejas', 'sacp', 'documentos', 'auditorias', 'riesgos', 'revision_direccion']
+const procesos = [ 'sacp', 'documentos', 'auditorias', 'riesgos', 'revision_direccion']
 
 export default function PlazosSettings({ active }: { active: boolean }) {
   const query = useSLAConfig(undefined, active)
@@ -46,9 +46,10 @@ export default function PlazosSettings({ active }: { active: boolean }) {
   if (query.error) return <ErrorState onRetry={() => void query.refetch()} />
 
   return <div className="space-y-5">
+    <p className="ui-panel p-4 text-sm text-qms-muted">Quejas usa plazos versionados por etapa: 3 días hábiles para la decisión inicial y 15 desde la procedencia. La revisión de GC conserva ese plazo. La prioridad y esta tabla histórica no controlan sus vencimientos.</p>
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="max-w-xl text-sm text-qms-muted">Definí cuándo advertir sobre un caso y cuántos días tiene el equipo para atenderlo.</p>
-      <Button disabled={saving || !!editor} onClick={() => setEditor({ proceso: 'quejas', prioridad: '', dias_alerta: 3, dias_vencimiento: 7 })}><Plus className="h-4 w-4" aria-hidden="true" /> Agregar plazo</Button>
+      <Button disabled={saving || !!editor} onClick={() => setEditor({ proceso: 'sacp', prioridad: '', dias_alerta: 3, dias_vencimiento: 7 })}><Plus className="h-4 w-4" aria-hidden="true" /> Agregar plazo</Button>
     </div>
     {editor && <form className="ui-panel space-y-4 border-qms-primary/20 bg-qms-primary-soft p-5" onSubmit={event => { event.preventDefault(); void ejecutar(false) }}>
       <h3 className="font-medium">{editor.id ? 'Editar plazo' : 'Nuevo plazo'}</h3>
@@ -68,7 +69,7 @@ export default function PlazosSettings({ active }: { active: boolean }) {
     <div className="ui-panel overflow-x-auto"><table className="ui-table">
       <caption className="sr-only">Plazos de atención por proceso y prioridad</caption>
       <thead><tr><th scope="col">Proceso</th><th scope="col">Prioridad</th><th scope="col">Alerta</th><th scope="col">Vencimiento</th><th scope="col">Acciones</th></tr></thead>
-      <tbody>{query.data?.length ? query.data.map(s => <tr key={s.id}>
+      <tbody>{query.data?.some(s => s.proceso !== 'quejas') ? query.data.filter(s => s.proceso !== 'quejas').map(s => <tr key={s.id}>
         <td className="font-medium">{presentarNombre(s.proceso)}</td><td><Badge variant="gray">{s.prioridad}</Badge></td><td>{s.dias_alerta} días</td><td>{s.dias_vencimiento} días</td>
         <td><div className="flex gap-1"><Button size="sm" variant="link" disabled={saving} onClick={() => setEditor(s)} aria-label={`Editar plazo de ${presentarNombre(s.proceso)}, ${s.prioridad}`}>Editar</Button><Button size="sm" variant="danger" disabled={saving} onClick={() => setEliminar(s)} aria-label={`Eliminar plazo de ${presentarNombre(s.proceso)}, ${s.prioridad}`}>Eliminar</Button></div></td>
       </tr>) : <tr><td colSpan={5} className="py-10! text-center text-qms-muted">No hay plazos configurados.</td></tr>}</tbody>

@@ -38,7 +38,7 @@
 - `errorToast.ts` envuelve sonner con mensajes seguros; el logger usa `normalizeApiError` para contexto HTTP/código sin diagnóstico. El wrapper `useApiError` sin consumidores fue retirado.
 - `logger.ts`: niveles ERROR/WARN/INFO/DEBUG, timestamp ISO, módulo/acción/usuario/status/código, detección server/client. Usa consola también en producción; Sentry/LogRocket no están integrados. Dashboard y caché lo consumen; persisten console.* legacy en otros módulos.
 - Boundaries: `app/error.tsx`, `app/global-error.tsx` (html/body), `app/quejas/error.tsx`, `app/documentos/error.tsx`; mostrar recuperación/refetch o reset.
-- `createRequestScope`/`useEntityRequestGuard` modelan una visita A→B→A distinta y descartan respuestas tardías. **No están conectados todavía a los handlers de los paneles de quejas**. Esos paneles resetean UI al cambiar ID, pero no garantizan aislamiento de todas las respuestas IA/subidas/transiciones en vuelo.
+- `createRequestScope`/`useEntityRequestGuard` están conectados a los dos paneles de Quejas. Separan visita (A→B→A, cierre, borrador) y ámbito de datos (`queryContextScope`, lifetime del QueryClient). Locks síncronos impiden duplicados. IA/chat/archivos/transiciones/comentarios ignoran UI tardía; escrituras confirmadas invalidan el origen si el ámbito sigue vigente, incluso al navegar. Logout/rol/vista descartan ese callback de caché. La selección exige misma visita/ID y revisión no inferior; no se vuelve a leer una revisión para forzar guardados.
 
 - Usuarios comparte `lib/services/apiClient.ts` (Bearer/signal), `usuariosService.ts` (mutación HTTP sin reintento) y `lib/hooks/useOperationLock.ts` (ref síncrono y estado visual). Alta/edición, delete, reset y cambio de estado recuperan la carga ante fallo; la propia cuenta omite rol/estado disabled. Un error de refresco posterior a una escritura confirmada no vuelve a enviar la mutación. Los errores de escritura conservan el borrador.
 
@@ -70,3 +70,24 @@
 Los boundaries muestran recuperación y los servicios usan mensajes sanitizados donde están integrados; todavía hay consumidores/console.* legacy. Login conserva un mensaje compuesto con `error.message` del SDK en `signIn`; no afirmar que todos los errores visibles ya pasan por `getUserError`.
 
 El «Estado del sistema» estilo Wordfence, alertas de errores inesperados, controles de 2FA/CAPTCHA y métricas reales dentro del panel siguen **propuestos, sin UI/backend integrado**. JSONB ya existe en configuración/snapshots/auditoría QMS, pero no hay una tabla nueva de telemetría, ingesta de errores ni limpieza anual automática instalada. Definir cobertura, acceso, redacción de datos sensibles y retención antes de implementarlos; no inventar diagnósticos ni usar logs de auditoría de negocio como temporales descartables.
+
+Quejas (10 octubre): fetchQuejas y Dashboard leen qms_quejas con RLS invoker;
+Dashboard ordena plazo_vence y comparte las cuatro queries previas. getQuejaDeadline
+solo presenta el vencimiento persistido, no calcula un nuevo plazo por prioridad.
+Reportería usa la misma vista/campo, sin filtro prioridad. Mantener AbortSignal,
+paginación estable y caché por ámbito. Tiptap/ProseMirror es lazy al abrir el editor,
+no un coste por fila ni una consulta remota añadida a la bandeja.
+
+Panel del 12 octubre: `useQuejaSeguimiento` lee hasta 20 ejecuciones del expediente
+con orden estable y AbortSignal. El panel cuenta el calendario guardado para presentar
+tiempo restante; conserva el vencimiento de la vista. Comentarios, actividad y estados
+de correo solo consultan al abrir Actividad. Los estados de correo omiten destinatario,
+payload y claim; se invalidan con el prefijo Quejas, y cambios con quejasActividad.
+No hubo cambios de TTL global, duración mínima de espera ni nuevo coste por fila.
+
+Sonido (publicado el 19 octubre): el panel abierto puede avisar en segundo plano, con
+sesión/preferencias vigentes y audio ya habilitado por un gesto. El hook prepara el
+MP3 antes de reclamar el ID en IndexedDB; autoplay bloqueado o descarga fallida no
+consumen el reclamo compartido. Buffers correctos se reutilizan; fallos no se cachean.
+No añade solicitudes remotas ni cambia Realtime/intervalos. Ver
+[contrato y pruebas](../notificaciones-audio-2026-10-14.md).

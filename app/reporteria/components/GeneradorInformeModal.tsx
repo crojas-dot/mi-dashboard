@@ -6,8 +6,10 @@ import {
 } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Select from '@/components/ui/Select'
+import Input from '@/components/ui/Input'
+import Field from '@/components/ui/Field'
 import Button from '@/components/ui/Button'
-import { MODULOS_INFORME, INCLUSIONES_INFORME, type IconoInforme } from './generador/configuracion'
+import { CONFIG_INFORMES, MODULOS_INFORME, INCLUSIONES_INFORME, type IconoInforme } from './generador/configuracion'
 import { useGeneradorInforme } from './generador/useGeneradorInforme'
 import VistaPreviaInforme from './generador/VistaPreviaInforme'
 
@@ -103,7 +105,7 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
               </div>
             </div>
             <div className="flex justify-end pt-2">
-                <Button onClick={() => { if (modulo) { setPaso(2); setFilterEstado(''); setFilterPrioridad(''); setFilterTipo('') } }}>
+                <Button onClick={() => { if (modulo) setPaso(2) }}>
                   Siguiente <ChevronRight className="h-4 w-4 inline" />
                 </Button>
             </div>
@@ -112,84 +114,30 @@ function ContenidoInforme({ open, onClose, moduloInicial }: Props) {
 
         {paso === 2 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Desde</label>
-                <input
-                  type="date"
-                  className="ui-field w-full px-3 py-2 text-sm"
-                  value={fechaDesde}
-                  onChange={(e) => setFechaDesde(e.target.value)}
-                />
+            <fieldset disabled={loading} className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field id="informe-desde" label="Desde"><Input id="informe-desde" type="date" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} /></Field>
+                <Field id="informe-hasta" label="Hasta"><Input id="informe-hasta" type="date" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} /></Field>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Hasta</label>
-                <input
-                  type="date"
-                  className="ui-field w-full px-3 py-2 text-sm"
-                  value={fechaHasta}
-                  onChange={(e) => setFechaHasta(e.target.value)}
-                />
-              </div>
-            </div>
-            {modulo === 'quejas' && catalogoEstados.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
-                <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
-                  <option value="">Todos</option>
-                  {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-                </Select>
-              </div>
-            )}
-            {modulo === 'quejas' && catalogoPrioridades.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Prioridad</label>
-                <Select className="w-full" value={filterPrioridad} onChange={(e) => setFilterPrioridad(e.target.value)}>
-                  <option value="">Todas</option>
-                  {catalogoPrioridades.map((p) => <option key={p.valor} value={p.valor}>{p.valor}</option>)}
-                </Select>
-              </div>
-            )}
-            {modulo === 'sacp' && catalogoEstados.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
-                <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
-                  <option value="">Todos</option>
-                  {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-                </Select>
-              </div>
-            )}
-            {modulo === 'sacp' && catalogoTipos.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Tipo</label>
-                <Select className="w-full" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)}>
-                  <option value="">Todos</option>
-                  {catalogoTipos.map((t) => <option key={t.valor} value={t.valor}>{t.valor}</option>)}
-                </Select>
-              </div>
-            )}
-            {modulo === 'auditorias' && catalogoEstados.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
-                <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
-                  <option value="">Todos</option>
-                  {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-                </Select>
-              </div>
-            )}
-            {modulo === 'documentos' && catalogoEstados.length > 0 && (
-              <div>
-                <label className="mb-1 block text-sm font-medium text-qms-dark">Estado</label>
-                <Select className="w-full" value={filterEstado} onChange={(e) => setFilterEstado(e.target.value)}>
-                  <option value="">Todos</option>
-                  {catalogoEstados.map((e) => <option key={e.valor} value={e.valor}>{e.valor}</option>)}
-                </Select>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-2">
-              <Button variant="secondary" onClick={() => setPaso(1)}><ChevronLeft className="h-4 w-4 inline" /> Atrás</Button>
-              <Button onClick={generarInforme}>Generar informe <ChevronRight className="h-4 w-4 inline" /></Button>
+              {CONFIG_INFORMES[modulo]?.catalogos.estado && catalogoEstados.length > 0 && (
+                <Field id="informe-estado" label="Estado"><Select id="informe-estado" value={filterEstado} onChange={e => setFilterEstado(e.target.value)}>
+                  <option value="">Todos</option>{catalogoEstados.map(item => <option key={item.valor} value={item.valor}>{item.etiqueta ?? item.valor}</option>)}
+                </Select></Field>
+              )}
+              {CONFIG_INFORMES[modulo]?.catalogos.prioridad && catalogoPrioridades.length > 0 && (
+                <Field id="informe-prioridad" label="Prioridad"><Select id="informe-prioridad" value={filterPrioridad} onChange={e => setFilterPrioridad(e.target.value)}>
+                  <option value="">Todas</option>{catalogoPrioridades.map(item => <option key={item.valor} value={item.valor}>{item.etiqueta ?? item.valor}</option>)}
+                </Select></Field>
+              )}
+              {CONFIG_INFORMES[modulo]?.catalogos.tipo && catalogoTipos.length > 0 && (
+                <Field id="informe-tipo" label="Tipo"><Select id="informe-tipo" value={filterTipo} onChange={e => setFilterTipo(e.target.value)}>
+                  <option value="">Todos</option>{catalogoTipos.map(item => <option key={item.valor} value={item.valor}>{item.etiqueta ?? item.valor}</option>)}
+                </Select></Field>
+              )}
+            </fieldset>
+            <div className="flex items-center justify-between gap-2 pt-2">
+              <Button variant="secondary" onClick={() => setPaso(1)}><ChevronLeft className="h-4 w-4" /> Atrás</Button>
+              <Button loading={loading} onClick={generarInforme}>Generar informe <ChevronRight className="h-4 w-4" /></Button>
             </div>
           </div>
         )}

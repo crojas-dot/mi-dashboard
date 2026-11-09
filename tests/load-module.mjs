@@ -30,7 +30,8 @@ export function loadModule(filename, mocks = {}, globals = {}) {
       return nativeRequire(id)
     }
     const context = { console, setTimeout, clearTimeout, Buffer, Date, Request, Response, FormData, File,
-      ReadableStream, AbortController, AbortSignal, DOMException, URL, fetch, ...globals }
+      ReadableStream, AbortController, AbortSignal, DOMException, URL, URLSearchParams, Headers,
+      TextEncoder, TextDecoder, crypto, btoa, atob, fetch, ...globals }
     const execute = new vm.Script(`(function(require, module, exports) { ${source}\n})`, { filename: resolved }).runInNewContext(context)
     execute(localRequire, loadedModule, loadedModule.exports)
     return loadedModule.exports

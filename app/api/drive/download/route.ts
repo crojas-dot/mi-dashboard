@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Readable } from 'node:stream'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { getCurrentUser } from '@/lib/server/auth'
-import { getDriveClient } from '@/lib/server/drive'
+import { getDriveClient, assertDriveCaseFile } from '@/lib/server/drive'
+import { logger } from '@/lib/utils/logger'
 
 export const runtime = 'nodejs'
 
@@ -13,83 +14,47 @@ function contentDisposition(nombre: string): string {
 
 export async function GET(request: NextRequest) {
   const current = await getCurrentUser(request)
-  if (!current) {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  }
-
+  if (!current) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const admin = createServiceClient()
-  if (!admin) {
-    return NextResponse.json({ error: 'Servidor mal configurado' }, { status: 500 })
-  }
-
+  if (!admin) return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
   const fileId = request.nextUrl.searchParams.get('id')?.trim() ?? ''
-  if (!fileId) {
-    return NextResponse.json({ error: 'Falta el parámetro "id"' }, { status: 400 })
-  }
-
-  const { data: adjunto } = await admin
-    .from('queja_adjuntos')
-    .select('queja_id, nombre, tipo_mime')
-    .eq('storage_path', fileId)
-    .limit(1)
-    .maybeSingle()
-  if (!adjunto) {
-    return NextResponse.json({ error: 'Adjunto no encontrado' }, { status: 404 })
-  }
-
-  const esStaff = ['admin', 'calidad'].includes(current.rol)
-  if (!esStaff) {
-    const { data: perfil } = await admin
-      .from('usuarios')
-      .select('id')
-      .eq('auth_id', current.auth_id)
-      .maybeSingle()
-    let queja: { responsable_id: string | null } | null = null
-    if (perfil) {
-      const { data } = await admin
-        .from('quejas')
-        .select('responsable_id')
-        .eq('id', adjunto.queja_id)
-        .maybeSingle()
-      queja = data
-    }
-    if (!perfil || !queja || queja.responsable_id !== perfil.id) {
-      return NextResponse.json({ error: 'Sin permisos para descargar este adjunto' }, { status: 403 })
-    }
-  }
-
-  const drive = getDriveClient()
-  if (!drive) {
-    return NextResponse.json(
-      { error: 'Servidor mal configurado: faltan GOOGLE_CLIENT_EMAIL o GOOGLE_PRIVATE_KEY' },
-      { status: 500 },
-    )
-  }
+  if (!/^[A-Za-z0-9_-]{10,200}$/.test(fileId)) return NextResponse.json({ error: 'ID de archivo inválido' }, { status: 400 })
 
   try {
-    const res = await drive.files.get(
-      { fileId, alt: 'media', supportsAllDrives: true },
-      { responseType: 'stream' },
-    )
-    const stream = Readable.toWeb(res.data as Readable) as ReadableStream<Uint8Array>
+    const { data: adjunto, error: adjuntoError } = await admin.from('queja_adjuntos').select('queja_id, nombre, tipo_mime').eq('storage_path', fileId).limit(1).maybeSingle()
+    if (adjuntoError) throw adjuntoError
+    if (!adjunto) return NextResponse.json({ error: 'Adjunto no encontrado' }, { status: 404 })
+    const { data: queja, error: caseError } = await admin.from('quejas').select('folio, responsable_id').eq('id', adjunto.queja_id).maybeSingle()
+    if (caseError) throw caseError
+    if (!queja) return NextResponse.json({ error: 'Expediente no encontrado' }, { status: 404 })
+    if (!['admin', 'calidad'].includes(current.rol) && !(current.rol === 'colaborador' && queja.responsable_id === current.id)) {
+      return NextResponse.json({ error: 'Sin permisos para descargar este adjunto' }, { status: 403 })
+    }
+    const { data: config, error: configError } = await admin.from('configuraciones_sistema').select('valor').eq('clave', 'drive_folder_id_quejas').maybeSingle()
+    if (configError) throw configError
+    const root = typeof config?.valor === 'string' ? config.valor.trim() : ''
+    const drive = getDriveClient()
+    if (!root || !drive) return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
+    await assertDriveCaseFile(drive, root, fileId, queja.folio)
+    const result = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' })
+    const stream = Readable.toWeb(result.data as Readable) as ReadableStream<Uint8Array>
+    // Gaxios actual usa Headers; fixtures/transportes antiguos pueden devolver un mapa.
+    const transportHeaders = result.headers as unknown as { get?: (name: string) => string | null } & Record<string, unknown>
+    const driveHeader = (name: string) => typeof transportHeaders.get === 'function' ? transportHeaders.get(name) : transportHeaders[name]
+    const reportedMime = String(driveHeader('content-type') ?? adjunto.tipo_mime ?? '').split(';')[0].trim().toLowerCase()
+    const mime = new RegExp('^[a-z0-9][a-z0-9.+_-]*/[a-z0-9][a-z0-9.+_-]*$').test(reportedMime) ? reportedMime : 'application/octet-stream'
     const headers = new Headers({
-      'Content-Type': adjunto.tipo_mime || 'application/octet-stream',
+      'Content-Type': mime,
       'Content-Disposition': contentDisposition(adjunto.nombre),
-      'Cache-Control': 'no-store',
+      'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff',
     })
-    const contentLength = res.headers['content-length']
+    const contentLength = driveHeader('content-length')
     if (contentLength) headers.set('Content-Length', String(contentLength))
     return new NextResponse(stream, { status: 200, headers })
   } catch (error) {
-    const httpStatus =
-      typeof error === 'object' && error !== null && 'response' in error
-        ? (error as { response?: { status?: number }; message?: string }).response?.status
-        : undefined
-    const mensaje = error instanceof Error ? error.message : 'Error desconocido'
-    console.error('[api/drive/download]', mensaje)
-    if (httpStatus === 404) {
-      return NextResponse.json({ error: 'El archivo ya no existe en Google Drive' }, { status: 404 })
-    }
-    return NextResponse.json({ error: `No se pudo descargar desde Google Drive: ${mensaje}` }, { status: 502 })
+    const source = error as { code?: string | number; response?: { status?: number } }
+    const status = source.code === 'DRIVE_EVIDENCE_SCOPE' ? 403 : source.code === 'DRIVE_FILE_MISSING' || source.response?.status === 404 || source.code === 404 ? 404 : 502
+    logger.error('No se pudo descargar un archivo de Drive', { module: 'drive', action: 'download', status }, error)
+    return NextResponse.json({ error: status === 403 ? 'El archivo no pertenece al expediente' : status === 404 ? 'El archivo ya no existe en Google Drive' : 'No se pudo descargar el archivo desde Google Drive' }, { status })
   }
 }

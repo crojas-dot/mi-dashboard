@@ -1,13 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { analizarIA } from '@/lib/services/aiService'
 import { showError } from '@/lib/services/errorToast'
 import type { EntityRequestScope } from '@/hooks/useEntityRequestGuard'
 
 export function useQuejaAssistant(quejaId: string | null, scope: EntityRequestScope) {
   const [aiAutoLoading, setAiAutoLoading] = useState(false)
-  const [aiResult, setAiResult] = useState('')
+  const [aiResult, setAiResultValue] = useState('')
+  const resultVersion = useRef(0)
   const [chat, setChat] = useState<{ id: string; role: 'user' | 'ia'; content: string }[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
@@ -16,22 +17,27 @@ export function useQuejaAssistant(quejaId: string | null, scope: EntityRequestSc
   if (previousId !== quejaId) {
     setPreviousId(quejaId)
     setAiAutoLoading(false)
-    setAiResult('')
+    setAiResultValue('')
     setChat([])
     setChatInput('')
     setChatLoading(false)
     setModoEdicion(false)
   }
 
+  const setAiResult = (value: string) => {
+    resultVersion.current++; setAiResultValue(value); setModoEdicion(true)
+  }
+
   const handleAnalisisAuto = async () => {
     if (!quejaId) return
     const operation = scope.start('ai-analysis')
     if (!operation) return
+    const version = resultVersion.current
     setAiAutoLoading(true)
-    setAiResult('')
     try {
       const result = await analizarIA({ modulo: 'quejas', entidad_id: quejaId, tipo_consulta: 'auto' })
-      if (operation.isCurrent()) setAiResult(result)
+      // Una respuesta de IA no pisa una edición realizada durante la consulta.
+      if (operation.isCurrent() && resultVersion.current === version) { setAiResultValue(result); setModoEdicion(false) }
     } catch (error) {
       if (operation.isCurrent()) showError(error, 'No se pudo generar el análisis IA')
     } finally {

@@ -7,7 +7,7 @@ La referencia es el registro manual de GC. Estos son los nombres del sistema:
 | Consecutivo | `folio` | RPC `generar_folio_queja`; año de Costa Rica y contador anual, p. ej. `2026-004` |
 | Fecha recepción por GC | `fecha_recepcion_gc` (`date`) | Automática en formulario público; ajustable por GC en el registro interno |
 | Área afectada | `area_afectada` | Solo GC en registro interno o expediente; el cliente no la selecciona |
-| Tipo | `tipo` | Queja, Observación, Sugerencia, Denuncia, Reclamo o Felicitación |
+| Tipo | `tipo` | Catálogo vigente: Queja, Observación, Sugerencia, Reclamo o Felicitación; 'Denuncia' sobrevive solo como valor histórico en DB |
 | Persona o empresa | `cliente_nombre` | Campo anterior, conserva los datos existentes |
 | N.º oficio de resolución | `numero_oficio_resolucion` | Interno; puede completarse después |
 | Observaciones | `observaciones` | Interno; separado de `notas` de justificación y `resolucion` del flujo |

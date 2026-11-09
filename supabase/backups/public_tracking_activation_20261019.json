@@ -1,0 +1,77 @@
+{
+  "verifiedAt": "2026-10-19T21:53:19.663Z",
+  "projectRef": "fykhrrpeoehwqznccmfp",
+  "deployment": {
+    "id": "dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF",
+    "origin": "https://mi-dashboard-iota.vercel.app",
+    "ready": true,
+    "promoted": true
+  },
+  "database": {
+    "migration": "20261015223440",
+    "appliedAndRecorded": true,
+    "rlsAndEffectiveGrantsInspected": true,
+    "publicationCutActive": true,
+    "legacyClientCanExecute": false,
+    "cuts": ["scripts/activar-publicacion-quejas.sql", "scripts/cerrar-workflow-quejas.sql"]
+  },
+  "configuration": {
+    "webTrackingEnabled": true,
+    "edgeTrackingEnabled": true,
+    "dedicatedSigningSecretMatches": true,
+    "canonicalOriginMatches": true,
+    "edgeHealthHttp": 200,
+    "edgeHealthSignatureVerified": true,
+    "appsScriptSavedSourceMatches": true,
+    "appsScriptMailEnabled": true,
+    "appsScriptTrackingOriginConfigured": true,
+    "existingTriggerMinutes": 5,
+    "automaticExecution": {
+      "function": "qmsMailPoll",
+      "startedAtCostaRica": "2026-10-19 15:49:20",
+      "durationSeconds": 4.518,
+      "status": "Completada"
+    }
+  },
+  "waf": {
+    "existingGroupsPreserved": 4,
+    "addedPostPaths": ["/api/public/seguimiento", "/api/public/seguimiento/documento"],
+    "requestsPerIp": 90,
+    "windowSeconds": 600,
+    "published": true
+  },
+  "verification": {
+    "nodePassed": 725,
+    "focusedPassed": 162,
+    "isolatedPostgresPassed": 208,
+    "edgeBundleSyntheticChecks": 50,
+    "soundFocusedPassed": 42,
+    "soundBrowserSyntheticChecks": 16,
+    "typecheck": true,
+    "lint": true,
+    "build": true,
+    "structure": true,
+    "visualLayer": true,
+    "candidateHttpChecks": 5,
+    "productionHttpChecks": 6,
+    "productionUnverifiedTrackingPost": 403,
+    "productionUnverifiedDocumentPost": 403,
+    "trackingPostNoStoreNoIndex": true,
+    "trackingPageHydratedAvailable": true,
+    "newCitizenEventsWithTrackingSnapshotSent": ["recibido", "investigacion"]
+  },
+  "sideEffectsExcluded": {
+    "testComplaintsCreated": 0,
+    "testEmailsSent": 0,
+    "manualPollInvoked": false,
+    "historicalBackfillOrResend": false,
+    "realCaseTestCapabilitiesIssued": false
+  },
+  "limits": [
+    "sent confirms emitter processing and ACK, not delivery or reading in every inbox",
+    "recipient acceptance of a new email and opening its private link remains unverified",
+    "an optional real-case capability issuance check was rejected by automatic review and was not executed",
+    "institutional Quality recipients and confirmed holidays remain to be assigned/configured",
+    "no authenticated large-volume benchmark or universal security guarantee"
+  ]
+}
