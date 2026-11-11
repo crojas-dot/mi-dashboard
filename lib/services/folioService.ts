@@ -11,6 +11,8 @@ const rpcByName = {
 
 export type FolioTipo = keyof typeof rpcByName
 
+/** Compatibilidad legacy. Las altas actuales asignan el folio en la transacción
+ * de registro; no reservar un consecutivo desde UI antes de insertar. */
 export async function generarFolio(tipo: FolioTipo): Promise<string> {
   const { data, error } = await supabase.rpc(rpcByName[tipo])
   if (error) {

@@ -5,9 +5,10 @@ import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { randomBytes, randomUUID } from 'node:crypto'
 import assert from 'node:assert/strict'
+import { verifyUrgentMail } from './test-quejas-urgent-mail-db.mjs'
 
 const root=process.cwd(), bin=process.env.QMS_PG_BIN??'C:/Program Files/PostgreSQL/18/bin'
-const work=path.join(root,'.performance','quejas-quality-db-'+Date.now()), data=path.join(work,'data'),port=55459
+const work=path.join(root,'.performance','quejas-quality-db-'+Date.now()), data=path.join(work,'data'),port=Number(process.env.QMS_PG_PORT??55459)
 const {Pool}=createRequire(path.join(root,'.performance/load-tools/package.json'))('pg')
 const password=randomBytes(32).toString('hex');let pool,started=false,checks=0
 const schema=JSON.parse(fs.readFileSync('supabase/backups/quejas_workflow_schema_20261010.json','utf8'))
@@ -163,6 +164,83 @@ try {
   await rejects(()=>finish(reopened,legacyFile),'55000','Reopened case cannot overwrite historical publication');
   const reclosed=await transition(reopened,'finished');
   check(reclosed.estado==='Finalizado'&&(await finals(reclosed)).length===1,'Historical reply can be retained without duplicate communication');
-  const result={ok:true,checks,scope:'Isolated PostgreSQL: review, return, original deadlines, private drafts, atomic publication, CAS, permissions and legacy compatibility',remoteWrites:false}
+  const oldSnapshot=(await pool.query("SELECT jsonb_agg(to_jsonb(o) ORDER BY o.id) value FROM queja_mail_outbox o")).rows[0].value
+  await pool.query(fs.readFileSync('supabase/migrations/20261110150300_quejas_correo_editable.sql','utf8'))
+  const afterSnapshot=(await pool.query("SELECT jsonb_agg(to_jsonb(o)-'correo_asunto'-'correo_cuerpo' ORDER BY o.id) value FROM queja_mail_outbox o")).rows[0].value
+  check(JSON.stringify(oldSnapshot)===JSON.stringify(afterSnapshot),'Additive email migration preserves every historical outbox field')
+  const saveEmail=async(q,version,subject,body,actor=actors.quality)=>(await as(actor,'SELECT qms_save_response_draft_v2($1,$2,$3,$4,$5,$6,$7,$8) value',[q.id,q.revision,version,'Respuesta pública separada','ECA-CORREO',null,subject,body]))[0].value
+  const finishEmail=async(q,file,version,subject,body,actor=actors.quality)=>(await as(actor,'SELECT qms_publish_approved_response_v2($1,$2,$3,$4,$5,$6,$7,$8) value',[q.id,q.revision,version,'Respuesta pública separada','ECA-CORREO',file,subject,body]))[0].value
+  const mailCase=await review(await pending()),mailFile=await attach(mailCase)
+  const mailBody='Estimada Persona de prueba:\n\nLos resultados se encuentran en el informe adjunto.\n\nAtentamente, Gestión de Calidad.'
+  for(const actor of [actors.owner,actors.inactive,actors.denied])await rejects(()=>saveEmail(mailCase,0,'Asunto',mailBody,actor),'42501','Email draft enforces existing active staff/module authorization')
+  for(const role of ['anon','service_role'])for(const fn of ['qms_save_response_draft_v2','qms_publish_approved_response_v2'])check(!(await pool.query("SELECT has_function_privilege($1,$2,'EXECUTE') value",[role,fn+'(uuid,bigint,bigint,text,text,uuid,text,text)'])).rows[0].value,'Email RPC closed to '+role)
+  check(!(await pool.query("SELECT has_function_privilege('authenticated','qms_mail_claim_batch_v4(integer,integer,uuid,bigint)','EXECUTE') value")).rows[0].value,'Browser cannot claim mail contents')
+  check(!(await pool.query("SELECT has_function_privilege('authenticated','qms_private.email_delivery_ready()','EXECUTE') value")).rows[0].value,'Browser cannot enable the sender')
+  const emailDraft=await saveEmail(mailCase,0,'Asunto personal',mailBody)
+  check(emailDraft.version===1&&emailDraft.correo_cuerpo===mailBody&&emailDraft.respuesta==='Respuesta pública separada','Email saved independently of public response and internal resolution')
+  await rejects(()=>saveEmail(mailCase,0,'Asunto distinto','Cambios de otra visita'),'40001','Email draft CAS cannot overwrite another version')
+  await rejects(()=>saveEmail(mailCase,1,'Cabecera\nInyectada',mailBody),'22023','Header injection rejected')
+  await rejects(()=>saveEmail(mailCase,1,'Asunto','x'.repeat(3501)),'22023','Email body bound enforced in DB')
+  await rejects(()=>saveEmail(mailCase,1,'😀'.repeat(91),mailBody),'22023','Subject bound counts UTF-16 units')
+  const unicodeDraft=await saveEmail(mailCase,1,'😀'.repeat(90),'😀'.repeat(1750))
+  check(unicodeDraft.version===2,'Valid astral characters remain supported at the transport boundary')
+  await rejects(()=>saveEmail(mailCase,2,'Asunto','😀'.repeat(1751)),'22023','Astral body cannot exceed signed transport limit')
+  const currentDraft=await saveEmail(mailCase,2,'Asunto personal',mailBody)
+  await rejects(()=>finishEmail(mailCase,mailFile,3,'Asunto personal',mailBody),'55000','Publication gated until upgraded sender is ready')
+  check((await current(mailCase)).estado==='Resuelto'&&(await finals(mailCase)).length===0,'Readiness failure is atomic')
+  await pool.query(fs.readFileSync('supabase/migrations/20261110151342_quejas_habilitar_correo_editable.sql','utf8'))
+  await rejects(()=>finishEmail(mailCase,mailFile,3,'',''),'22023','Incomplete email cannot be published')
+  const emailFinal=await finishEmail(mailCase,mailFile,currentDraft.version,'Asunto personal',mailBody)
+  const emailOutbox=(await finals(mailCase))[0]
+  check(emailFinal.estado==='Finalizado'&&emailOutbox.correo_asunto==='Asunto personal'&&emailOutbox.correo_cuerpo===mailBody,'Publication atomically enqueues the exact edited subject and body')
+  check((await pool.query('SELECT respuesta FROM queja_public_resolutions WHERE queja_id=$1',[mailCase.id])).rows[0].respuesta==='Respuesta pública separada','Cover email never replaces the public response or report')
+  await rejects(()=>finishEmail(mailCase,mailFile,3,'Reenvío','Otro correo'),'40001','Repeated publication does not resend or alter email snapshot')
+  check((await finals(mailCase)).length===1&&(await finals(mailCase))[0].correo_cuerpo===mailBody,'Final email remains singular and unchanged after retry')
+  await pool.query("UPDATE queja_mail_outbox SET next_attempt_at=now()+interval '1 day' WHERE queja_id<>$1",[mailCase.id])
+  const receivedBatch=await service('SELECT * FROM qms_mail_claim_batch_v4($1,120,$2,$3)',[5,randomUUID(),Math.floor(Date.now()/1000)])
+  const receivedMail=receivedBatch.find(row=>row.tipo==='recibido')
+  check(!!receivedMail&&!receivedBatch.some(row=>row.tipo==='final'),'Final delivery still waits for the receipt email')
+  await service('SELECT qms_mail_complete($1,$2,$3,$4,$5)',[receivedMail.id,receivedMail.claim_token,'sent',60,null])
+  const mailBatch=await service('SELECT * FROM qms_mail_claim_batch_v4($1,120,$2,$3)',[5,randomUUID(),Math.floor(Date.now()/1000)])
+  check(mailBatch.some(row=>row.id===emailOutbox.id&&row.correo.subject==='Asunto personal'&&row.correo.body===mailBody),'Machine-only claim projects the frozen email without client-supplied recipients')
+  const frozenMail=mailBatch.find(row=>row.id===emailOutbox.id)
+  check((await service('SELECT qms_mail_authorize_v2($1,$2) value',[frozenMail.id,frozenMail.claim_token]))[0].value===true,'Published custom email is eligible for physical delivery')
+  check((await service('SELECT qms_mail_authorize_v2($1,$2) value',[frozenMail.id,randomUUID()]))[0].value===false,'Wrong lease token never authorizes a citizen email')
+  await pool.query('INSERT INTO queja_attachment_deletions VALUES($1,$2,now())',[mailFile,actors.quality.id])
+  check((await service('SELECT qms_mail_authorize_v2($1,$2) value',[frozenMail.id,frozenMail.claim_token]))[0].value===false,'Deletion reservation blocks final document delivery')
+  await pool.query('DELETE FROM queja_attachment_deletions WHERE adjunto_id=$1',[mailFile])
+  await service('SELECT qms_mail_complete($1,$2,$3,$4,$5)',[frozenMail.id,frozenMail.claim_token,'sent',60,null])
+  check((await finals(mailCase))[0].status==='sent','Custom final email retains the existing delivery acknowledgement contract')
+  await pool.query(fs.readFileSync('supabase/migrations/20261110165806_quejas_no_procede_correo.sql','utf8'))
+  const rejectSave=async(q,version,reason='',format='plain',actor=actors.quality)=>(await as(actor,'SELECT qms_save_rejected_response_draft($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) value',[q.id,q.revision,version,'Fundamentos en el informe adjunto',q.folio,null,'Respuesta - Folio '+q.folio,'Estimada Persona: consulte el informe adjunto. Para consultas: gc@eca.or.cr.',reason,format]))[0].value
+  const rejectPublish=async(q,file,version,reason='La solicitud corresponde a otra entidad.',actor=actors.quality)=>(await as(actor,'SELECT qms_publish_rejected_response($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) value',[q.id,q.revision,version,'Fundamentos en el informe adjunto',q.folio,file,'Respuesta - Folio '+q.folio,'Estimada Persona: consulte el informe adjunto. Para consultas: gc@eca.or.cr.',reason,'markdown']))[0].value
+  const rejection=await newCase(),rejectionFile=await attach(rejection)
+  for(const actor of [actors.owner,actors.inactive,actors.denied])await rejects(()=>rejectSave(rejection,0,'Motivo','plain',actor),'42501','Rejection draft preserves staff authorization')
+  for(const role of ['anon','service_role'])for(const fn of ['qms_save_rejected_response_draft','qms_publish_rejected_response'])check(!(await pool.query("SELECT has_function_privilege($1,$2,'EXECUTE') value",[role,fn+'(uuid,bigint,bigint,text,text,uuid,text,text,text,text)'])).rows[0].value,'Rejection email RPC closed to '+role)
+  const rejectionDraft=await rejectSave(rejection,0)
+  check(rejectionDraft.version===1&&rejectionDraft.motivo_no_procede===''&&(await current(rejection)).estado==='Recibido','Incomplete rejection draft never closes or notifies')
+  check((await finals(rejection)).length===0,'Saving rejection sends no email')
+  await rejects(()=>rejectSave(rejection,0,'Otra visita'),'40001','Rejection draft CAS cannot overwrite another version')
+  await rejects(()=>rejectSave({...rejection,revision:rejection.revision+1},1,'Motivo'),'40001','Rejection preserves the original case revision')
+  await rejects(()=>rejectSave(rejection,1,'x'.repeat(10001)),'22023','Rejection reason bound enforced in DB')
+  await rejects(()=>rejectSave(rejection,1,'Motivo','html'),'22023','Rejection reason format is explicit and closed')
+  await rejects(()=>rejectPublish(rejection,rejectionFile,1,''),'22023','Rejection cannot publish without justification')
+  await rejects(()=>rejectPublish(rejection,foreignFile,1),'22023','Rejection never publishes a foreign document')
+  await rejects(()=>rejectPublish(rejection,rejectionFile,0),'40001','Stale rejection draft cannot publish')
+  check((await current(rejection)).estado==='Recibido'&&(await finals(rejection)).length===0&&await count('queja_public_resolutions',rejection.id)===0,'Failed rejection publication rolls back workflow, publication and email')
+  const rejectedWithMail=await rejectPublish(rejection,rejectionFile,1,'**La solicitud corresponde a otra entidad.**')
+  check(rejectedWithMail.estado==='No Procede'&&rejectedWithMail.fecha_cierre&&rejectedWithMail.resolucion==='**La solicitud corresponde a otra entidad.**'&&rejectedWithMail.resolucion_formato==='markdown','Rejection atomically stores justification, format and close date')
+  const rejectionEvent=(await finals(rejection))[0]
+  check(rejectionEvent.correo_cuerpo.includes('gc@eca.or.cr')&&rejectionEvent.correo_asunto==='Respuesta - Folio '+rejection.folio,'Rejection enqueues the exact editable cover email')
+  check((await pool.query('SELECT adjunto_id,respuesta FROM queja_public_resolutions WHERE queja_id=$1',[rejection.id])).rows[0].adjunto_id===rejectionFile,'Rejection publishes only the selected official report')
+  await rejects(()=>rejectPublish(rejection,rejectionFile,1),'40001','Repeated rejection never sends another mail')
+  check((await finals(rejection)).length===1,'One final email after repeated rejection request')
+  const abandoned=await newCase();await rejectSave(abandoned,0,'Motivo descartado','markdown')
+  let continued=await transition(abandoned,'investigation',{owner:actors.owner.id,justification:'Procede investigar'})
+  continued=await transition(continued,'quality_review',{resolution:'Propuesta aprobable'},actors.owner);continued=await review(continued)
+  const clean=await saveEmail(continued,1,'Respuesta aprobada','Correo de acompañamiento de la resolución aprobada.')
+  check(clean.motivo_no_procede===null&&clean.motivo_no_procede_formato===null,'Approved draft clears an abandoned rejection without resetting its version')
+  await verifyUrgentMail({ pool,service,newCase,check,rejects })
+  const result={ok:true,checks,scope:'Isolated PostgreSQL: quality flow, independent editable email, urgent citizen queue and transactional wake with mocked net/Vault',remoteWrites:false}
   console.log(JSON.stringify(result));fs.writeFileSync(path.join(root,'.performance/quejas-quality-flow-db-evidence.json'),JSON.stringify(result,null,2))
 } finally {if(pool)await pool.end();if(started)run('pg_ctl.exe',['-D',data,'-w','stop','-m','fast'])}

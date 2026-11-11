@@ -194,24 +194,25 @@ test('las ediciones usan el callback del último render confirmado sin emitir ca
 
 test('la paginación se limita al informe y limpia el estilo global al cerrar el último editor paginado', () => {
   const styles = Array.from({ length: 3 }, () => ({ remove() { styles.splice(styles.indexOf(this), 1) } }))
-  const paginationDocument = { head: { querySelectorAll: () => styles } }
+  const paginationDocument = { querySelectorAll: () => [...styles] }
   const regular = editorHarness()
-  regular.render()
+  regular.render({ variant: 'document', pagination: false })
   assert.equal(regular.options.extensions.some(extension => extension.name === 'PaginationPlus'), false)
 
   const report = editorHarness({ paginationDocument })
-  report.render({ pagination: true })
+  report.render({ variant: 'document', pagination: true })
   const [pagination, lifecycle] = report.options.extensions.slice(-2)
   assert.equal(pagination.name, 'PaginationPlus')
   assert.deepEqual(JSON.parse(JSON.stringify(pagination.options)), {
-    pageHeight: 1123, pageWidth: 794, marginTop: 76, marginBottom: 76, marginLeft: 76, marginRight: 76,
-    pageGap: 16, pageGapBorderSize: 1, pageGapBorderColor: 'var(--color-qms-border)',
-    pageBreakBackground: 'var(--color-qms-hover-bg)', contentMarginTop: 0, contentMarginBottom: 0,
+    pageHeight: 1123, pageWidth: 794, marginTop: 88, marginBottom: 88, marginLeft: 82, marginRight: 82,
+    pageGap: 28, pageGapBorderSize: 0, pageGapBorderColor: '#d5dce5',
+    pageBreakBackground: '#f3f5f8', contentMarginTop: 0, contentMarginBottom: 0,
     footerRight: 'Página {page}',
   })
   assert.equal(lifecycle.name, 'qmsPaginationStyleLifecycle')
+  // El montaje no borra estilos; solo el desmontaje del último editor paginado los retira.
   lifecycle.config.onCreate()
-  assert.equal(styles.length, 1, 'elimina estilos duplicados heredados del paquete')
+  assert.equal(styles.length, 3, 'abrir el editor no borra estilos de otros montajes')
   lifecycle.config.onDestroy()
   assert.equal(styles.length, 0, 'retira el estilo global al desmontar el último editor')
 })
@@ -225,16 +226,18 @@ test('las hojas paginadas tienen fondo gris, páginas A4 delimitadas y foco sin 
   assert.match(styles, /\.tiptap\.rm-with-pagination:focus-visible\s*\{[^}]*outline:\s*none/s)
 })
 
-test('una edición del informe pide recalcular los marcadores de página', () => {
-  const h = editorHarness()
-  h.render({ pagination: true })
-  h.change('## Informe\n\nTexto actualizado')
-  assert.deepEqual(h.paginationRefreshes, [16])
-
+test('el documento paginado monta la capa de bordes y el editor normal no la incluye', () => {
+  const collect = value => {
+    if (Array.isArray(value)) return value.flatMap(collect)
+    if (!value || typeof value !== 'object' || !value.props) return []
+    return [value, ...collect(value.props.children)]
+  }
+  const paged = editorHarness()
+  const pagedTree = collect(paged.render({ variant: 'document', pagination: true }))
+  assert.ok(pagedTree.some(node => node.type?.name === 'BordesDePagina'), 'el informe dibuja sus hojas')
   const regular = editorHarness()
-  regular.render()
-  regular.change('Texto actualizado')
-  assert.deepEqual(regular.paginationRefreshes, [])
+  const regularTree = collect(regular.render({ variant: 'document' }))
+  assert.equal(regularTree.some(node => node.type?.name === 'BordesDePagina'), false)
 })
 
 test('la barra y el viewport tienen anclajes separados para mantener fija la barra en documentos largos', () => {
@@ -250,7 +253,7 @@ test('la barra y el viewport tienen anclajes separados para mantener fija la bar
   const viewport = nodes.find(node => node.props['data-rich-text-viewport'] !== undefined)
   assert.equal(toolbar.props.role, 'group')
   assert.equal(toolbar.props['aria-label'], 'Formato de Observaciones')
-  assert.match(viewport.props.className, /flex-1 overflow-y-auto/)
+  assert.match(viewport.props.className, /flex-1 overflow-auto/)
   assert.doesNotMatch(toolbar.props.className, /overflow-y-auto/)
   assert.deepEqual(nodes.map(node => node.props['aria-label']).filter(Boolean), [
     'Formato de Observaciones', 'Estilo de texto', 'Negrita', 'Cursiva',

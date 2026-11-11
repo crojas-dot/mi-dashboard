@@ -190,7 +190,7 @@ export default function UsuariosPage() {
                     </div>
                   </TableCell>
                   <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
-                  <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'red'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+                  <TableCell><Badge variant="neutral">{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
                   <TableCell className="whitespace-nowrap text-sm text-qms-muted">
                     {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}
                   </TableCell>

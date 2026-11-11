@@ -63,6 +63,7 @@ function fixture(options = {}) {
     Date: Clock, JSON, Number, Array, Object,
     console: { info: (...args) => logs.push(['info', ...args]), warn: (...args) => logs.push(['warn', ...args]) },
     Utilities: { Charset: { UTF_8: 'UTF-8' }, DigestAlgorithm: { SHA_256: 'sha256' }, getUuid: randomUUID,
+      sleep: milliseconds => { state.now += milliseconds },
       newBlob: value => ({ getBytes: () => bytes(value), getDataAsString: () => Buffer.from(value).toString('utf8') }),
       base64EncodeWebSafe: value => Buffer.from(value).toString('base64url'),
       base64DecodeWebSafe: value => bytes(Buffer.from(value, 'base64url')),
@@ -105,7 +106,9 @@ function fixture(options = {}) {
       return { getResponseCode: () => options.httpStatus ?? 200,
         getContentText: () => options.rawResponse ?? JSON.stringify(envelope) }
     } },
-    ScriptApp: { getProjectTriggers: () => triggers, newTrigger(handler) {
+    ScriptApp: { AuthMode: { FULL: 'full' }, AuthorizationStatus: { REQUIRED: 'required' },
+      getAuthorizationInfo: () => ({ getAuthorizationStatus: () => options.authRequired ? 'required' : 'ready', getAuthorizationUrl: () => 'https://script.google.com/synthetic-authorization' }),
+      getProjectTriggers: () => triggers, newTrigger(handler) {
       return { timeBased() { return this }, everyMinutes(minutes) { assert.equal(minutes, 5); return this },
         create() { triggers.push({ getHandlerFunction: () => handler }) } }
     } },
@@ -126,11 +129,42 @@ function wakeRequest(value, overrides = {}) {
   return { postData: { contents: JSON.stringify(envelope) } }
 }
 
+test('configuración del despertador es firmada, separa su clave y no reclama ni envía correo', () => {
+  const value=fixture({drive:{getRootFolder(){return {}}}}),key='b'.repeat(64)
+  const call=payload=>JSON.parse(value.context.doPost({postData:{contents:JSON.stringify(sign('queue_wake_setup_request',payload,value.state.now))}}))
+  const reply=call({secret:key})
+  assert.equal(reply.purpose,'queue_wake_setup_receipt')
+  assert.equal(JSON.parse(Buffer.from(reply.payload,'base64url')).configured,true)
+  assert.equal(value.properties.QMS_MAIL_WAKE_SECRET,key)
+  assert.equal(value.requests.length,0);assert.equal(value.sent.length,0)
+  assert.equal(call({secret:'c'.repeat(64)}).error,'wake_setup_unavailable')
+  assert.equal(value.properties.QMS_MAIL_WAKE_SECRET,key)
+  assert.equal(call({secret:key,recipient:'not-allowed@example.test'}).error,'wake_setup_unavailable')
+  const unavailable=fixture()
+  assert.equal(JSON.parse(unavailable.context.doPost({postData:{contents:JSON.stringify(sign('queue_wake_setup_request',{secret:key},unavailable.state.now))}})).error,'wake_setup_unavailable')
+  assert.equal(unavailable.properties.QMS_MAIL_WAKE_SECRET,undefined)
+})
+
+test('la comprobación de recuperación no envía y preserva cualquier intento registrado', () => {
+  const eventId=randomUUID(),key='b'.repeat(64)
+  for(const previous of [null,'sent','attempting','uncertain','unknown']) {
+    const rows=[['event_id','hash','status','started_at','confirmed_at']]
+    if(previous)rows.push([eventId,'synthetic-hash',previous,new Date(),''])
+    const value=fixture({rows,drive:{getRootFolder(){return {}}}})
+    const reply=JSON.parse(value.context.doPost({postData:{contents:JSON.stringify(sign('queue_wake_setup_request',{secret:key,eventId},value.state.now))}}))
+    const payload=JSON.parse(Buffer.from(reply.payload,'base64url'))
+    assert.equal(payload.deliveryState,previous===null?'absent':previous==='sent'?'sent':'uncertain')
+    assert.equal(payload.configured,true)
+    assert.equal(value.sent.length,0);assert.equal(value.requests.length,0)
+    assert.equal(rows.length,previous?2:1)
+  }
+})
+
 test('correo final adjunta solo el archivo autorizado y un reintento no lo vuelve a enviar', () => {
   let reads = 0
   const document = { driveId: 'synthetic_official_file', name: 'Informe final.docx', mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 100 }
   const blob = { setName(name) { assert.equal(name, document.name); return this }, getBytes: () => Array(100).fill(1) }
-  const value = fixture({ messages: [{ ...syntheticMessage(), kind: 'final' }], properties: { QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS: 'true' },
+  const value = fixture({ messages: [{ ...syntheticMessage(), kind: 'final' }], properties: { QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS: 'false' },
     drive: { getFileById(id) { reads++; assert.equal(id, document.driveId); return { isTrashed: () => false, getSize: () => 100, getMimeType: () => document.mime, getBlob: () => blob } } },
     response(request, { defaultResponse }) { return { ...defaultResponse(request), ...(request.purpose === 'authorize_request' ? { officialDocument: document } : {}) } },
   })
@@ -139,6 +173,18 @@ test('correo final adjunta solo el archivo autorizado y un reintento no lo vuelv
   assert.equal(value.sent[0].attachments.length, 1); assert.equal(value.sent[0].attachments[0], blob)
   assert.equal(value.requests.find(request => request.purpose === 'authorize_request').decoded.includeOfficialDocument, true)
   assert.doesNotMatch(JSON.stringify(value.rows), /Informe final|synthetic_official_file/)
+})
+
+test('correo final sin documento no llega a MailApp ni crea attempting, con flag ausente o apagado', () => {
+  for (const flag of [undefined, 'false', 'true']) {
+    const value = fixture({ messages: [{ ...syntheticMessage(), kind: 'final' }], properties: { QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS: flag },
+      response(request, { defaultResponse }) { return { ...defaultResponse(request), ...(request.purpose === 'authorize_request' ? { officialDocument: null } : {}) } } })
+    value.poll()
+    assert.equal(value.sent.length, 0)
+    assert.equal(value.rows.length, 1)
+    assert.equal(value.requests.find(request => request.purpose === 'authorize_request').decoded.includeOfficialDocument, true)
+    assert.equal(value.requests.find(request => request.purpose === 'ack_request').decoded.outcome, 'retry')
+  }
 })
 
 test('Drive inaccesible o metadata alterada falla antes de attempting/MailApp y permite reintento seguro', () => {
@@ -256,7 +302,7 @@ test('tick cuota0 de GAS interopera con Edge real sin reservar eventos, escribir
   const handler = queue.createQuejasMailQueueHandler({ env: name => environment[name], crypto: webcrypto,
     now: () => value.state.now, fetcher: async (url, options) => {
       calls.push({ url, args: JSON.parse(options.body) })
-      assert.equal(url.endsWith('/qms_mail_claim_batch_v2'), true)
+      assert.equal(url.endsWith('/qms_mail_claim_batch_v4'), true)
       assert.equal(JSON.parse(options.body).p_limit, 0)
       return Response.json([])
     } })
@@ -448,7 +494,7 @@ test('Código.gs y Edge real interoperan health, claim interno, authorize y ACK 
   const handler = queue.createQuejasMailQueueHandler({ env: name => environment[name], crypto: webcrypto,
     now: () => value.state.now, fetcher: async (url, options) => {
       calls.push({ url, args: JSON.parse(options.body) })
-      return Response.json(url.endsWith('/qms_mail_claim_batch_v2') ? [row] : true)
+      return Response.json(url.endsWith('/qms_mail_claim_batch_v4') ? [row] : true)
     } })
   for (const [purpose, payload] of [['health_request', {}], ['claim_request', { limit: 1 }],
     ['authorize_request', { eventId: row.id, claimToken: row.claim_token }],
@@ -470,7 +516,7 @@ test('Código.gs y Edge real interoperan health, claim interno, authorize y ACK 
     if (purpose === 'authorize_request') {
       assert.equal(receipt.payload.eventId, row.id)
       assert.equal(receipt.payload.authorized, true)
-      assert.equal(calls.at(-1).url.endsWith('/qms_mail_authorize'), true)
+      assert.equal(calls.at(-1).url.endsWith('/qms_mail_authorize_v2'), true)
       assert.deepEqual(calls.at(-1).args, { p_id: row.id, p_claim_token: row.claim_token })
     }
     if (purpose === 'ack_request') assert.equal(receipt.payload.accepted, true)

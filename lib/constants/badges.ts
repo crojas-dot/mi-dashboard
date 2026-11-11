@@ -8,6 +8,7 @@ export const ESTILOS_BADGE = {
   investigacion: 'bg-qms-investigacion text-qms-investigacion-text',
   purple: 'bg-qms-purple text-white',
   gray: 'bg-qms-muted text-white',
+  neutral: 'bg-qms-neutral-soft text-qms-dark',
 } as const
 export type VarianteBadge = keyof typeof ESTILOS_BADGE
 

@@ -40,8 +40,8 @@ import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, Chev
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
-import { CASE_ACTIONS, caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
-import { CaseSection, CaseCycle, CaseAction, CaseMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CASE_ACTIONS, caseDate } from '@/app/quejas/components/quejaExpedienteModel'
+import { CaseSection, CaseCycle, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
@@ -67,6 +67,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [reviewOpen, setReviewOpen] = useState(false)
   const [motivoDevolucion, setMotivoDevolucion] = useState('')
   const [respuestaCase, setRespuestaCase] = useState<Queja | null>(null)
+  const [respuestaNoProcede, setRespuestaNoProcede] = useState(false)
 
   const [decisionProcedencia, setDecisionProcedencia] = useState<'procede' | 'no_procede' | null>(null)
   const [justificacion, setJustificacion] = useState('')
@@ -124,7 +125,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     if (!puedeEditarArea) setRegistroDraft(null)
   }
   const publicacion = usePublicacionQuejasDisponible(esStaff && !!queja)
-  const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && activityOpen)
+  const finalizada = ['Finalizado', 'No Procede'].includes(estadoActual)
+  const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && (activityOpen || finalizada))
 
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
@@ -138,6 +140,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setReviewOpen(false)
     setMotivoDevolucion('')
     setRespuestaCase(null)
+    setRespuestaNoProcede(false)
     setJustificacion('')
     setJustificacionFormato('plain')
     setResponsableSeleccionado(null)
@@ -420,7 +423,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const action = CASE_ACTIONS[estadoActual]
   // El responsable propone desde Mis Quejas; la comunicación final exige Calidad.
   const canAct = esStaff
-  const deadline = caseDeadline(queja, runs)
   const editing = !!respuestaCase || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
   const openAction = () => {
     if (!canAct || workflowPending || registroDraft) return
@@ -450,8 +452,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   </div>
   const editorOpen = decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
+  const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
   const requestDocument = <>
-    <CaseSection variant="document" title="Descripción" headerActions={<AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
+    <CaseSection variant="document" title="Descripción" headerActions={areaControl}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
 {queja.justificacion_procede && <CaseSection variant="document" source="Gestión de Calidad" title="Evaluación de procedencia"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></CaseSection>}
   </>
   const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</CaseSection>
@@ -468,10 +471,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   // Los estados y el vencimiento pertenecen al panel de acciones, no al encabezado
   // del flujo. El panel lateral conserva sus detalles en todas las etapas.
-  const statusBadges = <div className="flex flex-wrap items-center gap-2"><Badge variant={queja.estado_color || 'gray'}>{queja.estado_nombre || estadoActual}</Badge><Badge variant={deadline.variant} title={deadline.vence ? `${deadline.stageTitle} · ${caseDate(deadline.vence)}` : undefined}>{deadline.label}</Badge>{plazosError && <span role="alert" className="text-xs text-qms-muted">Sin detalle del calendario</span>}</div>
   // Mantener un alto mínimo común y dejar que los botones crezcan si el texto envuelve.
   const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
-  const workflowActions = canAct && action?.action && (qualityReview ? <>
+  const workflowActions = canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
@@ -479,18 +481,22 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
       headerActions={<>
-        {esStaff && <Button size="sm" variant="link" aria-label="Generar expediente" title="Generar expediente editable" disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}><FileText className="size-5" /><span className="hidden @min-[700px]/workspace:inline">Generar expediente</span></Button>}
+        {esStaff && <Button size="sm" variant="link" aria-label="Generar expediente" title="Generar expediente editable" disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}><FileText className="size-5" /></Button>}
         {(onPrevious || onNext) && <div className="hidden items-center gap-1 @min-[600px]/workspace:flex"><Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationDisabled} onClick={onPrevious}><ChevronLeft className="size-5" /></Button><Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationDisabled} onClick={onNext}><ChevronRight className="size-5" /></Button></div>}
-        <Button size="sm" variant="link" className="h-10 [&:not(:disabled):hover]:bg-transparent" onClick={() => setActivityOpen(true)} aria-label="Ver actividad" title="Actividad del expediente"><History className="size-5" /><span className="hidden @min-[600px]/workspace:inline">Actividad</span></Button>
+        <Button size="sm" variant="link" className="h-10 [&:not(:disabled):hover]:bg-transparent" onClick={() => setActivityOpen(true)} aria-label="Ver actividad" title="Actividad del expediente"><History className="size-5" /></Button>
         <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} aria-pressed={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}</Button>
       </>}>
-      {!esStaff && !expanded && <CaseRequestHeader key={queja.id} queja={queja} showReceivedAt={qualityReview} />}
-      <CaseWorkspace documentKey={`${queja.id}:${qualityReview ? 'review' : 'detail'}`} expanded={expanded} cyclePlacement={esStaff ? 'top' : 'side'} request={esStaff ? <CaseRequestHeader key={queja.id} queja={queja} variant="panel" showReceivedAt={qualityReview} /> : undefined} compact={<>
-          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">{statusBadges}<div className={`grid min-w-0 w-full gap-2 sm:w-auto ${qualityReview ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>{workflowActions}</div></div>
-          <CaseCycle queja={queja} audience="quality" compact line />
-        </>}
-        cycle={esStaff ? <CaseCycle queja={queja} audience="quality" compact line variant="plain" /> : <CaseCycle queja={queja} audience="quality" variant="plain" />}
-        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} variant="plain" heading={qualityReview ? 'Acciones' : undefined}><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm font-medium">{responsableActual?.nombre || 'Sin asignar'}</p><div className="mt-4 flex min-w-0 max-w-full flex-col items-stretch gap-2">{workflowActions}</div></CaseAction>}>
+      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="top"
+        request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
+        compact={<CaseCycle queja={queja} process currentOnly />}
+        cycle={<CaseCycle queja={queja} process />}
+        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
+          actionTitle={estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
+          actionDetail={estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
+          {workflowActions}
+          {esStaff && estadoActual === 'En Investigación' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || editing}>Derivar a SACP</Button>}
+          {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
+        </CaseAction>}>
             {qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
                 {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}
@@ -531,7 +537,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <div><h3 className="text-base font-semibold text-qms-dark">Seleccioná una decisión</h3><p className="mt-2 text-sm text-qms-muted">Después podés redactar su justificación y guardar.</p></div>
             <div role="group" aria-label="Decisión" className="grid w-full max-w-md grid-cols-2 gap-3">
               <Button variant="primary" className="min-h-11 min-w-0 text-base" disabled={workflowPending} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('procede') }}>Procede</Button>
-              <Button variant="danger" className="min-h-11 min-w-0 bg-qms-danger! text-base text-white!" disabled={workflowPending} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('no_procede') }}>No Procede</Button>
+              <Button variant="danger" className="min-h-11 min-w-0 bg-qms-danger! text-base text-white!" disabled={workflowPending || !publicacionVerificada} onClick={() => { draftVersions.current.workflow++; if (publicacionDisponible) { setRespuestaNoProcede(true); setRespuestaCase(workflowQueja); setDecisionOpen(false); } else setDecisionProcedencia('no_procede') }}>No Procede</Button>
             </div>
           </div>}
           {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
@@ -564,12 +570,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </CaseSection>
         <CaseSection title="Historial de cambios">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} /> : actividadError ? <p role="alert" className="text-sm text-qms-danger">No se pudo cargar la actividad. <Button size="sm" variant="link" onClick={() => refetchActividad()}>Reintentar</Button></p> : !actividad.length ? <p className="text-sm text-qms-muted">No hay cambios registrados.</p> : <ol className="space-y-4">{actividad.map(event => <li key={event.id} className="border-l-2 border-qms-border pl-3"><p className="whitespace-pre-wrap break-words text-sm">{event.descripcion}</p><p className="mt-1 text-xs text-qms-muted">{caseDate(event.created_at)}{event.usuario_id && ' · ' + (usuarios.find(u => u.id === event.usuario_id)?.nombre || 'Usuario registrado')}</p></li>)}</ol>}</CaseSection>
         {esStaff && (correosLoading ? <LoadingSkeleton variant="list" label="Cargando comunicaciones…" /> : correosError ? <CaseSection title="Comunicaciones"><p role="alert" className="text-sm text-qms-danger">No se pudieron cargar los estados. <Button size="sm" variant="link" onClick={() => refetchCorreos()}>Reintentar</Button></p></CaseSection> : <CaseMailStatus messages={correos} />)}
-        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{estadoActual !== 'Finalizado' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || !!registroDraft}><GitBranch className="size-4" />Derivar a SACP</Button>}{queja.derivado_sacp_id && <Badge variant="blue">Derivada a SACP</Badge>}</div></CaseSection>}
+        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{estadoActual !== 'Finalizado' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || !!registroDraft}><GitBranch className="size-4" />Derivar a SACP</Button>}{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
       </div>
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
-    {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id} queja={respuestaCase} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
-      onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={() => setRespuestaCase(null)} />}
+    {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id + (respuestaNoProcede ? ':rejected' : ':approved')} queja={respuestaCase} noProcede={respuestaNoProcede} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
+      onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); if (!completed) setDecisionOpen(true) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
     {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'} onClose={() => setInformeOpen(false)} />}
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
   </>

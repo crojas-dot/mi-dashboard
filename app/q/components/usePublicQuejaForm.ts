@@ -181,7 +181,9 @@ export function usePublicQuejaForm(token: string) {
           : item))
       }
     }
-    if (!isCurrent() || finalizedRef.current) return
+    // El recibo y su correo esperan a todas las evidencias. Un fallo conserva
+    // el mismo uploadId para reintentar sin anunciar un envío completado.
+    if (!isCurrent() || files.current.some(entry => entry.status !== 'subido') || finalizedRef.current) return
     setEtapa('Finalizando envío…')
     try {
       const result = await finalizarQuejaPublica(created.uploadToken, controller.signal)

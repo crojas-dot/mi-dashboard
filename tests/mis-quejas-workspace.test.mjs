@@ -63,7 +63,7 @@ test('Mis Quejas comparte workspace ampliable; cerrar y volver a abrir restablec
   assert.equal(panel.modal().props.expanded, false)
 })
 
-test('Mis Quejas mantiene solicitud lateral y avance superior en Análisis y Resolución', () => {
+test('Mis Quejas comparte el marco y el ciclo horizontal de Quejas', () => {
   const panel = fixture()
   panel.select('A')
   const workspace = () => panel.nodes().find(node => node.type.name === 'CaseWorkspace')
@@ -71,14 +71,15 @@ test('Mis Quejas mantiene solicitud lateral y avance superior en Análisis y Res
     const current = workspace()
     assert.equal(current.props.cyclePlacement, 'top')
     assert.equal(current.props.request.type.name, 'CaseRequestHeader')
-    assert.equal(current.props.request.props.variant, 'panel')
+    assert.equal(current.props.presentation, 'reference')
+    assert.equal(current.props.request.props.variant, 'details')
+    assert.equal(current.props.request.props.reference, true)
     assert.equal(current.props.cycle.type.name, 'CaseCycle')
-    assert.equal(current.props.cycle.props.compact, true)
-    assert.equal(current.props.cycle.props.line, true)
+    assert.equal(current.props.cycle.props.process, true)
     assert.equal(current.props.cycle.props.distribute, undefined)
     const compactCycle = panel.nodes().find(node => node.type.name === 'CaseCycle' && node !== current.props.cycle)
-    assert.equal(compactCycle.props.compact, true)
-    assert.equal(compactCycle.props.line, true)
+    assert.equal(compactCycle.props.currentOnly, true)
+    assert.equal(compactCycle.props.process, true)
     assert.equal(panel.nodes().some(node => node.type === 'AreaCatalog'), false)
   }
   assertSharedLayout()

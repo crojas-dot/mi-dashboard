@@ -9,6 +9,10 @@ export interface RespuestaClienteDraft {
   queja_id: string
   version: number
   respuesta: string
+  correo_asunto?: string | null
+  correo_cuerpo?: string | null
+  motivo_no_procede?: string | null
+  motivo_no_procede_formato?: RichTextFormat | null
   numero_oficio: string
   adjunto_id: string | null
   actualizado_por: string
@@ -23,7 +27,7 @@ export const respuestaClienteKey = (id: string) => [...queryKeys.quejas, 'respue
 
 export async function fetchRespuestaCliente(id: string, signal?: AbortSignal): Promise<RespuestaClienteContext> {
   const requests = [
-    supabase.from('queja_response_drafts').select('queja_id,version,respuesta,numero_oficio,adjunto_id,actualizado_por,updated_at').eq('queja_id', id),
+    supabase.from('queja_response_drafts').select('queja_id,version,respuesta,correo_asunto,correo_cuerpo,motivo_no_procede,motivo_no_procede_formato,numero_oficio,adjunto_id,actualizado_por,updated_at').eq('queja_id', id),
     supabase.from('queja_gc_revisiones').select('propuesta,propuesta_formato,created_at,usuario_id').eq('queja_id', id).eq('decision', 'approved').order('source_revision', { ascending: false }).limit(1),
     supabase.from('queja_public_resolutions').select('respuesta,adjunto_id,publicado_at,publicado_por').eq('queja_id', id),
   ]

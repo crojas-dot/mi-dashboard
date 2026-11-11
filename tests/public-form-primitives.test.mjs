@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHmac } from 'node:crypto'
 import { deflateSync } from 'node:zlib'
+import { jsPDF } from 'jspdf'
 import { loadModule } from './load-module.mjs'
 
 const validation = loadModule('lib/server/publicForms/validation.ts')
@@ -19,7 +20,7 @@ const QUEJA = '32345678-1234-4234-8234-123456789abc'
 const OTHER = '42345678-1234-4234-8234-123456789abc'
 const draft = {
   formToken: '12345678123442348234123456789abc', submissionId: SUBMISSION, honeypot: '',
-  nombre: ' Nombre sintético ', email: ' Persona@Example.TEST ', telefono: ' 1234 ',
+  nombre: ' Nombre sintético ', email: ' Persona@Example.TEST ', telefono: ' 12345678 ',
   categoria: 'Queja', descripcion: ' Una descripción sintética. ',
 }
 const status = expected => error => error?.status === expected
@@ -37,7 +38,7 @@ test('normaliza solamente los campos ciudadanos y conserva los tipos vigentes de
   const normalized = validation.validatePublicSubmission(draft)
   assert.equal(normalized.nombre, 'Nombre sintético')
   assert.equal(normalized.email, 'persona@example.test')
-  assert.equal(normalized.telefono, '1234')
+  assert.equal(normalized.telefono, '12345678')
   assert.equal(normalized.descripcion, 'Una descripción sintética.')
   assert.deepEqual([...limits.CATEGORIAS_PUBLICAS], ['Queja', 'Observación', 'Sugerencia', 'Reclamo', 'Felicitación'])
   for (const categoria of limits.CATEGORIAS_PUBLICAS) assert.equal(validation.validatePublicSubmission({ ...draft, categoria }).categoria, categoria)
@@ -62,9 +63,9 @@ test('exige correo, admite teléfono opcional y aplica límites exactos después
   for (const email of [undefined, null, '', '   ', 'sin correo']) {
     assert.throws(() => validation.validatePublicSubmission({ ...draft, email }), status(400))
   }
-  for (const [field, maximum] of [['nombre', 150], ['telefono', 40], ['descripcion', 10000]]) {
-    assert.equal(validation.validatePublicSubmission({ ...draft, [field]: 'a'.repeat(maximum) })[field].length, maximum)
-    assert.throws(() => validation.validatePublicSubmission({ ...draft, [field]: 'a'.repeat(maximum + 1) }), status(400))
+  for (const [field, maximum] of [['nombre', 50], ['telefono', 25], ['descripcion', 10000]]) {
+    assert.equal(validation.validatePublicSubmission({ ...draft, [field]: (field === 'telefono' ? '1' : 'a').repeat(maximum) })[field].length, maximum)
+    assert.throws(() => validation.validatePublicSubmission({ ...draft, [field]: (field === 'telefono' ? '1' : 'a').repeat(maximum + 1) }), status(400))
   }
   assert.throws(() => validation.validatePublicSubmission({ ...draft, email: 'a'.repeat(247) + '@ex.test' }), status(400))
   assert.throws(() => validation.validatePublicSubmission({ ...draft, email: 'sin correo' }), status(400))
@@ -205,10 +206,10 @@ function jpeg(width = 1, height = 1) {
     segment(0xc4, Buffer.concat([dc, ac])), segment(0xc0, Buffer.from([8, height >> 8, height & 255, width >> 8, width & 255, 1, 1, 17, 0])),
     segment(0xda, Buffer.from([1, 1, 0, 0, 63, 0])), Buffer.from([63, 255, 217])])
 }
-function pdf(extra = '', stream) {
+function pdf(extra = '', stream, streamType = '') {
   const objects = ['<< /Type /Catalog /Pages 2 0 R ' + extra + ' >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>']
-  if (stream) objects.push('<< /Length ' + stream.length + ' /Filter /FlateDecode >>\nstream\n' + stream.toString('latin1') + '\nendstream')
+  if (stream) objects.push('<< /Length ' + stream.length + ' /Filter /FlateDecode ' + streamType + ' >>\nstream\n' + stream.toString('latin1') + '\nendstream')
   let source = '%PDF-1.7\n'
   const offsets = [0]
   for (let i = 0; i < objects.length; i++) {
@@ -222,6 +223,51 @@ function pdf(extra = '', stream) {
   return Buffer.from(source, 'latin1')
 }
 const meta = (bytes, name, type) => ({ name, type, size: bytes.length })
+
+test('PDF generados por el sistema admiten vista inicial y zoom normales, comprimidos o no', () => {
+  for (const compress of [false, true]) for (const mode of ['fullwidth', 'fullheight', 'fullpage', 'original', '125%']) {
+    const document = new jsPDF({ compress })
+    document.text('Documento sintético de prueba.', 20, 20)
+    document.setDisplayMode(mode)
+    const bytes = Buffer.from(document.output('arraybuffer'))
+    assert.equal(files.validatePublicFile(meta(bytes, 'informe.pdf', 'application/pdf'), bytes).size, bytes.length)
+  }
+})
+
+test('OpenAction permite destinos de vista cerrados y conserva el rechazo de acciones o destinos ambiguos', () => {
+  for (const value of ['[3 0 R /XYZ null 10 1.25]', '[3 0 R /Fit]', '[3 0 R /FitH null]', '[3 0 R /FitV 0]', '[3 0 R /FitR -1 0 100 100]', '[3 0 R /FitB]', '[3 0 R /FitBH null]', '[3 0 R /FitBV 1]', '[3 0 R % vista inicial\n/FitH null]']) {
+    for (const key of ['OpenAction', 'Open#41ction']) {
+      const bytes = pdf('/' + key + ' ' + value)
+      assert.equal(files.validatePublicFile(meta(bytes, 'vista.pdf', 'application/pdf'), bytes).mimeType, 'application/pdf')
+      const compressed = pdf('', deflateSync(Buffer.from('/' + key + ' ' + value)), '/Type /ObjStm')
+      assert.equal(files.validatePublicFile(meta(compressed, 'vista.pdf', 'application/pdf'), compressed).mimeType, 'application/pdf')
+    }
+  }
+  for (const value of ['4 0 R', '<< /S /JavaScript /JS (sintético) >>', '<< /S /Launch /F (sintético) >>', '[3 0 R /Fit /Next 4 0 R]', '[3 0 R /XYZ null null (sintético)]', '[3 0 R /FitR null 0 1 1]', '[3 0 R /Unknown]', '[3 99999 R /Fit]', '[3 0 R /Fit', '[3 0 R /XYZ null null 1e200]']) {
+    for (const bytes of [pdf('/OpenAction ' + value), pdf('', deflateSync(Buffer.from('/OpenAction ' + value)), '/Type /ObjStm')]) {
+      assert.throws(() => files.validatePublicFile(meta(bytes, 'accion.pdf', 'application/pdf'), bytes), status(415))
+    }
+  }
+})
+
+test('una fuente binaria incrustada no confunde bytes /AA con acciones PDF, sin omitir ObjStm', () => {
+  const font = Buffer.alloc(128)
+  font.writeUInt32BE(0x00010000); font.writeUInt16BE(3, 4)
+  for (const [index, tag, offset, length] of [[0, 'head', 60, 54], [1, 'maxp', 116, 6], [2, 'glyf', 124, 4]]) {
+    const cursor = 12 + index * 16
+    font.write(tag, cursor, 'ascii'); font.writeUInt32BE(offset, cursor + 8); font.writeUInt32BE(length, cursor + 12)
+  }
+  font.writeUInt32BE(0x5f0f3cf5, 72); font.write('/AA ', 124, 'ascii')
+  const valid = pdf('', deflateSync(font))
+  assert.equal(files.validatePublicFile(meta(valid, 'fuente.pdf', 'application/pdf'), valid).mimeType, 'application/pdf')
+  for (const type of ['/Type /ObjStm', '/Type /Obj#53tm']) {
+    const hidden = pdf('', deflateSync(font), type)
+    assert.throws(() => files.validatePublicFile(meta(hidden, 'oculto.pdf', 'application/pdf'), hidden), status(415))
+  }
+  const fake = Buffer.from(font); fake.writeUInt32BE(0xffffffff, 20)
+  const malformed = pdf('', deflateSync(fake))
+  assert.throws(() => files.validatePublicFile(meta(malformed, 'falsa.pdf', 'application/pdf'), malformed), status(415))
+})
 
 test('admite archivos PDF, JPEG y PNG con estructura real y rechaza otros formatos renombrados', () => {
   for (const [bytes, name, type] of [[pdf(), 'ejemplo.pdf', 'application/pdf'], [jpeg(), 'ejemplo.jpeg', 'image/jpeg'], [png(), 'ejemplo.png', 'image/png']]) {

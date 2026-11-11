@@ -44,7 +44,7 @@ export default function ModoVistaActiva() {
       className={`ui-panel p-5 ${activo === rol.key ? 'border-qms-primary/30 bg-qms-primary-soft' : ''}`}>
       <div className="flex flex-wrap items-center justify-between gap-3"><h3 className="text-base font-medium">{rol.label}</h3><Switch aria-label={`Usar vista de ${rol.label}`} checked={activo === rol.key} disabled={saving} onChange={on => void activar(on ? rol.key : null)} /></div>
       <p className="mt-3 text-sm text-qms-muted">{rol.description}</p>
-      <div className="mt-4 flex flex-wrap gap-2">{rol.key === rolReal && <Badge variant="gray">Rol real</Badge>}{activo === rol.key && <Badge variant="blue">En uso</Badge>}</div>
+      <div className="mt-4 flex flex-wrap gap-2">{rol.key === rolReal && <Badge variant="gray">Rol real</Badge>}{activo === rol.key && <Badge variant="neutral">En uso</Badge>}</div>
     </section>)}</div>
     {vistaActiva && <Button variant="secondary" loading={saving} onClick={() => void activar(null)}>Restaurar vista real</Button>}
   </div>

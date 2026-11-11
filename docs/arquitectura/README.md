@@ -6,14 +6,49 @@ Las rutas de código de estas tablas parten de la raíz del proyecto.
 
 ## Ruta rápida
 
+[Consecutivos anuales — 11 noviembre](../consecutivos-anuales-2026-11-11.md)
+ubica el contador por módulo/año de Costa Rica, `qms_private.next_annual_folio`, los
+triggers de alta de SACP/Auditorías/Riesgos y la compatibilidad con RPC anteriores.
+DB aplicada, históricos intactos; modales sin reserva previa en el cliente local.
+Quejas mantiene `AAAA-NNN`; otros módulos conservan sus prefijos. Calendario adicional aplazado.
+
+[Limpieza compartida de Quejas/Mis Quejas](../quejas-panel-2026-10-13.md)
+ubica la selección persistente de fila con fondo #F0F4F7 (`ui-case-row`, `qms-row-selected`), contacto solo al ampliar,
+responsable antes de acciones, área junto a Descripción y adjuntos sin marcos
+anidados. `components/quejas/AreaAfectada.tsx` comparte el área de solo lectura
+sin consultar el catálogo. Cambios web locales; el contraste interno del visor
+de Google permanece pendiente por su aislamiento de origen.
+Quejas/Mis Quejas vuelven a leer `estado_color` para el fondo de sus estados;
+`components/quejas/QuejaPlazoIndicator.tsx` comparte punto y texto del plazo en
+tablas y paneles. Conserva fechas y colores originales del sistema.
+
+[Formulario, evidencias y correo por evento — 10 noviembre](../quejas-formulario-correo-inmediato-2026-11-10.md)
+ubica validación nativa y límites compartidos, finalización tras adjuntos,
+seguimiento sin copiar enlaces y RPC privados del despertador. DB/Edge aplicadas;
+Apps Script v5 activo por evento y final pendiente enviado con Word; web local sin publicar.
+
 [Revisión GC y respuesta al cliente](../quejas-revision-y-respuesta-2026-11-04.md)
 ubica acciones directas, devolución con motivo, informe editable y selector Word/PDF,
 borrador persistente y publicación final atómica. También documenta el adjunto físico
 del emisor, conservando No Procede y los contratos del cliente anterior.
+Su ajuste del 10 noviembre ubica `QuejaCorreoEditor.tsx` y `lib/utils/quejaCorreo.ts`:
+correo de acompañamiento personalizado con asunto/mensaje editables y
+selección/subida/visualización del documento arriba y atajo Editar informe que conserva
+el correo. No Procede comparte esa ventana y publica desde ella, sin un segundo
+editor/modal de justificación; conserva borrador CAS y fundamentos en el informe.
+Guardado/publicación v2, puentes de rechazo y claim v4 conservan el correo aprobado;
+DB y Edge están activadas, mientras el cliente web sigue local.
+La misma referencia ubica `CaseCompletionDate`/`CaseFinalMailStatus` en
+`QuejaExpedientePanels.tsx` y la actualización acotada del ACK en
+`lib/queries/useQuejaSeguimiento.ts`: cierre visible y estado del correo final.
+También registra el ajuste activo en Apps Script/Edge que reserva seguimiento
+al acuse y exige el informe físico en el correo final; Edge v16 añade el contacto de
+Calidad a las plantillas ciudadanas predeterminadas. El mismo contrato ubica el marco
+contraído compartido y Enviar a Revisión GC en las acciones de Mis Quejas.
 
 Revisión local del 3 noviembre de Quejas: [claridad, sonido y acuse por evento](../quejas-claridad-y-acuse-2026-11-03.md).
-Ubica la presentación del expediente y el despertador de correo, cuya activación
-remota sigue pendiente. El resumen superior de resultado se retiró por petición
+Ubica la presentación del expediente y el despertador de correo, activado el
+10 noviembre según el contrato enlazado arriba. El resumen superior de resultado se retiró por petición
 del propietario. [Resolución y revisión GC](../quejas-resolucion-y-revision-gc-2026-11-03.md)
 ubica la edición compacta y la propuesta prioritaria durante revisión; los demás
 estados mantienen Descripción al principio.

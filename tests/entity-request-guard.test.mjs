@@ -101,14 +101,14 @@ function panelHarness(kind = 'colaborador') {
     if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return []
     if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return visit(value.type(value.props))
     // El workspace renderiza estas ranuras además del documento central.
-    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)] : []
+    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request)] : []
   }
   const nodes = () => visit(tree)
   function text(value) {
     if (Array.isArray(value)) return value.map(text).join('')
     if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return ''
     if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return text(value.type(value.props))
-    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) : typeof value === 'string' ? value : ''
+    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) : typeof value === 'string' ? value : ''
   }
   const button = (label) => nodes().find((node) => ['Button', 'CButton'].includes(node.type) && text(node) === label)
   return {
@@ -408,23 +408,25 @@ for (const kind of ['colaborador', 'detalle']) {
   })
 }
 
-test('detalle: transición de A no limpia la resolución ni el loading de B', async () => {
+test('detalle: decisión de A no limpia la justificación ni el loading de B', async () => {
   const panel = panelHarness('detalle')
-  panel.select('A'); panel.button('Resolver').props.onClick(); panel.render()
-  panel.input('Escribí la conclusión y sus fundamentos', 'Resolución A')
-  const first = panel.button('Confirmar resolución').props.onClick()
-  panel.select('B'); panel.button('Resolver').props.onClick(); panel.render()
-  panel.input('Escribí la conclusión y sus fundamentos', 'Resolución B')
-  const current = panel.button('Confirmar resolución').props.onClick()
-  panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'Resuelto' })
+  const decide = id => {
+    panel.select(id, { estado: 'Recibido' }); panel.button('Tomar decisión').props.onClick(); panel.render()
+    panel.button('No Procede').props.onClick(); panel.render()
+    panel.input('justificación', 'Justificación ' + id)
+    return panel.button('Guardar').props.onClick()
+  }
+  const first = decide('A')
+  const current = decide('B')
+  panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'No Procede' })
   await first; panel.render()
   assert.equal(panel.updates[0].id, 'A')
   assert.equal(panel.guards[0](), false)
-  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('Escribí la conclusión y sus fundamentos')).props.value, 'Resolución B')
-  assert.equal(panel.button('Confirmar resolución').props.loading, true)
-  panel.requests[1].resolve({ id: 'B', revision: 5, estado: 'Resuelto' })
+  assert.equal(panel.nodes().find(node => node.props.placeholder?.includes('justificación')).props.value, 'Justificación B')
+  assert.equal(panel.button('Guardar').props.loading, true)
+  panel.requests[1].resolve({ id: 'B', revision: 5, estado: 'No Procede' })
   await current; panel.render()
-  assert.equal(panel.button('Confirmar resolución'), undefined)
+  assert.equal(panel.button('Guardar'), undefined)
   assert.equal(panel.updates.at(-1).id, 'B')
 })
 

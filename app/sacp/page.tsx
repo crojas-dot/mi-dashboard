@@ -84,7 +84,7 @@ export default function SACPage() {
                     <span className="text-xs text-gray-500">{a.seguimiento_porcentaje || 0}%</span>
                   </div>
                 </TableCell>
-                <TableCell><Badge variant={estadoSACPVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoSACPVariant[a.estado] || 'neutral'}>{a.estado}</Badge></TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost" onClick={() => { setSegModal(a); setAvance(a.seguimiento_porcentaje || 0) }}>

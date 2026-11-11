@@ -8,9 +8,58 @@ function qmsMailEnableOfficialAttachments() {
 function doPost(e) {
   try {
     if (e && e.postData && e.postData.contents.length <= 4096
+      && JSON.parse(e.postData.contents).purpose === 'queue_wake_setup_request') return qmsMailWakeSetup_(e);
+    if (e && e.postData && e.postData.contents.length <= 4096
       && JSON.parse(e.postData.contents).purpose === 'queue_wake_request') return qmsMailWake_(e);
   } catch (_) { /* El manejador habitual devuelve un rechazo seguro. */ }
   return qmsMailHandlePost(e);
+}
+
+/** Configuración de máquina firmada: no reclama cola ni envía mensajes. */
+function qmsMailWakeSetup_(e) {
+  var authenticated = false, stage = 'configuration';
+  try {
+    var configuration = qmsMailConfiguration_();
+    if (Utilities.newBlob(e.postData.contents).getBytes().length > 4096) throw new Error('invalid_mail_request');
+    var request = qmsMailVerify_(JSON.parse(e.postData.contents), 'queue_wake_setup_request', configuration.secret, 1024);
+    authenticated = true; stage = 'payload';
+    qmsMailRecord_(request.payload, ['secret', 'eventId']);
+    var secret = request.payload.secret;
+    if (typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret) || secret === configuration.secret) throw new Error('invalid_mail_request');
+    if (request.payload.eventId !== undefined && !qmsMailUuid_(request.payload.eventId)) throw new Error('invalid_mail_request');
+    stage = 'authorization';
+    var authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
+    if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
+      return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('queue_wake_setup_receipt', {
+        requestNonce: request.envelope.nonce, configured: false, authorizationRequired: true,
+        authorizationUrl: authorization.getAuthorizationUrl()
+      }, configuration.secret))).setMimeType(ContentService.MimeType.JSON);
+    }
+    stage = 'drive'; DriveApp.getRootFolder();
+    stage = 'lock';
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(1000)) throw new Error('setup_busy');
+    try {
+      stage = 'settings';
+      var props = PropertiesService.getScriptProperties(), existing = props.getProperty('QMS_MAIL_WAKE_SECRET');
+      if (existing && existing !== secret) throw new Error('wake_already_configured');
+      props.setProperty('QMS_MAIL_WAKE_SECRET', secret);
+      var deliveryState;
+      if (request.payload.eventId !== undefined) {
+        // Antes de recuperar un fallo previo al envío, comprobar el diario bajo
+        // el mismo lock que MailApp. Nunca devolver destinatario ni contenido.
+        stage = 'ledger';
+        var sheet = qmsMailLedger_(configuration), row = sheet.getLastRow() > 1
+          ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).createTextFinder(request.payload.eventId).matchEntireCell(true).findNext() : null;
+        var recorded = row ? sheet.getRange(row.getRow(), 3).getValues()[0][0] : null;
+        deliveryState = !row ? 'absent' : recorded === 'sent' ? 'sent' : 'uncertain';
+      }
+    } finally { lock.releaseLock(); }
+    return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('queue_wake_setup_receipt', {
+      requestNonce: request.envelope.nonce, configured: true, driveReady: true,
+      ...(deliveryState ? { deliveryState: deliveryState } : {})
+    }, configuration.secret))).setMimeType(ContentService.MimeType.JSON);
+  } catch (_) { return ContentService.createTextOutput(JSON.stringify({ error: 'wake_setup_unavailable', ...(authenticated ? { stage: stage } : {}) })).setMimeType(ContentService.MimeType.JSON); }
 }
 
 /** Despertador sin datos de correo. El claim, diario, cuota y ACK siguen en el emisor directo. */
@@ -36,13 +85,16 @@ function qmsMailWake_(e) {
   if (!lock.tryLock(1000)) return reply('busy');
   try {
     var cache = CacheService.getScriptCache(), key = 'qms-wake-' + request.envelope.nonce;
-    if (cache.get(key) || cache.get('qms-wake-cooldown')) return reply('busy');
+    if (cache.get(key)) return reply('busy');
     cache.put(key, '1', 360);
-    cache.put('qms-wake-cooldown', '1', 2);
   } finally { lock.releaseLock(); }
   // No mantener el lock durante HTTP. El poll y el despertador comparten el lease.
-  qmsMailPollDirect_(configuration);
-  return reply('accepted');
+  // Esperar brevemente al poll periódico evita perder el evento por un lock concurrente.
+  for (var attempt = 0; attempt < 10; attempt++) {
+    if (qmsMailPollDirect_(configuration, true) !== false) return reply('accepted');
+    Utilities.sleep(500);
+  }
+  return reply('busy');
 }
 function qmsMailIsRequest(e) {
   try { return JSON.parse(e.postData.contents).purpose === 'delivery_request'; }
@@ -198,6 +250,9 @@ function qmsMailDeliver_(configuration, payload, officialDocument) {
     catch (_) { return result('retry', 'ledger_unavailable'); }
     var recorded = qmsMailRecordedDelivery_(sheet, payload);
     if (recorded) return recorded;
+    // Un resultado final nuevo nunca se entrega sin su documento físico.
+    // El diario se comprueba primero para no reenviar una entrega histórica.
+    if (payload.kind === 'final' && !officialDocument) return result('retry', 'authorization_unavailable');
     if (MailApp.getRemainingDailyQuota() < 1) return result('retry', 'quota_exhausted', 86400);
     var mail = { to: payload.to, subject: payload.subject, body: payload.body,
       name: configuration.senderName, htmlBody: qmsMailHtml_(payload) };
@@ -370,7 +425,7 @@ function qmsMailAuthorizeInternal_(configuration, entry) {
   } finally { lock.releaseLock(); }
   try {
     // Nunca mantener ScriptLock durante HTTP ni escribir attempting antes de autorizar.
-    var attach = entry.message.kind === 'final' && PropertiesService.getScriptProperties().getProperty('QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS') === 'true';
+    var attach = entry.message.kind === 'final';
     var receipt = qmsMailQueueRequest_(configuration, 'authorize_request', {
       eventId: entry.message.eventId, claimToken: entry.claimToken,
       ...(attach ? { includeOfficialDocument: true } : {})
@@ -387,6 +442,7 @@ function qmsMailAuthorizeInternal_(configuration, entry) {
           || typeof file.mime !== 'string' || file.mime.length > 127 || !/^[A-Za-z0-9][A-Za-z0-9.+_-]*\/[A-Za-z0-9][A-Za-z0-9.+_-]*$/.test(file.mime)
           || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > 4194304) throw new Error('invalid_queue_receipt');
       }
+      if (file === null) throw new Error('official_document_required');
       entry.officialDocument = file;
     }
     return receipt.authorized ? null : { outcome: 'skipped', code: 'obsolete_notice', retryAfterSeconds: 300 };
@@ -435,16 +491,18 @@ function qmsMailDirectCapacity_(configuration) {
   } finally { lock.releaseLock(); }
 }
 
-function qmsMailPollDirect_(configuration) {
+function qmsMailPollDirect_(configuration, citizenOnly) {
   qmsMailQueueUrl_(configuration);
   var started = Date.now(), owner = Utilities.getUuid();
-  if (!qmsMailPollLease_(owner)) return;
+  if (!qmsMailPollLease_(owner)) return false;
   var counts = { claimed: 0, sent: 0, retry: 0, uncertain: 0, failed: 0, skipped: 0 };
   try {
     // Un tick sin capacidad mantiene las campanas activas aunque MailApp o el diario no estén disponibles.
     var limit = 0;
     try { limit = qmsMailDirectCapacity_(configuration); } catch (_) { /* claim0 no reserva ni entrega correos */ }
-    var batch = qmsMailClaimReceipt_(qmsMailQueueRequest_(configuration, 'claim_request', { limit: limit }, 'claim_receipt'), limit);
+    var claim = { limit: limit };
+    if (citizenOnly === true) claim.citizenOnly = true;
+    var batch = qmsMailClaimReceipt_(qmsMailQueueRequest_(configuration, 'claim_request', claim, 'claim_receipt'), limit);
     counts.claimed = batch.messages.length;
     for (var index = 0; index < batch.messages.length; index++) {
       if (Date.now() - started >= 240000) break;
@@ -453,7 +511,7 @@ function qmsMailPollDirect_(configuration) {
       // Reservar 30 s al final del lease/budget para no empezar una entrega tarde.
       var canStart = Date.now() - started < 210000 && batch.expires - Date.now() > 30000;
       var result = !canStart ? { outcome: 'retry', code: 'batch_not_started', retryAfterSeconds: 300 }
-        : qmsMailInternalKind_(entry.message.kind) || entry.message.kind === 'final' && PropertiesService.getScriptProperties().getProperty('QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS') === 'true'
+        : qmsMailInternalKind_(entry.message.kind) || entry.message.kind === 'final'
           ? qmsMailAuthorizeInternal_(configuration, entry) : null;
       if (!result) {
         // El HTTP de autorización también consume lease y presupuesto de ejecución.
@@ -514,7 +572,7 @@ function qmsMailHtml_(message) {
     '<tr><td style="padding:20px"><h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + title + '</h1>' +
     '<p style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.5;color:#6c757d;overflow-wrap:anywhere;word-break:break-word">Número de registro ' +
     '<span style="margin-left:8px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(message.folio) + '</span></p>' + paragraphs +
-    (tracking ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">Consultar mi trámite</a></p>' +
+    (tracking && message.kind === 'recibido' ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">Consultar mi trámite</a></p>' +
       '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>' : '') + '</td></tr>' +
     '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.</td></tr>' +
     '</table></td></tr></table></body></html>';

@@ -1,0 +1,255 @@
+{
+  "scope": "Consecutivos anuales; calendario aplazado",
+  "project": "fykhrrpeoehwqznccmfp",
+  "before": {
+    "historical": {
+      "sacp": {
+        "count": 14,
+        "digest": "1899feb3e555e0dd484a6e6024d6affa"
+      },
+      "quejas": {
+        "count": 152,
+        "digest": "25377c3da40b582596106784d76f9930"
+      },
+      "riesgos": {
+        "count": 1,
+        "digest": "5cb74605e8869ba1d7ee60d7ef6fc1a5"
+      },
+      "auditorias": {
+        "count": 1,
+        "digest": "e94d4dcc3064369de7c1e0f55f7d7d92"
+      }
+    },
+    "captured_at": "2026-11-11T15:12:49.105531+00:00",
+    "generator_acl": [
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_auditoria"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_documento"
+      },
+      {
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_queja"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_riesgo"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_sacp"
+      }
+    ],
+    "policies_digest": "19e89ffb63e13bd18be635211b824213",
+    "quejas_counters": [
+      {
+        "anio": 2025,
+        "ultimo": 16
+      },
+      {
+        "anio": 2026,
+        "ultimo": 2088
+      }
+    ]
+  },
+  "after": {
+    "contract": {
+      "triggers": 3,
+      "auth_legacy": false,
+      "private_rls": true,
+      "anon_allocator": false,
+      "auth_allocator": false,
+      "wrappers_private": 5,
+      "service_allocator": false,
+      "anon_legacy_sequence": false
+    },
+    "migration": "20261111151343",
+    "historical": {
+      "sacp": {
+        "count": 14,
+        "digest": "1899feb3e555e0dd484a6e6024d6affa"
+      },
+      "quejas": {
+        "count": 152,
+        "digest": "25377c3da40b582596106784d76f9930"
+      },
+      "riesgos": {
+        "count": 1,
+        "digest": "5cb74605e8869ba1d7ee60d7ef6fc1a5"
+      },
+      "auditorias": {
+        "count": 1,
+        "digest": "e94d4dcc3064369de7c1e0f55f7d7d92"
+      }
+    },
+    "captured_at": "2026-11-11T15:14:24.562272+00:00",
+    "generator_acl": [
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_auditoria"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_documento"
+      },
+      {
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_queja"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_riesgo"
+      },
+      {
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "name": "generar_folio_sacp"
+      }
+    ],
+    "other_counters": [
+      {
+        "anio": 2026,
+        "modulo": "sacp",
+        "ultimo": 260
+      }
+    ],
+    "policies_digest": "19e89ffb63e13bd18be635211b824213",
+    "quejas_counters": [
+      {
+        "anio": 2025,
+        "ultimo": 16
+      },
+      {
+        "anio": 2026,
+        "ultimo": 2088
+      }
+    ]
+  },
+  "historicalUnchanged": true,
+  "businessWrites": 0,
+  "remoteApplied": true,
+  "webPublished": false,
+  "advisors": {
+    "security": {
+      "before": [
+        {
+          "name": "rls_enabled_no_policy",
+          "level": "INFO",
+          "count": 11
+        },
+        {
+          "name": "extension_in_public",
+          "level": "WARN",
+          "count": 1
+        },
+        {
+          "name": "anon_security_definer_function_executable",
+          "level": "WARN",
+          "count": 6
+        },
+        {
+          "name": "authenticated_security_definer_function_executable",
+          "level": "WARN",
+          "count": 24
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "level": "WARN",
+          "count": 1
+        }
+      ],
+      "after": [
+        {
+          "name": "rls_enabled_no_policy",
+          "level": "INFO",
+          "count": 12
+        },
+        {
+          "name": "extension_in_public",
+          "level": "WARN",
+          "count": 1
+        },
+        {
+          "name": "anon_security_definer_function_executable",
+          "level": "WARN",
+          "count": 6
+        },
+        {
+          "name": "authenticated_security_definer_function_executable",
+          "level": "WARN",
+          "count": 24
+        },
+        {
+          "name": "auth_leaked_password_protection",
+          "level": "WARN",
+          "count": 1
+        }
+      ]
+    },
+    "performance": {
+      "before": [
+        {
+          "name": "unindexed_foreign_keys",
+          "level": "INFO",
+          "count": 7
+        },
+        {
+          "name": "auth_rls_initplan",
+          "level": "WARN",
+          "count": 5
+        },
+        {
+          "name": "unused_index",
+          "level": "INFO",
+          "count": 43
+        },
+        {
+          "name": "multiple_permissive_policies",
+          "level": "WARN",
+          "count": 8
+        }
+      ],
+      "after": [
+        {
+          "name": "unindexed_foreign_keys",
+          "level": "INFO",
+          "count": 7
+        },
+        {
+          "name": "auth_rls_initplan",
+          "level": "WARN",
+          "count": 5
+        },
+        {
+          "name": "unused_index",
+          "level": "INFO",
+          "count": 43
+        },
+        {
+          "name": "multiple_permissive_policies",
+          "level": "WARN",
+          "count": 8
+        }
+      ]
+    },
+    "health": {
+      "before": [],
+      "after": []
+    }
+  },
+  "validation": {
+    "postgresIsolatedChecks": 157,
+    "nodeChecks": 124,
+    "concurrentAssignments": 200,
+    "typescript": true,
+    "targetedLint": true,
+    "build": true,
+    "structure": true,
+    "visualLayer": true,
+    "webPublished": false
+  },
+  "migration": "20261111151343_folios_anuales_transaccionales.sql",
+  "migrationSha256": "01be30b63455bdc8a33342c6694e308e01371ee8e61a3fb706840972c2e68707"
+}

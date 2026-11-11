@@ -189,10 +189,31 @@ function validateJpeg(bytes: Buffer): void {
 
 function rejectPdfActions(source: string): void {
   const names = source.replace(/#([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)))
-  if (/\/(?:JavaScript|JS|Launch|EmbeddedFile|Filespec|RichMedia|XFA|OpenAction|AA|GoToR|SubmitForm|ImportData|Encrypt)\b/.test(names)) invalidFile()
+  let checked = 0
+  for (const match of names.matchAll(/\/(JavaScript|JS|Launch|EmbeddedFile|Filespec|RichMedia|XFA|OpenAction|AA|GoToR|SubmitForm|ImportData|Encrypt)\b/g)) {
+    if (++checked > 8192) invalidFile()
+    if (match[1] === 'OpenAction' && isPdfOpenDestination(names, match.index + match[0].length)) continue
+    invalidFile()
+  }
 }
 
 interface PdfToken { value: string; start: number; end: number; kind: 'name' | 'word' | 'delimiter' | 'string' }
+
+function isBinaryPdfFont(bytes: Buffer): boolean {
+  if (bytes.length < 12 || ![0x00010000, 0x4f54544f].includes(bytes.readUInt32BE(0))) return false
+  const count = bytes.readUInt16BE(4), directoryEnd = 12 + count * 16
+  if (!count || count > 128 || directoryEnd > bytes.length) return false
+  const tables = new Map<string, { offset: number; length: number }>()
+  for (let index = 0; index < count; index++) {
+    const cursor = 12 + index * 16, tag = bytes.toString('ascii', cursor, cursor + 4)
+    const offset = bytes.readUInt32BE(cursor + 8), length = bytes.readUInt32BE(cursor + 12)
+    if (tables.has(tag) || offset < directoryEnd || offset > bytes.length || length > bytes.length - offset) return false
+    tables.set(tag, { offset, length })
+  }
+  const head = tables.get('head'), profile = tables.get('maxp')
+  return !!head && head.length >= 54 && bytes.readUInt32BE(head.offset + 12) === 0x5f0f3cf5
+    && !!profile && profile.length >= 6
+}
 const PDF_SPACE = /[\x00\x09\x0a\x0c\x0d\x20]/
 const PDF_DELIMITER = /[\x00\x09\x0a\x0c\x0d\x20()[\]<>/%]/
 function pdfToken(source: string, offset: number): PdfToken | null {
@@ -231,6 +252,28 @@ function pdfToken(source: string, offset: number): PdfToken | null {
   return { value: source.slice(start,cursor), start, end: cursor, kind: 'word' }
 }
 
+function isPdfOpenDestination(source: string, offset: number): boolean {
+  // OpenAction admite un destino de página o una acción. Solo esta forma cerrada
+  // de destino es inocua; diccionarios y referencias a acciones siguen rechazados.
+  const value = source.slice(offset, offset + 512)
+  let cursor = 0
+  const next = () => { const token = pdfToken(value, cursor); if (token) cursor = token.end; return token }
+  if (next()?.value !== '[') return false
+  const page = next(), generation = next(), reference = next(), mode = next()
+  if (page?.kind !== 'word' || !/^[1-9]\d{0,9}$/.test(page.value)
+    || generation?.kind !== 'word' || !/^\d{1,5}$/.test(generation.value) || Number(generation.value) > 65535
+    || reference?.kind !== 'word' || reference.value !== 'R' || mode?.kind !== 'name') return false
+  const parameters: Record<string, number> = { XYZ: 3, Fit: 0, FitH: 1, FitV: 1, FitR: 4, FitB: 0, FitBH: 1, FitBV: 1 }
+  if (!Object.hasOwn(parameters, mode.value)) return false
+  for (let index = 0; index < parameters[mode.value]; index++) {
+    const parameter = next()
+    if (parameter?.kind !== 'word') return false
+    if (parameter.value === 'null' && mode.value !== 'FitR') continue
+    if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(parameter.value) || !Number.isFinite(Number(parameter.value))) return false
+  }
+  return next()?.value === ']'
+}
+
 function validatePdf(bytes: Buffer): void {
   const source = bytes.toString('latin1')
   if (!/^%PDF-(?:1\.[0-7]|2\.0)(?:\r\n|\n|\r)/.test(source)) invalidFile()
@@ -252,13 +295,14 @@ function validatePdf(bytes: Buffer): void {
   let cursor=0, depth=0, arrays=0, objects=0, streams=0, tokens=0, decodedBytes=0, rootFound=false
   let dictionary: { length?: number; filter?: string; type?: string; subtype?: string } = {}
   let dictionaryKeys = new Set<string>()
-  const forbidden = new Set(['JavaScript','JS','Launch','EmbeddedFile','Filespec','RichMedia','XFA','OpenAction','AA','GoToR','SubmitForm','ImportData','Encrypt'])
+  const forbidden = new Set(['JavaScript','JS','Launch','EmbeddedFile','Filespec','RichMedia','XFA','AA','GoToR','SubmitForm','ImportData','Encrypt'])
   while (cursor < source.length) {
     const token = pdfToken(source,cursor)
     if (!token) break
     cursor=token.end
     if (++tokens > 200000) invalidFile()
     if (token.kind === 'name' && forbidden.has(token.value)) invalidFile()
+    if (token.kind === 'name' && token.value === 'OpenAction' && !isPdfOpenDestination(source, cursor)) invalidFile()
     if (token.value === 'obj') { if (++objects > 8192) invalidFile(); dictionary={} }
     if (token.value === '<<') { if (++depth > 64) invalidFile(); if (depth===1) { dictionary={}; dictionaryKeys=new Set() } }
     else if (token.value === '>>') { if (--depth < 0) invalidFile() }
@@ -310,7 +354,9 @@ function validatePdf(bytes: Buffer): void {
         try {
           const decoded=inflateSync(bytes.subarray(begin,finish),{maxOutputLength:MAX_DECODED_BYTES-decodedBytes})
           decodedBytes+=decoded.length
-          rejectPdfActions(decoded.toString('latin1'))
+          // Una fuente sfnt contiene bytes binarios que pueden coincidir con /AA.
+          // ObjStm siempre se inspecciona: nunca tratar sus objetos como una fuente.
+          if (dictionary.type === 'ObjStm' || !isBinaryPdfFont(decoded)) rejectPdfActions(decoded.toString('latin1'))
         } catch { invalidFile() }
       }
     }

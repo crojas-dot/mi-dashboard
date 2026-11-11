@@ -13,6 +13,7 @@ export interface QuejaMailSnapshot {
   estado: string | null
   numero_oficio: string | null
   public_tracking?: { queja_id: string; nonce: string }
+  correo?: { subject: string; body: string }
 }
 
 export function isMailUuid(value: unknown): value is string {
@@ -44,11 +45,20 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
       || !isMailUuid(candidate.queja_id) || !isMailUuid(candidate.nonce)) throw new Error('invalid_mail_snapshot')
     tracking = { queja_id: candidate.queja_id.toLowerCase(), nonce: candidate.nonce.toLowerCase() }
   }
+  let correo: QuejaMailSnapshot['correo']
+  if (row.correo != null && row.tipo === 'final') {
+    const candidate = row.correo as Record<string, unknown>
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== 2
+      || !safeText(candidate.subject, 180) || !candidate.subject.trim()
+      || typeof candidate.body !== 'string' || candidate.body.length > 3500 || !candidate.body.trim()
+      || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(candidate.body)) throw new Error('invalid_mail_snapshot')
+    correo = { subject: candidate.subject, body: candidate.body }
+  }
   // Un aviso interno nunca proyecta la capacidad ciudadana, ni si un RPC añade ese campo.
   // Selección explícita: un RPC futuro no puede filtrar nuevos campos mediante un spread.
   return { id: row.id, claim_token: row.claim_token, tipo: row.tipo as QuejaMailSnapshot['tipo'],
     destinatario: row.destinatario, folio: row.folio, estado: row.estado as string | null ?? null,
-    numero_oficio: row.numero_oficio as string | null ?? null, ...(tracking ? { public_tracking: tracking } : {}) }
+    numero_oficio: row.numero_oficio as string | null ?? null, ...(tracking ? { public_tracking: tracking } : {}), ...(correo ? { correo } : {}) }
 }
 
 export function quejaMailMessage(row: QuejaMailSnapshot, options: { trackingUrl?: string } = {}) {
@@ -66,15 +76,16 @@ export function quejaMailMessage(row: QuejaMailSnapshot, options: { trackingUrl?
   }
   // Rechazar también llamadas directas con tipos retirados, sin producir un mensaje incompleto.
   if (!Object.prototype.hasOwnProperty.call(messages, row.tipo)) throw new Error('invalid_mail_snapshot')
-  const message = { eventId: row.id, kind: row.tipo, folio: row.folio, to: row.destinatario, ...messages[row.tipo] }
-  if (!options.trackingUrl || !row.public_tracking || !(CITIZEN_MAIL_KINDS as readonly string[]).includes(row.tipo)) return message
+  const message = { eventId: row.id, kind: row.tipo, folio: row.folio, to: row.destinatario, ...messages[row.tipo],
+    ...(row.tipo === 'final' && row.correo ? { subject: row.correo.subject, body: row.correo.body } : {}) }
+  if ((row.tipo === 'recibido' || row.tipo === 'final') && !row.correo) message.body += '\n\nPara consultas adicionales, puede escribir a gc@eca.or.cr.'
+  // El acuse conserva seguimiento; el correo final entrega el informe como adjunto
+  // independiente de la capacidad ciudadana que caduca a los 30 días.
+  if (!options.trackingUrl || !row.public_tracking || row.tipo !== 'recibido') return message
   // El generador Edge entrega una URL ya validada; no aceptar URLs libres del RPC.
   const url = new URL(options.trackingUrl)
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search
     || url.pathname !== '/q/seguimiento' || !/^#clave=[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(url.hash)
     || url.toString() !== options.trackingUrl || options.trackingUrl.length > 2048) throw new Error('invalid_mail_snapshot')
-  const body = row.tipo === 'final'
-    ? `La revisión de tu queja ${row.folio} concluyó con el estado: ${row.estado}.${row.numero_oficio ? `\n\nNúmero de oficio: ${row.numero_oficio}.` : ''}\n\nConsultá la respuesta y el oficio de resolución en el seguimiento privado de tu trámite.`
-    : message.body
-  return { ...message, body: `${body}\n\nSeguimiento privado: ${options.trackingUrl}`, trackingUrl: options.trackingUrl }
+  return { ...message, body: `${message.body}\n\nSeguimiento privado: ${options.trackingUrl}`, trackingUrl: options.trackingUrl }
 }

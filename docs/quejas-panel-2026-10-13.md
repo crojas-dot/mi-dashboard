@@ -1,5 +1,155 @@
 # Quejas: lectura y procesamiento del expediente
 
+## Limpieza compartida de lectura — 10 noviembre
+
+Quejas y Mis Quejas conservan una selección discreta de fila mediante
+`ui-case-row` y `aria-selected`, independiente del puntero y de la marca de lectura.
+Por preferencia posterior del propietario, la fila usa
+`qms-row-selected`: #F0F4F7,
+sin el contorno de la revisión intermedia ni cambio de alto.
+Cerrar el panel elimina la selección. Ambas tablas admiten Enter/Espacio sin
+interceptar el teclado de controles internos.
+
+El contacto conserva nombre, correo, teléfono, fecha y tipo; se retira el rótulo
+redundante «Datos de la solicitud». Por corrección posterior, el contacto se muestra
+únicamente al ampliar: el modal contraído pasa de las acciones a Descripción, sin
+desplegable de cliente ni espacio reservado. Su región permanece montada y oculta
+para conservar los nodos y borradores del documento al ampliar/reducir.
+El responsable aparece antes de las acciones de Calidad. Área afectada
+vuelve al extremo derecho del encabezado Descripción en ambos tamaños; el control
+de gestión conserva revisión/permisos y Mis Quejas solo consulta el valor.
+`components/quejas/AreaAfectada.tsx` comparte esa presentación sin cargar el catálogo
+en la consulta del responsable. `ListaAdjuntos` comparte tarjetas de superficie
+suave, sin marco ni separador interior, con iconos estáticos y acciones accesibles;
+listar sigue sin descargar miniaturas ni archivos.
+
+Verificación de la revisión inicial: 104/104 pruebas focalizadas y 993 comprobaciones sintéticas adicionales en ambos módulos,
+seis estados y cinco anchos (1920/1536/1200/390/320 px), incluidos selección sin
+hover, geometría, lectura de área, adjuntos y borrador/asistencia de Resolución.
+La batería anterior de referencia conserva 287 comprobaciones correctas. Sin
+escrituras de negocio ni correos; evidencia en `.performance/quejas-visual-20261110/`.
+TypeScript, lint, build, estructura y capa visual correctos. Web sin publicar.
+
+Revisión intermedia de contacto/contorno: 47/47 pruebas focalizadas, TypeScript y
+lint del panel correctos; 18 escenarios sintéticos sobre ambos módulos, tres estados
+y anchos 1536/390/320 px. Comprueba ausencia del contacto al contraer, conservación
+al ampliar, borde sin relleno ni cambio de alto, limpieza al cerrar y borrador de
+Resolución al ampliar/reducir. Evidencia en `.performance/quejas-border-20261110/`.
+Sin publicación web ni escrituras de negocio.
+
+Revisión previa según la guía de colores ECA: fondo gris muy claro, sin contorno.
+29 comprobaciones sintéticas en Quejas y Mis Quejas a 1536/390 px verifican el color
+RGB efectivo (240, 239, 239), ausencia del marco, cierre y contacto contraído;
+compilación de CSS y capa visual correctas. Evidencia en
+`.performance/quejas-gray-20261110/`. Cambio local, sin publicar.
+
+En la revisión previa, las etiquetas de estado adoptaban ese mismo gris ECA mediante la variante compartida
+`neutral` de `badges.ts` y el token `qms-neutral-soft`. Incluye listas, paneles,
+seguimiento público y otros módulos; texto oscuro y colores de plazo conservados.
+13/13 pruebas focalizadas y nueve muestras del Badge real en navegador verifican
+seis estados grises y plazos verde/ámbar/rojo; CSS compilado y lint correctos.
+Evidencia en `.performance/estado-gris-20261110/`; web local sin publicar.
+
+### Estados con sus colores y plazo con semáforo
+
+Por petición posterior del propietario, Quejas y Mis Quejas recuperan los fondos
+de estado que ya existían: `estado_color` de cada registro tiene prioridad sobre
+el mapa histórico de `estados.ts`. Se conserva la paleta original de Badge, con
+texto blanco u oscuro según su contraste. No se copian colores de la imagen de
+referencia ni se modifican códigos, nombres, catálogos o datos persistidos.
+
+`QuejaPlazoIndicator` sustituye el badge de plazo en ambas tablas y paneles por
+punto y texto: verde vigente, ámbar en alerta y rojo vencido. Completado/sin plazo
+son grises. Reutiliza `getQuejaDeadline`/`caseDeadline`; no recalcula fechas ni
+reinicia plazos. Mis Quejas muestra Plazo con su fecha original en el título.
+El seguimiento público y los demás módulos conservan su presentación propia.
+Verificación: 65/65 pruebas focalizadas, TypeScript, lint, build, estructura y capa
+visual correctos. 379 comprobaciones de navegador en 36 escenarios (ambos módulos,
+seis estados, 1536/390/320 px) verifican prioridad del color del catálogo, puntos
+de plazo sin fondo y geometría contraída/ampliada. Datos ficticios, sin escrituras
+ni correos; evidencia en `.performance/estados-semaforo-20261110/`.
+Cambios locales, sin publicar.
+
+El visor Google sigue abriendo inmediatamente su iframe. Una prueba aislada con
+un PDF público confirmó que su scrollport pinta el pulgar negro al 50 % y no cambia
+con `color-scheme: normal/light/dark` en el iframe. Su CSS pertenece a Google;
+ninguna regla del padre puede sustituir esos colores internos. No se añadió una
+barra decorativa, filtro sobre el documento ni reemplazo del lector sin resolver
+la preferencia del propietario. Contraste persistente del visor: pendiente.
+
+## Respuesta al cliente — 10 noviembre
+
+El documento se elige/sube/visualiza arriba. Debajo se edita el correo de
+acompañamiento personalizado (asunto y mensaje), separado de la resolución y del
+informe. Generar expediente y el atajo Editar informe abren el mismo editor; volver
+conserva el correo y el documento seleccionado. Oficio nuevo precarga el folio,
+asunto nuevo usa guion y la plantilla incluye `gc@eca.or.cr`. No Procede comparte
+la ventana directamente en el correo, sin pestañas ni modal posterior de justificación.
+Publicar respuesta es la acción final. Los fundamentos van en el informe; el registro
+conserva el motivo previo o la comunicación que remite al adjunto. Guardado y publicación
+congelan el correo autorizado; [contrato y activación](quejas-revision-y-respuesta-2026-11-04.md).
+Interfaz local, DB y emisor actualizados; sin publicación web.
+
+La fecha persistida de cierre se muestra bajo el estado en Quejas y Mis Quejas,
+en ambos tamaños. Calidad ve además el estado del correo final y su hora de envío;
+la consulta se actualiza solo mientras esté pendiente, sin reenviar. Detalle y
+diagnóstico en el mismo contrato del 10 noviembre.
+
+Mis Quejas contraído comparte el marco, separadores y avance segmentado de Quejas.
+Ambas vistas usan el mismo ciclo del expediente: etapa actual y segmentos al contraer,
+recorrido horizontal al ampliar, incluido Cierre al finalizar. Ampliar no remonta el editor. En Resolución,
+Enviar a Revisión GC pasa debajo de Volver al análisis en las acciones, liberando
+el pie del editor. QA sintética a 1536/390/320 px y límites de activación en el contrato.
+
+Unificación del ciclo del 10 noviembre: ambos paneles usan `CaseCycle process`
+y `currentOnly` en el encabezado contraído. Se verificó el mismo texto, segmentos y
+colores en seis estados, sin checks en el contraído; Finalizado muestra Cierre,
+paso 4 de 4. Recorrido horizontal ampliado conservado. 17/17 pruebas de panel y
+22 comprobaciones sintéticas de navegador, sin escrituras reales; lint focalizado
+correcto. Interfaz local, sin publicar.
+
+## Dos disposiciones de Quejas — ajuste local del 9 noviembre
+
+Sobre la base restaurada por el propietario, `QuejaDetalleModal` adopta únicamente
+las dos disposiciones de sus referencias:
+
+- Contraído: paso actual con segmentos de avance; dentro del marco desplazable,
+  Siguiente paso, Datos de la solicitud plegados y documento, en ese orden.
+- Ampliado: ciclo horizontal completo y, desde 1100 px útiles, solicitud a la
+  izquierda, documento sin límite adicional de ancho y acciones a la derecha.
+  Con menos espacio las secciones se apilan sin desbordar el diálogo.
+- Estado usa una etiqueta neutra y vencimiento conserva su badge de color. Durante investigación,
+  Calidad espera la propuesta y dispone del acceso a Derivar a SACP. El área
+  afectada acompaña los datos de la solicitud; mantiene sus handlers y revisión.
+
+La variante se activa solo en Quejas. Mis Quejas conserva la composición anterior;
+filtros, respuesta al cliente, persistencia y transiciones no se modifican. Ampliar
+o reducir mantiene una sola instancia del documento y sus borradores. No Procede
+proyecta evaluación y cierre, sin atribuir investigación o revisión inexistentes.
+
+Verificación local: **37/37** pruebas focalizadas; **287** comprobaciones sintéticas
+de navegador sobre los seis estados en anchos CSS 1536, 1200, 390 y 320 px, con
+componentes y CSS reales, datos ficticios y sin escrituras de negocio ni correos.
+Evidencia en `.performance/panel-reference-20261109/`. Este ajuste no está publicado.
+
+Refinamiento de alineación: en Quejas y Mis Quejas, el texto del primer paso de la
+barra superior se alinea con Descripción en escritorio, dejando el círculo en el
+margen izquierdo del documento. Los pasos ocupan la columna central.
+La barra replica las columnas del documento y reserva el espacio del scrollbar;
+cuando los pasos no caben, se desplazan dentro de esa columna. Verificación:
+**51/51** pruebas focalizadas y diez escenarios de navegador entre ambos módulos,
+en anchos CSS 1536, 1920, 1200, 390 y 320 px, sin desborde del diálogo.
+
+Las etiquetas de estado usan un gris azulado suave (`Badge neutral`, tokens
+`qms-primary-soft` y `qms-dark`) en Quejas y Mis Quejas: listas, modales,
+comunicaciones y seguimiento público. La misma receta se aplica en Dashboard,
+SACP, Documentos, Auditorías, Revisión, Procesos, Usuarios, Configuración y la
+vista previa del informe. Plazos y alertas conservan sus colores semánticos;
+los códigos, etiquetas y colores guardados del catálogo no se cambian.
+Verificado con **57/57** pruebas focalizadas, TypeScript, lint, build, estructura
+y capa visual; QA sintética de **36** etiquetas en listas y modales de ambos
+módulos, cubriendo los seis estados sin escrituras de negocio. Sigue local.
+
 ## Revisión local del 3 noviembre
 
 El expediente comienza con Descripción; el resumen superior de resultado público

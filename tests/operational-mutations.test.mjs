@@ -147,23 +147,23 @@ test('opciones ajenas al selector no pasan la validación y permiten corregir el
   }
 })
 
-test('folio con espacios usa el generador y sus fallos liberan el formulario sin insertar', async () => {
+test('folio vacío se asigna en el INSERT y un fallo conserva el borrador sin reservar otro número', async () => {
   for (const [file, , values] of [cases[1], cases[2], cases[4]]) {
-    const failed = modalHarness(file, { ...values, folio: '   ' }, { folioError: new TypeError('Failed to fetch') })
-    await failed.submit()
-    assert.equal(failed.state().folios, 1)
-    assert.equal(failed.requests.length, 0)
-    assert.equal(failed.state().loading, false)
-    const empty = modalHarness(file, { ...values, folio: '   ' }, { folio: '' })
-    await empty.submit()
-    assert.equal(empty.requests.length, 0)
-    assert.match(empty.state().error, /Folio/)
-    const successful = modalHarness(file, { ...values, folio: '   ' })
-    const pending = successful.submit()
-    await new Promise(resolve => setImmediate(resolve))
-    assert.equal(successful.requests[0].payload[0].folio, 'AUTO-2026-1')
-    successful.requests[0].resolve({ error: null })
+    const modal = modalHarness(file, { ...values, folio: '   ' })
+    const pending = modal.submit()
+    assert.equal(modal.requests.length, 1)
+    assert.equal('folio' in modal.requests[0].payload[0], false)
+    assert.equal(modal.state().folios, 0)
+    modal.requests[0].reject(new TypeError('Failed to fetch'))
     await pending
+    assert.equal(modal.state().loading, false)
+    assert.equal(modal.state().form.folio, '   ')
+    const retry = modal.submit()
+    assert.equal('folio' in modal.requests[1].payload[0], false)
+    assert.equal(modal.state().folios, 0)
+    modal.requests[1].resolve({ error: null })
+    await retry
+    assert.equal(modal.state().created, 1)
   }
 })
 

@@ -64,10 +64,20 @@ import Field from '@/components/ui/Field'
   gestor de contraseñas y comprobar clic, Tab y validación de campos vacíos.
 - Badge conserva el tamaño de las etiquetas de Quejas. Ámbar usa texto oscuro
   para mayor contraste; naranja distingue una prioridad alta.
+- Quejas y Mis Quejas muestran el fondo de estado configurado en `estado_color`
+  mediante la paleta existente de Badge; sin metadata usan el mapa histórico de
+  `lib/constants/estados.ts`. No copiar colores de una referencia externa.
+  Los demás estados neutros mantienen `qms-neutral-soft` y texto `qms-dark`.
+  `QuejaPlazoIndicator` representa el plazo calculado con un punto verde/ámbar/rojo
+  y texto sin fondo. Completado/sin plazo usan punto gris; la fecha queda en el título.
+  Prioridad, riesgo y roles conservan sus variantes semánticas.
 - Switch admite nombres accesibles y atributos HTML; cada permiso necesita
   identificar rol, módulo y operación.
 - Table conserva filas de 16px con padding vertical de 16px. Una fila con onClick
   también puede abrirse con Enter o Espacio, sin interceptar sus botones internos.
+  Quejas y Mis Quejas comparten `ui-case-row`: la selección usa `qms-row-selected`,
+  fondo #F0F4F7 elegido por el propietario. Sin contorno añadido ni
+  cambio de alto; conserva el foco de teclado.
 - Las etiquetas `ui-*` son utilidades de Tailwind v4, no clases Bootstrap.
   Las acciones nativas sencillas pueden usar las mismas recetas sin un wrapper.
 - ConfirmDialog permite que sus acciones cambien de fila y que etiquetas largas

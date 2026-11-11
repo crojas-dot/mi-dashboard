@@ -87,7 +87,7 @@ export default function CatalogosSettings({ active }: { active: boolean }) {
       <thead><tr><th scope="col">Valor</th><th scope="col">Color</th><th scope="col">Orden</th><th scope="col">Estado</th><th scope="col">Acciones</th></tr></thead>
       <tbody>{filas.length ? filas.map(c => <tr key={c.id}>
         <td className="font-medium">{c.valor}</td><td><Badge variant={c.color || 'secondary'}>{etiquetaColor(c.color)}</Badge></td><td>{c.orden}</td>
-        <td><Badge variant={c.activo !== false ? 'green' : 'gray'}>{c.activo !== false ? 'Activo' : 'Inactivo'}</Badge></td>
+        <td><Badge variant="neutral">{c.activo !== false ? 'Activo' : 'Inactivo'}</Badge></td>
         <td><div className="flex gap-1"><Button size="sm" variant="link" disabled={saving} onClick={() => setEditor(c)} aria-label={`Editar ${c.valor}`}>Editar</Button><Button size="sm" variant="danger" disabled={saving} onClick={() => setEliminar(c)} aria-label={`Eliminar ${c.valor}`}>Eliminar</Button></div></td>
       </tr>) : <tr><td colSpan={5} className="py-10! text-center text-qms-muted">No hay valores en este catálogo.</td></tr>}</tbody>
     </table></div>

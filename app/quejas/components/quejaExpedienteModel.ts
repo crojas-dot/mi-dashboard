@@ -23,6 +23,21 @@ export interface CaseRoleCycle {
   steps: { id: string; label: string; current: boolean; completed: boolean }[]
 }
 
+/** Recorrido de lectura del expediente; no cambia estados, plazos ni permisos. */
+export function getCaseProcessCycle(queja: Pick<Queja, 'estado'>): CaseRoleCycle {
+  const steps = [
+    { id: 'evaluation', label: 'Evaluación' },
+    { id: 'investigation', label: 'Investigación' },
+    { id: 'quality_review', label: 'Revisión de Calidad' },
+    { id: 'finished', label: 'Cierre' },
+  ]
+  // No Procede cierra tras la evaluación; no atribuirle investigación o revisión.
+  const visibleSteps = queja.estado === 'No Procede' ? [steps[0], steps[3]] : steps
+  const positions: Record<string, number> = { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 4, 'No Procede': 2 }
+  const position = Object.hasOwn(positions, queja.estado) ? positions[queja.estado] : -1
+  return { label: 'Etapas del expediente', detail: '', steps: visibleSteps.map((step, index) => ({ ...step, current: index === position, completed: position >= 0 && index < position })) }
+}
+
 /** Proyección de lectura por tarea; no representa el historial ni cambia el workflow. */
 export function getCaseRoleCycle(queja: Pick<Queja, 'estado'>, audience: CaseAudience): CaseRoleCycle {
   const { estado } = queja

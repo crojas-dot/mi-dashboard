@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **20 de octubre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **11 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
@@ -36,23 +36,34 @@ No cargar todos los documentos para una modificación aislada.
 | --- | --- |
 | Rutas, nombres, grupos e IDs de módulo | lib/constants/modulos.ts |
 | Roles operativos | lib/constants/roles.ts |
-| Colores de badges/estados | lib/constants/badges.ts y estados.ts |
+| Colores de badges/estados | lib/constants/badges.ts y estados.ts; Quejas prioriza estado_color del catálogo |
 | Marca institucional (logo del menú) | lib/constants/marca.ts (bucket, clave y límites); components/EmpresaLogo.tsx, lib/queries/useLogoEmpresa.ts y app/configuracion/components/LogoEmpresaEditor.tsx |
 | Colores y tipografía | app/styles/theme.css (@theme) |
 | Recetas y utilidades visuales | app/styles/components.css y app/globals.css |
 | Controles, modales y cargas | components/ui/ y components/Modal.tsx |
 | Páginas y editores | app/<modulo>/page.tsx y sus components/ |
+| Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol |
+| Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
+| Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
+| Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
+| Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
 | Workflow/mutaciones | lib/services/; guards privilegiados en lib/server/ |
+| Consecutivos anuales | qms_private.next_annual_folio; folios_quejas_anuales / qms_private.folios_anuales; migración 20261111151343 y [contrato](docs/consecutivos-anuales-2026-11-11.md) |
 | Lectura de justificación/análisis de Quejas | lib/utils/quejaContent.ts y lib/utils/richText.ts |
-| Formulario ciudadano y borrador/reintentos | app/q/[token]/page.tsx y app/q/components/usePublicQuejaForm.ts |
-| Validación ciudadana idéntica en cliente/API | lib/utils/publicQuejaValidation.ts; códigos de campo cerrados, sin diagnósticos remotos |
+| Formulario ciudadano y borrador/reintentos | app/q/[token]/page.tsx; app/q/components/usePublicQuejaForm.ts; lib/services/publicQuejasClient.ts |
+| Validación de bytes de evidencias públicas | lib/server/publicForms/files.ts; límites y tipos en lib/constants/publicForms.ts |
+| Validación ciudadana idéntica en cliente/API | lib/utils/publicQuejaValidation.ts; códigos de campo cerrados, sin diagnósticos remotos; nombre solo letras y teléfono solo dígitos/signos, con límites aplicados en cliente y API, sin textos de ayuda permanentes |
 | Seguimiento privado y publicación final | app/q/seguimiento/; lib/server/publicTracking.ts; app/quejas/components/QuejaPublicacionPanel.tsx |
 | Correos de Quejas: mensaje / transporte / apariencia | supabase/functions/quejas-mail-queue/message.ts / index.ts; integration/apps-script/quejas-mail/Codigo.gs |
 | DB aplicada y evidencia | supabase/migrations/ y supabase/backups/ |
 
-Stack: Next 16.3.8, React 19.2.4, Supabase JS 2.111.0, TanStack Query 5 y Zustand 5.
+Stack local: Next 16.4.6, React 19.2.4, Supabase JS 2.111.0, TanStack Query 5 y Zustand 5.
+Estado documentado al 10 noviembre: refinamientos web locales sin publicar; correo
+por evento activo en DB/Edge v17/Apps Script v5, con autorización Google/Drive y
+recibo HMAC/adjunto final verificados. No es una nueva auditoría remota. Contrato:
+[formulario y correo](docs/quejas-formulario-correo-inmediato-2026-11-10.md).
 El layout servidor solo monta metadata/font y AuthShell/ToastProvider. Las páginas
 operativas son Client Components; negocio se lee por hooks/servicios. API, proxy.ts
 y lib/server/* son servidor. createServiceClient es server-only; nunca importarlo en UI.
@@ -84,7 +95,7 @@ evidencia disponible, no garantizan que un despliegue posterior conserve ese est
 ### Modelo mental del sistema
 
 - **Presentación:** `app/` contiene rutas, páginas y API; `components/` contiene el shell, controles y paneles. Las páginas operativas son Client Components. El layout servidor monta metadata/fuente y los proveedores de autenticación y notificaciones.
-- **Estado:** TanStack Query administra datos remotos a través de `lib/queries/`; `lib/store/` (Zustand) administra sesión y estado de interfaz. Los borradores de formularios permanecen locales.
+- **Estado:** TanStack Query administra datos remotos a través de `lib/queries/`; `lib/store/` (Zustand) administra sesión y estado de interfaz. Los borradores de visita permanecen locales; informe y respuesta al cliente tienen guardado remoto versionado.
 - **Lecturas y escrituras:** los hooks/queries leen datos; `lib/services/` concentra flujos y mutaciones. Las lecturas de navegador usan el cliente Supabase sujeto a RLS. Las operaciones privilegiadas atraviesan API/`lib/server/`, que autentican y autorizan antes de usar service role.
 - **Identidad y acceso:** `lib/store/auth-store.ts`, `lib/auth.ts` y `components/AuthShell.tsx` coordinan sesión y protección de rutas; `proxy.ts` participa en el límite de entrada. La autorización de servidor y RLS siguen siendo necesarias aunque la UI oculte una acción.
 - **Persistencia e integraciones:** `supabase/migrations/` conserva cambios de esquema; `supabase/backups/` y las referencias de arquitectura aportan evidencia. Drive e IA se conectan desde APIs de servidor con límites y permisos propios.
@@ -133,20 +144,248 @@ Detalle: [datos y rendimiento](docs/arquitectura/datos-y-rendimiento.md),
 - Guardar IA preserva secreto vacío y consumo, usa revisión explícita/xmin y devuelve 409 en carreras. No reintentar silenciosamente con otra revisión ni introducir un RPC inexistente.
 - Evidencias nuevas usan Drive, máximo 4 MiB; paths legacy siguen Storage. Borrar Drive primero y después la fila; no borrar metadatos si falla el archivo.
 - Seguimiento añade reserva de borrado antes de Drive y publicación atómica de respuesta/oficio. No borrar un oficio publicado ni liberar una reserva incierta. Migración 20261015223440 y cortes de publicación/workflow aplicados el 19 octubre tras verificar cliente compatible; ver [contrato y activación](docs/quejas-seguimiento-y-publicacion-2026-10-16.md).
-- Motor QMS y auditoría están en DB; Quejas/Mis Quejas/Dashboard/informes consumen sus plazos. Tiptap usa formato plain/markdown explícito; prioridad de Quejas es histórica. DB encola correos y Apps Script consulta/manda/confirma mediante Edge HMAC de Supabase, sin Vercel. El activador existente de cinco minutos también procesa avisos internos QMS; no requiere pg_cron. Ver el contrato de avisos del 14 octubre.
+- Motor QMS y auditoría están en DB; Quejas/Mis Quejas/Dashboard/informes consumen sus plazos persistidos. DB encola y Apps Script envía/confirma a través de Edge HMAC, sin Vercel. El despertador pg_net por evento está activo desde el 10 noviembre; el poll de cinco minutos conserva recuperación y avisos internos. No requiere pg_cron.
 - No están integrados Seguridad y Estado, MFA/2FA, telemetría persistida/retención anual, fondo personalizado ni selector completo de tema. Formularios públicos: gateway/BotID Basic publicado, variables cifradas y cortes legacy aplicados; Storage histórico restringido por expediente/perfil activo. Ver estado y límites en [su guía](docs/seguridad-formularios-publicos.md).
 - Logout inmediato de UI no revoca universalmente todos los JWT emitidos. APIs privadas conservan rate limit por instancia; formulario público usa cuotas transaccionales PostgreSQL y tiene WAF Vercel publicado. No protegen el login Supabase externo.
 
-Estado de entrega: producción del 19 octubre en dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF, dominio mi-dashboard-iota.vercel.app. Conserva 20261009230746 (Storage RLS) y 20261009231000 (corte público/Drive); añade seguimiento y cierre de qms_transition interno legacy. Metadata anónima y escritura directa de adjuntos permanecen cerradas. El visor Drive conserva iframe inmediato sin skeleton. No reabrir accesos legacy ni restaurar un cliente antiguo sin coordinar su contrato de DB.
+Último despliegue web documentado: 19 de octubre en dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF, dominio mi-dashboard-iota.vercel.app. Conserva 20261009230746 (Storage RLS) y 20261009231000 (corte público/Drive); añade seguimiento y cierre de qms_transition interno legacy. Metadata anónima y escritura directa de adjuntos permanecen cerradas. El visor Drive conserva iframe inmediato sin skeleton. No reabrir accesos legacy ni restaurar un cliente antiguo sin coordinar su contrato de DB.
 
 Detalle público: [seguridad-formularios-publicos.md](docs/seguridad-formularios-publicos.md). Mantener cerrado el acceso público legacy; cualquier corte de workflow interno exige verificar primero su cliente compatible publicado.
 
 Detalle: [base de datos](docs/arquitectura/base-de-datos.md) e
 [integraciones](docs/arquitectura/integraciones.md). No ejecutar dumps, seeds o SQL legacy como migración.
 
-## Verificar y mantener
+## Quejas y Mis Quejas: lógica vigente
 
-Ejecutar las comprobaciones pertinentes al cambio, sin instalar dependencias de prototipos ni regenerar fixtures para esconder fallos:
+Alcance: recepción y gestión interna de Quejas; no toda la matriz de Calidad ni un
+portal ciudadano completo. Las variantes de presentación no cambian IDs, estados,
+permisos ni datos persistidos.
+
+- Alta pública/interna con nombre, correo y descripción obligatorios, tipos
+  compartidos, fecha automática y consecutivo anual transaccional. Conservar folios
+  y contadores históricos; no reiniciar la serie ni consumir folios sin un alta.
+- Consecutivo automático: año de registro en Costa Rica, mínimo tres dígitos
+  (`2027-001`, `2027-002`, …, `2027-1000`), una serie por módulo/año. Cada enero
+  empieza en 001 si ese año no tiene histórico. Conservar los prefijos de otros
+  módulos. SACP/Auditorías/Riesgos omiten el folio vacío en el INSERT; nunca reservar
+  desde UI. Los RPC legacy se conservan para compatibilidad del cliente publicado.
+  DB aplicada el 11 noviembre; cliente local y calendario adicional aplazado.
+  [Contrato y evidencia](docs/consecutivos-anuales-2026-11-11.md).
+- Procede requiere justificación y responsable. Investigación prepara la propuesta;
+  enviarla a Revisión GC no publica ni notifica al cliente. Aprobar y continuar pasa
+  a Resuelto; Calidad prepara después la comunicación final. Publicar respuesta
+  congela el correo y documento elegidos y pasa atómicamente a Finalizado.
+- Devolver a investigación exige motivo y conserva propuesta y plazo. Reabrir exige
+  motivo. Las etapas nuevas usan 3/15 días hábiles; revisión, devolución o reasignación
+  no reinician la investigación. Leer el snapshot QMS, nunca prioridad/SLA legacy
+  para inventar vencimientos. Los históricos conservan su calendario y revisión.
+- No Procede usa directamente la misma ventana de correo y documento. No restaurar
+  pestañas de Justificación/Correo ni el segundo modal «Confirmar no procedencia».
+  Los fundamentos se documentan en el informe; el servicio conserva el motivo previo
+  o la comunicación al adjunto, y publica mediante el puente atómico correspondiente.
+- Guardados y transiciones capturan revisión/visita/ámbito antes de escribir. Informe
+  y respuesta tienen versiones remotas; conflictos conservan el borrador. No sustituir
+  la revisión esperada por la de un refresco ni repetir una publicación confirmada.
+- Oficio institucional único y documento publicado obligatorios para el cierre final.
+  Aprobar la propuesta en GC no exige adelantar la publicación del oficio. El número
+  nuevo precarga el folio como valor editable; no es otra serie ni cambia el folio.
+- Área afectada: selección directa junto a Descripción; solo se edita en Recibido
+  con permisos y revisión capturada. Mis Quejas la consulta sin cargar el catálogo.
+  Configuración administra `quejas/area_afectada`: editar, desactivar y restaurar sin
+  borrar históricos ni asignar automáticamente una opción nueva al expediente.
+- Observaciones agrupa comentarios de Actividad y conserva la observación histórica
+  sin inventar autor/fecha. Notas de investigación y propuesta enviada sí persisten;
+  los borradores de análisis/resolución aún no enviados son de la visita.
+- Decisiones/resoluciones usan Tiptap lazy, límite 10.000 y formato plain/markdown
+  explícito. `quejaContent` omite
+  solo la copia plain exacta `[Procede]` de una justificación separada; conserva otras
+  notas y reaperturas. No interpretar HTML ni inferir Markdown de texto histórico.
+
+Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-04.md),
+[panel y procesamiento](docs/quejas-panel-2026-10-13.md) e
+[informe editable](docs/quejas-informe-editable-word-2026-11-03.md).
+
+## Quejas y Mis Quejas: presentación vigente
+
+- Compartir `CaseWorkspace`, `CaseCycle`, `CaseRequestHeader`, `CaseSection`,
+  `AreaAfectada`, `ListaAdjuntos` y `QuejaPlazoIndicator` cuando el contrato coincida.
+  Conservar las acciones/permisos particulares de Calidad y del responsable.
+- Workspace lateral derecho de 40vw/100dvh; la tabla conserva columnas, filtros y
+  scroll en ambos ejes. Móvil y ampliado usan diálogo nativo. Cerrar restablece el
+  lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
+- Contraído: etapa actual y segmentos horizontales arriba; acciones primero y luego
+  documento dentro de un único marco desplazable. Sin desplegable de datos del
+  cliente ni espacio reservado. El contacto se mantiene oculto/montado para no
+  remontar el documento al ampliar.
+- Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
+  izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
+  se alinean con Descripción. Por debajo se apila sin desbordar el diálogo.
+- Ciclo compartido de evaluación/investigación/revisión/cierre; el contraído no usa
+  checks verticales. No Procede muestra únicamente evaluación y cierre. Es una
+  proyección del estado, nunca otro historial ni aprobaciones/fechas inventadas.
+- Descripción comienza el documento y usa todo el ancho disponible. Área afectada
+  queda a la derecha en el mismo encabezado, adaptándose al espacio. Sin resumen
+  superior de resultado ni líneas verticales decorativas. En revisión GC se prioriza
+  la propuesta y se pliegan Solicitud y antecedentes.
+- Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
+  expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
+  Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
+- Mis Quejas conserva Análisis/Resolución. En Resolución, editor bajo las pestañas
+  y Asistencia en esa misma fila; no anteponer grandes bloques vacíos. Enviar a
+  Revisión GC está debajo de Volver al análisis, en las acciones, liberando el editor.
+- Estados de Quejas/Mis Quejas: usar primero `estado_color` del catálogo y la paleta
+  original de Badge; mapa histórico de `estados.ts` como fallback. No imponer los
+  colores de una maqueta ni cambiar los códigos guardados. Otros estados neutros
+  conservan el fondo `qms-neutral-soft` (gris ECA aclarado) y texto oscuro.
+- Plazos en ambas tablas/paneles: punto verde vigente, ámbar en alerta, rojo vencido;
+  gris completado/sin plazo. Texto sin fondo y fecha en el título. El color no
+  sustituye el texto ni altera el cálculo de `getQuejaDeadline`/`caseDeadline`.
+- Fila seleccionada: `ui-case-row` + `aria-selected`, fondo `qms-row-selected`
+  **#F0F4F7**, sin contorno añadido ni cambios de alto; persiste al retirar el puntero
+  y desaparece al cerrar. Enter/Espacio abren la fila sin interceptar controles hijos.
+- Adjuntos en `ListaAdjuntos layout="cards"`: superficie suave, sin marcos/separadores
+  interiores fuertes; iconos estáticos por formato, nombre/tamaño y acciones accesibles.
+  Separar evidencias del cliente y del análisis por su autor, sin descargar miniaturas
+  ni archivos al listar. Conservar permisos de eliminar/descargar/visualizar.
+- Marco redondeado y margen inferior del lienzo solo contraído; ampliado sin esa
+  franja. El documento conserva padding final para que el contenido no toque el borde.
+- Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
+  estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
+  `::-webkit-scrollbar`. Laterales sticky con capa propia y fondo opaco; ampliado sin
+  velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
+- Visor Drive: iframe inmediato, sin blob previo ni skeleton; preconnect solo por
+  intención. Los archivos Storage históricos conservan su ruta de vista/descarga.
+  Las barras internas de Google pertenecen a otro origen y no se recolorean con CSS
+  del padre. Su contraste persistente sigue pendiente; no afirmar que esté resuelto
+  ni alterar los colores del documento con filtros para simular una solución.
+
+Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
+[capa visual](docs/arquitectura/visual.md) y [panel](docs/quejas-panel-2026-10-13.md).
+
+## Informe y correo de respuesta al cliente
+
+- Generar expediente abre un informe Tiptap prellenado, editable y guardado en el
+  expediente para retomarlo desde otra computadora. Incluye encabezado institucional,
+  secciones del caso, Conclusión y Resolución y anexos como nombres de archivo.
+  El informe admite 100.000 caracteres (`INFORME_MAX_LENGTH`, validado en editor/API).
+  Exporta Word/PDF; guardar/exportar están en las acciones del encabezado.
+- Respuesta al cliente no vuelve a montar el informe como cuerpo del correo. Arriba:
+  oficio editable, selector del informe guardado o documento subido, Adjuntar,
+  Visualizar y Editar informe. Volver del editor conserva asunto, mensaje y selección.
+- Debajo: correo de acompañamiento independiente y editable, dirigido al interesado,
+  asunto con guion y folio; resultados/fundamentos en el informe adjunto y consultas
+  a `gc@eca.or.cr`. Límites compartidos: asunto 180, mensaje 3.500 caracteres.
+- Guardar borrador es remoto/versionado; Publicar respuesta es la acción final desde
+  esa ventana, también para No Procede. No añadir otro texto o confirmación obligatoria
+  de justificación después de que el usuario ya preparó correo e informe.
+- El documento físico Word/PDF viaja en el correo final. El seguimiento temporal no
+  reemplaza el adjunto; no incluir su botón en el mensaje final. `sent` confirma
+  aceptación del servicio de envío, no lectura ni ubicación garantizada en inbox.
+
+Fuentes: `QuejaInformeModal`, `QuejaRespuestaClienteModal`, `QuejaCorreoEditor`,
+`useQuejaInforme`, `useQuejaRespuestaCliente`, `quejaInformeService`,
+`quejaWorkflowService`, `quejaInforme*` y `quejaCorreo`. Contrato vigente en
+[revisión/respuesta](docs/quejas-revision-y-respuesta-2026-11-04.md).
+
+## Formulario público, evidencias y seguimiento
+
+- Cliente/API comparten `publicQuejaValidation`: nombre 50, correo 254, teléfono 25,
+  descripción 10.000. Nombre con letras/tildes y signos admitidos, sin números;
+  teléfono con dígitos/signos, sin letras ni marcas invisibles. No reducir email a 25.
+- Errores de campo mediante `setCustomValidity`/`reportValidity`: aviso nativo junto
+  al campo, foco/scroll y mensaje accesible, que se limpia al corregir. Sin toast
+  para campos ni ayudas permanentes debajo. Errores operativos quedan en el pie.
+- Formulario de 896px máximos, dos columnas desde sm y una en móvil; descripción de
+  seis filas ampliable. Alto disponible con scroll solo en campos y pie separado.
+  Adjuntar/contador en una fila y lista acotada cuando hay archivos.
+- Hasta diez evidencias públicas PDF/JPEG/PNG, máximo 4 MiB por archivo. Gateway
+  valida bytes/tipo/contenido, tamaño, cuotas y capacidades; no confiar en extensión,
+  MIME declarado o validación del navegador. BotID/WAF y accesos legacy cerrados se
+  conservan. Las restricciones del canal público no sustituyen el contrato interno.
+- Registro/subida/finalización son idempotentes. Conservar folio, submissionId,
+  uploadId y capacidad al reintentar; no finalizar mientras falte confirmar un archivo.
+  Mostrar error seguro por archivo y en el pie; no presentar una carga fallida como éxito.
+- Un único reintento automático de evidencias ante red/502/503/504, backoff abortable
+  de 500ms y misma identidad de carga. Formato, permiso, cuota, capacidad vencida,
+  reserva pendiente y privacidad no se reintentan a ciegas. Nunca duplicar folio/archivo.
+- PDF: no confundir bytes de fuentes sfnt con acciones ni un destino de vista/zoom
+  `OpenAction` con código ejecutable. Se permiten destinos cerrados y acotados;
+  acciones JS/Launch/diccionarios/referencias ambiguas siguen rechazadas. No atribuir
+  un fallo a contraseña/contenido activo sin haber determinado esa causa. No prometer
+  antivirus ni aceptación universal de cualquier PDF.
+- Seguimiento automático por capacidad privada, nunca solo por folio; sin PII,
+  evidencias/notas internas ni caché. El enlace autoriza a su portador, no verifica
+  identidad. BotID se comprueba antes de consultar/descargar en backend.
+- Caduca 30 días naturales desde el primer No Procede/Finalizado; Resuelto no inicia
+  el plazo. Consultar/reabrir no renueva el acceso ni borra expediente/evidencias.
+  Recuperar un enlace pendiente no repite registro/adjuntos.
+- Seguimiento muestra etapas/fechas y Actualizar estado; sin Copiar enlace ni botón
+  de descarga del informe en esa vista. Retirar botones no revoca capacidades ni
+  endpoints previos: su autorización y compatibilidad se conservan.
+- El propietario confirmó el reintento del PDF original y la lectura remota verificó
+  un adjunto completo con checksum coincidente. Excluyó recuperar la evidencia antigua
+  de otro folio; no recrearla ni generar quejas de prueba para compensar esa exclusión.
+
+Contrato y activación: [formulario/correo del 10 noviembre](docs/quejas-formulario-correo-inmediato-2026-11-10.md).
+Seguridad y capacidad: [formularios públicos](docs/seguridad-formularios-publicos.md) y
+[seguimiento/publicación](docs/quejas-seguimiento-y-publicacion-2026-10-16.md).
+
+## Correo, avisos, sonido y calendario
+
+- Dos eventos ciudadanos: recibido y final (No Procede o publicación de respuesta).
+  Inicio de investigación queda histórico; reapertura/Finalizado no duplican envíos.
+  DB encola, Edge autoriza/transporta y Apps Script envía/confirma mediante HMAC,
+  leases, nonce y ACK. No depende de Vercel ni de un worker web.
+- Despertador por evento activo según evidencia del **10 noviembre**: `pg_net`
+  después del commit, Edge **v17** y Apps Script **v5**, sin revertir el negocio si
+  falla el despertar. Migraciones `20261110203610` y `20261110212506` aplicadas;
+  settings/Vault privados y RPC de máquina solo service_role, sin claves en logs.
+- Claim urgente de hasta dos correos ciudadanos, respetando finalización del
+  formulario, orden y deduplicación; el poll de cinco minutos conserva recuperación
+  y avisos internos. Envío por evento no garantiza latencia, cuota ni entrega en inbox.
+- Antes de intentar el final, autorizar y verificar el único documento publicado,
+  descargarlo y adjuntarlo físicamente. No aceptar un final nuevo sin adjunto.
+  Diario mínimo del emisor sin destinatarios/contenido; no reenviar sent ni reintentar
+  incertidumbre a ciegas. Una recuperación histórica autorizada no habilita reenvíos en masa.
+- Avisos internos: recepción a Calidad, evaluación a un día, asignación al responsable,
+  investigación a cinco días a Calidad y a tres a ambos, vencimientos pertinentes.
+  Destinatarios activos con rol real calidad; admin no sustituye ese rol. Conservar
+  corte temporal, calendario y pertinencia antes del envío; límite de claim cero no
+  reserva correo y permite procesar campanas.
+- Sonido: primera lectura silenciosa; IDs nuevos y reclamo IndexedDB atómico entre
+  pestañas, con sesión/preferencias vigentes. Preparar MP3/contexto por gesto antes
+  de reclamar; recuperar descarga fallida. Si falla almacenamiento, omitir audio
+  automático. No prometer sonido sin permiso/interacción previa del navegador.
+- Calendario admin en Configuración: días ISO/feriados confirmados, motivo y versión
+  capturada, publicación con `qms_publish_calendar`. Afecta etapas nuevas, no abiertas;
+  conflictos conservan borrador/revisión. SLA legacy no publica calendarios QMS ni
+  justifica editar genéricamente reglas 3/15. No inventar feriados institucionales.
+
+Referencias: [correo por evento](docs/quejas-formulario-correo-inmediato-2026-11-10.md),
+[protocolo](docs/seguridad-correos-quejas.md),
+[avisos internos](docs/avisos-internos-quejas-2026-10-14.md),
+[audio](docs/notificaciones-audio-2026-10-14.md) y
+[calendario](docs/calendario-qms-2026-10-15.md).
+
+## Alcance de los demás módulos
+
+Dashboard monta consultas compartidas, próximos vencimientos y actividad real, con
+cargas independientes; no los tabs analíticos alternativos. Configuración agrupa
+Organización/Acceso/Servicios y exige admin real. Usuarios administra cuentas por API
+con guards; no asumir cierre transaccional distribuido del último admin.
+Procesos, Auditorías, Riesgos, Revisión por Dirección, Documentos y SACP tienen las
+capacidades parciales de [módulos y flujos](docs/arquitectura/modulos-y-flujos.md):
+no atribuirles gestión documental/versionado, mitigación, eficacia o acuerdos completos
+por encontrar una tabla o modal. Reportería ofrece filtros/vistas/impresión; no
+confundirla con el informe Word/PDF editable de Quejas ni asumir guardado/envío de
+informes configurables. No asignar porcentajes por cantidad de archivos o pruebas.
+
+## Verificar, entregar y mantener
+
+Ejecutar comprobaciones acordes al cambio, sin instalar prototipos ni regenerar
+fixtures para esconder fallos. QA con datos ficticios y sin secretos; no crear
+expedientes, enviar correos ni cambiar roles reales solo para una prueba sin que
+esa acción esté autorizada por la tarea.
 
 ~~~sh
 npx tsc --noEmit
@@ -157,245 +396,34 @@ npm run check:structure
 npm run check:visual
 ~~~
 
-Verificación del 5 de noviembre: Node 831/831, TypeScript, lint, build, estructura y
-capa visual correctos; el expediente ampliado con solicitud en lateral y avance en la
-línea superior con línea de progreso azul verificado con el contrato nuevo del panel.
-La corrección del scroll ampliado sigue local, sin publicar. Conserva la verificación del
-2 de noviembre: Node 798/798 (19/19 de contratos visuales con la
-promoción del scrollport, fondo opaco y velo del backdrop, y la exclusión de
-`::-webkit-scrollbar` en el lienzo); TypeScript, lint, build, estructura y
-capa visual correctos; el CSS compilado emite `will-change:transform`, la barra
-nativa del expediente y las reglas globales con `:not([data-case-scroll])`. La
-corrección
-del scroll ampliado sigue local, sin publicar. Conserva la verificación del 20 octubre:
-Node 795/795, selección pública 107/107,
-PostgreSQL aislado de correo 137/137 y bundle Edge 41 checks; lint, build,
-estructura y capa visual correctos. La política de dos correos se aplicó en DB
-con 20261020163142; el arreglo web de reintentos permanece local, sin publicar.
-Detalle: [dos correos y reintentos](docs/quejas-dos-correos-y-reintentos-2026-10-20.md).
-La verificación local del 19 octubre conserva Node 731/731 tras el refinamiento de lienzo
-(104/104 focalizadas y build correctos). La activación previa conserva 725/725 y selección de seguimiento/correo
-162/162, PostgreSQL aislado 208/208 y bundle Edge 50 checks; TypeScript, lint,
-build, estructura y capa visual correctos (96 archivos React). Candidato 5/5 y
-producción 6/6 comprobaciones HTTP sin escrituras de negocio. Recibo público conserva
-QA 142/142 y audio 16/16 en navegador sintético; no certifican cada dispositivo/buzón.
-El 16 octubre conserva logo institucional, PostgreSQL aislado de seguimiento/publicación
-208/208 y HTML de correo 201/201. QA anterior: seguimiento/formulario 74/74 y gestión/seguimiento
-98/98; esa evidencia visual conserva su fecha/alcance, no certifica producción.
-La evidencia del calendario del 15 octubre conserva 112/112 en DB y 43/43 de QA.
-La evidencia de cada entrega se conserva
-en su referencia fechada. El 14 octubre: QA de sonido 13 comprobaciones en dos
-pestañas con datos ficticios, correo 78/78 y DB de avisos 76/76. Las auditorías previas
-de DB/seguridad y sus fixtures/ROLLBACK conservan fecha y alcance en docs/.
-No existe benchmark autenticado con miles de filas ni garantía universal de servicios externos.
-Compilar no publica Vercel. No publicar estos cambios web sin autorización explícita;
-una petición de documentación o continuidad no la sustituye. Verificar el despliegue
-solicitado antes de afirmar que los cambios están en producción.
+Evidencia reciente, con alcances distintos y selecciones parcialmente solapadas:
 
-Actualizar el documento del tema cambiado y el mapa si cambian puntos de edición.
-Mantener esta entrada breve; la evidencia fechada no sustituye contratos vivos.
-Consulta [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md).
+| Área | Evidencia conservada | Referencia |
+| --- | --- | --- |
+| Panel/colores/plazos | 65/65 Node, 379 comprobaciones en 36 escenarios, dos módulos, seis estados, 1536/390/320px; TypeScript, lint, build, estructura y visual correctos | [Panel](docs/quejas-panel-2026-10-13.md) |
+| PDF de vista inicial | 118/118 focalizadas, PDF original reintentado con éxito y checksum de un único adjunto confirmado | [Formulario/correo](docs/quejas-formulario-correo-inmediato-2026-11-10.md) |
+| Correo por evento | 83/83 selección de correo, 39/39 emisor, 159 PostgreSQL aisladas; activación HMAC/Drive y ACK final con Word documentados | [Activación](supabase/backups/quejas_urgent_mail_activation_20261110.json) |
 
-## Quejas y Mis Quejas: estado vigente
+No sumar esas cifras como suite global nueva. Las verificaciones completas antiguas,
+fallos previos de informe/paginación y auditorías conservan su fecha y alcance en
+[verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
+benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-Flujo del 4 noviembre: revisión GC separada de respuesta al cliente. Aprobar sin oficio
-pasa a Resuelto; borrador remoto versionado, publicación confirmada atómica a Finalizado.
-Devolver exige motivo y conserva propuesta/plazo. Históricos de lectura, No Procede
-compatible. Cliente local; activación/QA en [su contrato](docs/quejas-revision-y-respuesta-2026-11-04.md).
-Refinamiento posterior: Devolver/Aprobar directamente en el expediente, sin modal
-duplicado; estado/plazo arriba. Respuesta usa la hoja del informe y selector Word/PDF,
-con correo de plantilla. Adjuntos físicos y permiso Drive de lectura en el mismo contrato.
+- **Web:** última publicación documentada del 19 octubre; los refinamientos web de
+  noviembre siguen locales. Compilar o actualizar documentación no publica Vercel.
+  No desplegar sin autorización explícita; verificar el despliegue antes de afirmar
+  que una función local está en producción.
+- **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
+  fechada del 10 noviembre; no confundirlos con la web pendiente ni con una auditoría
+  remota recién ejecutada. No reabrir accesos legacy o restaurar clientes incompatibles.
+- **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
+  feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
+  o subidas inciertos; contraste de las barras internas de Google Drive.
+- **Límites de seguridad:** sin MFA/2FA integrado, antivirus, portal ciudadano completo,
+  telemetría persistida/retención anual ni Seguridad y Estado terminados. La auditoría
+  npm documentada tras fijar Next 16.4.6 registró cero críticas/altas y seis moderadas
+  indirectas pendientes; no presentarla como una auditoría nueva ni seguridad total.
 
-Ajuste local del 5 de noviembre (corrección): el modal de gestión de Quejas muestra el
-avance del proceso en la línea horizontal superior con mini línea y los datos de la
-solicitud en el lateral izquierdo de forma estable; la disposición ya no depende del modo
-expandido. La variante lateral con desplegable corresponde al panel del responsable
-(Mis Quejas). El catálogo de áreas sale del expediente ampliado y se administra desde
-Configuración. Detalle en
-[panel y procesamiento](docs/quejas-panel-2026-10-13.md). Local, sin publicar.
-
-Ajuste local del 3 noviembre: expediente empieza con Descripción, sin resumen
-superior de resultado; margen inferior y marco redondeado del lienzo solo sin ampliar
-y dos pestañas en Mis Quejas
-(Análisis/Resolución). Barra principal nativa de ancho normal; interiores de 16px
-con puntas cuadradas. Audio recupera contexto con interacción previa. Despertador
-de correo por evento preparado, **sin activar ni publicar**; configuración y
-evidencia fechada en [su contrato](docs/quejas-claridad-y-acuse-2026-11-03.md).
-Excepción de lectura posterior: revisión GC comienza con la propuesta y pliega
-antecedentes; Resolución de Mis Quejas compacta el editor bajo las pestañas. Ambas
-usan ciclo horizontal en ese contexto. Ver [composición y evidencia](docs/quejas-resolucion-y-revision-gc-2026-11-03.md).
-
-Alcance: módulo de Quejas, recepción y gestión interna; no toda la matriz de Calidad ni un portal
-ciudadano completo. La implementación local y la versión web publicada son estados
-distintos. DB aplicó 20261011044303/20261011044317/20261011044810; la evidencia está en
-[lanzamiento y pendientes](docs/quejas-lanzamiento-2026-10-09.md).
-
-- Alta pública/interna, nombre/correo/descripción obligatorios, tipos compartidos,
-  fecha automática y consecutivo anual transaccional. Conservar folios y contadores
-  históricos; no reiniciar la serie para aparentar 001 ni consumir folios sin alta.
-- Procedencia con justificación/responsable; investigación, revisión GC, resolución,
-  cierre y reapertura con motivo. Nuevas etapas de 3/15 días hábiles; revisión/devolución
-  GC no reinicia investigación. UI e informes leen el snapshot persistido del plazo.
-- Área afectada junto a Descripción: una lista directa; elegir guarda con la revisión
-  capturada, sin segundo selector. Catálogo administrado en Configuración (módulo `quejas`,
-  tipo `area_afectada`); el expediente conserva solo el control de asignación junto a
-  Descripción. Añadir no asigna ni reemplaza la selección; el catálogo es un desplegable
-  compacto con tres puntos por fila. Admin real puede Editar, Eliminar (desactivar con
-  confirmación) y Restaurar mediante quejaAreaCatalogService con comparación del snapshot,
-  sin borrar históricos. Oficio emitido por ECA, único, obligatorio al declarar No Procede o
-  resolver; se adjunta su documento en Drive. Prioridad histórica fuera de la UX de Quejas,
-  sin borrar datos de otros módulos.
-- Observaciones centraliza notas/comentarios de Actividad; conserva la observación
-  histórica sin inventar autor/fecha. Las notas de investigación son otro contrato.
-- Workspace derecho 40vw/100dvh, tabla operativa con scroll en ambos ejes sin recomponer
-  filtros/columnas. Móvil/ampliado modal; cerrar restablece lateral. Ciclo con checks,
-  estado/acción sticky, sin footer de lectura. Actividad independiente y adjuntos con
-  tarjetas/iconos estáticos, sin descargar miniaturas al listar.
-- Scroll del expediente (2 noviembre): el scrollport de CaseWorkspace se promueve a
-  capa compuesta (`will-change: transform`) y queda excluido de las reglas globales
-  `::-webkit-scrollbar`; usa la barra nativa `solid-color` (`scrollbar-width: thin`
-  y `scrollbar-color`) que Chromium actualiza en el compositor. La personalizada se
-  repinta en el hilo principal y retrasaba el desplazamiento al ampliar a todo el
-  ancho; los laterales sticky llevan capa propia para que su offset no dependa del
-  hilo principal. Quejas y Mis Quejas conservan una sola barra, laterales sticky y
-  borradores; no cambian permisos, DB ni workflow. El pulgar del expediente pierde el
-  resaltado al pasar el puntero, que la barra nativa no expone. Al ampliar a pantalla
-  completa el diálogo no compone un velo (`backdrop:bg-transparent`) sobre un fondo
-  opaco, y el scrollport del expediente lleva fondo opaco para que la capa compuesta no
-  obligue a mezclar el ancho completo en cada frame. Corrección local verificada; no
-  publicada.
-- Espacio inferior en el documento (4 de noviembre): el sheet del documento añade `pb-6`
-  al final de la descripción/evidencias para que el texto no quede pegado al borde
-  inferior del modal al terminar el contenido. Ver
-  [scroll ampliado](docs/quejas-panel-2026-10-13.md).
-- Editor del expediente (4 de noviembre): el lienzo con `layout="fill"` del
-  `RichTextEditor` pasa a `overscroll-contain` y capa compuesta (`will-change:
-  transform`) en su scroll, igualando el patrón del scrollport del expediente; el
-  lienzo del informe con `layout="content"` (`data-informe-scroll`) incorpora la misma
-  promoción. Ver [scroll ampliado](docs/quejas-panel-2026-10-13.md).
-- Encabezado del expediente (4 de noviembre): el resumen `data-case-summary` se vuelve
-  `sticky top-0 z-10` dentro del contenedor de scroll del modal, con su propio fondo, para
-  que los datos de la solicitud queden fijos al deslizar el documento. No se reorganiza el
-  orden; solo se pega arriba al hacer scroll. Ver [scroll ampliado](docs/quejas-panel-2026-10-13.md).
-- Flujo export/Respuesta (4 de noviembre): la respuesta al cliente se alimenta del documento
-  interno que se publica (No Procede: justificación; resolución: resolución) sin exigir texto
-  paralelo. Ver [scroll ampliado](docs/quejas-panel-2026-10-13.md).
-- Editor informe (4 de noviembre): los botones Guardar Cambios / Exportar a Word / Exportar
-  a PDF se pasan al `headerActions` del Modal y la fila de estado de contenido se quita,
-  subiendo el editor. Ver [scroll ampliado](docs/quejas-panel-2026-10-13.md).
-- Refinamiento visual local del 19 octubre: Quejas/Mis Quejas comparten CaseWorkspace
-  y una única hoja central; CaseRequestHeader conserva el mini desplegable de datos
-  bajo el folio, fuera del documento, sin agrandar la cabecera del lateral. El área
-  acompaña Descripción. Encabezado Folio semibold, iconos de 20 px y Actividad con texto azul, sin fondo, solo en workspace. El ciclo se proyecta por tarea:
-  Calidad ve evaluación/revisión/cierre; responsable, asignación/investigación/propuesta
-  enviada. No son nuevos estados ni un historial de aprobaciones. Este ajuste visual
-  posterior a la activación sigue sin publicar; no altera permisos ni revisiones.
-- Decisión document XL/90dvh estable, encabezado blanco, elección inicial centrada
-  azul/roja que cede el lienzo al editor; decisión gris y responsable buscable arriba.
-  Guardar Procede exige asignación antes de escribir. Cancelar vuelve a elegir conservando
-  el borrador; la X cierra. Mantener locks/revisión también al devolver a investigación.
-- Tiptap lazy y límite 10.000, formatos plain/markdown explícitos. El lector compartido
-  quejaContent oculta únicamente la copia plain exacta `[Procede]` de la justificación
-  separada; conserva análisis distintos/reaperturas, sin modificar DB ni inferir formato.
-
-Detalle de interacción: [panel y procesamiento](docs/quejas-panel-2026-10-13.md).
-
-Entrega del 16 octubre, publicada el 19: Mis Quejas comparte workspace/ciclo/plazos con Quejas,
-con Tiptap amplio e IA secundaria. El análisis es borrador de visita; notas y propuesta
-enviada a GC sí persisten. Calidad redacta la respuesta pública separada del documento
-interno y selecciona el oficio. Seguimiento por capacidad privada, nunca por folio solo;
-sin PII ni evidencia interna y sin caché. Configuración obtiene enlaces por formulario
-solo con admin real. Web/Edge/Apps Script/migración y cortes activos el 19 octubre.
-Seguimiento abre automáticamente por enlace, sin contraseña/consecutivo manual.
-Mientras esté desactivado no ofrece una consulta rota. Finalizar devuelve estado
-disabled/available/pending; recuperar enlace pendiente no repite alta ni adjuntos.
-El propietario mantuvo todo local el 16 octubre y autorizó activar enlaces en nuevos
-correos el 19. El corte coordinado está verificado; no hubo backfill ni reenvío histórico.
-En la activación del 19, eventos recibido/investigación con snapshot constaron sent; falta aceptar entrega
-y apertura del enlace por su destinatario. Evidencia: supabase/backups/public_tracking_activation_20261019.json.
-El enlace de seguimiento autoriza al portador, no verifica identidad ni control del
-correo: no prometer acceso exclusivo al titular. Caducidad: DB fija 30 días
-naturales desde el primer No Procede/Finalizado;
-Resuelto no inicia la cuenta. Firma v2/snapshot de correo solo expediente/nonce;
-consulta/descarga/emisión comprueban DB. No renovar por consultar o reabrir ni borrar
-expediente/evidencias al vencer. Consulta/descarga verifican BotID Basic antes del
-backend; WAF amplía la regla existente a sus dos POST, 90 peticiones/IP por 600 s.
-Contratos, límites y orden: [seguimiento y publicación](docs/quejas-seguimiento-y-publicacion-2026-10-16.md).
-
-### Formulario público y correo
-
-- Formulario de 896 px máximos, campos iniciales en dos columnas desde sm; móvil en
-  una columna. Encabezado compacto y descripción ampliable de cinco filas. Adjuntar
-  y contador en una fila, lista solo al seleccionar y hasta dos filas con scroll. Tarjeta hasta 100dvh − 48 px; en
-  pantallas bajas se desplazan solo los campos, pie de envío separado sin superposición.
-- Registro/subida/finalización y errores permanecen en el mismo formulario. Reintentos
-  conservan submissionId/uploadId; no generan otra queja. Confirmación con folio solo
-  cuando finalizan todos los adjuntos y la operación. Sin pausas ni ventanas de subida.
-  La presentación refinada y el recibo compacto quedaron publicados el 19 octubre.
-- Recibo local del 20 octubre: cabecera de marca y una columna como el correo,
-  folio en línea sin recuadro interior. Conserva éxito/adjuntos/seguimiento;
-  43/43 pruebas del cliente y QA sintética en tres anchos. Sigue sin publicar.
-- Corrección web del 20 octubre: reintentos del formulario público verificados en local;
-  no está publicada y no sustituye la versión web del 19. Ver su referencia de entrega.
-- Correo directo: DB encola → Apps Script consulta/envía → ACK por
-  `quejas-mail-queue` de Supabase. Desde el 20 octubre, dos eventos ciudadanos:
-  recibido y final (No Procede o resolución de Calidad). Investigación es histórica;
-  los avisos internos siguen intactos. Reapertura/Finalizado no duplican.
-  No depende de Vercel; credenciales DB solo en Edge, HMAC independiente en el script.
-- Estado operativo en queja_mail_outbox; diario privado mínimo del emisor para deduplicar
-  e incertidumbre, sin destinatarios/contenido. Un trigger cada cinco minutos; `/exec`
-  anterior archivado y worker Vercel local apagado. `sent` no significa leído; no reintentar
-  incertidumbre a ciegas. Cuotas de MailApp compartidas, no correo ilimitado.
-- HTML qmsMailHtml_ de 760 px máximos, adaptable/compacto, sin recursos remotos. Guardado
-  y verificado en el Apps Script activo, actualizado el 19 octubre; los correos anteriores no cambian.
-  Editar apariencia no requiere ejecutar el poll ni reinstalar el activador.
-  Refinamiento del 19: recibo compacto y HTML con encabezado blanco publicados;
-  el botón de seguimiento aparece solo con URL validada. La pantalla confirma
-  registro/adjuntos; aclara la posible espera del correo y no afirma entrega.
-- Avisos internos activos desde el 14 octubre: recepción a Calidad, evaluación a 1 día,
-  asignación al responsable, investigación a 5 días a Calidad y a 3 días a ambos,
-  vencimiento a ambos cuando corresponda. Usuarios activos con rol real `calidad`;
-  admin no sustituye ese rol para correo. Fecha de corte sin avisos históricos,
-  calendario persistido, deduplicación y pertinencia comprobada antes de enviar.
-  Claim v2 con límite 0 procesa campanas aunque falte cuota/diario; no reserva correo.
-  Nunca reiniciar 15 días al reasignar ni reintentar incertidumbre automáticamente.
-- Sonido publicado el 19 octubre: primera lectura silenciosa; IDs nuevos y reclamo IndexedDB atómico
-  entre pestañas, con comprobación de sesión/preferencias antes de reproducir.
-  Panel abierto también avisa en segundo plano. Preparar MP3/contexto habilitado por
-  gesto antes de reclamar evita que autoplay bloqueado consuma el aviso de otra pestaña;
-  descarga fallida se puede recuperar. Si falla el almacenamiento se omite el audio
-  automático. Requiere permiso del navegador y gesto previo permitido para el audio.
-- Calendario laboral: editor admin publicado en Configuración, días ISO y feriados
-  confirmados, motivo y versión capturada. Publica con qms_publish_calendar, no
-  sla_config. Conflictos conservan borrador; no cambiar expected al refrescar.
-  Afecta etapas que comiencen después de guardar, nunca etapas abiertas. DB aplicó
-  20261015171835: calendarios/reglas/auditoría sin writes/TRUNCATE cliente; SELECT/RLS
-  y RPC conservados. No inventar feriados ni exponer cambios genéricos de reglas 3/15.
-
-Referencias: [formulario visual](docs/formulario-publico-visual-2026-10-14.md),
-[seguridad pública](docs/seguridad-formularios-publicos.md),
-[correo operativo](docs/correo-quejas-directo-2026-10-13.md) y
-[protocolo de correo](docs/seguridad-correos-quejas.md).
-Avisos/destinatarios: [contrato operativo](docs/avisos-internos-quejas-2026-10-14.md).
-Audio: [coordinación y límites](docs/notificaciones-audio-2026-10-14.md).
-Calendario: [editor y permisos](docs/calendario-qms-2026-10-15.md).
-
-### Lo que falta para cerrar la versión operativa de Quejas
-
-1. Aceptar la recepción de un correo nuevo con «Consultar mi trámite» y apertura del
-   enlace por su destinatario. Web/DB/Edge/Apps Script, WAF y ambos cortes ya están
-   activos; las comprobaciones HTTP sin capacidad real no sustituyen esa aceptación.
-2. Registrar los feriados institucionales confirmados en el editor de calendario
-   QMS publicado. DB conserva lunes–viernes, sin feriados.
-   El editor SLA legacy sigue separado de las reglas/calendarios versionados.
-3. Asignar los destinatarios institucionales de Calidad: la activación encontró cero
-   perfiles activos de ese rol. Validar recepción institucional de los avisos con sus
-   destinatarios reales; no cambiar roles ni generar quejas/correos de prueba sin autorización.
-4. Aceptación institucional del ciclo completo (roles, oficios, plazos, evidencias,
-   correos/fallos/reintentos). Sigue sin UI de conciliación de envíos/subidas inciertos.
-
-No presentar Seguridad y Estado, MFA, antivirus o un portal ciudadano completo como
-capacidades terminadas de esta versión. Al comunicar avance al propietario, usar
-«módulo de Quejas» o «versión operativa», con alcance y pendientes explícitos.
-No asignar un porcentaje por archivos o pruebas:
-el avance es una estimación de planificación, separada de la aceptación y el despliegue.
+Actualizar la referencia temática y el mapa cuando cambien puntos de edición.
+Conservar esta entrada como contrato actual: la cronología vive en `docs/` y no debe
+restaurar decisiones visuales o flujos ya reemplazados por el propietario.

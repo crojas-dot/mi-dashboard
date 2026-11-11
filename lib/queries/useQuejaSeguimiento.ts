@@ -33,5 +33,10 @@ export async function fetchQuejaCorreos(id: string, signal?: AbortSignal): Promi
   return (data ?? []) as QuejaCorreoEstado[]
 }
 export function useQuejaCorreos(id: string, enabled: boolean) {
-  return useQuery({ queryKey: [...queryKeys.quejas, 'correos', id], queryFn: ({ signal }) => fetchQuejaCorreos(id, signal), enabled: enabled && !!id, staleTime: 30_000 })
+  return useQuery({ queryKey: [...queryKeys.quejas, 'correos', id], queryFn: ({ signal }) => fetchQuejaCorreos(id, signal), enabled: enabled && !!id, staleTime: 30_000,
+    // El ACK del emisor no modifica quejas ni dispara su Realtime. Actualizar solo
+    // mientras el envío final siga pendiente y esta vista esté activa/visible.
+    refetchInterval: query => query.state.data?.some(message => message.tipo === 'final' && ['pending', 'leased', 'retry'].includes(message.status)) ? 30_000 : false,
+    refetchIntervalInBackground: false,
+  })
 }

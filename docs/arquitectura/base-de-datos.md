@@ -1,5 +1,27 @@
 # Base de datos: esquema, políticas y motor QMS
 
+10 noviembre, aplicadas: `20261110203610` y `20261110212506`, cola urgente ciudadana
+y despertador transaccional pg_net. Settings privados, clave dedicada en Vault,
+RPC service-only y activación verificada tras autorizar ejecución/Drive del emisor.
+Recuperación única de un final agotado solo tras comprobar ausencia en el diario;
+ACK sent confirmado con Word obligatorio. [Contrato y límites](../quejas-formulario-correo-inmediato-2026-11-10.md).
+
+10 noviembre, aplicado: `20261110165806_quejas_no_procede_correo.sql` conserva motivo
+y formato en el borrador remoto. Los puentes invoker de rechazo guardan sin cerrar y
+publican No Procede con documento/correo en la transacción existente. Conservan
+autorización, revisión/versiones CAS y restricciones de publicación histórica.
+Sin backfill ni escrituras directas; RLS/grants y avisos de seguridad comprobados.
+[Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
+
+10 noviembre, aplicado: `20261110150300_quejas_correo_editable.sql` añade asunto y
+cuerpo opcionales a borradores/outbox. Los RPC v2 de borrador/publicación mantienen
+el guard de Calidad y las revisiones originales; publican respuesta/oficio/correo en
+una transacción. Claim v4 y authorize v2 son solo de máquina; no se conceden columnas
+del mensaje del outbox al navegador. Los históricos permanecen nulos y sin reenvío.
+`20261110151342_quejas_habilitar_correo_editable.sql` activa el envío tras verificar
+la Edge compatible. RLS/grants y avisos de seguridad antes/después verificados.
+[Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md). Cliente web local.
+
 4 noviembre, aplicada y verificada en ECA-QMS: migración
 `20261104202558_quejas_revision_y_respuesta_separadas.sql`. Añade historial GC
 inmutable y borradores internos con CAS; aprobación sin publicación y publicación
@@ -15,8 +37,8 @@ cierre No Procede/Finalizado, con ventana exacta de 30 días naturales. Abierto 
 ambas nulas; consultas, reaperturas y correos no renuevan. Consulta/descarga/emisión
 comprueban revocación/vigencia. Helper con lock del expediente evita carreras con cierre;
 las capacidades y snapshots firmados v2 contienen solo expediente/nonce.
-No cambia el retorno de claim v2; v3 añade el snapshot opcional y es el usado por
-la Edge activa con seguimiento habilitado. El wrapper publica y transiciona con
+No cambia el retorno de claim v2; v3 añade el snapshot opcional de seguimiento
+(claim v4 lo conserva y añade el correo desde el 10 noviembre). El wrapper publica y transiciona con
 la revisión original en una transacción. Tras verificar el cliente compatible
 publicado, se aplicaron `scripts/activar-publicacion-quejas.sql` y
 `scripts/cerrar-workflow-quejas.sql`: `publication_cut_active=true` y
@@ -151,7 +173,7 @@ Esta capa se aplicó en la migración remota `etapas_versionadas`. **Existe y ej
 - Al cambiar estado cierra runs anteriores. Para Recibido/En Investigación toma la última regla/calendario, guarda snapshot inmutable en `qms_stage_runs` y calcula expires_at/attention_at/notices.
 - Evaluación escribe fecha_sla; investigación escribe fecha_limite_investigacion. Cambiar prioridad/notas sin cambiar estado **no recalcula** esos plazos por sla_config: el trigger conserva el snapshot vigente.
 - Alertas se programan a las 06:00 locales según offsets y, para notify_quality, al vencer. Desde la migración `20261015011028`, `qms_process_notices` procesa hasta 250 avisos totales con FOR UPDATE/SKIP LOCKED y orden queja → aviso; usa etapas/calendarios hábiles conocidos, ventanas vigentes y destinatarios activos del [contrato interno](../avisos-internos-quejas-2026-10-14.md).
-- El poll existente de Apps Script usa la Edge HMAC cada cinco minutos; desde el 19 octubre, con seguimiento activo, esta llama `qms_mail_claim_batch_v3`. Conserva el procesamiento de avisos con límite 0, sin reclamar correo; v2 sigue siendo compatible. No se instaló pg_cron. Configuración privada con RLS, RPC nuevos sin EXECUTE cliente; `qms_set_internal_notices` solo owner/service_role activa con corte sin avalancha histórica. Columnas usuario/run/event_key del outbox no se conceden a authenticated.
+- El poll existente de Apps Script usa la Edge HMAC cada cinco minutos; desde el 10 noviembre esta llama `qms_mail_claim_batch_v4`, que conserva el seguimiento añadido en v3. Conserva el procesamiento de avisos con límite 0, sin reclamar correo; v2 sigue siendo compatible. No se instaló pg_cron. Configuración privada con RLS, RPC nuevos sin EXECUTE cliente; `qms_set_internal_notices` solo owner/service_role activa con corte sin avalancha histórica. Columnas usuario/run/event_key del outbox no se conceden a authenticated.
 - Campana y outbox se insertan atómicamente y deduplican por evento/usuario; una fila por destinatario. El directorio debe tener correo válido para recibir ambos; la activación comprobó cero perfiles activos con correo inválido. `qms_mail_authorize` comprueba lease/token, rol, actividad, correo congelado, generación de asignación y etapa justo antes de MailApp. `skipped/obsolete_notice` solo interno; uncertain nunca se reenvía a ciegas. El claim anterior conserva únicamente correos ciudadanos.
 - Triggers `qms_*_event` en quejas, acciones, documentos y riesgos registran aperturas/cierres (y Resuelto en quejas) en qms_case_events. No afirmar que esos eventos son el mismo listado que quejas_actividad.
 - `qms_catalog_audit` audita catálogos y protege códigos/estructura/historia.
@@ -162,11 +184,13 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 
 ### Folios
 
-- `generar_folio_queja()` vigente usa `folios_quejas_anuales(anio,ultimo)`, UPSERT por año con incremento y hora Costa Rica. Devuelve **`AAAA-NNN`** con mínimo tres dígitos, sin truncar a partir de 1000. No agrega `QUEJA-`.
-- El contador anual de quejas avanza por fila/año; no necesita reset manual de la antigua secuencia para enero.
-- SACP/Auditorías/Riesgos/Documentos conservan generadores por secuencias y prefijos `SACP-`, `AUD-`, `RIESGO-`, `DOC-` con año y cuatro dígitos. Los modales correspondientes (excepto Documentos) pueden aceptar folio manual o generar por RPC.
-- `siguiente_folio_queja()` y el formato Q-AAAA-NNNNN son legacy; el cliente actual usa el generador a través del workflow/RPC de creación.
+- Desde `20261111151343`, los cinco generadores usan `qms_private.next_annual_folio` con la fecha de la transacción en Costa Rica. Quejas conserva su única tabla `folios_quejas_anuales(anio,ultimo)`; otros módulos usan `qms_private.folios_anuales(modulo,anio,ultimo)`, sin acceso cliente.
+- UPSERT por módulo/año: mínimo tres dígitos (`AAAA-001`), crece a 1000 sin truncar y el nuevo año comienza en 001 salvo histórico ya existente. No requiere reset manual ni cron. Los prefijos SACP-/AUD-/RIESGO-/DOC- se conservan; ningún folio previo se reescribe.
+- SACP/Auditorías/Riesgos aceptan código manual o asignan automáticamente dentro del INSERT mediante `a_qms_annual_folio`. RPC previos conservan ACL para el cliente publicado; la eliminación de la reserva previa en esos modales sigue local. Documentos usa `codigo_doc`; su generador anual no tiene consumidor.
+- `siguiente_folio_queja()` y las secuencias anteriores quedan cerrados al cliente, sin consumidores vigentes ni reset de valores históricos. Los RPC de creación de Quejas mantienen sus guards y revisión del contrato.
 - No generar un folio de queja adicional en frontend antes de `crear_queja_interna`/pública: la creación lo resuelve en DB.
+
+[Contrato anual, compatibilidad y verificación del 11 noviembre](../consecutivos-anuales-2026-11-11.md).
 
 ### RPC: uso y acceso relevantes
 

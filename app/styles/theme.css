@@ -33,6 +33,9 @@
   --color-qms-table-head: #F0F2F5;
   --color-qms-header: #343a40;
   --color-qms-surface: #ffffff;
+  /* Gris Claro de la guía ECA, aclarado con blanco para las etiquetas de estado. */
+  --color-qms-neutral-soft: color-mix(in srgb, #e6e5e5 60%, var(--color-qms-surface));
+  --color-qms-row-selected: #f0f4f7;
   --color-qms-background: #f4f7f6;
   --color-qms-danger: #dc3545;
   --color-qms-success: #198754;

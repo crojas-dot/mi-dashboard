@@ -49,7 +49,9 @@ export function publicErrorMessage(error: unknown, fallback: string): string {
     if (error.status === 409) return 'El intento anterior todavía no puede confirmarse. Esperá un momento y reintentá el mismo envío.'
     if (error.status === 400 || error.status === 422) return 'Revisá los datos del formulario antes de enviarlo.'
     if (error.status === 413) return 'El archivo supera el límite de 4 MB.'
-    if (error.status === 415) return 'Solo se permiten archivos PDF, JPEG y PNG.'
+    if (error.status === 415) return error.code === 'unsupported_public_file'
+      ? 'No se pudo procesar este archivo. No quedó adjuntado; tus datos y tu folio se conservaron.'
+      : 'Solo se permiten archivos PDF, JPEG y PNG.'
     if (error.serverMessage) return getUserError({ message: error.serverMessage }, fallback).message
     return fallback
   }
@@ -118,7 +120,23 @@ export async function subirAdjuntoPublico(file: File, uploadToken: string, uploa
   body.append('file', file)
   body.append('uploadToken', uploadToken)
   body.append('uploadId', uploadId)
-  const data = await publicJson('/api/drive/upload-public', { method: 'POST', body, signal })
+  const send = () => publicJson('/api/drive/upload-public', { method: 'POST', body, signal })
+  let data: Record<string, unknown>
+  try { data = await send() }
+  catch (error) {
+    const transient = error instanceof TypeError || error instanceof PublicRequestError
+      && [502, 503, 504].includes(error.status)
+      && !['public_storage_not_private', 'public_storage_unavailable'].includes(error.code ?? '')
+    if (!transient || signal?.aborted) throw error
+    // Una respuesta perdida puede corresponder a un commit: conservar siempre
+    // archivo/capacidad/uploadId permite recuperar su recibo sin crear otra copia.
+    await new Promise<void>((resolve, reject) => {
+      const cancel = () => { clearTimeout(timer); reject(new DOMException('Solicitud cancelada', 'AbortError')) }
+      const timer = setTimeout(() => { signal?.removeEventListener('abort', cancel); resolve() }, 500)
+      signal?.addEventListener('abort', cancel, { once: true })
+    })
+    data = await send()
+  }
   if (typeof data.drive_file_id !== 'string' || !data.drive_file_id || typeof data.queja_id !== 'string' || !data.queja_id) {
     throw new Error('No se recibió la confirmación del archivo. Reintentá la evidencia.')
   }

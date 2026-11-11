@@ -1,0 +1,132 @@
+{
+  "functions": [
+    {
+      "schema": "public",
+      "proname": "qms_publish_approved_response_v2",
+      "args": "p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text",
+      "definition": "CREATE OR REPLACE FUNCTION public.qms_publish_approved_response_v2(p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text)\n RETURNS jsonb\n LANGUAGE sql\n SET search_path TO ''\nAS $function$select qms_private.publish_response_email(p_id,p_expected,p_version,p_response,p_office,p_file,p_email_subject,p_email_body)$function$\n"
+    },
+    {
+      "schema": "qms_private",
+      "proname": "quality_case",
+      "args": "p_id uuid, p_expected bigint",
+      "definition": "CREATE OR REPLACE FUNCTION qms_private.quality_case(p_id uuid, p_expected bigint)\n RETURNS quejas\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare q public.quejas;\nbegin\n  if auth.uid() is null or public.app_usuario_actual_id() is null or not (\n    coalesce(public.app_es_admin(),false) or\n    (coalesce(public.app_es_staff(),false) and coalesce(public.app_tiene_permiso('quejas',true),false))\n  ) then raise exception 'No autorizado.' using errcode='42501'; end if;\n  select * into q from public.quejas where id=p_id for update;\n  if q.id is null then raise exception 'Queja no encontrada.' using errcode='P0002'; end if;\n  if p_expected is null or q.revision is distinct from p_expected then\n    raise exception 'Otra persona modificó el expediente. Conservá el borrador y actualizá la vista.' using errcode='40001';\n  end if;\n  return q;\nend $function$\n"
+    },
+    {
+      "schema": "qms_private",
+      "proname": "save_response_draft",
+      "args": "p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid",
+      "definition": "CREATE OR REPLACE FUNCTION qms_private.save_response_draft(p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare q public.quejas; d public.queja_response_drafts; result public.queja_response_drafts;\nbegin\n  q:=qms_private.quality_case(p_id,p_expected);\n  if q.estado<>'Resuelto' or exists(select 1 from public.queja_public_resolutions where queja_id=p_id) then\n    raise exception 'La respuesta ya está publicada o la resolución no está aprobada.' using errcode='55000';\n  end if;\n  if p_version is null or p_version<0 or p_response is null or length(p_response)>10000\n    or p_office is null or length(p_office)>120 or p_office ~ '[[:cntrl:]]' then\n    raise exception 'Revisá la respuesta y el número de oficio.' using errcode='22023';\n  end if;\n  select * into d from public.queja_response_drafts where queja_id=p_id for update;\n  if coalesce(d.version,0)<>p_version then\n    raise exception 'Otra persona guardó el borrador. Tu texto se conserva; compará los cambios antes de reintentar.' using errcode='40001';\n  end if;\n  if p_file is not null then perform qms_private.quality_document(p_id,p_file); end if;\n  insert into public.queja_response_drafts(queja_id,version,respuesta,numero_oficio,adjunto_id,actualizado_por)\n    values(p_id,p_version+1,btrim(p_response),btrim(p_office),p_file,public.app_usuario_actual_id())\n    on conflict(queja_id) do update set version=excluded.version,respuesta=excluded.respuesta,numero_oficio=excluded.numero_oficio,\n      adjunto_id=excluded.adjunto_id,actualizado_por=excluded.actualizado_por,updated_at=now() returning * into result;\n  return to_jsonb(result);\nend $function$\n"
+    },
+    {
+      "schema": "qms_private",
+      "proname": "publish_response",
+      "args": "p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid",
+      "definition": "CREATE OR REPLACE FUNCTION qms_private.publish_response(p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare q public.quejas; actor uuid; run uuid; result jsonb;\nbegin\n  q:=qms_private.quality_case(p_id,p_expected);\n  if q.estado<>'Resuelto' or exists(select 1 from public.queja_public_resolutions where queja_id=p_id) then\n    raise exception 'La respuesta ya está publicada o la resolución no está aprobada.' using errcode='55000';\n  end if;\n  if nullif(btrim(p_response),'') is null or length(p_response)>10000 or\n    nullif(btrim(p_office),'') is null or length(p_office)>120 or p_office ~ '[[:cntrl:]]' then\n    raise exception 'Completá la respuesta, el número de oficio y el documento oficial.' using errcode='22023';\n  end if;\n  perform qms_private.quality_document(p_id,p_file);\n  perform qms_private.save_response_draft(p_id,p_expected,p_version,p_response,p_office,p_file);\n  actor:=public.app_usuario_actual_id();\n  select id into run from public.qms_stage_runs where case_id=p_id and stage_id='quejas.investigation' order by started_at desc,id desc limit 1;\n  -- INSERT exclusivamente: ni el RPC ni un reintento reemplazan una publicación.\n  insert into public.queja_public_resolutions(queja_id,respuesta,adjunto_id,investigation_run_id,publicado_por,source_revision,publication_txid)\n    values(p_id,btrim(p_response),p_file,run,actor,p_expected,txid_current());\n  result:=public.qms_transition_complaint(p_id,p_expected,'finished',null,null,null,null,btrim(p_office));\n  insert into public.quejas_actividad(queja_id,tipo,descripcion,usuario_id)\n    values(p_id,'nota','Respuesta al cliente y oficio oficial publicados. Expediente finalizado.',actor);\n  insert into public.logs(fecha,usuario_id,accion,modulo,detalle)\n    values(now(),actor,'publicar','quejas','Respuesta y oficio publicados para '||q.folio);\n  return result;\nend $function$\n"
+    },
+    {
+      "schema": "qms_private",
+      "proname": "save_response_email",
+      "args": "p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text",
+      "definition": "CREATE OR REPLACE FUNCTION qms_private.save_response_email(p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result public.queja_response_drafts;\nbegin\n  -- El guard existente comprueba identidad, permiso, revisión y estado antes de escribir.\n  perform qms_private.quality_case(p_id,p_expected);\n  perform qms_private.validate_response_email(p_email_subject,p_email_body,false);\n  perform qms_private.save_response_draft(p_id,p_expected,p_version,p_response,p_office,p_file);\n  update public.queja_response_drafts set correo_asunto=btrim(p_email_subject),correo_cuerpo=btrim(p_email_body,E' \\t\\n\\r')\n    where queja_id=p_id returning * into result;\n  return to_jsonb(result);\nend $function$\n"
+    },
+    {
+      "schema": "qms_private",
+      "proname": "publish_response_email",
+      "args": "p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text",
+      "definition": "CREATE OR REPLACE FUNCTION qms_private.publish_response_email(p_id uuid, p_expected bigint, p_version bigint, p_response text, p_office text, p_file uuid, p_email_subject text, p_email_body text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result jsonb; q public.quejas; affected integer;\nbegin\n  q:=qms_private.quality_case(p_id,p_expected);\n  if not qms_private.email_delivery_ready() then\n    raise exception 'El envío del correo editado todavía no está disponible. Guardá el borrador para conservarlo.' using errcode='55000';\n  end if;\n  perform qms_private.validate_response_email(p_email_subject,p_email_body,true);\n  if coalesce(q.email_cliente,'') !~ '^[^[:space:]@,;<>]+@[^[:space:]@,;<>]+\\.[^[:space:]@,;<>]+$' then\n    raise exception 'El interesado no tiene un correo válido para el envío.' using errcode='22023';\n  end if;\n  -- Una comunicación histórica o incierta nunca se modifica ni se vuelve a enviar.\n  if exists(select 1 from public.queja_mail_outbox where queja_id=p_id and tipo='final') then\n    raise exception 'El expediente ya tiene una comunicación final registrada.' using errcode='55000';\n  end if;\n  result:=qms_private.publish_response(p_id,p_expected,p_version,p_response,p_office,p_file);\n  update public.queja_response_drafts set correo_asunto=btrim(p_email_subject),correo_cuerpo=btrim(p_email_body,E' \\t\\n\\r') where queja_id=p_id;\n  -- La fila recién creada no es visible al emisor hasta el COMMIT de esta operación.\n  update public.queja_mail_outbox set correo_asunto=btrim(p_email_subject),correo_cuerpo=btrim(p_email_body,E' \\t\\n\\r')\n    where queja_id=p_id and tipo='final' and status='pending' and claim_token is null;\n  get diagnostics affected=row_count;\n  if affected<>1 then raise exception 'No se pudo registrar el correo de acompañamiento.' using errcode='55000'; end if;\n  return result;\nend $function$\n"
+    }
+  ],
+  "responseDraft": [
+    {
+      "kind": "function",
+      "name": "qms_resolve_complaint_with_document",
+      "detail": "CREATE OR REPLACE FUNCTION public.qms_resolve_complaint_with_document(p_queja_id uuid, p_estado text, p_detalles jsonb, p_expected_revision bigint, p_adjunto_id uuid, p_respuesta_publica text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\nDECLARE complaint public.quejas; document public.queja_adjuntos; result jsonb;\r\n  actor uuid; response text:=btrim(coalesce(p_respuesta_publica,''));\r\nBEGIN\r\n  actor:=public.app_usuario_actual_id();\r\n  IF auth.uid() IS NULL OR actor IS NULL OR NOT (coalesce(public.app_es_admin(),false)\r\n      OR (coalesce(public.app_es_staff(),false) AND coalesce(public.app_tiene_permiso('quejas',true),false))) THEN\r\n    RAISE EXCEPTION 'No autorizado.' USING ERRCODE='42501';\r\n  END IF;\r\n  IF p_estado IS NULL OR p_estado NOT IN ('rejected','resolved')\r\n    OR p_detalles IS NULL OR jsonb_typeof(p_detalles)<>'object'\r\n    OR p_detalles-ARRAY['resolution','resolution_format','office_number']<>'{}'::jsonb\r\n    OR EXISTS (SELECT 1 FROM jsonb_each(p_detalles) e WHERE jsonb_typeof(e.value)<>'string')\r\n    OR length(response) NOT BETWEEN 1 AND 10000 THEN\r\n    RAISE EXCEPTION 'Revisá la respuesta y el documento final.' USING ERRCODE='22023';\r\n  END IF;\r\n  SELECT * INTO complaint FROM public.quejas WHERE id=p_queja_id FOR UPDATE;\r\n  IF complaint.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada.' USING ERRCODE='P0002'; END IF;\r\n  IF p_expected_revision IS NULL OR complaint.revision IS DISTINCT FROM p_expected_revision THEN\r\n    RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE='40001';\r\n  END IF;\r\n  SELECT * INTO document FROM public.queja_adjuntos WHERE id=p_adjunto_id FOR UPDATE;\r\n  IF document.id IS NULL OR document.queja_id IS DISTINCT FROM p_queja_id\r\n    OR document.usuario_id IS NULL OR document.storage_path !~ '^[A-Za-z0-9_-]{10,200}$'\r\n    OR char_length(btrim(coalesce(document.nombre,''))) NOT BETWEEN 1 AND 255\r\n    OR document.nombre ~ '[[:cntrl:]/\\\\]'\r\n    OR document.tamano IS NULL OR document.tamano NOT BETWEEN 1 AND 4194304\r\n    OR char_length(coalesce(document.tipo_mime,'')) NOT BETWEEN 3 AND 127\r\n    OR document.tipo_mime !~ '^[A-Za-z0-9][A-Za-z0-9.+_-]*/[A-Za-z0-9][A-Za-z0-9.+_-]*$' THEN\r\n    RAISE EXCEPTION 'Seleccioná el oficio adjunto de este expediente.' USING ERRCODE='22023';\r\n  END IF;\r\n  IF EXISTS (SELECT 1 FROM public.queja_attachment_deletions WHERE adjunto_id=p_adjunto_id) THEN\r\n    RAISE EXCEPTION 'El archivo tiene una eliminación pendiente.' USING ERRCODE='55000';\r\n  END IF;\r\n  -- Publicación antes de la transición: el trigger encola una referencia coherente.\r\n  -- Cualquier fallo de CAS/estado/oficio revierte ambas escrituras en esta transacción.\r\n  INSERT INTO public.queja_public_resolutions(queja_id,respuesta,adjunto_id,publicado_por,\r\n    investigation_run_id,source_revision,publication_txid)\r\n    VALUES(p_queja_id,response,p_adjunto_id,actor,(SELECT last.id FROM public.qms_stage_runs last\r\n      WHERE last.case_id=p_queja_id AND last.stage_id='quejas.investigation' ORDER BY last.started_at DESC,last.id DESC LIMIT 1),\r\n      p_expected_revision,txid_current())\r\n    ON CONFLICT(queja_id) DO UPDATE\r\n    SET respuesta=excluded.respuesta,adjunto_id=excluded.adjunto_id,\r\n      publicado_por=excluded.publicado_por,publicado_at=now(),investigation_run_id=excluded.investigation_run_id,\r\n      source_revision=excluded.source_revision,publication_txid=excluded.publication_txid;\r\n  result:=public.qms_transition_complaint(p_queja_id,p_expected_revision,p_estado,\r\n    coalesce(nullif(p_detalles->>'resolution',''),response),NULL,NULL,NULL,\r\n    p_detalles->>'office_number',coalesce(p_detalles->>'resolution_format','plain'),NULL);\r\n  INSERT INTO public.logs(fecha,usuario_id,accion,modulo,detalle)\r\n    VALUES(now(),actor,'publicar','quejas','Respuesta y oficio publicados para '||complaint.folio);\r\n  RETURN result;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "kind": "policy",
+      "name": "response_drafts_staff_read",
+      "detail": "{authenticated} SELECT (( SELECT app_es_admin() AS app_es_admin) OR (( SELECT app_es_staff() AS app_es_staff) AND ( SELECT app_tiene_permiso('quejas'::text, false) AS app_tiene_permiso))) "
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "INSERT"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "SELECT"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "UPDATE"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "DELETE"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "TRUNCATE"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "REFERENCES"
+    },
+    {
+      "kind": "grant",
+      "name": "postgres",
+      "detail": "TRIGGER"
+    },
+    {
+      "kind": "grant",
+      "name": "authenticated",
+      "detail": "SELECT"
+    },
+    {
+      "kind": "grant",
+      "name": "service_role",
+      "detail": "SELECT"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_actualizado_por_fkey",
+      "detail": "FOREIGN KEY (actualizado_por) REFERENCES usuarios(id) ON DELETE RESTRICT"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_numero_oficio_check",
+      "detail": "CHECK (((length(numero_oficio) <= 120) AND (numero_oficio !~ '[[:cntrl:]]'::text)))"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_pkey",
+      "detail": "PRIMARY KEY (queja_id)"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_queja_id_fkey",
+      "detail": "FOREIGN KEY (queja_id) REFERENCES quejas(id) ON DELETE RESTRICT"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_respuesta_check",
+      "detail": "CHECK ((length(respuesta) <= 10000))"
+    },
+    {
+      "kind": "constraint",
+      "name": "queja_response_drafts_version_check",
+      "detail": "CHECK ((version > 0))"
+    },
+    {
+      "kind": "constraint",
+      "name": "response_draft_email_check",
+      "detail": "CHECK ((((correo_asunto IS NULL) AND (correo_cuerpo IS NULL)) OR ((correo_asunto IS NOT NULL) AND (correo_cuerpo IS NOT NULL) AND ((length(correo_asunto) + length(regexp_replace(correo_asunto, '[\u0001-￿]'::text, ''::text, 'g'::text))) <= 180) AND ((length(correo_cuerpo) + length(regexp_replace(correo_cuerpo, '[\u0001-￿]'::text, ''::text, 'g'::text))) <= 3500) AND (correo_asunto !~ '[[:cntrl:]]'::text) AND (regexp_replace(correo_cuerpo, '[\t\n\r]'::text, ''::text, 'g'::text) !~ '[[:cntrl:]]'::text))))"
+    }
+  ]
+}

@@ -52,7 +52,7 @@ export default function AuditoriasPage() {
                 <TableCell><span className="font-mono text-xs">{a.folio || '-'}</span></TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{a.tipo}</TableCell>
                 <TableCell className="font-medium text-gray-900 dark:text-white">{a.objetivo || '-'}</TableCell>
-                <TableCell><Badge variant={estadoAuditoriaVariant[a.estado] || 'gray'}>{a.estado}</Badge></TableCell>
+                <TableCell><Badge variant={estadoAuditoriaVariant[a.estado] || 'neutral'}>{a.estado}</Badge></TableCell>
                 <TableCell>
 <Button size="sm" variant="ghost" onClick={() => setHallazgosOpen(a)}>
                       <ListChecks className="h-3.5 w-3.5" />
@@ -80,7 +80,7 @@ export default function AuditoriasPage() {
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{h.descripcion}</p>
                     <Badge variant={h.tipo === 'No Conformidad' ? 'red' : h.tipo === 'Observacion' ? 'amber' : 'blue'}>{h.tipo}</Badge>
                   </div>
-                  {h.derivado_sacp_id && <Badge variant="blue">Derivado a SACP</Badge>}
+                  {h.derivado_sacp_id && <Badge variant="neutral">Derivado a SACP</Badge>}
                 </div>
               </div>
             ))

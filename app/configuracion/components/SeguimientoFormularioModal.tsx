@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Copy, ExternalLink } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Field from '@/components/ui/Field'
@@ -9,7 +9,6 @@ import Input from '@/components/ui/Input'
 import type { FormularioPublico } from '@/lib/queries/useFormulariosPublicos'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { obtenerEnlaceSeguimientoPrivado } from '@/lib/services/publicTrackingAdminClient'
-import { showError, showSuccess } from '@/lib/services/errorToast'
 import { getUserError } from '@/lib/errors/userError'
 
 interface Props {
@@ -51,16 +50,6 @@ export default function SeguimientoFormularioModal({ formulario, enabled, checki
       operation.finish()
     }
   }
-  const copiar = async () => {
-    if (!url) return
-    const isCurrent = scope.capture(), currentContext = scope.captureContext()
-    try {
-      await navigator.clipboard.writeText(url)
-      if (isCurrent() && currentContext()) showSuccess('Enlace privado copiado')
-    } catch {
-      if (isCurrent() && currentContext()) showError(null, 'No se pudo copiar. Seleccioná el enlace para copiarlo manualmente.')
-    }
-  }
   return <Modal open onClose={close} title="Seguimiento de formulario" size="md">
     <div className="space-y-5">
       <div><p className="text-base font-medium text-qms-dark">{formulario.nombre}</p><p className="mt-1 text-sm leading-relaxed text-qms-muted">Consultá un envío finalizado de este formulario. Cada expediente usa un enlace privado; el consecutivo por sí solo no permite acceder.</p></div>
@@ -76,7 +65,7 @@ export default function SeguimientoFormularioModal({ formulario, enabled, checki
         <div className="flex justify-end"><Button type="submit" loading={busy} loadingLabel="Obteniendo enlace privado…" disabled={!enabled || !folio.trim() || checking || unavailable}>Obtener enlace privado</Button></div>
       </form>
       {error && <p role="alert" className="text-sm text-qms-danger">{error}</p>}
-      {enabled && url && <section className="ui-panel space-y-3 p-4"><Field id="seguimiento-enlace-privado" label="Enlace privado del expediente"><Input id="seguimiento-enlace-privado" readOnly value={url} autoComplete="off" className="text-sm" /></Field><p className="text-xs leading-relaxed text-qms-muted">Tratalo como privado. Compartilo únicamente con la persona autorizada para consultar este trámite.</p><div className="flex flex-wrap gap-2"><Button size="sm" variant="secondary" onClick={() => void copiar()}><Copy className="size-4" aria-hidden="true" />Copiar enlace privado</Button><a className="ui-button ui-button-secondary ui-button-sm" href={url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><ExternalLink className="size-4" aria-hidden="true" />Abrir seguimiento privado</a></div></section>}
+      {enabled && url && <section className="ui-panel space-y-3 p-4"><Field id="seguimiento-enlace-privado" label="Enlace privado del expediente"><Input id="seguimiento-enlace-privado" readOnly value={url} autoComplete="off" className="text-sm" /></Field><p className="text-xs leading-relaxed text-qms-muted">Tratalo como privado. Compartilo únicamente con la persona autorizada para consultar este trámite.</p><a className="ui-button ui-button-secondary ui-button-sm" href={url} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer"><ExternalLink className="size-4" aria-hidden="true" />Abrir seguimiento privado</a></section>}
     </div>
   </Modal>
 }

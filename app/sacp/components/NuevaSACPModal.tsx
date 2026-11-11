@@ -5,11 +5,10 @@ import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import { supabase } from '@/lib/supabase'
-import { generarFolio } from '@/lib/services/folioService'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { getUserError } from '@/lib/errors/userError'
 import { logger } from '@/lib/utils/logger'
-import { trimTextFields, requireOption, validateDate, requireText } from '@/lib/utils/operationalFormValidation'
+import { trimTextFields, requireOption, validateDate } from '@/lib/utils/operationalFormValidation'
 
 interface Props {
   open: boolean
@@ -38,10 +37,9 @@ export default function NuevaSACPModal({ open, onClose, onCreated }: Props) {
       const values = trimTextFields(form)
       requireOption(values.tipo, ['Correctiva', 'Preventiva', 'Mejora'], 'Tipo')
       validateDate(values.fecha_limite, 'Fecha Límite')
-      const folio = values.folio || await generarFolio('sacp')
-      requireText(folio, 'Folio')
       const { error } = await supabase.from('acciones').insert([{
-        folio,
+        // La DB asigna el consecutivo dentro del alta, sin una reserva previa.
+        ...(values.folio ? { folio: values.folio } : {}),
         tipo: values.tipo,
         descripcion: values.descripcion,
         fecha_limite: values.fecha_limite || null,

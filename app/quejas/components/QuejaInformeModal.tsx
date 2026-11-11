@@ -26,6 +26,7 @@ interface Props {
   anexos: readonly { nombre: string }[]
   autor: string
   onClose: () => void
+  onSaved?: (informe: QuejaInforme) => void
 }
 
 function InformeIcono() {
@@ -179,6 +180,7 @@ function InformeEditor({
   anexos,
   autor,
   onClose,
+  onSaved,
   inicial,
 }: Props & {
   inicial: QuejaInforme | null
@@ -278,6 +280,7 @@ function InformeEditor({
       if (operation.isCurrent()) {
         setContenidoBase(result.contenido)
         setGuardado(result)
+        onSaved?.(result)
 
         setAviso(
           `Versión ${result.version} guardada en el expediente.`

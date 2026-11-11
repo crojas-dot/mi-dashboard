@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-10",
+  "project": "fykhrrpeoehwqznccmfp",
+  "request": "Final email with durable physical report attachment; tracking only on receipt",
+  "mailer": {
+    "scriptId": "1mdreXAbphKBlywtngtk68z-jMhFslwEg9ClljGycJY6cQbMEkagbbkkh",
+    "changedFunctions": [
+      "qmsMailDeliver_",
+      "qmsMailAuthorizeInternal_",
+      "qmsMailPollDirect_",
+      "qmsMailHtml_"
+    ],
+    "beforeHash": "5824edeae5ecab4fea6cb7c4c0f0b88c97a6b4278ffda841a6b5f59f541333a3",
+    "afterHash": "b8cbc7295e0be401b3dd5b3acc7904b4877d27b6fd72742eddf619842e8602d3",
+    "manifestUnchanged": true,
+    "otherFilesUnchanged": true,
+    "mailSent": false,
+    "saved": true,
+    "verified": true
+  },
+  "edge": {
+    "beforeVersion": 14,
+    "version": 15,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "exactSource": true
+  },
+  "outbox": {
+    "before": [
+      {
+        "status": "sent",
+        "total": 7
+      }
+    ],
+    "after": [
+      {
+        "status": "sent",
+        "total": 7
+      }
+    ]
+  },
+  "verification": {
+    "focusedNode": 106,
+    "bundledEdge": 55,
+    "typescript": true,
+    "focusedLint": true,
+    "realTestEmails": 0,
+    "manualPolls": 0,
+    "historicalResends": 0
+  },
+  "policy": {
+    "receiptTracking": true,
+    "finalTracking": false,
+    "finalPhysicalAttachmentRequired": true,
+    "downloadBeforeAttempting": true,
+    "retryOnMissingDocument": true,
+    "unchangedPermissions": true,
+    "unchangedPublicTrackingExpiry": true
+  },
+  "webDeployment": "Local web change only; no Vercel deployment",
+  "artifacts": ".performance/final-mail-20261110/"
+}

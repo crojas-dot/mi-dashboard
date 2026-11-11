@@ -39,6 +39,24 @@ test('borrador permite campos incompletos y usa versión independiente sin trans
   assert.equal(calls.length, 1)
 })
 
+test('No Procede guarda motivo/formato y publica con la misma revisión sin cerrar antes', async () => {
+  const { service, calls } = serviceFixture()
+  const values = { ...input, correo: { asunto: 'Respuesta - Folio 2026-001', cuerpo: 'Estimada Ana: consulte su informe adjunto. gc@eca.or.cr' }, noProcede: { justificacion: '**No corresponde al ámbito de ECA.**', formato: 'markdown' } }
+  await service.guardarRespuestaClienteBorrador(snapshot, 3, values)
+  assert.equal(calls[0].name, 'qms_save_rejected_response_draft')
+  assert.equal(calls[0].args.p_reason, values.noProcede.justificacion)
+  assert.equal(calls[0].args.p_reason_format, 'markdown')
+  await service.publicarRespuestaAprobada(snapshot, 3, values, file)
+  assert.equal(calls[1].name, 'qms_publish_rejected_response')
+  assert.equal(calls[1].args.p_expected, 17)
+  assert.equal(calls[1].args.p_version, 3)
+  assert.equal(calls[1].args.p_file, file.id)
+  assert.equal(calls[1].args.p_email_body, values.correo.cuerpo)
+  assert.equal(calls.length, 2)
+  assert.throws(() => service.publicarRespuestaAprobada(snapshot, 3, { ...values, noProcede: { justificacion: '', formato: 'plain' } }, file), /justificación/)
+  assert.equal(calls.length, 2)
+})
+
 test('publicación aprobada valida oficio propio y solo proyecta respuesta explícita', async () => {
   const { service, calls } = serviceFixture()
   for (const [patch, attachment] of [[{ respuesta: '' }, file], [{ numeroOficio: '' }, file], [{}, null],
@@ -63,6 +81,27 @@ test('conflictos de borrador/publicación/revisión se conservan sin rebase ni r
     assert.equal(calls.length, 1)
     assert.equal(calls[0].args.p_expected, 17)
   }
+})
+
+test('correo editable usa RPC versionado sin sustituir respuesta pública, destinatario ni revisión', async () => {
+  const { service, calls } = serviceFixture()
+  const correo = { asunto: ' Respuesta personal ', cuerpo: ' Estimada Ana:\n\nConsulte el informe adjunto. ' }
+  await service.guardarRespuestaClienteBorrador(snapshot, 2, { ...input, correo })
+  await service.publicarRespuestaAprobada({ ...snapshot, resolucion: 'INFORME INTERNO' }, 2, { ...input, correo }, file)
+  assert.equal(calls[0].name, 'qms_save_response_draft_v2')
+  assert.equal(calls[1].name, 'qms_publish_approved_response_v2')
+  for (const call of calls) {
+    assert.equal(call.args.p_expected, 17)
+    assert.equal(call.args.p_version, 2)
+    assert.equal(call.args.p_response, 'Respuesta pública')
+    assert.equal(call.args.p_email_subject, 'Respuesta personal')
+    assert.equal(call.args.p_email_body, correo.cuerpo.trim())
+    assert.equal(call.args.p_file, file.id)
+    assert.equal(JSON.stringify(call.args).includes('INFORME INTERNO'), false)
+    assert.equal(Object.hasOwn(call.args, 'destinatario'), false)
+  }
+  for (const invalid of [{ asunto: 'Bcc:\notro', cuerpo: 'Texto' }, { asunto: '', cuerpo: '' }, { asunto: 'Hola', cuerpo: 'x'.repeat(3501) }]) assert.throws(() => service.publicarRespuestaAprobada(snapshot, 2, { ...input, correo: invalid }, file))
+  assert.equal(calls.length, 2)
 })
 
 test('contexto obtiene borrador/aprobación/publicación por expediente, con cancelación y errores cerrados', async () => {

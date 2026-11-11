@@ -17,7 +17,7 @@ function receipt(input) {
   return { folio: 'Q-SYNTHETIC-001', quejaId: 'synthetic-case', uploadToken: CAPABILITY, submissionId: input.submissionId, expiresAt: new Date(Date.now() + 1800000).toISOString() }
 }
 function client(fetch) {
-  return loadModule('lib/services/publicQuejasClient.ts', {}, { fetch, crypto: webcrypto })
+  return loadModule('lib/services/publicQuejasClient.ts', {}, { fetch, crypto: webcrypto, TypeError })
 }
 function storageShim() {
   const entries = new Map()
@@ -183,6 +183,7 @@ test('folio se publica antes de terminar uploads; fallidos reintentan su mismo I
   let uploads = 0
   const harness = hookHarness((call) => {
     if (call.url === '/api/drive/upload-public' && ++uploads === 1) return pendingUpload.promise
+    if (call.url === '/api/drive/upload-public' && uploads === 2) return response({}, 502)
     return ordinaryHandler(call)
   })
   harness.fill()
@@ -198,14 +199,74 @@ test('folio se publica antes de terminar uploads; fallidos reintentan su mismo I
   await attempt
   harness.render()
   assert.equal(harness.form.archivos[0].status, 'fallido')
-  assert.equal(harness.form.finalized, true)
+  assert.equal(harness.form.finalized, false)
+  assert.equal(harness.calls.some(call => call.url.endsWith('/finalizar')), false)
   await harness.form.retryPending()
   harness.render()
   assert.equal(harness.form.archivos[0].status, 'subido')
   const requests = harness.calls.filter((call) => call.url === '/api/drive/upload-public')
-  assert.equal(requests[0].options.body.get('uploadId'), requests[1].options.body.get('uploadId'))
+  assert.equal(requests.length, 3)
+  assert.equal(new Set(requests.map(call => call.options.body.get('uploadId'))).size, 1)
   assert.equal(harness.calls.filter((call) => call.url === '/api/public/quejas').length, 1)
   assert.equal(harness.calls.filter((call) => call.url.endsWith('/finalizar')).length, 1)
+})
+
+test('un fallo temporal de evidencia se recupera automáticamente con el mismo archivo e ID', async () => {
+  for (const failure of ['network', 502, 503, 504]) {
+    const calls = []
+    const api = client(async (url, options) => {
+      calls.push({ url, options })
+      if (calls.length === 1) {
+        if (failure === 'network') throw new TypeError('Synthetic lost response')
+        return response({ code: 'public_service_unavailable' }, failure)
+      }
+      return response({ drive_file_id: 'synthetic-file', queja_id: 'synthetic-case', idempotent: true })
+    })
+    const file = attachment()
+    await api.subirAdjuntoPublico(file, CAPABILITY, 'same-upload-id')
+    assert.equal(calls.length, 2)
+    assert.equal(calls[0].options.body, calls[1].options.body)
+    assert.equal(calls[1].options.body.get('uploadId'), 'same-upload-id')
+    assert.equal(calls[1].options.body.get('file'), file)
+  }
+})
+
+test('errores de formato, cuota, capacidad o privacidad no se reintentan automáticamente', async () => {
+  for (const [status, code] of [[400,'invalid_public_request'],[403,'invalid_upload_capability'],[409,'public_upload_pending'],[410,'upload_capability_expired'],[413,'public_file_too_large'],[415,'unsupported_public_file'],[429,'public_rate_limited'],[503,'public_storage_not_private'],[503,'public_storage_unavailable']]) {
+    let calls = 0
+    const api = client(async () => { calls++; return response({ code }, status) })
+    await assert.rejects(api.subirAdjuntoPublico(attachment(), CAPABILITY, 'same-id'))
+    assert.equal(calls, 1, code)
+  }
+})
+
+test('cancelar durante el reintento de evidencia evita la segunda petición', async () => {
+  let calls = 0
+  const api = client(async () => { calls++; return response({}, 503) })
+  const controller = new AbortController()
+  const pending = api.subirAdjuntoPublico(attachment(), CAPABILITY, 'same-id', controller.signal)
+  await new Promise(resolve => setTimeout(resolve, 20))
+  controller.abort()
+  await assert.rejects(pending, error => error.name === 'AbortError')
+  assert.equal(calls, 1)
+})
+
+test('diez evidencias se confirman antes de finalizar aunque una requiera reintento temporal', async () => {
+  let uploads = 0
+  const harness = hookHarness(call => {
+    if (call.url === '/api/drive/upload-public' && ++uploads === 5) return response({}, 503)
+    if (call.url.endsWith('/finalizar')) assert.equal(uploads, 11)
+    return ordinaryHandler(call)
+  })
+  harness.fill(); harness.form.agregarArchivos(Array.from({ length: 10 }, (_, index) => attachment('evidencia-' + index + '.pdf'))); harness.render()
+  await harness.form.submit(); harness.render()
+  assert.equal(harness.form.archivos.length, 10)
+  assert.equal(harness.form.archivos.filter(file => file.status === 'subido').length, 10)
+  assert.equal(harness.form.finalized, true)
+  assert.equal(harness.calls.filter(call => call.url === '/api/public/quejas').length, 1)
+  assert.equal(harness.calls.filter(call => call.url.endsWith('/finalizar')).length, 1)
+  const requests = harness.calls.filter(call => call.url === '/api/drive/upload-public')
+  assert.equal(new Set(requests.map(call => call.options.body.get('uploadId'))).size, 10)
 })
 
 test('fallo de finalizar conserva folio y reintenta únicamente finalización', async () => {
@@ -330,10 +391,11 @@ function textContent(element) {
 }
 function pageHarness(query, form = {}) {
   let token = TOKEN
-  const effects = [], focusCalls = []
+  const effects = [], focusCalls = [], toasts = []
   const api = client(() => { throw new Error('La vista no debe llamar red directamente') })
   const { default: Page } = loadModule('app/q/[token]/page.tsx', {
     react: { useRef: value => ({ current: value }), useEffect: effect => effects.push(effect) },
+    sonner: { toast: { error: (message, options) => toasts.push({ message, options }) } },
     'next/navigation': { useParams: () => ({ token }) },
     '@/lib/queries/useFormularioPublico': { useFormularioPublico: () => query },
     '@/app/q/components/usePublicQuejaForm': { usePublicQuejaForm: () => ({ archivos: [], draft: DRAFT, ...form }) },
@@ -346,10 +408,12 @@ function pageHarness(query, form = {}) {
     '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
     'lucide-react': { X: 'X', Upload: 'Upload', CircleCheck: 'CircleCheck' },
   }, { document: { getElementById: id => ({
+    setCustomValidity: message => focusCalls.push({ action: 'validity', id, message }),
     focus: options => focusCalls.push({ action: 'focus', id, options }),
     scrollIntoView: options => focusCalls.push({ action: 'scroll', id, options }),
+    reportValidity: () => focusCalls.push({ action: 'report', id }),
   }) } })
-  return { api, query, Page, focusCalls, setToken(next) { token = next }, render() {
+  return { api, query, Page, focusCalls, toasts, setToken(next) { token = next }, render() {
     const root = Page()
     const rendered = root.type(root.props)
     for (const effect of effects.splice(0)) effect()
@@ -376,6 +440,19 @@ function elementsOfType(element, type) {
   if (element == null || typeof element !== 'object') return [];
   if (Array.isArray(element)) return element.flatMap(child => elementsOfType(child, type));
   return [...(element.type === type ? [element] : []), ...elementsOfType(element.props?.children, type)];
+}
+
+function findElement(element, predicate) {
+  if (element == null || typeof element !== 'object') return null
+  if (Array.isArray(element)) {
+    for (const child of element) {
+      const hit = findElement(child, predicate)
+      if (hit) return hit
+    }
+    return null
+  }
+  if (predicate(element)) return element
+  return findElement(element.props?.children, predicate)
 }
 
 for (const scenario of [
@@ -409,7 +486,7 @@ test('todos los adjuntos y la finalización confirmados muestran la tarjeta fina
   assert.match(textContent(rendered), /Q-SYNTHETIC-001/);
   assert.match(textContent(rendered), /Evidencias adjuntadas:\s+1\s+de\s+1/);
   assert.match(textContent(rendered), /Gestión de Calidad revisará tu queja/);
-  assert.match(textContent(rendered), /El correo de confirmación puede tardar unos minutos/);
+  assert.match(textContent(rendered), /Recibirás la confirmación en el correo electrónico indicado/);
   assert.doesNotMatch(textContent(rendered), /Registro de queja|Reintentar|Subiendo|Envío completado|correo enviado/i);
 });
 
@@ -538,8 +615,9 @@ test('validación local identifica el campo antes de red y permite corregir cons
 })
 
 test('la vista enfoca el campo inválido y conserva su vínculo accesible al mensaje', () => {
+  const fieldMessage = 'Ingresá un correo electrónico válido, de hasta 254 caracteres y sin comas ni punto y coma.'
   const view = pageHarness({ data: { nombre: 'Formulario sintético', uploadsAllowed: true } }, {
-    invalidField: { field: 'email' }, error: 'Ingresá un correo electrónico válido.', enviando: false, confirmationPending: false,
+    invalidField: { field: 'email' }, error: fieldMessage, enviando: false, confirmationPending: false,
   })
   const rendered = view.render()
   assert.equal(elementsOfType(rendered, 'form')[0].props.noValidate, true)
@@ -547,12 +625,22 @@ test('la vista enfoca el campo inválido y conserva su vínculo accesible al men
   assert.equal(input.props['aria-invalid'], true)
   assert.equal(input.props['aria-describedby'], 'public-email-error')
   assert.equal(input.props.disabled, false)
-  assert.equal(view.focusCalls.length, 2)
-  assert.equal(view.focusCalls[0].action, 'focus')
+  assert.equal(view.focusCalls.length, 4)
+  assert.equal(view.focusCalls[0].action, 'validity')
+  assert.equal(view.focusCalls[0].message, 'Ingresá un correo electrónico válido.')
   assert.equal(view.focusCalls[0].id, 'public-email')
-  assert.equal(view.focusCalls[0].options.preventScroll, true)
-  assert.equal(view.focusCalls[1].action, 'scroll')
-  assert.equal(view.focusCalls[1].options.block, 'nearest')
+  assert.equal(view.focusCalls[1].action, 'focus')
+  assert.equal(view.focusCalls[1].options.preventScroll, true)
+  assert.equal(view.focusCalls[2].action, 'scroll')
+  assert.equal(view.focusCalls[2].options.block, 'nearest')
+  assert.equal(view.focusCalls[3].action, 'report')
+  // El navegador no dibuja nada bajo el campo: el usuario ve un aviso flotante breve.
+  const publicField = findElement(rendered, element => typeof element.type === 'function' && element.props?.field === 'email')
+  const inline = elementsOfType(publicField.type(publicField.props), 'p').find(element => element.props.id === 'public-email-error')
+  assert.equal(inline.props.className, 'sr-only')
+  assert.equal(textContent(inline), fieldMessage)
+  assert.equal(view.toasts.length, 0)
+  assert.equal(elementsOfType(rendered, 'p').filter(element => element.props.role === 'alert').length, 0)
   for (const state of [{ enviando: true }, { confirmationPending: true }]) {
     const locked = pageHarness({ data: { nombre: 'Formulario sintético', uploadsAllowed: true } }, {
       invalidField: { field: 'email' }, error: 'Correo inválido.', ...state,
@@ -560,7 +648,34 @@ test('la vista enfoca el campo inválido y conserva su vínculo accesible al men
     const lockedInput = elementsOfType(locked.render(), 'Input').find(element => element.props.id === 'public-email')
     assert.equal(lockedInput.props.disabled, true)
     assert.equal(locked.focusCalls.length, 0)
+    assert.equal(locked.toasts.length, 0)
   }
+})
+
+test('un error operativo permanece en el pie, sin aviso flotante ni vínculo de campo', () => {
+  const message = 'No se pudo completar el envío. Reintentá el mismo envío sin crear otra queja.'
+  const view = pageHarness({ data: { nombre: 'Formulario sintético', uploadsAllowed: true } }, {
+    invalidField: null, error: message, enviando: false, confirmationPending: false,
+  })
+  const rendered = view.render()
+  assert.equal(view.toasts.length, 0)
+  const alert = elementsOfType(rendered, 'p').find(element => element.props.role === 'alert')
+  assert.ok(alert)
+  assert.equal(textContent(alert), message)
+  const input = elementsOfType(rendered, 'Input').find(element => element.props.id === 'public-email')
+  assert.equal(input.props['aria-invalid'], false)
+  assert.equal(input.props['aria-describedby'], undefined)
+})
+
+test('el fallo de evidencia permanece visible en el pie aunque su fila quede fuera del scroll', () => {
+  const message = 'El archivo no pudo validarse.'
+  const view = pageHarness({ data: { nombre: 'Formulario sintético', uploadsAllowed: true } }, {
+    receipt: receipt({ submissionId: 'synthetic-submission' }), finalized: false, error: '',
+    archivos: [{ uploadId: 'synthetic', file: attachment(), status: 'fallido', error: message }],
+  })
+  const alert = elementsOfType(view.render(), 'p').find(element => element.props.role === 'alert')
+  assert.equal(textContent(alert), message)
+  assert.equal(view.toasts.length, 0)
 })
 
 test('seguimiento pendiente se recupera sin recrear queja ni subir otra vez los adjuntos', async () => {

@@ -97,7 +97,7 @@ function TareasPendientesBlock() {
                   <TableRow key={t.id}>
                     <TableCell className="font-medium">{t.titulo}</TableCell>
                     <TableCell><span className="text-qms-muted">{t.tipo}</span></TableCell>
-                    <TableCell><Badge variant={t.entidad === 'Quejas' ? varianteEstado('quejas', t.estado) : t.entidad === 'SACP' ? varianteEstado('sacp', t.estado) : 'gray'}>{t.estado}</Badge></TableCell>
+                    <TableCell><Badge variant={t.entidad === 'Quejas' ? varianteEstado('quejas', t.estado) : t.entidad === 'SACP' ? varianteEstado('sacp', t.estado) : 'neutral'}>{t.estado}</Badge></TableCell>
                     <TableCell className="text-qms-muted">{t.vence ? new Date(t.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'}</TableCell>
                   </TableRow>
                 ))

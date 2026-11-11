@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { Check, ChevronDown, MapPin } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import AreaAfectada, { AreaAfectadaFrame } from '@/components/quejas/AreaAfectada'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import type { RegistroQuejaInput } from '@/lib/services/quejaWorkflowService'
 
@@ -106,11 +107,11 @@ export default function AreaQuejaControl({ quejaId, area, draft, onEdit, onSave,
   // Un área histórica sigue visible aunque ya no se ofrezca para otras quejas.
   if (area && !options.includes(area)) options.unshift(area)
   const display = area || 'Seleccionar área afectada'
-  return <div className="relative flex w-[250px] min-w-0 max-w-full shrink-0 flex-col gap-0.5">
-    <span className="px-1.5 text-xs font-medium text-qms-muted">Área afectada</span>
-    {onEdit ? <Button ref={buttonRef} id={id} size="sm" variant="ghost" disabled={disabled || saving} onClick={() => editing ? cancel() : onEdit()} aria-label={`Área afectada: ${area || 'Sin indicar'}`} aria-haspopup="dialog" aria-expanded={editing} aria-controls={editing ? `${id}-popup` : undefined} title={`Área afectada: ${area || 'Sin indicar'}`} className="w-full min-w-0 justify-start gap-1.5 px-1.5 text-left text-qms-muted">
+  if (!onEdit) return <AreaAfectada area={area} />
+  return <AreaAfectadaFrame>
+    <Button ref={buttonRef} id={id} size="sm" variant="ghost" disabled={disabled || saving} onClick={() => editing ? cancel() : onEdit()} aria-label={`Área afectada: ${area || 'Sin indicar'}`} aria-haspopup="dialog" aria-expanded={editing} aria-controls={editing ? `${id}-popup` : undefined} title={`Área afectada: ${area || 'Sin indicar'}`} className="w-full min-w-0 justify-start gap-1.5 px-1.5 text-left text-qms-muted">
       {saving ? <Spinner size="sm" /> : <MapPin aria-hidden="true" className="size-3.5 shrink-0" />}<span className={`min-w-0 flex-1 ${area ? 'truncate' : 'whitespace-normal'}`}>{saving ? 'Guardando área…' : display}</span><ChevronDown aria-hidden="true" className="size-3.5 shrink-0" />
-    </Button> : <span className="flex min-w-0 items-center gap-1.5 px-1.5 text-sm text-qms-muted" title={`Área afectada: ${area || 'Sin indicar'}`}><MapPin aria-hidden="true" className="size-3.5 shrink-0" /><span className="min-w-0 break-words">{display}</span></span>}
+    </Button>
     {editing && <div ref={popupRef} id={`${id}-popup`} role="dialog" aria-label="Seleccionar área afectada" aria-busy={saving} data-area-queja-control className="fixed z-[70] m-0 overflow-y-auto overscroll-contain rounded-card border border-qms-border bg-qms-surface p-1.5 text-qms-dark shadow-lg" style={{ inset: 'auto' }}>
       <p className="px-2.5 py-2 text-xs font-medium text-qms-muted">Área afectada</p>
       {isLoading && <p role="status" className="px-2.5 py-2 text-sm text-qms-muted">Cargando áreas…</p>}
@@ -119,5 +120,5 @@ export default function AreaQuejaControl({ quejaId, area, draft, onEdit, onSave,
         {!isLoading && !options.length && <p className="px-2.5 py-2 text-xs text-qms-muted">Todavía no hay áreas en el catálogo.</p>}
       </div>}
     </div>}
-  </div>
+  </AreaAfectadaFrame>
 }

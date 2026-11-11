@@ -464,7 +464,8 @@ test('el expediente ampliado con solicitud en lateral deja el avance en la líne
   assert.match(html, /data-case-cycle-label[^>]*>Estado del trámite<\/div>/)
   // La solicitud se presenta en el lateral izquierdo y el documento ocupa el centro.
   assert.match(html, /data-case-request/)
-  assert.match(html, /Datos de la solicitud/)
+  assert.match(html, /Persona de prueba/)
+  assert.doesNotMatch(html, /Datos de la solicitud/)
   const sharedColumns = '@min-[1100px]:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(220px,240px)]'
   assert.equal(html.split(sharedColumns).length - 1, 2)
   assert.match(html, /data-case-layout[^>]*@min-\[1100px\]:pl-3/)
@@ -531,7 +532,9 @@ test('etiquetas del panel lateral de acciones se envuelven dentro de la columna'
     runs: [],
     variant: 'plain',
   }))
-  assert.equal((html.match(/max-w-full whitespace-normal justify-start text-left/g) || []).length, 2)
+  assert.equal((html.match(/max-w-full whitespace-normal justify-start text-left/g) || []).length, 1)
+  assert.match(html, /data-queja-deadline="true"[^>]*max-w-full/)
+  assert.match(html, /min-w-0 break-words">Sin plazo/)
 })
 
 test('la revisión documental puede ajustar su alto sin alterar los editores amplios', () => {

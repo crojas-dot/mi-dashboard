@@ -11,7 +11,7 @@ const fields = ['nombre', 'email', 'telefono', 'categoria', 'descripcion']
 const catchError = (action) => { try { action() } catch (error) { return error }; assert.fail('La validación debía rechazar los datos') }
 
 test('cliente y API aceptan el borrador normal de prueba y normalizan el mismo contenido', () => {
-  const draft = { ...DRAFT, nombre: '  Nombre sinte\u0301tico  ', email: ' Persona@Example.TEST ', telefono: ' 1234 ', descripcion: ' Primera línea\r\nSegunda línea\rTercera\tparte ' }
+  const draft = { ...DRAFT, nombre: '  Nombre sinte\u0301tico  ', email: ' Persona@Example.TEST ', telefono: ' 12345678 ', descripcion: ' Primera línea\r\nSegunda línea\rTercera\tparte ' }
   const clientDraft = client.validarBorradorPublico(draft)
   const serverDraft = server.validatePublicSubmission({ ...draft, ...ADMIN })
   for (const field of fields) assert.equal(clientDraft[field], serverDraft[field], field)
@@ -46,12 +46,35 @@ test('ambas capas rechazan los mismos correos y controles con código y campo pr
   }
 })
 
+test('nombre y teléfono rechazan formatos ajenos y texto invisible en cliente y API', () => {
+  for (const nombre of ['Persona 123', '12345', 'Persona <script>', 'Persona@example', 'Persona_sintética', 'Persona / Calidad', 'Persona{}']) {
+    assert.equal(catchError(() => client.validarBorradorPublico({ ...DRAFT, nombre })).field, 'nombre')
+    assert.equal(catchError(() => server.validatePublicSubmission({ ...DRAFT, ...ADMIN, nombre })).field, 'nombre')
+  }
+  for (const nombre of ['María José O’Connor', 'Jean-Luc Picard', 'J. R. de la Cruz']) {
+    assert.equal(client.validarBorradorPublico({ ...DRAFT, nombre }).nombre, nombre)
+    assert.equal(server.validatePublicSubmission({ ...DRAFT, ...ADMIN, nombre }).nombre, nombre)
+  }
+  for (const telefono of ['abc123456', '12345678a', '+506 8888-8888 ext 12', '<12345678>', '12345']) {
+    assert.equal(catchError(() => client.validarBorradorPublico({ ...DRAFT, telefono })).field, 'telefono')
+    assert.equal(catchError(() => server.validatePublicSubmission({ ...DRAFT, ...ADMIN, telefono })).field, 'telefono')
+  }
+  for (const telefono of ['+506 8888-8888', '(506) 2222-2222', '2222 2222']) {
+    assert.equal(client.validarBorradorPublico({ ...DRAFT, telefono }).telefono, telefono)
+    assert.equal(server.validatePublicSubmission({ ...DRAFT, ...ADMIN, telefono }).telefono, telefono)
+  }
+  for (const descripcion of ['Texto\u202eoculto', 'Texto\u200boculto', 'Texto\ufeffoculto']) {
+    assert.equal(catchError(() => client.validarBorradorPublico({ ...DRAFT, descripcion })).field, 'descripcion')
+    assert.equal(catchError(() => server.validatePublicSubmission({ ...DRAFT, ...ADMIN, descripcion })).field, 'descripcion')
+  }
+})
+
 test('cliente y API conservan límites exactos, cinco categorías y teléfono opcional', () => {
-  for (const [field, maximum] of [['nombre', 150], ['telefono', 40], ['descripcion', 10000]]) {
-    const accepted = { ...DRAFT, [field]: 'a'.repeat(maximum) }
+  for (const [field, maximum] of [['nombre', 50], ['telefono', 25], ['descripcion', 10000]]) {
+    const accepted = { ...DRAFT, [field]: (field === 'telefono' ? '1' : 'a').repeat(maximum) }
     assert.equal(client.validarBorradorPublico(accepted)[field].length, maximum)
     assert.equal(server.validatePublicSubmission({ ...accepted, ...ADMIN })[field].length, maximum)
-    const rejected = { ...DRAFT, [field]: 'a'.repeat(maximum + 1) }
+    const rejected = { ...DRAFT, [field]: (field === 'telefono' ? '1' : 'a').repeat(maximum + 1) }
     assert.equal(catchError(() => client.validarBorradorPublico(rejected)).field, field)
     assert.equal(catchError(() => server.validatePublicSubmission({ ...rejected, ...ADMIN })).field, field)
   }
@@ -96,6 +119,16 @@ test('solo los códigos permitidos de una respuesta de validación identifican c
   assert.equal(client.fieldFromPublicError(new client.PublicRequestError(503, 'invalid_public_email')), null)
   assert.equal(client.fieldFromPublicError({ field: 'email', code: 'invalid_public_email' }), null)
   assert.equal(client.fieldFromPublicError(new Error('invalid_public_email')), null)
+})
+
+test('cada campo tiene un aviso flotante breve distinto del mensaje completo', () => {
+  for (const field of fields) {
+    const short = core.publicQuejaFieldMessage(field)
+    const error = new core.PublicQuejaValidationError(field)
+    assert.equal(typeof short, 'string')
+    assert.ok(short.length > 0 && short.length < error.message.length)
+    assert.doesNotMatch(short, /diagnóstico|privado|</)
+  }
 })
 
 test('errores de tokens, IDs, antispam y campos administrativos no se atribuyen al ciudadano', () => {

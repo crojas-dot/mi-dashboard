@@ -1,5 +1,22 @@
 # Servicio independiente de correo de Quejas
 
+10 noviembre, despertador por evento: [contrato y activación](../../../docs/quejas-formulario-correo-inmediato-2026-11-10.md).
+Despliegue nuevo v5 activo, con autorización de ejecución Google y Drive verificadas;
+settings habilitados y recibo HMAC accepted. `queue_wake_setup_request` configura una clave
+dedicada mediante HMAC maestro, sin reclamar ni enviar mensajes. `queue_wake_request`
+lleva carga vacía y usa claim ciudadano, conservando leases/diario/ACK del poll.
+El activador de cinco minutos y el endpoint legacy archivado se conservan.
+El setup puede comprobar un eventId: solo devuelve absent/sent/uncertain, bajo lock,
+sin enviar ni exponer destinatarios. Permite recuperar un fallo previo al envío
+sin reabrir entregas anteriores o inciertas.
+
+Actualizado y verificado el 10 noviembre: los finales requieren el único informe publicado
+como adjunto físico, sin depender de `QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS`. Sin archivo
+válido no se llama a MailApp. El botón de seguimiento queda en el acuse; el final
+entrega los resultados en el Word/PDF adjunto. El HEAD del emisor y la Edge v15 están
+actualizados, con lectura posterior exacta; no se ejecutaron envíos de prueba ni
+se reenviaron históricos. Estado y evidencia en el contrato de revisión/respuesta.
+
 4 noviembre: adjunto oficial físico preparado con `QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS`.
 Usa el único documento publicado que devuelve Edge por HMAC con lease vigente.
 Requiere el manifiesto con `drive.readonly` y ejecutar una vez
@@ -31,8 +48,8 @@ Cambiar la apariencia no requiere ejecutar el poll ni recrear el activador.
 Para los enlaces, configurar `QMS_PUBLIC_TRACKING_ORIGIN` con el origen canónico
 permitido (`https://mi-dashboard-iota.vercel.app`). La firma dedicada vive solo en
 web/Edge: no copiarla a Apps Script ni utilizar el HMAC del mailer como sustituto.
-Con seguimiento habilitado, Edge usa claim v3; v2 y los eventos históricos sin
-snapshot conservan su contrato. El botón solo aparece cuando llega un enlace
+Edge usa claim v4, conservando v2/v3. Desde v15 el enlace solo se genera para el
+acuse de recibo. El botón solo aparece cuando llega un enlace
 válido; el script no lo inventa ni emite capacidades. Ver
 [configuración y evidencia del 19](../../../docs/correo-quejas-directo-2026-10-13.md#activación-coordinada-del-19-octubre).
 

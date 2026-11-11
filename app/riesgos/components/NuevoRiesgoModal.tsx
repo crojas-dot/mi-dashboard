@@ -8,11 +8,10 @@ import { nivelRiesgoVariant } from '@/lib/constants/estados'
 import { calcularNivelRiesgo } from '@/lib/utils/riesgos'
 import Select from '@/components/ui/Select'
 import { supabase } from '@/lib/supabase'
-import { generarFolio } from '@/lib/services/folioService'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { getUserError } from '@/lib/errors/userError'
 import { logger } from '@/lib/utils/logger'
-import { trimTextFields, requireOption, validateRiskScale, requireText } from '@/lib/utils/operationalFormValidation'
+import { trimTextFields, requireOption, validateRiskScale } from '@/lib/utils/operationalFormValidation'
 
 interface Props {
   open: boolean
@@ -44,10 +43,8 @@ export default function NuevoRiesgoModal({ open, onClose, onCreated }: Props) {
       requireOption(values.tipo, ['Riesgo Operativo', 'Riesgo Estratégico', 'Riesgo de Cumplimiento'], 'Tipo')
       validateRiskScale(values.probabilidad, 'Probabilidad')
       validateRiskScale(values.impacto, 'Impacto')
-      const folio = values.folio || await generarFolio('riesgo')
-      requireText(folio, 'Folio')
       const { error } = await supabase.from('riesgos').insert([{
-        folio,
+        ...(values.folio ? { folio: values.folio } : {}),
         tipo: values.tipo,
         categoria: values.categoria,
         descripcion: values.descripcion,

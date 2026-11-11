@@ -1,0 +1,91 @@
+{
+  "date": "2026-11-10",
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": "20261110165806_quejas_no_procede_correo.sql",
+  "database": {
+    "applied": true,
+    "staffCanSave": true,
+    "anonCanSave": false,
+    "machineCanPublish": false,
+    "draftRlsEnabled": true,
+    "newNullableFields": 2,
+    "backfill": false,
+    "preservedPoliciesAndExistingGrants": true,
+    "publicBridgesSecurityInvoker": true,
+    "caseRevisionAndDraftVersionRequired": true,
+    "rejectedPublicationAtomic": true
+  },
+  "advisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "count": 10
+    },
+    {
+      "name": "extension_in_public",
+      "count": 1
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "count": 6
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "count": 24
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "count": 1
+    }
+  ],
+  "edge": {
+    "beforeVersion": 15,
+    "version": 16,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "exactSource": true,
+    "citizenDefaultContact": "gc@eca.or.cr",
+    "editedEmailUnchanged": true,
+    "receiptTrackingOnly": true,
+    "finalPhysicalAttachmentRequired": true
+  },
+  "outboxPreflight": [
+    {
+      "type": "recibido",
+      "status": "sent",
+      "count": 16
+    },
+    {
+      "type": "final",
+      "status": "sent",
+      "count": 7
+    }
+  ],
+  "verification": {
+    "focusedNode": {
+      "pass": 145,
+      "total": 145
+    },
+    "isolatedPostgres": {
+      "pass": 124,
+      "total": 124
+    },
+    "browserChecks": 45,
+    "bundledEdgeChecks": 64,
+    "typescript": true,
+    "lint": true,
+    "build": true,
+    "structure": true,
+    "visual": true,
+    "additionalReportSelection": {
+      "pass": 106,
+      "total": 107,
+      "knownFailure": "Existing PDF test double lacks getTextWidth; implementation and test unchanged"
+    },
+    "testEmails": 0,
+    "businessTestWrites": 0,
+    "polls": 0,
+    "historicalResends": 0
+  },
+  "webDeployment": "Local; no Vercel deployment",
+  "artifacts": ".performance/quejas-refinamientos-20261110/"
+}

@@ -47,7 +47,7 @@ function fixture(options = {}) {
     const call = { url: String(target), ...init, args: init.body ? JSON.parse(init.body) : undefined }
     calls.push(call)
     if (options.transport) return options.transport(call)
-    return Response.json(target.endsWith('/qms_mail_claim_batch_v2') ? options.rows ?? [] : options.ack ?? true)
+    return Response.json(/\/qms_mail_claim_(?:batch_v4|urgent_batch)$/.test(target) ? options.rows ?? [] : options.ack ?? true)
   }
   const handler = queue.createQuejasMailQueueHandler({ env: key => { envReads.push(key); return environment[key] },
     fetcher, crypto: webcrypto, now: options.now ?? (() => clock) })
@@ -75,13 +75,27 @@ test('adjunto oficial opt-in solo sale del documento publicado tras autorizar el
     assert.equal(result.authorized, true)
     if (include) assert.deepEqual(result.officialDocument, { driveId: file.storage_path, name: file.nombre, mime: file.tipo_mime, size: file.tamano })
     else assert.equal(Object.hasOwn(result, 'officialDocument'), false)
-    assert.equal(f.calls.length, include ? 2 : 1)
+    assert.equal(f.calls.length, include ? 3 : 1)
+  }
+})
+
+test('despertador firmado selecciona solo el RPC ciudadano y conserva límite y nonce', async () => {
+  const f=fixture(),input=envelope('claim_request',{limit:5,citizenOnly:true})
+  await receipt(await f.handler(request(input)),'claim_receipt')
+  assert.equal(f.calls.length,1)
+  assert.equal(f.calls[0].url,`${url}/rest/v1/rpc/qms_mail_claim_urgent_batch`)
+  assert.equal(f.calls[0].args.p_limit,2)
+  assert.equal(f.calls[0].args.p_run_nonce,input.nonce)
+  for(const citizenOnly of ['true',1,null,{}]){
+    const bad=fixture()
+    assert.equal((await bad.handler(request(envelope('claim_request',{limit:1,citizenOnly})))).status,401)
+    assert.equal(bad.calls.length,0)
   }
 })
 
 test('adjunto no consulta archivos para lease denegado y rechaza metadata ajena/corrupta', async () => {
   const input = { eventId: randomUUID(), claimToken: randomUUID(), includeOfficialDocument: true }, caseId = randomUUID()
-  const denied = fixture({ transport: () => Response.json([]) })
+  const denied = fixture({ transport: () => Response.json(false) })
   const result = await receipt(await denied.handler(request(envelope('authorize_request', input))), 'authorize_receipt')
   assert.equal(result.authorized, false); assert.equal(denied.calls.length, 1)
   for (const patch of [{ queja_id: randomUUID() }, { tamano: 4194305 }, { storage_path: 'folder/private' }, { nombre: 'oficio\n.pdf' }, { tipo_mime: 'invalid' }]) {
@@ -98,11 +112,20 @@ test('adjunto final no se autoriza con lease vencido, otro tipo o caso reabierto
   const input = { eventId: randomUUID(), claimToken: randomUUID(), includeOfficialDocument: true }
   for (const patch of [{ lease_until: new Date(clock - 1).toISOString() }, { lease_until: 'invalid' },
     { tipo: 'recibido' }, { queja: { estado: 'En Investigación' } }, { queja: null }]) {
-    const f = fixture({ transport: () => Response.json([{ tipo: 'final', queja_id: randomUUID(), lease_until: new Date(clock + 600000).toISOString(), queja: { estado: 'Finalizado' }, ...patch }]) })
+    const f = fixture({ transport: call => call.method === 'POST' ? Response.json(true) : Response.json([{ tipo: 'final', queja_id: randomUUID(), lease_until: new Date(clock + 600000).toISOString(), queja: { estado: 'Finalizado' }, ...patch }]) })
     const result = await receipt(await f.handler(request(envelope('authorize_request', input))), 'authorize_receipt')
     assert.equal(result.authorized, false); assert.equal(result.officialDocument, null)
-    assert.equal(f.calls.length, 1)
+    assert.equal(f.calls.length, 2)
   }
+})
+
+test('un final sin publicación no se autoriza como correo sin informe', async () => {
+  const input = { eventId: randomUUID(), claimToken: randomUUID(), includeOfficialDocument: true }, caseId = randomUUID()
+  const f = fixture({ transport: call => new URL(call.url).pathname.endsWith('/queja_mail_outbox')
+    ? Response.json([{ tipo: 'final', queja_id: caseId, lease_until: new Date(clock + 600000).toISOString(), queja: { estado: 'Finalizado' } }]) : Response.json([]) })
+  const response = await f.handler(request(envelope('authorize_request', input)))
+  assert.equal(response.status, 503)
+  assert.doesNotMatch(await response.text(), /drive|service-role/)
 })
 
 test('claves modernas se quedan en Edge y usan apikey sin Authorization JWT', async () => {
@@ -205,7 +228,7 @@ test('claim0 conserva el tick DB y exige respuesta vacía sin reservar entregas 
   assert.deepEqual(result.messages, [])
   assert.equal(result.requestNonce, input.nonce)
   assert.equal(f.calls.length, 1)
-  assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v2`)
+  assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v4`)
   assert.deepEqual(f.calls[0].args, { p_limit: 0, p_lease_seconds: 600, p_run_nonce: input.nonce, p_issued_at: seconds })
   const unexpected = fixture({ rows: [snapshot()] })
   assert.equal((await unexpected.handler(request(envelope('claim_request', { limit: 0 })))).status, 503)
@@ -226,10 +249,10 @@ test('claim usa solo RPC fijo, nonce original, lease600 y servicio después de H
   assert.equal(JSON.stringify(result).includes('DO_NOT_EXPOSE_INTERNAL_TEXT'), false)
   assert.equal(f.calls.length, 1)
   const call = f.calls[0]
-  assert.equal(call.url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v2`)
+  assert.equal(call.url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v4`)
   assert.equal(call.redirect, 'error')
   assert.equal(call.headers.Authorization, 'Bearer synthetic-service-role-for-tests')
-  assert.deepEqual(call.args, { p_limit: 5, p_lease_seconds: 600, p_run_nonce: input.nonce, p_issued_at: seconds })
+  assert.deepEqual(call.args, { p_limit: 2, p_lease_seconds: 600, p_run_nonce: input.nonce, p_issued_at: seconds })
 })
 
 test('claim replay conserva nonce DB y no entrega un segundo lote reservado', async () => {
@@ -373,6 +396,7 @@ test('plantillas canónicas usan exclusivamente los campos públicos del snapsho
     assert.equal(JSON.stringify(message).includes('INTERNAL_SECRET'), false)
     assert.equal(message.subject.length <= 180, true)
     assert.equal(message.body.length <= 6000, true)
+    assert.match(message.body, /Para consultas adicionales, puede escribir a gc@eca\.or\.cr\./)
   }
 })
 
@@ -412,7 +436,7 @@ test('avisos internos optan por contrato v2 y conservan exactamente el snapshot 
     const f = fixture({ rows: [raw] })
     const result = await receipt(await f.handler(request(envelope('claim_request', { limit: 1 }))), 'claim_receipt')
     assert.deepEqual(result.messages[0], { ...message, claimToken: raw.claim_token })
-    assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v2`)
+    assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v4`)
   }
 })
 
@@ -436,7 +460,7 @@ test('authorize solo usa el RPC fijo y devuelve booleano firmado correlacionado 
     const result = await receipt(await f.handler(request(input)), 'authorize_receipt')
     assert.deepEqual(result, { requestNonce: input.nonce, eventId: payload.eventId, authorized })
     assert.equal(f.calls.length, 1)
-    assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_authorize`)
+    assert.equal(f.calls[0].url, `${url}/rest/v1/rpc/qms_mail_authorize_v2`)
     assert.deepEqual(f.calls[0].args, { p_id: payload.eventId, p_claim_token: payload.claimToken })
     assert.equal(f.calls[0].redirect, 'error')
   }

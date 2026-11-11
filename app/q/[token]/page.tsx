@@ -11,17 +11,19 @@ import Textarea from '@/components/ui/Textarea'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useFormularioPublico } from '@/lib/queries/useFormularioPublico'
 import { CATEGORIAS_PUBLICAS, PUBLIC_FILE_ACCEPT, MAX_PUBLIC_FILES, PublicRequestError, publicErrorMessage, type PublicQuejaField } from '@/lib/services/publicQuejasClient'
+import { PUBLIC_QUEJA_LIMITES, publicQuejaFieldMessage } from '@/lib/utils/publicQuejaValidation'
 import { usePublicQuejaForm } from '@/app/q/components/usePublicQuejaForm'
 
 // Mantener el mismo ancho al cargar, enviar y confirmar evita saltos de tamaño.
 const PUBLIC_FORM_WIDTH = 'w-full max-w-[896px]'
 
-function PublicField({ field, label, error, hint, children }: {
-  field: PublicQuejaField; label: string; error?: string; hint?: string; children: ReactNode
+function PublicField({ field, label, error, children }: {
+  field: PublicQuejaField; label: string; error?: string; children: ReactNode
 }) {
-  return <Field id={`public-${field}`} label={label} hint={hint}>
+  return <Field id={`public-${field}`} label={label}>
     {children}
-    {error && <p id={`public-${field}-error`} className="mt-1.5 text-xs text-qms-danger">{error}</p>}
+    {/* El aviso visible es el flotante; este nodo conserva el vínculo accesible del campo. */}
+    {error && <p id={`public-${field}-error`} className="sr-only">{error}</p>}
   </Field>
 }
 
@@ -45,15 +47,22 @@ function FormularioQuejaPublica({ token }: { token: string }) {
 
   useEffect(() => {
     if (!form.invalidField || form.enviando || form.confirmationPending) return
-    const input = document.getElementById(`public-${form.invalidField.field}`)
+    const input = document.getElementById(`public-${form.invalidField.field}`) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null
+    if (!input) return
+    // El navegador ancla el aviso al campo y lo retira al corregirlo.
+    input.setCustomValidity(publicQuejaFieldMessage(form.invalidField.field))
     input?.focus({ preventScroll: true })
     input?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+    input.reportValidity()
+    return () => input.setCustomValidity('')
   }, [form.invalidField, form.enviando, form.confirmationPending])
 
   const fieldError = (field: PublicQuejaField) => form.invalidField?.field === field ? form.error : undefined
+  // El error de un campo usa el aviso flotante; el pie conserva solo errores operativos.
+  const footerError = form.invalidField ? '' : form.error || form.archivos.find(entry => entry.status === 'fallido')?.error || ''
   const fieldAttributes = (field: PublicQuejaField) => ({
     'aria-invalid': !!fieldError(field),
-    'aria-describedby': [field === 'descripcion' ? 'public-descripcion-hint' : '', fieldError(field) ? `public-${field}-error` : ''].filter(Boolean).join(' ') || undefined,
+    'aria-describedby': fieldError(field) ? `public-${field}-error` : undefined,
   })
 
   if (!form.receipt && token && consulta.isPending) {
@@ -101,7 +110,7 @@ function FormularioQuejaPublica({ token }: { token: string }) {
             <strong className="min-w-0 select-text break-all text-lg font-semibold text-qms-primary">{form.receipt.folio}</strong>
           </p>
           <p className="mt-5 text-base text-qms-dark">Recibimos tu información correctamente. Gestión de Calidad revisará tu queja y te comunicará el resultado.</p>
-          <p className="mt-3 text-sm text-qms-muted">El correo de confirmación puede tardar unos minutos.</p>
+          <p className="mt-3 text-sm text-qms-muted">Recibirás la confirmación en el correo electrónico indicado.</p>
           {form.trackingUrl && <div className="mt-5">
             <a className="ui-button ui-button-primary min-h-11 w-full sm:w-auto" href={form.trackingUrl} referrerPolicy="no-referrer">Consultar mi trámite</a>
             <p className="mt-3 text-xs text-qms-muted">El enlace abre tu trámite directamente, sin contraseña. Guardalo y compartilo solo con personas de confianza.</p>
@@ -124,28 +133,28 @@ function FormularioQuejaPublica({ token }: { token: string }) {
   }
 
   return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
-    <div className={`${PUBLIC_FORM_WIDTH} flex max-h-[calc(100dvh-48px)] flex-col rounded-card border border-qms-border bg-qms-surface p-4 pb-0 shadow-sm sm:p-6 sm:pb-0`}>
+    <div className={`${PUBLIC_FORM_WIDTH} flex h-[calc(100dvh-48px)] flex-col rounded-card border border-qms-border bg-qms-surface p-4 pb-0 shadow-sm sm:p-6 sm:pb-0`}>
       <div className="mb-3 shrink-0 border-b border-qms-border pb-3">
         <h1 className="m-0 text-xl font-semibold text-qms-dark">Registro de queja</h1>
         <p className="mt-1 text-sm text-qms-muted">{consulta.data?.nombre || 'Formulario de quejas'}</p>
       </div>
       {/* El validador compartido también cubre required/email y permite enfocar el error dentro del scroll. */}
-      <form noValidate onSubmit={(event) => { event.preventDefault(); void form.submit() }} className="flex min-h-0 flex-col">
+      <form noValidate onSubmit={(event) => { event.preventDefault(); void form.submit() }} className="flex min-h-0 flex-1 flex-col">
         {/* El contenido se acorta en pantallas bajas; el envío conserva su espacio sin tapar campos. */}
-        <div className="-mx-1 min-h-0 space-y-4 overflow-y-auto overscroll-contain px-1 pb-4 pt-1 [scrollbar-gutter:stable]">
+        <div className="-mx-1 min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-1 pb-4 pt-1 [scrollbar-gutter:stable]">
         <div aria-hidden="true" hidden>
           <label htmlFor="public-website">Sitio web</label>
           <input id="public-website" name="qms-contact-check" type="text" tabIndex={-1} autoComplete="off" data-lpignore="true" data-1p-ignore value={form.honeypot} onChange={(event) => form.setHoneypot(event.target.value)} />
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <PublicField field="nombre" label="Nombre *" error={fieldError('nombre')}>
-            <Input id="public-nombre" name="nombre" autoComplete="name" required maxLength={150} disabled={disabled} value={form.draft.nombre} onChange={(event) => form.updateField('nombre', event.target.value)} className="w-full" {...fieldAttributes('nombre')} />
+            <Input id="public-nombre" name="nombre" autoComplete="name" required maxLength={PUBLIC_QUEJA_LIMITES.nombre} disabled={disabled} value={form.draft.nombre} onChange={(event) => form.updateField('nombre', event.target.value)} className="w-full" {...fieldAttributes('nombre')} />
           </PublicField>
           <PublicField field="email" label="Correo electrónico *" error={fieldError('email')}>
-            <Input id="public-email" name="email" autoComplete="email" type="email" required maxLength={254} disabled={disabled} value={form.draft.email} onChange={(event) => form.updateField('email', event.target.value)} className="w-full" {...fieldAttributes('email')} />
+            <Input id="public-email" name="email" autoComplete="email" type="email" required maxLength={PUBLIC_QUEJA_LIMITES.email} disabled={disabled} value={form.draft.email} onChange={(event) => form.updateField('email', event.target.value)} className="w-full" {...fieldAttributes('email')} />
           </PublicField>
           <PublicField field="telefono" label="Teléfono (opcional)" error={fieldError('telefono')}>
-            <Input id="public-telefono" name="telefono" autoComplete="tel" type="tel" maxLength={40} disabled={disabled} value={form.draft.telefono} onChange={(event) => form.updateField('telefono', event.target.value)} className="w-full" {...fieldAttributes('telefono')} />
+            <Input id="public-telefono" name="telefono" autoComplete="tel" type="tel" inputMode="tel" maxLength={PUBLIC_QUEJA_LIMITES.telefono} disabled={disabled} value={form.draft.telefono} onChange={(event) => form.updateField('telefono', event.target.value)} className="w-full" {...fieldAttributes('telefono')} />
           </PublicField>
           <PublicField field="categoria" label="Tipo *" error={fieldError('categoria')}>
             <Select id="public-categoria" name="categoria" required disabled={disabled} value={form.draft.categoria} onChange={(event) => form.updateField('categoria', event.target.value)} {...fieldAttributes('categoria')}>
@@ -154,8 +163,8 @@ function FormularioQuejaPublica({ token }: { token: string }) {
             </Select>
           </PublicField>
         </div>
-        <PublicField field="descripcion" label="Descripción *" hint="Hasta 10000 caracteres." error={fieldError('descripcion')}>
-          <Textarea id="public-descripcion" name="descripcion" required rows={5} maxLength={10000} disabled={disabled} value={form.draft.descripcion} onChange={(event) => form.updateField('descripcion', event.target.value)} className="w-full resize-y [@media(min-width:640px)_and_(max-height:680px)]:h-28" {...fieldAttributes('descripcion')} />
+        <PublicField field="descripcion" label="Descripción *" error={fieldError('descripcion')}>
+          <Textarea id="public-descripcion" name="descripcion" required rows={6} maxLength={PUBLIC_QUEJA_LIMITES.descripcion} disabled={disabled} value={form.draft.descripcion} onChange={(event) => form.updateField('descripcion', event.target.value)} className="w-full resize-y [@media(min-width:640px)_and_(max-height:680px)]:h-28" {...fieldAttributes('descripcion')} />
         </PublicField>
         {(consulta.data?.uploadsAllowed || form.archivos.length > 0) && <Field id="public-archivos" label="Evidencias (opcional)" hint={`PDF, JPEG o PNG. Hasta ${MAX_PUBLIC_FILES} archivos, de 4 MB por archivo.`}>
           <input ref={fileInputRef} id="public-archivos-input" type="file" hidden
@@ -189,10 +198,10 @@ function FormularioQuejaPublica({ token }: { token: string }) {
         </Field>}
         </div>
         <div className="-mx-4 shrink-0 space-y-3 rounded-b-card border-t border-qms-border bg-qms-surface px-4 pb-4 pt-4 sm:-mx-6 sm:px-6 sm:pb-6">
-          {(form.confirmationPending || form.error || form.receipt) && <div className="space-y-2" aria-live="polite" aria-atomic="true">
+          {(form.confirmationPending || footerError || form.receipt) && <div className="space-y-2" aria-live="polite" aria-atomic="true">
             {form.receipt && <p className="text-sm text-qms-dark">Queja registrada. Tu folio es <strong className="font-mono text-qms-primary">{form.receipt.folio}</strong>. Guardalo para dar seguimiento.</p>}
-            <p role={form.error ? 'alert' : 'status'} className={form.error ? 'text-sm text-qms-danger' : completed ? 'text-sm text-qms-success' : 'text-sm text-qms-muted'}>
-              {form.error || (form.enviando ? form.etapa : completed ? 'Envío completado.' : form.receipt ? (failed ? 'La queja conserva su folio. Podés reintentar únicamente las evidencias pendientes.' : 'La queja está registrada; falta confirmar la finalización.') : 'Tus datos se conservaron. Reintentá el mismo envío sin crear otra queja.')}
+            <p role={footerError ? 'alert' : 'status'} className={footerError ? 'text-sm text-qms-danger' : completed ? 'text-sm text-qms-success' : 'text-sm text-qms-muted'}>
+              {footerError || (form.enviando ? form.etapa : completed ? 'Envío completado.' : form.receipt ? (failed ? 'La queja conserva su folio. Podés reintentar únicamente las evidencias pendientes.' : 'La queja está registrada; falta confirmar la finalización.') : 'Tus datos se conservaron. Reintentá el mismo envío sin crear otra queja.')}
             </p>
             {form.receipt && form.archivos.length > 0 && <p className="text-xs text-qms-muted">{uploaded} de {form.archivos.length} evidencias adjuntadas.</p>}
           </div>}

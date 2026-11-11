@@ -13,6 +13,17 @@ const sample = { id: caseId, folio: '2026-001', revision: 7, cliente_nombre: 'Pe
   estado: 'Pendiente de Revisión GC', fecha: '2026-11-03', notas: '[Procede] Procede\nHallazgo propio', justificacion_procede: 'Procede', resolucion: '**Propuesta en negrita**', resolucion_formato: 'markdown' }
 const template = () => crearPlantillaInforme(sample, [{ nombre: 'Factura [1].pdf' }, { nombre: 'Hallazgos.docx' }], 'Calidad de prueba', new Date('2026-11-03T18:00:00Z'))
 
+test('informe y archivo conservan el folio de registro aunque el documento se emita en otro año', () => {
+  for (const folio of ['2026-2088', '2027-001', '2027-1000', 'QUEJA-2025-0016']) {
+    const contenido = crearPlantillaInforme({ ...sample, folio }, [], 'Calidad', new Date('2028-01-01T18:00:00Z'))
+    const documento = JSON.stringify(new MarkdownManager({ extensions: richTextExtensions() }).parse(contenido))
+    assert.ok(documento.includes('Folio:'))
+    assert.ok(documento.includes(`Folio ${folio}`))
+    assert.ok(documento.split(folio).length >= 3)
+    assert.equal(informeFilename(folio), `Expediente-${folio}.docx`)
+  }
+})
+
 test('plantilla conserva datos literales, fecha civil y separa las etapas sin duplicar notas legacy', () => {
   const json = new MarkdownManager({ extensions: richTextExtensions() }).parse(template())
   const serialized = JSON.stringify(json)
@@ -85,6 +96,9 @@ test('PDF presenta jerarquía, metadatos alineados y contenido sin sintaxis Mark
     setTextColor(...args) { calls.push(['color', ...args]) }
     setFillColor(...args) { calls.push(['fill', ...args]) }
     setDrawColor(...args) { calls.push(['draw-color', ...args]) }
+    getTextWidth(text) { return text.length * 6 }
+    getNumberOfPages() { return 1 }
+    setPage() {}
     splitTextToSize(text) { return [text] }
     text(...args) { calls.push(['text', ...args]) }
     roundedRect(...args) { calls.push(['rect', ...args]) }
@@ -100,7 +114,7 @@ test('PDF presenta jerarquía, metadatos alineados y contenido sin sintaxis Mark
   assert.equal(output, 'pdf-blob')
   assert.ok(calls.some(call => call[0] === 'rect'))
   assert.ok(label && value && value[2] > label[2])
-  assert.ok(textCalls.some(call => call[1] === 'Descripción del caso'))
+  assert.ok(textCalls.map(call => String(call[1])).join('').includes('Descripción del caso'))
   assert.ok(textCalls.every(call => !/[#*]{1,2}/.test(call[1])))
 })
 

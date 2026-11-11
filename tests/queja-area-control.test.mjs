@@ -4,7 +4,7 @@ import { loadModule } from './load-module.mjs'
 
 const originalDraft = { quejaId: 'a', revision: 17, area: 'Área histórica', numeroOficio: 'ECA-GC-2026-005', observaciones: 'Observación guardada anteriormente.' }
 const clone = value => JSON.parse(JSON.stringify(value))
-const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children)] : []
+const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children), ...(['AreaAfectadaFrame', 'AreaAfectada'].includes(value.type?.name) ? visit(value.type(value.props)) : [])] : []
 const textOf = value => Array.isArray(value) ? value.map(textOf).join('') : value?.props ? textOf(value.props.children) : typeof value === 'string' ? value : ''
 
 function areaHarness(overrides = {}, catalogOverrides = {}) {
@@ -111,7 +111,7 @@ test('modo lectura conserva etiqueta y valor sin un selector que permita editar'
   const h = areaHarness({ area: '', draft: null, onEdit: undefined })
   assert.equal(h.trigger(), undefined); assert.equal(h.popup(), undefined)
   assert.ok(h.nodes().some(node => node.type === 'span' && node.props.children === 'Área afectada'))
-  assert.ok(h.nodes().some(node => node.type === 'span' && node.props.children === 'Seleccionar área afectada'))
+  assert.ok(h.nodes().some(node => node.type === 'span' && node.props.children === 'Sin indicar'))
   h.render({ area: 'SAL' })
   assert.ok(h.nodes().some(node => node.type === 'span' && node.props.children === 'SAL'))
   assert.equal(h.saves.length, 0)

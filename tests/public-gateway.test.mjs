@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { checkBotId } from 'botid/server'
+import { jsPDF } from 'jspdf'
 import { loadModule } from './load-module.mjs'
 
 const SECRET = 'synthetic-public-gateway-signing-secret-0000'
@@ -108,6 +109,20 @@ function fixture(options = {}) {
 }
 
 // SDK Supabase real; BotID/Drive y sus errores permanecen sintéticos.
+test('un PDF exportado por el sistema llega completo al guardado y commit de evidencias públicas', async () => {
+  const document = new jsPDF({ compress: true })
+  document.text('Informe sintético de prueba.', 20, 20)
+  const bytes = Buffer.from(document.output('arraybuffer'))
+  const f = fixture()
+  const result = await f.upload(uploadRequest({ file: new File([bytes], 'Expediente-sintetico.pdf', { type: 'application/pdf' }) }))
+  assert.equal(result.status, 200)
+  assert.equal((await result.json()).drive_file_id, FILE_ID)
+  const reservation = f.calls.find(call => call.type === 'rpc' && call.resource === 'public_form_reserve_upload')
+  assert.equal(reservation.args.p_tamano, bytes.length)
+  assert.equal(reservation.args.p_content_hash, createHash('sha256').update(bytes).digest('hex'))
+  assert.equal(f.calls.filter(call => call.type === 'rpc' && call.resource === 'public_form_commit_upload').length, 1)
+})
+
 test('producción exige resultado humano completo y no permite bots de ninguna clase', async () => {
   const cases = [
     [{ bot: { isHuman: false, isBot: true } }, 403],

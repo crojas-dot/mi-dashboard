@@ -50,7 +50,7 @@ export default function ListaAdjuntos({
     if (lista.length === 0) return null
     return (
       <div className="mt-3">
-        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">{titulo}</p>
+        <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>
         <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : 'space-y-1'}>
           {lista.map((a) => {
             const { Icon, label, color } = filePresentation(a)
@@ -64,25 +64,25 @@ export default function ListaAdjuntos({
               onPointerDown: preparePreviewConnection,
             }
             return layout === 'cards' ? (
-              <li key={a.id} className="group w-full min-w-0 max-w-56 overflow-hidden rounded-card border border-qms-border bg-qms-surface transition-colors hover:border-qms-primary/30 focus-within:border-qms-primary/30">
+              <li key={a.id} className="group w-full min-w-0 max-w-64 rounded-card bg-qms-hover-bg transition-colors hover:bg-qms-primary-soft focus-within:bg-qms-primary-soft">
                 {/* Solo metadatos e iconos estáticos: listar archivos no descarga vistas previas. */}
                 <button
                   {...previewIntent}
                   type="button"
                   onClick={() => onPreview(a)}
-                  className="flex w-full min-w-0 cursor-pointer items-center gap-2 px-2.5 py-2 text-left hover:bg-qms-hover-bg"
+                  className="flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-card px-3 pt-3 pb-1 text-left"
                   title={a.nombre}
                   aria-label={`Vista previa de ${a.nombre}`}
                 >
                   <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-button ${color}`} aria-hidden="true">
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" strokeWidth={1.5} />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm text-qms-dark">{a.nombre}</span>
                     <span className="block truncate text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</span>
                   </span>
                 </button>
-                <div className="flex items-center justify-end border-t border-qms-border/60 bg-qms-background/50 px-1 group-hover:bg-qms-hover-bg group-focus-within:bg-qms-hover-bg">
+                <div className="flex items-center justify-end gap-0.5 px-2 pb-1">
                   <Button {...previewIntent} size="icon" variant="ghost" onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}>
                     <Eye className="h-4 w-4" aria-hidden="true" />
                   </Button>

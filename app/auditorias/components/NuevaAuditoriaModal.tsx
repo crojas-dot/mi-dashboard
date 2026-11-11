@@ -5,11 +5,10 @@ import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import { supabase } from '@/lib/supabase'
-import { generarFolio } from '@/lib/services/folioService'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { getUserError } from '@/lib/errors/userError'
 import { logger } from '@/lib/utils/logger'
-import { trimTextFields, requireOption, validateDate, validateDateOrder, requireText } from '@/lib/utils/operationalFormValidation'
+import { trimTextFields, requireOption, validateDate, validateDateOrder } from '@/lib/utils/operationalFormValidation'
 
 interface Props {
   open: boolean
@@ -40,10 +39,9 @@ export default function NuevaAuditoriaModal({ open, onClose, onCreated }: Props)
       validateDate(values.fecha_inicio, 'Fecha Inicio')
       validateDate(values.fecha_fin, 'Fecha Fin')
       validateDateOrder(values.fecha_inicio, values.fecha_fin)
-      const folio = values.folio || await generarFolio('auditoria')
-      requireText(folio, 'Folio')
       const { error } = await supabase.from('auditorias').insert([{
-        folio,
+        // La fecha programada no determina el año del consecutivo de registro.
+        ...(values.folio ? { folio: values.folio } : {}),
         tipo: values.tipo,
         objetivo: values.objetivo,
         alcance: values.alcance,

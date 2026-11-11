@@ -1,5 +1,61 @@
 # Verificación, despliegue y pendientes
 
+Contrato actual consolidado en [AGENTS.md](../../AGENTS.md), revisión del 11 noviembre.
+
+11 noviembre: [consecutivos anuales](../consecutivos-anuales-2026-11-11.md), 157
+comprobaciones PostgreSQL aisladas, cinco series, cambio de año CR en tres zonas de
+sesión, 200 asignaciones concurrentes y rollback por validación/RLS. Migración
+20261111151343 aplicada y lectura remota con históricos/contadores de Quejas/policies
+intactos; sin registros ni correos reales de QA. La DB conserva compatibilidad con
+los RPC anteriores; los tres modales sin reserva previa siguen locales. Calendario
+adicional aplazado.
+
+Selección Node de esta entrega: 124/124 en altas, cliente público, informe, correo
+y cola; TypeScript, lint focalizado, build, estructura y capa visual correctos.
+
+Las entradas siguientes conservan su fecha y alcance; no sustituyen las correcciones
+posteriores del propietario. Panel/estados/plazos: 65/65 Node y 379 comprobaciones
+de navegador en ambos módulos/seis estados/1536–320 px; colores de catálogo con
+prioridad, plazo como punto/texto, contacto solo al ampliar y selección #F0F4F7.
+TypeScript, lint, build, estructura y capa visual correctos, sin publicar web.
+[Contrato visual vigente](../quejas-panel-2026-10-13.md). No Procede abre directamente
+correo/documento y publica desde esa ventana, sin otro modal de justificación;
+[contrato de respuesta](../quejas-revision-y-respuesta-2026-11-04.md).
+
+PDF de vista inicial, 10 noviembre: 118/118 en primitivas, revisión de seguridad,
+gateway y cliente. PDF exacto del propietario aceptado y reintento real completado;
+un solo adjunto y finalización confirmados. OpenAction permite destinos de vista
+cerrados, mantiene el rechazo de acciones y no modifica permisos ni DB. Web local.
+[Contrato y alcance](../quejas-formulario-correo-inmediato-2026-11-10.md).
+
+Nuevos envíos, 10 noviembre: reintento automático acotado de evidencias ante red/
+502/503/504, sin duplicar archivo/folio. Cliente 49/49, navegador 63/63 (tres anchos),
+lint, build, estructura y capa visual correctos. Diez archivos confirmados antes de
+finalizar; cancelación y rechazos permanentes sin reintento. El propietario excluyó
+recuperar el archivo antiguo. [Contrato](../quejas-formulario-correo-inmediato-2026-11-10.md).
+
+10 noviembre, formulario/correo por evento: 205/205 Node focalizadas, 159/159
+PostgreSQL aisladas, 63 comprobaciones de navegador. Falso rechazo de fuentes
+incrustadas en PDF corregido y reproducido con ambos documentos de requisitos.
+Validación nativa y reintento de evidencias antes de finalizar; copiar enlaces
+retirado de formulario/seguimiento/configuración. Web local; DB/Edge/Apps Script v5
+activos por evento tras autorización Google. Final pendiente recuperado sin entrega
+previa y ACK sent con Word. Suite del emisor posterior: 39/39. [Contrato](../quejas-formulario-correo-inmediato-2026-11-10.md).
+
+10 noviembre, refinamiento de panel/comunicación: 145/145 Node focalizadas,
+124/124 PostgreSQL aisladas, 45 comprobaciones de navegador y 64 del bundle Edge.
+TypeScript, lint, build, estructura y capa visual correctos. No Procede usa la
+ventana compartida con justificación/CAS; atajo al informe y envío GC en acciones.
+DB y Edge v16 activas; web local sin publicación Vercel. Conserva el fallo previo
+del doble de PDF en la selección adicional del informe. [Contrato](../quejas-revision-y-respuesta-2026-11-04.md).
+
+10 noviembre: [correo de acompañamiento editable](../quejas-revision-y-respuesta-2026-11-04.md).
+101 checks PostgreSQL aislados y 46 de navegador sintético, con Word real y
+RPC/subidas ficticios; ningún correo o expediente real creado para QA. DB y Edge
+activadas con snapshot del correo; cliente web local, sin despliegue Vercel. El
+asesor conserva los cinco tipos/recuentos previos. La suite general conserva cinco
+fallos anteriores en informe/paginación, fuera del cambio de correo.
+
 9 noviembre, local: [estabilidad del modal de Quejas y Mis Quejas](../quejas-resolucion-y-revision-gc-2026-11-03.md#estabilidad-del-modal--9-noviembre-de-2026).
 QA de navegador 505/505 y suites de paneles 98/98; lint, build con TypeScript,
 estructura y capa visual correctos. Persisten cinco fallos anteriores en pruebas

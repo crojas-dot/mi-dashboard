@@ -170,27 +170,40 @@ test('aprobar solo registra la revisión original y continúa a respuesta sin ca
   assert.equal(panel.requests.length, 1)
 })
 
-test('rechazo exige campos públicos y conserva decisión/editor al cancelar; false confirmado usa legacy', async () => {
+test('rechazo abre la respuesta al cliente con revisión capturada; cancelar vuelve a decidir; false confirmado usa legacy', async () => {
   const panel = panelFixture(); panel.select({ estado: 'Recibido', numero_oficio_resolucion: '' })
-  panel.click('Tomar decisión'); panel.click('No Procede'); panel.edit('Justificación interna')
-  await panel.click('Publicar no procedencia')
+  panel.click('Tomar decisión'); panel.click('No Procede')
+  // Con publicación confirmada la justificación y el oficio se redactan dentro de la
+  // respuesta al cliente; el panel no mantiene un editor ni campos públicos paralelos.
+  assert.equal(panel.nodes().find(node => node.type === 'Editor'), undefined)
+  const response = panel.nodes().find(node => node.type === 'Response')
+  assert.equal(response.props.noProcede, true)
+  assert.equal(response.props.queja.id, quejaId)
+  assert.equal(response.props.queja.revision, 7)
+  panel.select({ revision: 99 })
+  assert.equal(panel.nodes().find(node => node.type === 'Response').props.queja.revision, 7)
+  panel.nodes().find(node => node.type === 'Response').props.onClose(false); panel.render()
+  assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
+  assert.ok(panel.button('No Procede')); assert.ok(panel.button('Procede'))
   assert.equal(panel.requests.length, 0)
-  panel.field('-respuesta', 'Respuesta pública')
-  await panel.click('Publicar no procedencia'); assert.match(panel.toasts.at(-1), /número del oficio/)
-  panel.field('-oficio', 'ECA-GC-2026-008')
-  await panel.click('Publicar no procedencia'); assert.match(panel.toasts.at(-1), /oficio definitivo/)
-  panel.click('Cancelar'); assert.ok(panel.button('No Procede'))
-  panel.click('No Procede'); panel.click('Respuesta al cliente')
-  assert.equal(panel.nodes().find(node => node.type === 'Textarea').props.value, 'Respuesta pública')
-  panel.field('-archivo', panel.files[0].id)
-  const pending = panel.click('Publicar no procedencia')
-  assert.equal(panel.requests[0].args[1].estado, 'No Procede')
-  panel.requests[0].resolve({ id: quejaId, revision: 8 }); await pending
-  const legacy = panelFixture(); legacy.availability({ data: false }); legacy.select()
-  const old = legacy.click('Aprobar y continuar')
-  assert.equal(legacy.requests[0].kind, 'review')
-  assert.equal(legacy.requests[0].args[0].revision, 7)
-  legacy.requests[0].resolve({ id: quejaId, revision: 8 }); await old
+
+  // Publicación false confirmada conserva el contrato legacy con justificación y oficio.
+  const legacy = panelFixture(); legacy.availability({ data: false }); legacy.select({ estado: 'Recibido', numero_oficio_resolucion: '' })
+  legacy.click('Tomar decisión'); legacy.click('No Procede'); legacy.edit('Justificación interna')
+  await legacy.click('Guardar')
+  assert.equal(legacy.requests.length, 0)
+  assert.match(legacy.toasts.at(-1), /número del oficio/)
+  legacy.field('-rechazo-' + quejaId, 'ECA-GC-2026-008')
+  const pending = legacy.click('Guardar')
+  assert.equal(legacy.requests[0].kind, 'legacy')
+  assert.equal(legacy.requests[0].args[1], 'No Procede')
+  legacy.requests[0].resolve({ id: quejaId, revision: 8 }); await pending
+
+  const approve = panelFixture(); approve.availability({ data: false }); approve.select()
+  const old = approve.click('Aprobar y continuar')
+  assert.equal(approve.requests[0].kind, 'review')
+  assert.equal(approve.requests[0].args[0].revision, 7)
+  approve.requests[0].resolve({ id: quejaId, revision: 8 }); await old
 })
 
 test('flag público no confirmado bloquea publicación de No Procede; analista no aprueba', async () => {
@@ -204,17 +217,19 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   assert.equal(analyst.button('Resolver'), undefined)
 })
 
-test('guardar durante subida o respuesta antigua no edita el borrador de otra visita', async () => {
-  const panel = panelFixture(); panel.select({ estado: 'Recibido' }); panel.click('Tomar decisión'); panel.click('No Procede'); panel.edit('Justificación A'); panel.click('Respuesta al cliente')
-  panel.field('-respuesta', 'Respuesta A'); panel.field('-archivo', panel.files[0].id)
-  const first = panel.click('Publicar no procedencia')
-  panel.select({ id: otherId, estado: 'Recibido' }); panel.click('Tomar decisión'); panel.click('No Procede'); panel.edit('Justificación B'); panel.click('Respuesta al cliente')
-  panel.field('-respuesta', 'Respuesta B')
-  panel.requests[0].resolve({ id: quejaId, revision: 8 }); await first; panel.render()
-  assert.equal(panel.nodes().find(node => node.type === 'Textarea').props.value, 'Respuesta B')
-  const input = panel.nodes().find(node => node.type === 'input' && node.props.type === 'file')
-  input.props.onChange({ target: { files: [new File(['fixture'], 'oficio.pdf')], value: '' } }); panel.render()
-  assert.equal(panel.button('Publicar no procedencia').props.disabled, true)
-  await panel.click('Publicar no procedencia')
-  assert.equal(panel.requests.filter(request => request.kind === 'publish').length, 1)
+test('cambiar de visita descarta la respuesta en curso y la nueva visita abre su propia decisión', () => {
+  const panel = panelFixture(); panel.select({ estado: 'Recibido' })
+  panel.click('Tomar decisión'); panel.click('No Procede')
+  const first = panel.nodes().find(node => node.type === 'Response')
+  assert.equal(first.props.queja.id, quejaId)
+  // Cambiar de visita retira la respuesta de A: no queda editor ni modal de otra visita.
+  panel.select({ id: otherId, estado: 'Recibido' })
+  assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
+  assert.equal(panel.nodes().find(node => node.type === 'Editor'), undefined)
+  panel.click('Tomar decisión'); panel.click('No Procede')
+  const second = panel.nodes().find(node => node.type === 'Response')
+  assert.equal(second.props.queja.id, otherId)
+  assert.equal(second.props.noProcede, true)
+  assert.notEqual(second, first)
+  assert.equal(panel.requests.filter(request => request.kind === 'publish').length, 0)
 })

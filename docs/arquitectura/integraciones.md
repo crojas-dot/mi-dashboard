@@ -1,5 +1,30 @@
 # API e integraciones: Usuarios, formularios públicos, Drive e IA
 
+10 noviembre: Edge v17 y Apps Script v5 activos con despertador ciudadano desde
+pg_net. Autorización Google/Drive, recibo HMAC accepted y ACK sent del final pendiente
+con Word verificados. [Protocolo y estado](../quejas-formulario-correo-inmediato-2026-11-10.md).
+
+10 noviembre, Edge v16 verificada: las plantillas predeterminadas de recepción/final
+añaden `gc@eca.or.cr`; el correo editado conserva su contenido exacto. Mantiene el
+adjunto físico final obligatorio y seguimiento solo en el acuse. Sin actualización
+adicional de Apps Script, permisos, activadores o reenvíos. La respuesta de No Procede
+usa el mismo snapshot de correo mediante publicación transaccional.
+[Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
+
+10 noviembre, ajuste del correo final activado: Apps Script adjunta obligatoriamente
+el Word/PDF publicado y deja el envío pendiente si no puede obtenerlo. Edge v15 emite
+el enlace de seguimiento solo en el acuse de recibo; el correo final no depende del
+acceso que vence a los 30 días. HEAD del emisor y bundle remoto leídos y verificados;
+sin cambios de permisos/manifiesto, activadores, DB o reenvíos. [Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
+
+10 noviembre: el correo final puede usar asunto/mensaje de acompañamiento editados
+y aprobados por Calidad. `quejas-mail-queue/message.ts` consume el snapshot opcional
+del claim v4; no sustituye la respuesta pública ni el informe. La Edge conserva
+HMAC, tracking y adjunto único publicado. Limita el reclamo a dos mensajes para el
+sobre de 64 KiB; la autorización v2 valida por separado envíos ciudadanos/internos.
+El emisor Apps Script conserva su HTML, permisos, diario y ACK. No hay reenvío ni
+cambio de huellas históricas. [Contrato y activación](../quejas-revision-y-respuesta-2026-11-04.md).
+
 19 octubre, **activo en producción**: `/q/seguimiento` es una página estática genérica. Los POST públicos
 exactos `/api/public/seguimiento` y `/api/public/seguimiento/documento` requieren una
 capacidad firmada y DB vigente, con cuota/no-store y guard BotID Basic antes

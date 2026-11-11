@@ -48,14 +48,20 @@ function appsScript(properties = {}) {
   return context
 }
 
-test('los dos hitos ciudadanos generan link privado determinista mediante v3; nunca envían secretos', async () => {
+test('el acuse lleva seguimiento y el correo final conserva el informe sin enlace temporal', async () => {
   const rows = ['recibido', 'final'].map(tipo => snapshot({ tipo, estado: tipo === 'final' ? 'Resuelto' : 'Recibido', numero_oficio: 'ECA-GC-2026-001' }))
   const first = await claim(rows), second = await claim(rows)
   assert.equal(first.response.status, 200)
-  assert.match(first.calls[0].target, /\/qms_mail_claim_batch_v3$/)
+  assert.match(first.calls[0].target, /\/qms_mail_claim_batch_v4$/)
   assert.deepEqual(first.receipt.messages, second.receipt.messages)
   for (let index = 0; index < rows.length; index++) {
-    const message = first.receipt.messages[index], row = rows[index], url = new URL(message.trackingUrl)
+    const message = first.receipt.messages[index], row = rows[index]
+    if (row.tipo === 'final') {
+      assert.equal(Object.hasOwn(message, 'trackingUrl'), false)
+      assert.doesNotMatch(message.body, /Seguimiento privado:|seguimiento privado de tu trámite/)
+      continue
+    }
+    const url = new URL(message.trackingUrl)
     assert.equal(url.origin, origin)
     const claims = await capability.verifyPublicTrackingCapability(url.hash.slice('#clave='.length), trackingSecret, { crypto: webcrypto })
     assert.equal(claims.quejaId, row.public_tracking.queja_id)
@@ -64,8 +70,7 @@ test('los dos hitos ciudadanos generan link privado determinista mediante v3; nu
     assert.equal(JSON.stringify(message).includes(trackingSecret), false)
     assert.equal(Object.keys(message).includes('public_tracking'), false)
   }
-  assert.match(first.receipt.messages[1].body, /respuesta y el oficio/)
-  assert.doesNotMatch(first.receipt.messages[1].body, /contactá a Gestión/)
+  assert.match(first.receipt.messages[0].body, /Seguimiento privado:/)
 })
 
 test('tracking no rehabilita el correo ciudadano de investigación retirado', async () => {
@@ -80,7 +85,22 @@ test('tracking no rehabilita el correo ciudadano de investigación retirado', as
   assert.throws(() => script.qmsMailHtml_(message), /invalid_mail_request/)
 })
 
-test('snapshot nulo y flag ausente preservan exactamente mensajes legacy y RPCv2', async () => {
+test('correos editados al límite Unicode caben en el recibo firmado de Apps Script antes de reservar el lote', async () => {
+  const rows = Array.from({ length: 2 }, () => snapshot({ tipo: 'final', estado: 'Resuelto',
+    folio: '漢'.repeat(120), numero_oficio: '漢'.repeat(120),
+    correo: { subject: '漢'.repeat(180), body: '漢'.repeat(3500) } }))
+  const result = await claim(rows, {}, Date.now())
+  assert.equal(result.response.status, 200)
+  assert.equal(JSON.parse(result.calls[0].init.body).p_limit, 2)
+  const signed = await queue.signQueueEnvelope('claim_receipt', result.receipt, secret, webcrypto, now)
+  assert.ok(Buffer.byteLength(JSON.stringify(signed), 'utf8') <= 65536)
+  const script = appsScript()
+  assert.equal(script.qmsMailClaimReceipt_(result.receipt, 5).messages.length, 2)
+  assert.equal(result.receipt.messages[0].subject, rows[0].correo.subject)
+  assert.ok(result.receipt.messages[0].body.startsWith(rows[0].correo.body))
+})
+
+test('snapshot nulo y flag ausente preservan exactamente mensajes legacy con el reclamo ampliado', async () => {
   const row = snapshot({ public_tracking: null })
   const result = await claim([row])
   const expected = { ...messages.quejaMailMessage(messages.claimMailSnapshot(row)), claimToken: row.claim_token }
@@ -89,7 +109,7 @@ test('snapshot nulo y flag ausente preservan exactamente mensajes legacy y RPCv2
   for (const flag of [undefined, 'false', 'TRUE', '1']) {
     const disabled = await claim([row], { PUBLIC_TRACKING_ENABLED: flag, PUBLIC_TRACKING_SIGNING_SECRET: undefined, PUBLIC_TRACKING_ORIGIN: undefined })
     assert.equal(disabled.response.status, 200)
-    assert.match(disabled.calls[0].target, /\/qms_mail_claim_batch_v2$/)
+    assert.match(disabled.calls[0].target, /\/qms_mail_claim_batch_v4$/)
     assert.deepEqual(disabled.receipt.messages[0], canonical(expected))
   }
 })
@@ -127,6 +147,7 @@ test('lote mixto y reintento tardío conservan URL/cuerpo/hash aunque la DB ya h
     delete after.claimToken
     assert.equal(script.qmsMailFingerprint_(after), script.qmsMailFingerprint_(before))
     assert.equal(script.qmsMailValidMessage_(after, true), true)
+    if (after.kind === 'final') { assert.equal(Object.hasOwn(after, 'trackingUrl'), false); continue }
     const wire = JSON.parse(Buffer.from(new URL(after.trackingUrl).hash.slice('#clave='.length).split('.')[0], 'base64url').toString())
     assert.deepEqual(Object.keys(wire), ['purpose', 'queja_id', 'nonce'])
   }

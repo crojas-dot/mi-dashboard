@@ -55,11 +55,14 @@ test('badge traduce códigos DB por la misma paleta y trata claves desconocidas 
   for (const value of ['constructor', '__proto__', '#abc', 'nuevo-estado']) assert.equal(palette.estiloBadge(value), palette.estiloBadge('gray'))
 })
 
-test('un estado nuevo o desconocido no confunde módulos ni cambia la resolución por su color', () => {
-  assert.equal(states.varianteEstado('quejas', 'En Investigación'), 'investigacion')
-  assert.equal(states.varianteEstado('sacp', 'En Proceso'), 'blue')
-  assert.equal(states.varianteEstado('quejas', 'En Proceso'), 'gray')
-  assert.equal(states.varianteEstado('revision', 'constructor'), 'gray')
+test('los estados de Quejas recuperan sus tonos existentes sin cambiar las reglas del workflow', () => {
+  for (const modulo of ['sacp', 'documentos', 'auditorias', 'revision']) {
+    for (const estado of ['En Investigación', 'En Proceso', 'Publicado', 'Planificada', 'constructor', '__proto__', 'Estado nuevo']) assert.equal(states.varianteEstado(modulo, estado), 'neutral')
+  }
+  for (const modulo of ['quejas', 'mis_quejas']) {
+    for (const [estado, variant] of Object.entries({ Recibido: 'blue', 'En Investigación': 'investigacion', 'Pendiente de Revisión GC': 'purple', Resuelto: 'green', Finalizado: 'gray', 'No Procede': 'red' })) assert.equal(states.varianteEstado(modulo, estado), variant)
+    for (const estado of ['constructor', '__proto__', 'Estado nuevo']) assert.equal(states.varianteEstado(modulo, estado), 'neutral')
+  }
   assert.equal(complaints.esQuejaResuelta('Resuelto'), true)
   for (const value of ['En Investigación', 'Finalizado', 'Cerrada', 'No Procede', 'success', 'green']) assert.equal(complaints.esQuejaResuelta(value), false)
 })

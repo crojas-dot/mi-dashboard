@@ -109,7 +109,7 @@ export default function VistaPreviaInforme({ modulo, incluir, fechaDesde, fechaH
                           {columnasPorModulo[modulo]?.map((col) => (
                             <td key={col.key} className="px-3 py-1.5 align-middle">
                               {col.key === 'prioridad' || col.key === 'estado' ? (
-                                <Badge variant="gray">{cellValue(row, col.key)}</Badge>
+                                <Badge variant={col.key === 'estado' ? 'neutral' : 'gray'}>{cellValue(row, col.key)}</Badge>
                               ) : (
                                 <span>{cellValue(row, col.key)}</span>
                               )}

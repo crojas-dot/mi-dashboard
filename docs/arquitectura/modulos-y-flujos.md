@@ -1,5 +1,15 @@
 # Módulos y flujos de negocio
 
+**Contrato vigente de Quejas/Mis Quejas al 10 noviembre:** [AGENTS.md](../../AGENTS.md)
+consolida lógica y presentación actuales; [panel](../quejas-panel-2026-10-13.md),
+[respuesta](../quejas-revision-y-respuesta-2026-11-04.md) y
+[formulario/correo](../quejas-formulario-correo-inmediato-2026-11-10.md) detallan las
+correcciones posteriores. Lecturas anteriores de esta página conservan su fecha:
+no restaurar los tres tabs, el segundo selector de área, el modal duplicado de
+justificación, el informe como cuerpo del correo ni el despertador desactivado.
+El cliente web sigue local; DB/Edge v17/Apps Script v5 del correo por evento están
+activos según la evidencia fechada. Esta actualización no es una auditoría remota.
+
 4 noviembre, cliente local: [revisión GC y respuesta separadas](../quejas-revision-y-respuesta-2026-11-04.md).
 Aprobar pasa a Resuelto sin publicar; el borrador persiste y Publicar respuesta pasa
 a Finalizado. Devolver exige motivo y conserva propuesta/plazo. No Procede y las
@@ -26,7 +36,7 @@ fechada registra web, migración, cortes y emisor activos; falta aceptación ins
 | --- | --- | --- |
 | `/` | PageHeader, QuejasSummary lazy/Suspense, indicadores por módulo, ocho expedientes próximos y actividad real | No monta los tabs analíticos alternativos |
 | `/quejas` | Tabla con filtros, paginación, tipo/estado, vencimiento por etapa, vistas locales, precarga de adjuntos, alta y detalle | Edición y transición por wrappers QMS con revisión esperada; oficio/área/observaciones integrados |
-| `/mis-quejas` | Filtra responsable_id=usuario real, tabla y panel fixed con Detalle/Análisis/Resolución | No permite adoptar otro responsable simulando rol |
+| `/mis-quejas` | Filtra responsable_id=usuario real, tabla y workspace compartido con Análisis/Resolución | No permite adoptar otro responsable simulando rol; propuesta enviada persiste, borradores de visita son locales |
 | `/configuracion` | Siete secciones agrupadas en Organización/Acceso/Servicios; solo admin | Editor de SLA legacy no publica versiones QMS |
 | `/procesos` | Listado paginado y alta nombre/tipo/objetivo/estado | Documentos vinculados/KPIs no constituyen un gestor completo |
 | `/auditorias` | Listado paginado, alta y modal de hallazgos asociados | Hallazgos de solo lectura, sin CRUD/derivación UI |
@@ -161,8 +171,9 @@ Archivos internos comparten transporte, pero tienen su propia allowlist y autori
 - SACP: alta con folio, tipo, descripción y fecha límite; estado Abierta, avance 0. Avance 100→En Validación. El botón de cierre se muestra desde En Validación y escribe Cerrada/100; la UI no sustituye una máquina de estados transaccional de DB.
 - Origen/origen_id se escriben en derivación desde quejas. Eficacia, validado_por_gc, notas, responsabilidad y prioridad no tienen edición completa en el flujo actual de SACP.
 - Riesgos: probabilidad×impacto con escala 1–3. <=2 Bajo, <=4 Medio, <=6 Alto, >6 Crítico; matriz 3×3. Alta directa de atributos y nivel.
-- Auditorías: alta con folio (manual o RPC), tipo/área/fechas/objetivo/alcance. Hallazgos asociados solo se listan; badge derivado_sacp_id no implementa derivación.
+- Auditorías: alta con folio (manual o automático en el INSERT), tipo/área/fechas/objetivo/alcance. Hallazgos asociados solo se listan; badge derivado_sacp_id no implementa derivación.
 - Documentos: alta con código/título, versión 1.0 y Borrador; `generar_folio_documento` existe pero no se usa aquí. Cambiar versión solo actualiza `documentos.version_actual`; el historial muestra un placeholder y no inserta versiones.
+- Consecutivos automáticos desde el 11 noviembre: año de registro CR y contador por módulo/año, mínimo tres dígitos sin truncar; SACP/Auditorías/Riesgos omiten folio vacío para asignarlo transaccionalmente. Los RPC previos siguen compatibles para el cliente publicado y los códigos manuales se conservan. DB aplicada, modales nuevos locales; [contrato](../consecutivos-anuales-2026-11-11.md).
 - Revisión por Dirección: altas/listado/detalle de reuniones, agenda/fechas. Acta Pendiente/Registrada con texto e icono estático; no usar spinner para un estado permanente. No se implementa un gestor de actas o acuerdos con Drive completo.
 - Reportería: módulos Quejas/SACP/Documentos/Auditorías/Riesgos/Revisión; filtros de fechas/estado/tipo (sin prioridad en Quejas). Lee lotes de 500 ordenados por id, tope 5000 filas y exige restringir filtros al superarlo. `window.print`/CSS de impresión; no persiste informes_config.
 - Usuarios: GET API permite admin/Calidad (directorio de responsables); POST/PATCH/DELETE solo admin. Alta Auth+perfil y rollback de Auth al fallar el INSERT; comprobación de auto-desactivación/auto-rol/auto-borrado y del último admin activo (409). Esta última usa COUNT antes de la escritura, sin bloqueo transaccional de ambos administradores; no garantiza por sí sola el caso concurrente. Cambios Auth/perfil son llamadas separadas, no una transacción distribuida.

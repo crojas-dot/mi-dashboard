@@ -32,11 +32,11 @@ export function crearPlantillaInforme(queja: Queja, anexos: readonly { nombre: s
   const lines = [
     '## ENTE COSTARRICENSE DE ACREDITACIÓN',
     '**Gestión de Calidad**',
-    `**INFORME N°:** ${informeLiteral(queja.numero_oficio_resolucion || 'Pendiente de asignar')}`,
+    `**INFORME N°:** ${informeLiteral(queja.numero_oficio_resolucion || queja.folio)}`,
     `**A:** ${informeLiteral(queja.cliente_nombre)}`,
     `**DE:** ${informeLiteral(autor || 'Gestión de Calidad')}`,
     `**FECHA:** ${date(fecha)}`,
-    `**ASUNTO:** ${informeLiteral((queja.tipo || queja.categoria) + ' · Folio ' + queja.folio)}`,
+    `**ASUNTO:** ${informeLiteral((queja.tipo || queja.categoria) + ' - Folio ' + queja.folio)}`,
     '## 1. Antecedentes del expediente',
     `**Folio:** ${informeLiteral(queja.folio)}`,
     `**Recepción:** ${Number.isNaN(received.getTime()) ? 'Sin fecha registrada' : date(received)}`,

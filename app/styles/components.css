@@ -82,6 +82,13 @@
   @apply min-w-0 rounded-card border border-qms-border bg-qms-surface;
 }
 
+/* Fondo tenue de selección compartido por Quejas y Mis Quejas. */
+@utility ui-case-row {
+  &[aria-selected="true"], &[aria-selected="true"]:hover {
+    @apply bg-qms-row-selected;
+  }
+}
+
 .mis-quejas-resolution-editor [data-rich-text-toolbar] {
   min-height: 44px;
   flex-wrap: wrap;

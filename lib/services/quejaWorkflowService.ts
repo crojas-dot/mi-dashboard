@@ -6,6 +6,7 @@ import type { SACP } from '@/lib/queries/useSACP'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { CODIGOS_ESTADO_QUEJA, REGISTRO_QUEJA_LIMITES, TIPOS_REGISTRO_QUEJA } from '@/lib/constants/quejas'
 import { requireText, trimTextFields } from '@/lib/utils/operationalFormValidation'
+import { validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
 
 type ExpedienteVersionado = Pick<Queja, 'id' | 'revision'>
 
@@ -149,7 +150,15 @@ export function revisarResolucionQueja(queja: ExpedienteVersionado, decision: 'a
     p_motivo: decision === 'returned' ? motivo!.trim() : null })
 }
 
-export interface RespuestaClienteDraftInput { respuesta: string; numeroOficio: string; adjuntoId: string | null }
+export interface RespuestaClienteDraftInput { respuesta: string; numeroOficio: string; adjuntoId: string | null; correo?: CorreoQueja; noProcede?: { justificacion: string; formato: 'plain' | 'markdown' } }
+
+function rechazoArgs(input: RespuestaClienteDraftInput, required = false) {
+  const reason = input.noProcede
+  if (!reason || !['plain', 'markdown'].includes(reason.formato) || reason.justificacion.length > 10000 || required && !reason.justificacion.trim()) throw new Error('Revisá la justificación de no procedencia.')
+  if (!input.correo) throw new Error('Revisá el asunto y el mensaje del correo.')
+  validarCorreoQueja(input.correo, required)
+  return { p_reason: reason.justificacion.trim(), p_reason_format: reason.formato, p_email_subject: input.correo.asunto.trim(), p_email_body: input.correo.cuerpo.trim() }
+}
 
 function respuestaArgs(queja: ExpedienteVersionado, version: number, input: RespuestaClienteDraftInput) {
   if (!Number.isSafeInteger(version) || version < 0) throw new Error('Actualizá el borrador antes de guardar.')
@@ -160,7 +169,13 @@ function respuestaArgs(queja: ExpedienteVersionado, version: number, input: Resp
 }
 
 export function guardarRespuestaClienteBorrador(queja: ExpedienteVersionado, version: number, input: RespuestaClienteDraftInput) {
-  return callRpc<import('@/lib/queries/useQuejaRespuestaCliente').RespuestaClienteDraft>('qms_save_response_draft', respuestaArgs(queja, version, input))
+  const args = respuestaArgs(queja, version, input)
+  if (input.noProcede) return callRpc<import('@/lib/queries/useQuejaRespuestaCliente').RespuestaClienteDraft>('qms_save_rejected_response_draft', { ...args, ...rechazoArgs(input) })
+  if (input.correo) {
+    validarCorreoQueja(input.correo)
+    Object.assign(args, { p_email_subject: input.correo.asunto.trim(), p_email_body: input.correo.cuerpo.trim() })
+  }
+  return callRpc<import('@/lib/queries/useQuejaRespuestaCliente').RespuestaClienteDraft>(input.correo ? 'qms_save_response_draft_v2' : 'qms_save_response_draft', args)
 }
 
 export function publicarRespuestaAprobada(queja: ExpedienteVersionado, version: number, input: RespuestaClienteDraftInput, adjunto: QuejaAdjunto | null) {
@@ -168,7 +183,12 @@ export function publicarRespuestaAprobada(queja: ExpedienteVersionado, version: 
   if (!args.p_response || !args.p_office || !esOficioPublicableQueja(adjunto, queja.id) || adjunto.id !== args.p_file) {
     throw new Error('Completá la respuesta, el número de oficio y el documento oficial de este expediente.')
   }
-  return callRpc<Queja>('qms_publish_approved_response', args)
+  if (input.noProcede) return callRpc<Queja>('qms_publish_rejected_response', { ...args, ...rechazoArgs(input, true) })
+  if (input.correo) {
+    validarCorreoQueja(input.correo, true)
+    Object.assign(args, { p_email_subject: input.correo.asunto.trim(), p_email_body: input.correo.cuerpo.trim() })
+  }
+  return callRpc<Queja>(input.correo ? 'qms_publish_approved_response_v2' : 'qms_publish_approved_response', args)
 }
 
 export function actualizarRegistroQueja(input: RegistroQuejaInput) {

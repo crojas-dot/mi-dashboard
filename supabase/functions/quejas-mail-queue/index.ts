@@ -136,7 +136,7 @@ function databaseConfig(env: QueueDependencies['env']) {
   return { url, key, legacyJwt: !modernKey }
 }
 
-async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_claim_batch_v2' | 'qms_mail_claim_batch_v3' | 'qms_mail_authorize' | 'qms_mail_complete',
+async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_claim_batch_v2' | 'qms_mail_claim_batch_v3' | 'qms_mail_claim_batch_v4' | 'qms_mail_claim_urgent_batch' | 'qms_mail_authorize_v2' | 'qms_mail_complete',
   args: Record<string, unknown>, fetcher: typeof fetch) {
   const result = await fetcher(new URL(`/rest/v1/rpc/${name}`, config.url).toString(), {
     method: 'POST', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10_000),
@@ -155,6 +155,9 @@ async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_cl
 
 /** Solo un evento final autorizado puede revelar su único documento publicado al emisor HMAC. */
 async function officialDocument(config: ReturnType<typeof databaseConfig>, id: string, claim: string, fetcher: typeof fetch, now: number) {
+  const eligible = await rpc(config, 'qms_mail_authorize_v2', { p_id: id, p_claim_token: claim }, fetcher)
+  if (typeof eligible !== 'boolean') throw new QueueError(503, 'mail_queue_unavailable')
+  if (!eligible) return { authorized: false, document: null }
   const read = async (table: string, params: Record<string, string>) => {
     const url = new URL('/rest/v1/' + table, config.url)
     url.search = new URLSearchParams(params).toString()
@@ -172,8 +175,8 @@ async function officialDocument(config: ReturnType<typeof databaseConfig>, id: s
     || !['Resuelto', 'Finalizado', 'No Procede'].includes(String(state))) return { authorized: false, document: null }
   if (!isMailUuid(event.queja_id)) throw new QueueError(503, 'mail_queue_unavailable')
   const publication = await read('queja_public_resolutions', { select: 'adjunto:queja_adjuntos(queja_id,storage_path,nombre,tipo_mime,tamano)', queja_id: 'eq.' + event.queja_id, limit: '1' })
-  // Los eventos legacy sin publicación conservan su comunicación previa, sin elegir otro archivo.
-  if (!publication) return { authorized: true, document: null }
+  // El adjunto se obtiene del expediente, sin depender del enlace que caduca.
+  if (!publication) throw new QueueError(503, 'mail_queue_unavailable')
   const file = publication.adjunto as Record<string, unknown> | null
   if (!file || file.queja_id !== event.queja_id || typeof file.storage_path !== 'string' || !/^[A-Za-z0-9_-]{10,200}$/.test(file.storage_path)
     || typeof file.nombre !== 'string' || !file.nombre.trim() || file.nombre.length > 255 || /[\u0000-\u001f\u007f/\\]/.test(file.nombre)
@@ -204,10 +207,14 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
           enabled: dependencies.env('QUEJAS_MAIL_QUEUE_ENABLED') === 'true' }, secret, cryptoApi, now()))
       }
       if (envelope.purpose === 'claim_request') {
-        const value = record(payload, ['limit'])
+        const value = record(payload, ['limit', 'citizenOnly'])
         // Cero despacha los avisos en DB sin reservar correo: las campanas no dependen de MailApp.
-        if (!Number.isInteger(value.limit) || Number(value.limit) < 0 || Number(value.limit) > 5) throw new QueueError()
-        args = { p_limit: value.limit, p_lease_seconds: 600, p_run_nonce: envelope.nonce, p_issued_at: envelope.issuedAt }
+        if (!Number.isInteger(value.limit) || Number(value.limit) < 0 || Number(value.limit) > 5
+          || value.citizenOnly !== undefined && typeof value.citizenOnly !== 'boolean') throw new QueueError()
+        // Dos mensajes máximos de 3500 unidades UTF-16 caben en el sobre base64
+        // de 64 KiB que acepta Apps Script, incluso con Unicode y seguimiento.
+        // Acotar antes de reclamar evita dejar un lote reservado que no puede entregarse.
+        args = { p_limit: Math.min(Number(value.limit), 2), p_lease_seconds: 600, p_run_nonce: envelope.nonce, p_issued_at: envelope.issuedAt }
       } else if (envelope.purpose === 'authorize_request') {
         const value = record(payload, ['eventId', 'claimToken', 'includeOfficialDocument'])
         if (!isMailUuid(value.eventId) || !isMailUuid(value.claimToken)
@@ -235,14 +242,14 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
           // Fallar antes de reservar un lote si falta la configuración del destino público.
           buildPublicTrackingUrl(trackingOrigin ?? '', 'configuration.check')
         }
-        const data = await rpc(database, trackingEnabled ? 'qms_mail_claim_batch_v3' : 'qms_mail_claim_batch_v2', args, fetcher)
+        const data = await rpc(database, (payload as Record<string, unknown>).citizenOnly === true ? 'qms_mail_claim_urgent_batch' : 'qms_mail_claim_batch_v4', args, fetcher)
         if (!Array.isArray(data) || data.length > Number(args.p_limit)) throw new QueueError(503, 'mail_queue_unavailable')
         const ids = new Set<string>()
         const messages = await Promise.all(data.map(async value => {
           const row = claimMailSnapshot(value, { internal: true })
           if (ids.has(row.id)) throw new QueueError(503, 'mail_queue_unavailable')
           ids.add(row.id)
-          const trackingUrl = trackingEnabled && row.public_tracking
+          const trackingUrl = trackingEnabled && row.public_tracking && row.tipo === 'recibido'
             ? buildPublicTrackingUrl(trackingOrigin!, await mintPublicTrackingCapability({
               quejaId: row.public_tracking.queja_id, nonce: row.public_tracking.nonce,
             }, trackingSecret!, { crypto: cryptoApi })) : undefined
@@ -258,7 +265,7 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
         // Revalidar el usuario y el hito en DB; este endpoint no acepta destinatario ni regla.
         const include = (payload as Record<string, unknown>).includeOfficialDocument === true
         const delivery = include ? await officialDocument(database, String(args.p_id), String(args.p_claim_token), fetcher, now()) : null
-        const authorized = delivery ? delivery.authorized : await rpc(database, 'qms_mail_authorize', args, fetcher)
+        const authorized = delivery ? delivery.authorized : await rpc(database, 'qms_mail_authorize_v2', args, fetcher)
         if (typeof authorized !== 'boolean') throw new QueueError(503, 'mail_queue_unavailable')
         const document = delivery?.document ?? null
         return response(await signQueueEnvelope('authorize_receipt', { requestNonce: envelope.nonce,

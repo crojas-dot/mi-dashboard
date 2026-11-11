@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-10",
+  "project": "fykhrrpeoehwqznccmfp",
+  "request": "Personalized editable cover email independent of public response and report",
+  "migrations": [
+    {
+      "version": "20261110150300",
+      "name": "quejas_correo_editable"
+    },
+    {
+      "version": "20261110151342",
+      "name": "quejas_habilitar_correo_editable"
+    }
+  ],
+  "edge": {
+    "version": 14,
+    "status": "ACTIVE",
+    "verify_jwt": false,
+    "exactSource": true
+  },
+  "activationSuccess": true,
+  "postflight": {
+    "enabled": true,
+    "rls_intact": true,
+    "staff_can_save": true,
+    "anon_can_save": false,
+    "browser_can_claim": false,
+    "machine_can_claim": true,
+    "browser_can_read_outbox_email": false,
+    "browser_can_enable": false
+  },
+  "advisors": {
+    "before": [
+      {
+        "name": "rls_enabled_no_policy",
+        "count": 10,
+        "level": "INFO"
+      },
+      {
+        "name": "extension_in_public",
+        "count": 1,
+        "level": "WARN"
+      },
+      {
+        "name": "anon_security_definer_function_executable",
+        "count": 6,
+        "level": "WARN"
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "count": 24,
+        "level": "WARN"
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "count": 1,
+        "level": "WARN"
+      }
+    ],
+    "after": [
+      {
+        "name": "rls_enabled_no_policy",
+        "count": 10,
+        "level": "INFO"
+      },
+      {
+        "name": "extension_in_public",
+        "count": 1,
+        "level": "WARN"
+      },
+      {
+        "name": "anon_security_definer_function_executable",
+        "count": 6,
+        "level": "WARN"
+      },
+      {
+        "name": "authenticated_security_definer_function_executable",
+        "count": 24,
+        "level": "WARN"
+      },
+      {
+        "name": "auth_leaked_password_protection",
+        "count": 1,
+        "level": "WARN"
+      }
+    ]
+  },
+  "compatibility": {
+    "legacyMailSnapshotsUntouched": true,
+    "noHistoricalBackfill": true,
+    "oldRpcSignaturesRetained": true,
+    "appsScriptUpdated": false,
+    "recipientFromComplaint": true,
+    "publicResponseIndependent": true,
+    "deliveryAckUnchanged": true
+  },
+  "verification": {
+    "postgresIsolated": 101,
+    "focusedNode": 89,
+    "edgeBundledChecks": 55,
+    "syntheticBrowser": 46,
+    "browserWidths": [
+      1536,
+      390,
+      320
+    ],
+    "fullNode": {
+      "passed": 867,
+      "total": 872,
+      "preexistingFailures": 5,
+      "scope": "Report/pagination failures documented before this task"
+    },
+    "productionBuild": true,
+    "typescript": true,
+    "lint": true,
+    "structure": true,
+    "visualLayer": true
+  },
+  "realTestEmailsSent": 0,
+  "realBusinessRecordsCreated": 0,
+  "webDeployment": "Local changes only; no Vercel deployment",
+  "artifacts": {
+    "postgres": ".performance/correo-editable-20261109/db-tests.log",
+    "node": ".performance/correo-editable-20261109/node-tests.log",
+    "browser": ".performance/correo-editable-20261109/response-evidence.json",
+    "edge": ".performance/correo-editable-20261109/edge-bundle-evidence.json",
+    "previousEdge": "supabase/backups/quejas_correo_edge_before_20261110.json"
+  }
+}

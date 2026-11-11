@@ -8,13 +8,15 @@ import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
 import { useQuejas } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useAuthStore } from '@/lib/store/auth-store'
+import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
+import { varianteEstado } from '@/lib/constants/estados'
 import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
-import { formatQuejaDeadlineDate, getQuejaDeadlineDate } from '@/lib/utils/quejaDeadline'
+import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -75,7 +77,7 @@ export default function MisQuejasPage() {
                   <th scope="col" className="min-w-[160px]">Cliente</th>
                   <th scope="col" className="min-w-[140px]">Tipo</th>
                   <th scope="col">Estado</th>
-                  <th scope="col">Límite investigación</th>
+                  <th scope="col">Plazo</th>
                   <th scope="col" className="pr-6!">Fecha</th>
                 </tr>
               </thead>
@@ -85,14 +87,15 @@ export default function MisQuejasPage() {
                 ) : (
                   quejas.map((q) => {
                     const vista = esVista(q.id)
+                    const deadline = getQuejaDeadline(q)
                     return (
-                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} onClick={() => openPanel(q)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openPanel(q) } }} className={`cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
+                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
                       <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                       <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
                       <td>{tipoVisible(q)}</td>
-                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || 'gray'}>{q.estado_nombre || q.estado}</Badge></td>
+                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{q.estado_nombre || q.estado}</Badge></td>
                       <td className="whitespace-nowrap text-qms-muted">
-                        {formatQuejaDeadlineDate(getQuejaDeadlineDate(q))}
+                        <QuejaPlazoIndicator deadline={deadline} />
                       </td>
                       <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
                     </tr>

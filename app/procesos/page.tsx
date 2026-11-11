@@ -47,7 +47,7 @@ export default function ProcesosPage() {
                 <TableCell className="font-medium text-gray-900 dark:text-white">{p.nombre_proceso}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{p.tipo || '-'}</TableCell>
                 <TableCell className="text-gray-600 dark:text-gray-400">{p.objetivo || '-'}</TableCell>
-                <TableCell><Badge variant={p.estado === 'Activo' ? 'green' : 'gray'}>{p.estado}</Badge></TableCell>
+                <TableCell><Badge variant="neutral">{p.estado}</Badge></TableCell>
               </TableRow>
             ))
           )}
