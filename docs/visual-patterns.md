@@ -283,3 +283,20 @@ externo con emitUpdate:false, pero limita las transacciones de edición/pegado.
 scrollport del expediente).
 toolbar/ayuda accesibles. Placeholder y primer bloque comparten el origen; el selector
 de texto es Select del kit, con flecha y controles de la misma altura.
+
+
+## Presentación unificada de Quejas y Mis Quejas (12 noviembre 2026)
+
+Ambas vistas usan `CaseWorkspace` y `CaseProcessHeader`: en modal reducido
+se muestra el resumen con segmentos bajo el encabezado; en modal ampliado
+las cuatro etapas tienen una línea de progreso cada una, sin checks, sobre
+el lienzo central. El ancho real se alinea descontando el gutter del scrollport
+con `--qms-case-scrollbar-width`. El encabezado de modal conserva las acciones
+específicas de navegación, no las acciones secundarias del expediente.
+
+En Mis Quejas, **Adjuntos del análisis** antecede a **Notas de investigación**
+en el lateral izquierdo. En Quejas, **Generar expediente** (solo personal autorizado)
+y **Historial y observaciones** aparecen como accesos laterales bajo los datos
+del cliente, conservando sus diálogos, permisos y operaciones. Las tarjetas de
+acceso utilizan el patrón visual compartido de `CaseSidebarShortcut`, sin añadir
+nuevos scrolls ni duplicar acciones.
