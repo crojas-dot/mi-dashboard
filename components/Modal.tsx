@@ -14,6 +14,7 @@ interface ModalProps {
   dismissOnBackdrop?: boolean
   descriptionId?: string
   headerLeading?: React.ReactNode
+  headerCenter?: React.ReactNode
   headerActions?: React.ReactNode
   footer?: React.ReactNode
   children: React.ReactNode
@@ -28,7 +29,7 @@ const sizes: Record<string, string> = {
 let scrollLocks = 0
 let previousOverflow = ''
 
-export default function Modal({ open, onClose, title, size = 'md', variant = 'dialog', height = 'fill', expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerActions, footer, children }: ModalProps) {
+export default function Modal({ open, onClose, title, size = 'md', variant = 'dialog', height = 'fill', expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerCenter, headerActions, footer, children }: ModalProps) {
   const drawer = variant === 'drawer'
   const workspace = variant === 'workspace'
   const report = variant === 'report'
@@ -138,10 +139,11 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
           data-modal-header
           className={report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : lightHeader ? 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark' : 'flex shrink-0 items-center justify-between rounded-t-modal bg-qms-dark px-4 py-3 text-white/75'}
         >
-          <div className={`flex min-w-0 items-center gap-3 ${report ? 'flex-1 gap-2' : confirmation ? 'gap-3' : ''}`}>
+          <div className={`flex min-w-0 items-center gap-3 ${headerCenter ? 'shrink-0' : 'flex-1'} ${report ? 'gap-2' : confirmation ? 'gap-3' : ''}`}>
             {headerLeading}
             <h2 id={titleId} title={workspace ? title : report ? title : undefined} className={`m-0 min-w-0 truncate leading-6 ${workspace ? 'text-sm font-semibold sm:text-base' : report ? 'text-base font-semibold' : confirmation ? 'text-lg font-semibold' : 'text-base'}`}>{title}</h2>
           </div>
+          {headerCenter && <div data-modal-header-center className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2">{headerCenter}</div>}
           <div className={`flex shrink-0 items-center gap-1 ${report || confirmation ? 'gap-1' : ''}`}>
             {headerActions}
             <button type="button" onClick={onClose} aria-label={`Cerrar ${title}`} className={`inline-flex ${report || confirmation ? 'h-9 w-9' : 'h-10 w-10'} shrink-0 cursor-pointer items-center justify-center rounded-button border border-transparent bg-transparent ${lightHeader ? 'text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark' : 'text-white/75 hover:bg-white/10 hover:text-white'}`}>
