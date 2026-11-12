@@ -472,6 +472,10 @@
   border-radius: 6px;
   transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease;
 }
+.mis-quejas-reading [data-case-action] .ui-button:not(.ui-button-icon) {
+  min-height: 40px;
+  padding: 8px 16px;
+}
 .mis-quejas-reading .ui-button-primary {
   background: #2563eb;
   border-color: #2563eb;
