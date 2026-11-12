@@ -373,7 +373,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     if (!motivoDevolucion.trim()) { showError(null, 'Escribí el motivo de devolución.'); return }
     return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion),
       'Queja devuelta a investigación', 'No se pudo devolver la queja',
-      () => { setReviewOpen(false); setMotivoDevolucion('') })
+      () => { setReviewOpen(false); setMotivoDevolucion(''); void refetchActividad() })
   }
 
   const handleDerivarSACP = async () => {
