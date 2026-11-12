@@ -13,7 +13,7 @@ interface ListaAdjuntosProps {
   onDownload: (a: QuejaAdjunto) => void
   puedeEliminar?: (a: QuejaAdjunto) => boolean
   onEliminar?: (a: QuejaAdjunto) => void
-  layout?: 'list' | 'cards'
+  layout?: 'list' | 'cards' | 'rows'
 }
 
 function filePresentation(adjunto: QuejaAdjunto) {
@@ -51,7 +51,7 @@ export default function ListaAdjuntos({
     return (
       <div className="mt-3">
         <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>
-        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : 'space-y-1'}>
+        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : 'space-y-1'}>
           {lista.map((a) => {
             const { Icon, label, color } = filePresentation(a)
             const preparePreviewConnection = () => {
@@ -94,6 +94,25 @@ export default function ListaAdjuntos({
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   )}
+                </div>
+              </li>
+            ) : layout === 'rows' ? (
+              <li key={a.id} data-attachment-row className="flex min-w-0 items-start gap-3 px-3 py-3 transition-colors hover:bg-qms-hover-bg">
+                <span className={`flex size-9 shrink-0 items-center justify-center rounded-button ${color}`} aria-hidden="true">
+                  <Icon className="size-5" strokeWidth={1.5} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <button {...previewIntent} type="button" onClick={() => onPreview(a)}
+                    title={a.nombre} aria-label={`Vista previa de ${a.nombre}`}
+                    className="block w-full cursor-pointer text-left text-sm font-medium leading-relaxed text-qms-dark hover:text-qms-primary hover:underline break-words [overflow-wrap:anywhere]">
+                    {a.nombre}
+                  </button>
+                  <p className="mt-1 text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <Button {...previewIntent} size="icon" variant="ghost" onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
+                  <Button size="icon" variant="ghost" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}><Download className="size-4" aria-hidden="true" /></Button>
+                  {onEliminar && puedeEliminar?.(a) && <Button size="icon" variant="ghost" onClick={() => onEliminar(a)} title="Eliminar adjunto" aria-label={`Eliminar ${a.nombre}`} className="text-qms-danger"><Trash2 className="size-4" aria-hidden="true" /></Button>}
                 </div>
               </li>
             ) : (
