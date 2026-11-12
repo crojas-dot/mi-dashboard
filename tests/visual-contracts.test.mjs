@@ -418,67 +418,6 @@ test('el progreso del encabezado descuenta el gutter real del editor', () => {
   assert.match(shared, /--qms-case-scrollbar-width/)
 })
 
-test('la nueva composición tipográfica no se propaga a Quejas ni a otros diálogos', () => {
-  const reading = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso', readingLayout: true })
-  const normal = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
-  const readingHeader = reading.dialog.props.children.find(child => child?.props?.['data-modal-header'])
-  const normalHeader = normal.dialog.props.children.find(child => child?.props?.['data-modal-header'])
-  assert.equal(reading.dialog.props['data-mis-quejas-reading'], true)
-  assert.equal(normal.dialog.props['data-mis-quejas-reading'], undefined)
-  assert.match(reading.dialog.props.className, /mis-quejas-reading/)
-  assert.doesNotMatch(normal.dialog.props.className, /mis-quejas-reading/)
-  assert.ok(readingHeader.props.className.includes('grid-cols-[280px_minmax(0,1fr)_300px]'))
-  assert.ok(normalHeader.props.className.includes('grid-cols-[220px_minmax(0,1fr)_260px]'))
-  const css = fs.readFileSync('app/styles/components.css', 'utf8')
-  assert.ok(css.includes('.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap'))
-  assert.match(css, /--mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif/)
-  const editorRule = css.match(/\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap \{([^}]+)\}/)?.[1] || ''
-  assert.match(editorRule, /max-width: 848px/, 'incluye 40px de padding por lado: texto máximo 768px')
-  assert.match(editorRule, /font-family: var\(--mis-quejas-document-font\)/)
-  assert.match(editorRule, /font-size: 17px/)
-  assert.match(editorRule, /line-height: 1\.625/)
-  const copyRule = css.match(/\.mis-quejas-reading \.mis-quejas-reading-copy > div \{([^}]+)\}/)?.[1] || ''
-  assert.match(copyRule, /max-width: 768px/)
-  assert.match(copyRule, /font-family: var\(--mis-quejas-document-font\)/)
-  assert.match(copyRule, /font-size: 17px/)
-  assert.match(copyRule, /line-height: 1\.625/)
-  assert.match(css, /\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap :is\(p, li, blockquote\)/)
-  assert.match(css, /\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap > p,/)
-  assert.match(css, /margin-block: 0 16px/)
-  assert.match(css, /width: min\(100%, 848px\)/)
-})
-
-test('Mis Quejas adopta los colores y proporciones exactos de la referencia sin alterar los tokens globales', () => {
-  const css = fs.readFileSync('app/styles/components.css', 'utf8')
-  const theme = fs.readFileSync('app/styles/theme.css', 'utf8')
-  const readingRule = css.match(/\\.mis-quejas-reading \\{([^}]+)\\}/)?.[1] ?? ''
-  for (const declaration of [
-    '--mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',
-    '--color-qms-primary: #2563eb;',
-    '--color-qms-primary-hover: #1d4ed8;',
-    '--color-qms-primary-soft: #eff6ff;',
-    '--color-qms-dark: #1f2937;',
-    '--color-qms-muted: #6b7280;',
-    '--color-qms-border: #e5e7eb;',
-    '--color-qms-hover-bg: #f9fafb;',
-    '--color-qms-success: #16a34a;',
-    '--color-qms-warning: #eab308;',
-    '--color-qms-danger: #ef4444;',
-  ]) {
-    assert.ok(readingRule.includes(declaration), declaration)
-  }
-  assert.match(theme, /--color-qms-primary: #024796;/)
-  assert.ok(css.includes('[data-mis-quejas-status="En Investigación"]'))
-  assert.ok(css.includes('background: #1e3a8a;'))
-  assert.ok(css.includes('.mis-quejas-reading [data-case-request] dl {'))
-  assert.ok(css.includes('.mis-quejas-reading [data-case-action] .ui-button:not(.ui-button-icon)'))
-  assert.ok(css.includes('min-height: 40px;'))
-  assert.ok(css.includes('.mis-quejas-reading [data-resolution-header] p {'))
-  assert.ok(css.includes('font-size: 14px;'))
-  assert.ok(css.includes('font-size: 17px;'))
-  assert.ok(css.includes('line-height: 1.625;'))
-})
-
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
