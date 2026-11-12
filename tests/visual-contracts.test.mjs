@@ -432,7 +432,16 @@ test('la nueva composición tipográfica no se propaga a Quejas ni a otros diál
   const css = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.ok(css.includes('.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap'))
   assert.match(css, /max-width: 768px/)
-  assert.match(css, /font-size: 17px/)
+  assert.match(css, /--mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif/)
+  const editorRule = css.match(/\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap \{([^}]+)\}/)?.[1] || ''
+  assert.match(editorRule, /font-family: var\(--mis-quejas-document-font\)/)
+  assert.match(editorRule, /font-size: 16px/)
+  assert.match(editorRule, /line-height: 1\.6/)
+  const copyRule = css.match(/\.mis-quejas-reading \.mis-quejas-reading-copy > div \{([^}]+)\}/)?.[1] || ''
+  assert.match(copyRule, /font-family: var\(--mis-quejas-document-font\)/)
+  assert.match(copyRule, /font-size: 16px/)
+  assert.match(copyRule, /line-height: 1\.6/)
+  assert.match(css, /\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap :is\(p, li, blockquote\)/)
 })
 
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
