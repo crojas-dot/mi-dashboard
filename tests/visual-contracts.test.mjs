@@ -21,6 +21,26 @@ test('todo el sistema usa la pila de fuentes nativas sin cargar Inter', () => {
 })
 
 
+test('escala nativa global mantiene tamaños legibles sin alterar la familia ni los colores', () => {
+  const theme = fs.readFileSync('app/styles/theme.css', 'utf8')
+  const css = fs.readFileSync('app/globals.css', 'utf8')
+  const values = {
+    '--text-xs': '0.9375rem',
+    '--text-sm': '1rem',
+    '--text-base': '1.0625rem',
+    '--text-lg': '1.1875rem',
+    '--text-xl': '1.3125rem',
+    '--text-2xl': '1.5625rem',
+  }
+  for (const [token, size] of Object.entries(values)) {
+    assert.ok(theme.includes(token + ': ' + size + ';'), token + ' conserva el aumento de 1px')
+  }
+  assert.ok(theme.includes('--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;'))
+  assert.ok(theme.includes('--color-qms-primary: #024796;'))
+  assert.match(css, /font-size:\s*var\(--text-base\);/)
+  assert.match(css, /line-height:\s*var\(--text-base--line-height\);/)
+})
+
 test('paginación conserva controles HTML accesibles y no envía formularios', () => {
   const { default: Pagination } = loadModule('components/ui/Pagination.tsx', {
     '@/lib/queries/pagination': { PAGE_SIZE: 25 },
