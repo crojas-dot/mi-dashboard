@@ -43,7 +43,7 @@ export default function QuejaInvestigacionResumen({ devolucion, devoluciones, op
         {historial.length > 1 && <p className="mt-2 text-xs">{historial.length} devoluciones registradas</p>}
         {verMas && <Button className="mt-2" size="sm" variant="secondary" onClick={() => cambiarVerMotivo(true)}>Ver más</Button>}
       </section>
-      <Modal open={verMotivo} onClose={() => cambiarVerMotivo(false)} title="Devoluciones de Calidad" size="md" height="content">
+      <Modal open={verMotivo} onClose={() => cambiarVerMotivo(false)} title="Devolución de Calidad" size="md" height="content">
         <ol className="space-y-3">
           {historial.map((item, index) => (
             <li key={item.fecha + '-' + index} className="rounded-card bg-soft-amber-bg p-4 text-sm text-soft-amber-text">
