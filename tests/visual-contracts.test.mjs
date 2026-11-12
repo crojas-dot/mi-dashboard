@@ -418,6 +418,23 @@ test('el progreso del encabezado descuenta el gutter real del editor', () => {
   assert.match(shared, /--qms-case-scrollbar-width/)
 })
 
+test('la nueva composición tipográfica no se propaga a Quejas ni a otros diálogos', () => {
+  const reading = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso', readingLayout: true })
+  const normal = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
+  const readingHeader = reading.dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  const normalHeader = normal.dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.equal(reading.dialog.props['data-mis-quejas-reading'], true)
+  assert.equal(normal.dialog.props['data-mis-quejas-reading'], undefined)
+  assert.match(reading.dialog.props.className, /mis-quejas-reading/)
+  assert.doesNotMatch(normal.dialog.props.className, /mis-quejas-reading/)
+  assert.match(readingHeader.props.className, /grid-cols-\\[280px_minmax\\(0,1fr\\)_300px\\]/)
+  assert.match(normalHeader.props.className, /grid-cols-\\[220px_minmax\\(0,1fr\\)_260px\\]/)
+  const css = fs.readFileSync('app/styles/components.css', 'utf8')
+  assert.match(css, /\\.mis-quejas-reading \\.mis-quejas-resolution-editor \\[data-rich-text-viewport\\] \\.tiptap/)
+  assert.match(css, /max-width: 768px/)
+  assert.match(css, /font-size: 17px/)
+})
+
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
