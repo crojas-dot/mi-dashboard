@@ -362,13 +362,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
               </div></div>
 
   return <>
-    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} readingLayout
+    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
       headerCenter={<CaseProcessHeader queja={queja} />} headerActions={<>
       <Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationLocked} onClick={onPrevious}><ArrowLeft className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationLocked} onClick={onNext}><ArrowRight className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} title={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} onClick={() => setIsExpanded(value => !value)}>{isExpanded ? <Minimize className="size-5" /> : <Maximize className="size-5" />}</Button>
     </>}>
-      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
+      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards"
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
         requestFooter={<div className="space-y-4">
           <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
@@ -376,29 +376,28 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div>}
         compact={<CaseCycle queja={queja} process currentOnly />} cycle={<CaseCycle queja={queja} process />}
-        action={<div className="space-y-4"><section className="min-w-0 rounded-[8px] border border-qms-border bg-qms-surface p-5 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-base font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />Acción actual</h3>
-          <Badge variant={queja.estado_color || varianteEstado('quejas', estado)} data-mis-quejas-status={estado}>{queja.estado_nombre || estado}</Badge>
+        action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />Acción actual</h3>
+          <Badge variant={queja.estado_color || varianteEstado('quejas', estado)}>{queja.estado_nombre || estado}</Badge>
           <CaseCompletionDate queja={queja} />
           <div className="mt-3" title={deadline.stageTitle}>{plazo}{plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}</div>
           {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
-          <div className="mt-6 space-y-3">
-            <Button aria-label="Ver caso completo" variant="secondary" className="w-full min-w-0 text-qms-dark" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver caso completo</Button>
+          <div className="mt-4 space-y-2">
+            <Button aria-label="Ver caso completo" className="w-full border-qms-brand-red! bg-qms-brand-red! hover:border-qms-brand-red! hover:bg-qms-surface! hover:text-qms-brand-red!" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver caso completo</Button>
             {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
           </div>
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} devoluciones={devoluciones} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
-        {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-[8px] border border-qms-border bg-qms-surface shadow-sm">
-          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-[8px] border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-6"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-lg font-semibold text-qms-dark">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
+        {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-card border border-qms-border bg-qms-surface shadow-sm">
+          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-card border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
             ? <Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button>
             : <Button data-resolution-edit size="sm" className="px-2! sm:px-3!" variant="secondary" title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'} disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}><Pencil aria-hidden="true" className="size-4 shrink-0" />Editar</Button>}{editandoResolucion && <Button size="sm" className="px-2! sm:px-3!" variant="secondary" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} disabled={resolutionPending} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" />Asistencia</Button>}</div><span role="status" className="sr-only">{guardandoResolucion ? 'Guardando borrador…' : borradorVersion === null ? 'Cargando borrador…' : resolutionSaved ? 'Borrador guardado' : resolutionDirty ? 'Cambios sin guardar' : 'Sin contenido todavía'}</span></div>
           {assistance}
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
           <div className="min-w-0"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución" placeholder="Documentá la conclusión y los hallazgos de tu investigación..." value={resolucion} format={resolucionFormato} onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }} variant="document" layout="content" minHeight={540} maxLength={DOCUMENT_LIMIT} required readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null} className="mis-quejas-resolution-editor" /></div>
-        </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel"><div className="mis-quejas-reading-copy">
-          {queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
+        </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel">{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
           {queja.numero_oficio_resolucion && <p className="mt-3 break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}
-        </div></CaseSection>}
+        </CaseSection>}
       </CaseWorkspace>
       <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
         adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
