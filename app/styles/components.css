@@ -95,25 +95,12 @@
   overflow: visible;
 }
 
-/* Sin foco, la rueda navega el expediente. hidden conserva el punto de lectura
-   del texto; el gutter evita que cambie de ancho al empezar o terminar la edición. */
+/* Mis Quejas usa un único scroll del expediente. El editor crece con el texto,
+   tanto durante la escritura como en lectura: no hay scroll interior ni gutter. */
 .mis-quejas-resolution-editor [data-rich-text-viewport] {
-  overflow-y: hidden;
+  overflow: visible;
   overscroll-behavior: auto;
-  scrollbar-gutter: stable;
-}
-
-/* También incluye los controles de formato, para no sacar el lienzo de la vista
-   al llegar al primer/último párrafo o al editar todavía un documento vacío. */
-.mis-quejas-resolution-editor:not([data-rich-text-readonly]):focus-within [data-rich-text-viewport] {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* Guardado: la lectura del documento conserva su propio desplazamiento. */
-.mis-quejas-resolution-editor[data-rich-text-readonly] [data-rich-text-viewport] {
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  scrollbar-gutter: auto;
 }
 
 @utility ui-table {
