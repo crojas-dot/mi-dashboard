@@ -35,6 +35,7 @@ interface Props {
 export default function QuejaAnalisisPanel(props: Props) {
   const { queja } = props
   const analysis = getQuejaAnalysis(queja)
+  const adjuntosCliente = props.adjuntos.filter(adjunto => !adjunto.usuario_id)
   const decision = queja.estado === 'No Procede' ? 'No Procede' : queja.justificacion_procede ? 'Procede' : null
   return <Modal open={props.open} onClose={props.onClose} title={`Análisis · ${queja.folio}`} variant="document" size="xl"
     footer={<div className="flex flex-wrap justify-end gap-2"><Button variant="ghost" onClick={props.onClose}>Cerrar</Button>{props.onPrepararResolucion && <Button className="min-w-0 whitespace-normal" onClick={props.onPrepararResolucion}>Preparar resolución</Button>}</div>}>
@@ -45,8 +46,8 @@ export default function QuejaAnalisisPanel(props: Props) {
           <CaseSection title="Descripción del cliente" variant="document" headerActions={<AreaAfectada area={queja.area_afectada} />}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción.'}</p></CaseSection>
           {props.devolucion && <CaseSection title="Devolución de Calidad" variant="document"><div className="rounded-card bg-soft-amber-bg p-3 text-sm text-soft-amber-text"><time dateTime={props.devolucion.fecha}>{caseDate(props.devolucion.fecha)}</time><p className="mt-2 whitespace-pre-wrap break-words">{props.devolucion.motivo}</p></div></CaseSection>}
           {analysis && <CaseSection title="Análisis registrado" source="Gestión interna" variant="document"><RichTextContent value={analysis.value} format={analysis.format} /></CaseSection>}
-          <CaseSection title="Archivos del expediente" variant="document">
-            {props.adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando archivos…" framed={false} /> : props.adjuntosError ? <div role="alert"><p>No se pudieron cargar los archivos.</p><Button variant="ghost" size="sm" onClick={props.onRetryAdjuntos}>Reintentar archivos</Button></div> : props.adjuntos.length ? <ListaAdjuntos adjuntos={props.adjuntos} layout="cards" onPreview={props.onPreview} onDownload={props.onDownload} /> : <p className="text-sm text-qms-muted">Sin archivos registrados.</p>}
+          <CaseSection title="Adjuntos del cliente" variant="document">
+            {props.adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando archivos…" framed={false} /> : props.adjuntosError ? <div role="alert"><p>No se pudieron cargar los archivos.</p><Button variant="ghost" size="sm" onClick={props.onRetryAdjuntos}>Reintentar archivos</Button></div> : adjuntosCliente.length ? <ListaAdjuntos adjuntos={adjuntosCliente} layout="cards" onPreview={props.onPreview} onDownload={props.onDownload} /> : <p className="text-sm text-qms-muted">Sin adjuntos del cliente.</p>}
           </CaseSection>
           {(queja.resolucion || queja.numero_oficio_resolucion) && <CaseSection title={queja.estado === 'En Investigación' ? 'Propuesta anterior registrada' : 'Documento registrado'} source="Responsable" variant="document">
             {queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}

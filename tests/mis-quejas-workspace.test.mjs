@@ -60,9 +60,9 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
   const visit = value => {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props) return []
-    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
+    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
     if (value.type === 'Modal' && !value.props.open) return [value]
-    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter)]
+    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter)]
   }
   const nodes = () => visit(tree)
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
@@ -100,10 +100,13 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   const panel = fixture()
   panel.select('A')
   const workspace = panel.nodes().find(node => node.type.name === 'CaseWorkspace')
-  assert.equal(workspace.props.cyclePlacement, 'top')
+  assert.equal(workspace.props.cyclePlacement, 'header')
   assert.equal(workspace.props.presentation, 'reference')
   assert.equal(workspace.props.request.type.name, 'CaseRequestHeader')
-  assert.equal(workspace.props.requestFooter.type.name, 'QuejaNotasCard')
+  assert.equal(workspace.props.requestFooter.type, 'div')
+  assert.equal(workspace.props.requestFooter.props.children[0].type.name, 'QuejaNotasCard')
+  assert.equal(workspace.props.requestFooter.props.children[1].type.name, 'QuejaAdjuntosCard')
+  assert.ok(panel.modal().props.headerCenter)
   assert.equal(workspace.props.cycle.props.process, true)
   assert.equal(panel.editor().props.label, 'Resolución')
   assert.equal(panel.editor().props.layout, 'fill')
@@ -288,30 +291,43 @@ test('borrador bloquea navegación; cambiar de visita retira borrador y lateral 
   assert.equal(panel.editor().props.value, '')
 })
 
-test('Adjuntar va junto a Guardar y lo subido se lista bajo el lienzo, sin otra consulta', () => {
+test('los adjuntos de análisis viven debajo de notas, no dentro del lienzo, y se separan de los del cliente', () => {
   const panel = fixture()
   panel.select('A')
-  const input = panel.nodes().find(node => node.props['aria-label'] === 'Adjuntar evidencia de investigación')
-  assert.equal(input.props.disabled, false)
-  const file = new File(['evidencia sintética'], 'Evidencia.pdf', { type: 'application/pdf' })
-  const event = { target: { files: [file], value: 'seleccionado' } }
-  input.props.onChange(event)
-  assert.equal(event.target.value, '')
-  assert.deepEqual(panel.uploads, [file])
-  const all = panel.nodes()
-  const attach = panel.button('Adjuntar')
-  const save = panel.button('Guardar')
-  assert.ok(all.indexOf(attach) > -1 && all.indexOf(attach) < all.indexOf(save))
-  assert.equal(panel.editor().props.toolbarActions, undefined)
-  const lists = all.filter(node => node.type === 'Attachments')
-  assert.equal(lists.length, 1)
-  assert.ok(all.indexOf(panel.editor()) < all.indexOf(lists[0]))
-  assert.equal(lists[0].props.puedeEliminar(lists[0].props.adjuntos[0]), false)
-  assert.equal(lists[0].props.puedeEliminar(lists[0].props.adjuntos[1]), true)
+  assert.equal(panel.nodes().some(node => node.props['data-resolution-attachments']), false)
+  assert.equal(panel.button('Adjuntar'), undefined)
+  const card = panel.nodes().find(node => node.props['data-investigation-files-card'])
+  assert.ok(card)
+  assert.ok(panel.nodes().some(node => node.props['data-investigation-notes-card']))
+  const openFiles = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis')
+  openFiles.props.onClick(); panel.render()
+  const list = panel.nodes().find(node => node.type === 'Attachments')
+  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['file'])
+  assert.equal(list.props.puedeEliminar(list.props.adjuntos[0]), true)
+  assert.ok(panel.button('Agregar archivos'))
+  panel.modal().props.onClose(); panel.render()
+  assert.equal(panel.nodes().find(node => node.type === 'Modal' && node.props.title?.startsWith('Adjuntos del análisis')).props.open, false)
   panel.openAnalysis()
-  const shared = panel.nodes().find(node => node.type?.name === 'QuejaAnalisisPanel').props.adjuntos
-  assert.deepEqual(lists[0].props.adjuntos, shared)
-  assert.ok(panel.nodes().filter(node => node.type === 'Attachments').every(node => node.props.layout === 'cards'))
+  const cliente = panel.nodes().find(node => node.type === 'Attachments')
+  assert.deepEqual(cliente.props.adjuntos.map(file => file.id), ['client-file'])
+})
+
+test('la tarjeta lateral acepta arrastrar dos archivos y los envía secuencialmente', async () => {
+  const panel = fixture()
+  panel.select('A')
+  const card = panel.nodes().find(node => node.props['data-investigation-files-card'])
+  const one = new File(['primero'], 'Primero.pdf', { type: 'application/pdf' })
+  const two = new File(['segundo'], 'Segundo.png', { type: 'image/png' })
+  let prevented = 0, stopped = 0
+  const target = { dataset: {} }
+  card.props.onDragOver({ currentTarget: target, dataTransfer: { types: ['Files'], dropEffect: 'none' }, preventDefault() { prevented++ } })
+  assert.equal(target.dataset.dragging, 'true')
+  card.props.onDrop({ currentTarget: target, dataTransfer: { types: ['Files'], files: [one, two] }, preventDefault() { prevented++ }, stopPropagation() { stopped++ } })
+  await new Promise(setImmediate)
+  assert.deepEqual(panel.uploads, [one, two])
+  assert.equal(target.dataset.dragging, undefined)
+  assert.equal(prevented, 2)
+  assert.equal(stopped, 1)
 })
 
 test('una evidencia pendiente bloquea envío mientras permite consultar y cerrar Análisis', async () => {
@@ -457,9 +473,10 @@ test('la lectura de notas y archivos no concede escritura a un responsable ajeno
   panel.openNotes()
   assert.equal(panel.button('Agregar nota'), undefined)
   panel.notesModal().props.onClose(); panel.render()
+  panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis').props.onClick(); panel.render()
   const list = panel.nodes().find(node => node.type === 'Attachments')
   assert.ok(list.props.adjuntos.every(file => !list.props.puedeEliminar(file)))
-  assert.equal(panel.button('Adjuntar'), undefined)
+  assert.equal(panel.button('Agregar archivos'), undefined)
 })
 
 test('las notas propias se editan o eliminan desde el menú; las ajenas y la devolución no', async () => {
@@ -491,17 +508,15 @@ test('las notas propias se editan o eliminan desde el menú; las ajenas y la dev
   assert.equal(panel.noteDeletes[0].id, 'mine')
 })
 
-test('al guardar, los archivos siguen bajo el documento y Guardar se convierte en Editar', async () => {
+test('guardar el borrador conserva adjuntos a la izquierda sin duplicarlos en el editor', async () => {
   const panel = fixture()
   panel.select('A')
-  assert.ok(panel.nodes().some(node => node.props['data-resolution-attachments']))
-  assert.ok(panel.nodes().find(node => node.type === 'Attachments').props.adjuntos.length > 0)
+  assert.equal(panel.nodes().some(node => node.props['data-resolution-attachments']), false)
+  assert.ok(panel.nodes().some(node => node.props['data-investigation-files-card']))
   panel.editor().props.onChange('Trabajo guardado', 'plain'); panel.render()
   await panel.button('Guardar').props.onClick(); panel.render()
-  assert.ok(panel.nodes().some(node => node.props['data-resolution-attachments']))
-  const list = panel.nodes().find(node => node.type === 'Attachments')
-  assert.equal(list.props.layout, 'cards')
-  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['client-file', 'file'])
+  assert.equal(panel.nodes().some(node => node.props['data-resolution-attachments']), false)
+  assert.ok(panel.nodes().some(node => node.props['data-investigation-files-card']))
   assert.equal(panel.button('Guardar'), undefined)
   assert.ok(panel.button('Editar'))
 })
