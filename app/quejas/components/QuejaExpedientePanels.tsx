@@ -87,11 +87,11 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
         <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `p-3 sm:p-4 ${referenceColumns} @min-[1100px]:items-start @min-[1100px]:py-4` : ''}`}>
-          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:order-none' : ''}`}>
+          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
           </aside>
           <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? 'space-y-4 bg-qms-hover-bg' : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
-          <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-5 @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-10rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:bg-transparent @min-[1100px]:p-0 @min-[1100px]:[will-change:transform]' : 'border-b border-qms-border'}`}>{action}</aside>
+          <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:bg-transparent @min-[1100px]:p-0' : 'border-b border-qms-border'}`}>{action}</aside>
         </div>
       </div>
     </div>
@@ -138,10 +138,15 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
     const completed = flow.steps.every(step => step.completed)
     const index = current >= 0 ? current : completed ? flow.steps.length - 1 : -1
     if (currentOnly) return <div data-case-cycle-compact><p className="text-sm text-qms-muted sm:text-base">{index >= 0 ? `${flow.steps[index].label} · paso ${index + 1} de ${flow.steps.length}` : 'Etapa por verificar'}</p><div aria-hidden="true" className="mt-2 flex gap-1">{flow.steps.map(step => <span key={step.id} className={`h-1 flex-1 ${step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />)}</div></div>
-    return <div className="min-w-0 overflow-x-auto"><ol aria-label={flow.label} className="flex min-w-max items-center">{flow.steps.map((step, position) => <li key={step.id} aria-current={step.current ? 'step' : undefined} className="relative flex shrink-0 items-center text-sm sm:text-base">
-      {position > 0 && <span data-case-cycle-connector aria-hidden="true" className={`mx-3 h-[2px] w-6 shrink-0 sm:w-10 ${step.current || step.completed ? 'bg-qms-success' : 'bg-qms-border'}`} />}
-      <span aria-hidden="true" className={`flex size-6 shrink-0 items-center justify-center rounded-full border ${step.completed ? 'border-qms-success bg-qms-success text-white' : step.current ? 'border-qms-primary text-qms-primary' : 'border-qms-border text-qms-muted'}`}>{step.completed ? <Check className="size-4" /> : position + 1}</span><span className={`ml-2 whitespace-nowrap ${step.current ? 'font-semibold text-qms-dark' : 'text-qms-muted'}`}>{step.label}</span>{step.completed && <span className="sr-only">: completada</span>}
-    </li>)}</ol></div>
+    return <div data-case-process-lines className="w-full min-w-0">
+      <ol aria-label={flow.label} className={`grid w-full min-w-0 gap-1.5 sm:gap-2 ${flow.steps.length === 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+        {flow.steps.map((step, position) => <li key={step.id} title={step.label} aria-current={step.current ? 'step' : undefined} className="min-w-0 text-center">
+          <span className={`block truncate text-[11px] sm:text-sm ${step.current ? 'font-semibold text-qms-primary' : step.completed ? 'font-medium text-qms-muted' : 'text-qms-muted'}`}>{position + 1}. {step.label}</span>
+          <span data-case-cycle-line aria-hidden="true" className={`mt-1.5 block h-1 w-full rounded-full ${step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />
+          {step.completed && <span className="sr-only">: completada</span>}
+        </li>)}
+      </ol>
+    </div>
   }
   const flow = getCaseRoleCycle(queja, audience)
   if (currentOnly) {

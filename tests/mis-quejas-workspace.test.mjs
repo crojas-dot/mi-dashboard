@@ -12,7 +12,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
   let uploading = false
   const user = { id: 'owner', rol }
   const react = {
-    useEffect() {}, useCallback: value => value,
+    useEffect() {}, useLayoutEffect() {}, useCallback: value => value,
     useRef(value) { const i = cursor++; slots[i] ??= { current: value }; return slots[i] },
     useState(initial) { const i = cursor++; if (!(i in slots)) slots[i] = typeof initial === 'function' ? initial() : initial; return [slots[i], value => { const next = typeof value === 'function' ? value(slots[i]) : value; if (!Object.is(next, slots[i])) { slots[i] = next; changed = true } }] },
   }
@@ -109,6 +109,9 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.ok(panel.modal().props.headerCenter)
   assert.equal(workspace.props.cycle.props.process, true)
   assert.equal(panel.editor().props.label, 'Resolución')
+  const stickyHeader = panel.nodes().find(node => node.props['data-resolution-header'])
+  assert.match(stickyHeader.props.className, /sticky top-0/)
+  assert.match(panel.nodes().find(node => node.props['data-resolution-inline']).props.className, /overflow-visible/)
   assert.equal(panel.editor().props.layout, 'content')
   assert.equal(panel.editor().props.minHeight, 540)
   assert.equal(panel.editor().props.variant, 'document')
@@ -302,7 +305,11 @@ test('los adjuntos de análisis viven debajo de notas, no dentro del lienzo, y s
   assert.ok(panel.nodes().some(node => node.props['data-investigation-notes-card']))
   const openFiles = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis')
   openFiles.props.onClick(); panel.render()
+  const filesModal = panel.nodes().find(node => node.type === 'Modal' && node.props.title.startsWith('Adjuntos del análisis'))
+  assert.equal(filesModal.props.tall, true)
+  assert.ok(panel.nodes().some(node => node.props['data-attachment-list-scroll']))
   const list = panel.nodes().find(node => node.type === 'Attachments')
+  assert.equal(list.props.layout, 'rows')
   assert.deepEqual(list.props.adjuntos.map(file => file.id), ['file'])
   assert.equal(list.props.puedeEliminar(list.props.adjuntos[0]), true)
   assert.ok(panel.button('Agregar archivos'))

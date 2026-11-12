@@ -89,10 +89,20 @@
   }
 }
 
+/* Solo el scroll del expediente mueve el documento. El contenedor interno
+   debe dejar de recortar la barra de formato para que el sticky funcione. */
+.mis-quejas-resolution-editor > div:nth-child(2) {
+  overflow: visible;
+}
+
 .mis-quejas-resolution-editor [data-rich-text-toolbar] {
+  position: sticky;
+  top: var(--qms-resolution-header-height, 5rem);
+  z-index: 20;
   min-height: 44px;
   flex-wrap: wrap;
   overflow: visible;
+  background: var(--color-qms-surface);
 }
 
 /* Mis Quejas usa un único scroll del expediente. El editor crece con el texto,
