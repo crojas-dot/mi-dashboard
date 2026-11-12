@@ -41,16 +41,12 @@ interface CardProps {
   adjuntos: QuejaAdjunto[]
   loading: boolean
   error: boolean
-  canUpload: boolean
-  uploading: boolean
   onOpen: () => void
-  onFiles: OnFiles
 }
 
-export function QuejaAdjuntosCard({ adjuntos, loading, error, canUpload, uploading, onOpen, onFiles }: CardProps) {
+export function QuejaAdjuntosCard({ adjuntos, loading, error, onOpen }: CardProps) {
   const ultimo = adjuntos.at(-1)
-  return <section data-investigation-files-card {...dropHandlers(canUpload, onFiles)}
-    className="min-w-0 rounded-card border border-qms-border bg-qms-surface shadow-sm transition-colors data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
+  return <section data-investigation-files-card className="min-w-0 rounded-card border border-qms-border bg-qms-surface shadow-sm">
     <button type="button" onClick={onOpen} aria-label="Ver adjuntos del análisis" className="w-full min-w-0 cursor-pointer p-4 text-left">
       <span className="flex items-start gap-2">
         <Paperclip aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-primary" />
@@ -63,7 +59,6 @@ export function QuejaAdjuntosCard({ adjuntos, loading, error, canUpload, uploadi
       <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-qms-primary">
         Ver adjuntos <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
       </span>
-      {canUpload && <span className="mt-2 block text-xs text-qms-muted">{uploading ? 'Subiendo archivos…' : 'También podés arrastrar archivos aquí'}</span>}
     </button>
   </section>
 }
