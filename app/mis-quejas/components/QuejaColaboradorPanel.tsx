@@ -367,7 +367,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
           <div className="mt-4 space-y-2">
             <Button aria-label="Ver caso completo" className="w-full border-qms-brand-red! bg-qms-brand-red! hover:border-qms-brand-red! hover:bg-qms-surface! hover:text-qms-brand-red!" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver caso completo</Button>
-            {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}><Send aria-hidden="true" className="size-4 shrink-0" />{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
+            {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
           </div>
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} devoluciones={devoluciones} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
