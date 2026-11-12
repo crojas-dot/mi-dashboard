@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadModule } from './load-module.mjs'
 
-const { obtenerDevolucionPendiente, esNotaInvestigacion, NOTA_DEVOLUCION_PREFIX, NOTA_APROBACION_GC } =
+const { obtenerDevolucionPendiente, obtenerHistorialDevoluciones, esNotaInvestigacion, NOTA_DEVOLUCION_PREFIX, NOTA_APROBACION_GC } =
   loadModule('lib/utils/quejaInvestigacionNotas.ts')
 
 const actividad = (id, descripcion, tipo = 'nota') => ({
@@ -55,4 +55,25 @@ test('el historial de notas no se modifica al identificar la devolución', () =>
   const copy = events.slice()
   obtenerDevolucionPendiente('En Investigación', events)
   assert.deepEqual(events, copy)
+})
+
+test('el historial incluye todas las devoluciones, ordenadas de la más reciente a la más antigua', () => {
+  const events = [
+    actividad(5, NOTA_DEVOLUCION_PREFIX + 'Último motivo'),
+    actividad(1, NOTA_DEVOLUCION_PREFIX + 'Primer motivo'),
+    actividad(4, 'Nota de investigación'),
+    actividad(3, NOTA_DEVOLUCION_PREFIX + 'Motivo intermedio'),
+    actividad(2, NOTA_APROBACION_GC),
+  ]
+  const copy = events.slice()
+  const historial = obtenerHistorialDevoluciones(events)
+  assert.deepEqual(historial.map(item => item.motivo), ['Último motivo', 'Motivo intermedio', 'Primer motivo'])
+  assert.deepEqual(events, copy)
+})
+
+test('un único motivo largo permanece completo en el historial para el modal', () => {
+  const motivo = 'Explicación detallada del hallazgo. '.repeat(20)
+  const historial = obtenerHistorialDevoluciones([actividad(1, NOTA_DEVOLUCION_PREFIX + motivo)])
+  assert.equal(historial.length, 1)
+  assert.equal(historial[0].motivo, motivo.trim())
 })
