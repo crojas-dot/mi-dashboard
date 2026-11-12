@@ -7,7 +7,10 @@ como otra biblioteca. El azul de marca es **#024796**.
 La fuente global se define en `app/styles/theme.css` mediante `--font-sans`:
 `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`.
 `app/globals.css` la aplica al `body`; `app/layout.tsx` y `app/global-error.tsx`
-ya no descargan Inter. Se conservan los tamaños de texto, colores y espaciados.
+ya no descargan Inter. La escala tipográfica se aumentó 1px para que la fuente
+nativa tenga una presencia visual similar a la anterior: auxiliares 15px,
+controles 16px, texto base 17px, títulos 19/21/25px. Se conservan colores,
+radios, espaciado de contenedores y medidas explícitas de documentos.
 
 ## Dónde modificar cada cosa
 
