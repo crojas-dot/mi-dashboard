@@ -405,6 +405,19 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
 })
 
+test('el progreso del encabezado descuenta el gutter real del editor', () => {
+  const { dialog } = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
+  const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.equal(header.props['data-case-header-grid'], true)
+  assert.match(header.props.className, /grid-cols-\\[220px_minmax/)
+  const stylesheet = fs.readFileSync('app/styles/components.css', 'utf8')
+  assert.match(stylesheet, /data-case-header-grid="true"/)
+  assert.match(stylesheet, /padding-right: calc\\(1rem \\+ var\\(--qms-case-scrollbar-width, 0px\\)\\)/)
+  const shared = fs.readFileSync('app/quejas/components/QuejaExpedientePanels.tsx', 'utf8')
+  assert.match(shared, /offsetWidth - scrollport.clientWidth/)
+  assert.match(shared, /--qms-case-scrollbar-width/)
+})
+
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
