@@ -5,6 +5,22 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
 
+test('todo el sistema usa la pila de fuentes nativas sin cargar Inter', () => {
+  const theme = fs.readFileSync('app/styles/theme.css', 'utf8')
+  const css = fs.readFileSync('app/globals.css', 'utf8')
+  const layout = fs.readFileSync('app/layout.tsx', 'utf8')
+  const globalError = fs.readFileSync('app/global-error.tsx', 'utf8')
+  const expected = '--font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;'
+
+  assert.ok(theme.includes(expected))
+  assert.match(css, /body\s*\{[^}]*font-family:\s*var\(--font-sans\);/s)
+  assert.doesNotMatch(layout, /next\/font|\bInter\b|inter\.className/)
+  assert.doesNotMatch(globalError, /next\/font|\bInter\b|inter\.className/)
+  assert.match(layout, /<body className="select-none">/)
+  assert.match(globalError, /<body className="select-none">/)
+})
+
+
 test('paginación conserva controles HTML accesibles y no envía formularios', () => {
   const { default: Pagination } = loadModule('components/ui/Pagination.tsx', {
     '@/lib/queries/pagination': { PAGE_SIZE: 25 },
