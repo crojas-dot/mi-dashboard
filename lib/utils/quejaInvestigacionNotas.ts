@@ -19,12 +19,25 @@ export function obtenerDevolucionPendiente(
   actividad: readonly { tipo: string; descripcion: string; created_at: string }[],
 ): { motivo: string; fecha: string } | undefined {
   if (estado !== 'En Investigación') return undefined
-  const ultimaDecision = [...actividad].reverse().find(item =>
-    item.tipo === 'nota' && (item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX) || item.descripcion === NOTA_APROBACION_GC)
-  )
+  const ultimaDecision = actividad
+    .filter(item => item.tipo === 'nota' && (item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX) || item.descripcion === NOTA_APROBACION_GC))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
   if (!ultimaDecision?.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX)) return undefined
   return {
     motivo: ultimaDecision.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim(),
     fecha: ultimaDecision.created_at,
   }
+}
+
+/** Historial de devoluciones de GC, separado de las notas del responsable. */
+export function obtenerHistorialDevoluciones(
+  actividad: readonly { tipo: string; descripcion: string; created_at: string }[],
+): { motivo: string; fecha: string }[] {
+  return actividad
+    .filter(item => item.tipo === 'nota' && item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX))
+    .map(item => ({
+      motivo: item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim(),
+      fecha: item.created_at,
+    }))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
 }
