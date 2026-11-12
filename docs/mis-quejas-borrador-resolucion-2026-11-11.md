@@ -61,9 +61,14 @@ expediente. Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo
 también al editar, con `ListaAdjuntos layout="cards"`; no hay sheet ni contador
 aparte. Diálogo, visor y permisos reutilizan las lecturas y servicios existentes. El
 envío a GC permanece en Acción actual, sin otro botón debajo del
-editor. Si la investigación tiene devolución previa, el control se llama
-«Reenviar revisión a GC» y el mensaje de devolución no se muestra en ese contexto;
-el envío actual entrega la propuesta corregida. Un mensaje de devolución muy largo
+editor. Si la última decisión de Calidad es una devolución y la queja está de nuevo
+En Investigación, el control se llama «Reenviar a Revisión GC» y el mensaje
+con el motivo aparece bajo los botones de Acción actual. Una investigación
+inicial muestra «Enviar a Revisión GC» sin mensaje. Al reenviar, la transición
+a Pendiente de Revisión GC retira el aviso y el botón de la acción actual;
+el historial conserva el motivo anterior. Una aprobación posterior impide
+que una devolución histórica aparezca al reabrir. La devolución de Calidad
+refresca el historial de actividad compartido. Un mensaje de devolución muy largo
 se resume en línea y abre modal «Ver más» para revisarlo completo. Ampliar, consultar y cerrar paneles no remonta el editor ni cambia su
 revisión o borrador.
 
