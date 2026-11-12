@@ -97,20 +97,20 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
     onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose() }}
     onMouseDown={event => { backdropDown.current = outside(event) }}
     onClick={event => { if (backdropDown.current && outside(event)) onClose(); backdropDown.current = false }}>
-    <div className="flex shrink-0 items-center gap-2 bg-qms-dark px-4 py-2.5 text-white">
-      <FileText className="h-4 w-4 shrink-0 opacity-70" aria-hidden="true" />
+    <div className="flex shrink-0 items-center gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark">
+      <FileText className="h-4 w-4 shrink-0 text-qms-primary" aria-hidden="true" />
       <span id={titleId} className="min-w-0 flex-1 select-text truncate text-sm font-semibold">{adjunto.nombre}</span>
-      <span className="hidden whitespace-nowrap text-xs opacity-60 sm:inline">{formatBytes(adjunto.tamano)}</span>
-      <span className="rounded border border-white/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wide opacity-80">{drive ? 'Google Drive' : 'Interno'}</span>
+      <span className="hidden whitespace-nowrap text-xs text-qms-muted sm:inline">{formatBytes(adjunto.tamano)}</span>
+      <span className="rounded border border-qms-border px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-qms-muted">{drive ? 'Google Drive' : 'Interno'}</span>
       <button type="button" onClick={handleDescargar} disabled={descargando} aria-busy={descargando}
-        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-white/40 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-white/10 disabled:opacity-50" title="Descargar">
+        className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-qms-border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-qms-hover-bg disabled:opacity-50" title="Descargar">
         {descargando ? <Spinner size="sm" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />} Descargar
       </button>
       {drive && <a href={driveUrl + '/view'} target="_blank" rel="noreferrer"
-        className="hidden shrink-0 rounded-lg border border-white/40 p-1.5 transition-colors hover:bg-white/10 sm:block" title="Abrir en Google Drive" aria-label="Abrir en Google Drive">
+        className="hidden shrink-0 rounded-lg border border-qms-border p-1.5 transition-colors hover:bg-qms-hover-bg sm:block" title="Abrir en Google Drive" aria-label="Abrir en Google Drive">
         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
       </a>}
-      <button type="button" onClick={onClose} className="shrink-0 cursor-pointer rounded-lg p-1.5 opacity-60 transition-colors hover:bg-white/10 hover:opacity-100" title="Cerrar" aria-label="Cerrar visor de documentos">
+      <button type="button" onClick={onClose} className="shrink-0 cursor-pointer rounded-lg p-1.5 text-qms-muted transition-colors hover:bg-qms-hover-bg hover:text-qms-dark" title="Cerrar" aria-label="Cerrar visor de documentos">
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
