@@ -15,7 +15,7 @@ import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { quejaActividadKey, useQuejaActividad, useCrearQuejaActividad, type QuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { actualizarNotaInvestigacion, eliminarNotaInvestigacion } from '@/lib/services/quejaInvestigacionService'
-import { esNotaInvestigacion, NOTA_DEVOLUCION_PREFIX } from '@/lib/utils/quejaInvestigacionNotas'
+import { esNotaInvestigacion, obtenerDevolucionPendiente } from '@/lib/utils/quejaInvestigacionNotas'
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { useQuejaPlazos } from '@/lib/queries/useQuejaSeguimiento'
 import { enviarResolucionBorradorRevision, guardarResolucionBorrador } from '@/lib/services/quejaWorkflowService'
@@ -152,10 +152,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     }
   }
   const deadline = caseDeadline(queja, runs)
-  const notaDevolucion = [...actividad].reverse().find(item => item.tipo === 'nota' && item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX))
-  const devolucion = notaDevolucion ? { motivo: notaDevolucion.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim(), fecha: notaDevolucion.created_at } : undefined
+  const devolucion = obtenerDevolucionPendiente(estado, actividad)
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
-  // Tras una devolución previa, el envío actual es una reenvía de la propuesta corregida.
   const reenviarRevision = investigando && !!devolucion
 
   const handleGuardarResolucion = async () => {
@@ -368,10 +366,10 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
           <div className="mt-4 space-y-2">
             <Button aria-label="Ver caso completo" className="w-full border-qms-brand-red! bg-qms-brand-red! hover:border-qms-brand-red! hover:bg-qms-surface! hover:text-qms-brand-red!" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver caso completo</Button>
-            {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}><Send aria-hidden="true" className="size-4 shrink-0" />{reenviarRevision ? 'Reenviar revisión a GC' : 'Enviar a Revisión GC'}</Button>}
+            {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}><Send aria-hidden="true" className="size-4 shrink-0" />{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
           </div>
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
-        </section>{!reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
+        </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
         {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{adjuntar}{editandoResolucion
             ? <Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button>
