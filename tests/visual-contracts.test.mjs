@@ -448,6 +448,37 @@ test('la nueva composición tipográfica no se propaga a Quejas ni a otros diál
   assert.match(css, /width: min\(100%, 848px\)/)
 })
 
+test('Mis Quejas adopta los colores y proporciones exactos de la referencia sin alterar los tokens globales', () => {
+  const css = fs.readFileSync('app/styles/components.css', 'utf8')
+  const theme = fs.readFileSync('app/styles/theme.css', 'utf8')
+  const readingRule = css.match(/\\.mis-quejas-reading \\{([^}]+)\\}/)?.[1] ?? ''
+  for (const declaration of [
+    '--mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;',
+    '--color-qms-primary: #2563eb;',
+    '--color-qms-primary-hover: #1d4ed8;',
+    '--color-qms-primary-soft: #eff6ff;',
+    '--color-qms-dark: #1f2937;',
+    '--color-qms-muted: #6b7280;',
+    '--color-qms-border: #e5e7eb;',
+    '--color-qms-hover-bg: #f9fafb;',
+    '--color-qms-success: #16a34a;',
+    '--color-qms-warning: #eab308;',
+    '--color-qms-danger: #ef4444;',
+  ]) {
+    assert.ok(readingRule.includes(declaration), declaration)
+  }
+  assert.match(theme, /--color-qms-primary: #024796;/)
+  assert.ok(css.includes('[data-mis-quejas-status="En Investigación"]'))
+  assert.ok(css.includes('background: #1e3a8a;'))
+  assert.ok(css.includes('.mis-quejas-reading [data-case-request] dl {'))
+  assert.ok(css.includes('.mis-quejas-reading [data-case-action] .ui-button:not(.ui-button-icon)'))
+  assert.ok(css.includes('min-height: 40px;'))
+  assert.ok(css.includes('.mis-quejas-reading [data-resolution-header] p {'))
+  assert.ok(css.includes('font-size: 14px;'))
+  assert.ok(css.includes('font-size: 17px;'))
+  assert.ok(css.includes('line-height: 1.625;'))
+})
+
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
