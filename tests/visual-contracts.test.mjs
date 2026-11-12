@@ -431,17 +431,21 @@ test('la nueva composición tipográfica no se propaga a Quejas ni a otros diál
   assert.ok(normalHeader.props.className.includes('grid-cols-[220px_minmax(0,1fr)_260px]'))
   const css = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.ok(css.includes('.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap'))
-  assert.match(css, /max-width: 768px/)
   assert.match(css, /--mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif/)
   const editorRule = css.match(/\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap \{([^}]+)\}/)?.[1] || ''
+  assert.match(editorRule, /max-width: 848px/, 'incluye 40px de padding por lado: texto máximo 768px')
   assert.match(editorRule, /font-family: var\(--mis-quejas-document-font\)/)
-  assert.match(editorRule, /font-size: 16px/)
-  assert.match(editorRule, /line-height: 1\.6/)
+  assert.match(editorRule, /font-size: 17px/)
+  assert.match(editorRule, /line-height: 1\.625/)
   const copyRule = css.match(/\.mis-quejas-reading \.mis-quejas-reading-copy > div \{([^}]+)\}/)?.[1] || ''
+  assert.match(copyRule, /max-width: 768px/)
   assert.match(copyRule, /font-family: var\(--mis-quejas-document-font\)/)
-  assert.match(copyRule, /font-size: 16px/)
-  assert.match(copyRule, /line-height: 1\.6/)
+  assert.match(copyRule, /font-size: 17px/)
+  assert.match(copyRule, /line-height: 1\.625/)
   assert.match(css, /\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap :is\(p, li, blockquote\)/)
+  assert.match(css, /\.mis-quejas-reading \.mis-quejas-resolution-editor \[data-rich-text-viewport\] \.tiptap > p,/)
+  assert.match(css, /margin-block: 0 16px/)
+  assert.match(css, /width: min\(100%, 848px\)/)
 })
 
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
