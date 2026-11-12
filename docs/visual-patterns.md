@@ -320,3 +320,23 @@ normales, conservando fuente System UI y gris oscuro. Para hacer coincidir
 el ancho de texto con `max-w-3xl` del ejemplo, la caja editable mide hasta
 848px incluyendo 40px de padding lateral por lado; la zona de lectura real
 sigue siendo de máximo 768px, al igual que la resolución ya registrada.
+
+
+## Paleta literal del demo en Mis Quejas (12 noviembre 2026)
+
+El workspace de Mis Quejas clona el aspecto de la referencia HTML
+`deepseek_html_20261112_ecfa95(2).html` sin copiar sus emojis ni su
+dependencia CDN. La clase `mis-quejas-reading` modifica únicamente
+variables CSS locales del diálogo: System UI / Segoe UI, fondo #f3f4f6,
+blanco #ffffff en tarjetas, texto principal #1f2937, interfaz #374151,
+secundarios #6b7280, bordes #e5e7eb y azul #2563eb (hover #1d4ed8).
+Los botones secundarios utilizan borde #d1d5db; el estado En Investigación
+utiliza #1e3a8a solamente en el panel de Mis Quejas; indicadores verdes,
+amarillos y rojos adoptan #16a34a, #eab308 y #ef4444. El texto del
+lienzo sigue con 17px / 1.625, separación de párrafos 16px y ancho de
+lectura útil máximo 768px. Tarjetas redondeadas 8px, botones 6px,
+sombra tenue, acciones de 40px de altura y espacios de 12px.
+
+No se modificaron `app/styles/theme.css`, Quejas, el resto de páginas,
+ni estados, permisos o transiciones. Las etiquetas visibles conservan
+los valores reales del expediente; los iconos son los Lucide existentes.
