@@ -100,7 +100,6 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
         </Button>}
         <input ref={inputRef} aria-label="Seleccionar adjuntos del análisis" type="file" multiple hidden
           disabled={!props.canUpload || props.uploading}
-          onCancel={event => event.stopPropagation()}
           onChange={event => {
             const files = Array.from(event.target.files ?? [])
             event.target.value = ''
