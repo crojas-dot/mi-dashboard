@@ -494,10 +494,10 @@ function complaintPanelFixture() {
       tree = Panel({ queja: entity, onUpdated: noOp, onClose() { closed++ } })
     } while (changed)
   }
-  const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)] : []
+  const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter)] : []
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
-  return { render, closed: () => closed,
+  return { render, nodes, closed: () => closed,
     select(id) { entity = id ? { id, folio: '2026-001', revision: 1, estado: 'Recibido', cliente_nombre: 'Persona de prueba' } : null; render() },
     workspace: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace'),
     editor: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'document'),
@@ -516,6 +516,19 @@ test('cerrar el expediente ampliado y volver a abrirlo restablece el panel later
   assert.equal(panel.workspace().props.expanded, false)
   panel.select(null); panel.select('test-A')
   assert.equal(panel.workspace().props.expanded, false)
+})
+
+test('Quejas reutiliza las tarjetas laterales para generar expediente e historial', () => {
+  const panel = complaintPanelFixture()
+  panel.select('test-A')
+  const workspace = panel.nodes().find(node => node.type?.name === 'CaseWorkspace')
+  assert.equal(workspace.props.cyclePlacement, 'header')
+  assert.ok(panel.workspace().props.headerCenter)
+  const cards = panel.nodes().filter(node => node.type?.name === 'CaseSidebarShortcut')
+  assert.deepEqual(cards.map(card => card.props.actionLabel), ['Generar expediente', 'Ver actividad'])
+  assert.ok(cards.every(card => card.props.icon && card.props.onClick))
+  const headerButtons = panel.workspace().props.headerActions.props.children
+  assert.doesNotMatch(JSON.stringify(headerButtons), /Generar expediente|Ver actividad/)
 })
 
 test('el scrollport del expediente se promueve a capa compuesta al ampliar', () => {
