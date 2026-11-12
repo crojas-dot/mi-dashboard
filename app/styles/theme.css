@@ -3,6 +3,9 @@
    Radios de esquina pequeños => look "cuadradito" uniforme
    ========================================================= */
 @theme {
+  /* Fuente nativa de todo ECA-QMS, incluida la utilidad font-sans de Tailwind. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
   /* Escala de lectura: texto auxiliar 14px, controles 15px y contenido 16px. */
   --text-xs: 0.875rem;
   --text-xs--line-height: 1.5;
