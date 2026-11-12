@@ -153,7 +153,7 @@ El HTML externo es referencia de ergonomía, no código de producción. Se conse
 Lucide outline, los colores institucionales ECA, los componentes y la gestión de
 adjuntos únicamente en su modal (filas, nombres completos, vista previa y acciones).
 La tipografía System UI se aplica solo al workspace opt-in de Mis Quejas. El editor
-utiliza 16px, interlineado 1.6, gris #1f2937 y máximo 768px centrado,
+utiliza 17px, interlineado 1.625, gris #1f2937 y máximo 768px útiles centrados,
 incluyendo el texto de lectura y su placeholder. Controles de 15px, secundarios
 existentes de 14px y título de resolución de 18px.
 
@@ -166,3 +166,11 @@ Corrección visual posterior: se declaró explícitamente la fuente nativa Syste
 sobre el texto Tiptap y el contenido de lectura, además del placeholder, para que
 no dependan de Inter global. Tamaño e interlineado pasan a 16px y 1.6, exactamente
 como el elemento `.editor-area` de `ejemploparaqms(1).html`.
+
+
+Ajuste al ejemplo de tres columnas: se pasa de 16px/1.6 a 17px/1.625,
+separación de 16px entre párrafos (sin alterar párrafos de listas) y ancho
+útil de texto 768px. El contenedor TipTap incluye padding lateral de 40px
+en escritorio, por lo que su ancho exterior máximo es 848px. El placeholder
+y la resolución final conservan el mismo estilo. Sin cambios en Quejas ni
+en la gestión de adjuntos.

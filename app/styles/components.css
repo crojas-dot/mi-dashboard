@@ -352,7 +352,7 @@
 
 
 /* Piloto visual de Mis Quejas: no modifica Quejas ni los tokens institucionales.
-   La referencia usa System UI con un lienzo de 16px / interlineado 1.6. */
+   El demo de tres columnas usa System UI con texto de 17px e interlineado relajado. */
 .mis-quejas-reading {
   --mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--mis-quejas-document-font);
@@ -396,13 +396,14 @@
 .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;
-  max-width: 768px;
+  /* El límite del texto es 768px: el ancho de la caja incluye los padding laterales. */
+  max-width: 848px;
   margin-inline: auto;
   padding: 24px 20px;
   color: #1f2937;
   font-family: var(--mis-quejas-document-font);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.625;
   overflow-wrap: break-word;
 }
 .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
@@ -410,12 +411,12 @@
   left: 50%;
   right: auto;
   top: 24px;
-  width: min(100%, 768px);
+  width: min(100%, 848px);
   transform: translateX(-50%);
   padding-inline: 20px;
   font-family: var(--mis-quejas-document-font);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.625;
 }
 .mis-quejas-reading .mis-quejas-reading-copy,
 .mis-quejas-reading .mis-quejas-reading-copy > div {
@@ -424,8 +425,8 @@
   margin-inline: auto;
   color: #1f2937;
   font-family: var(--mis-quejas-document-font);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.625;
 }
 /* Los nodos de ReactMarkdown y ProseMirror deben conservar la misma fuente;
    no dejar que sus clases text-base/text-sm restauren Inter o el tamaño previo. */
@@ -434,6 +435,15 @@
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+}
+/* El ejemplo separa los párrafos 16px; no afecta a párrafos dentro de listas. */
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap > p,
+.mis-quejas-reading .mis-quejas-reading-copy > div > p {
+  margin-block: 0 16px;
+}
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap > p:last-child,
+.mis-quejas-reading .mis-quejas-reading-copy > div > p:last-child {
+  margin-bottom: 0;
 }
 @media (min-width: 640px) {
   .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
