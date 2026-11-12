@@ -19,9 +19,9 @@ export function obtenerDevolucionPendiente(
   actividad: readonly { tipo: string; descripcion: string; created_at: string }[],
 ): { motivo: string; fecha: string } | undefined {
   if (estado !== 'En Investigación') return undefined
-  const ultimaDecision = [...actividad].reverse().find(item =>
-    item.tipo === 'nota' && (item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX) || item.descripcion === NOTA_APROBACION_GC)
-  )
+  const ultimaDecision = actividad
+    .filter(item => item.tipo === 'nota' && (item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX) || item.descripcion === NOTA_APROBACION_GC))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
   if (!ultimaDecision?.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX)) return undefined
   return {
     motivo: ultimaDecision.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim(),
