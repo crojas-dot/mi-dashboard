@@ -57,10 +57,13 @@ Editar y Eliminar (confirmación en línea; Escape o pulsar fuera cierra el men�
 notas de devolución de Calidad solo se leen y conservan su historial. El centro queda
 reservado al editor de resolución: el ciclo horizontal vive en el encabezado
 principal del modal, sin consumir otra franja. El lienzo ya no contiene listas de
-adjuntos y crece verticalmente. Debajo de Notas en la columna izquierda se muestra
+adjuntos y crece con su contenido, sin scroll interior ni altura fija. El
+expediente conserva un único desplazamiento principal; la columna izquierda
+no tiene scrollbar propia ni recorta la tarjeta de archivos. Debajo de Notas en la columna izquierda se muestra
 Adjuntos del análisis con cantidad, último nombre y acceso a un diálogo centrado;
-desde la tarjeta se pueden arrastrar archivos y desde el diálogo arrastrar o
-seleccionar varios. El diálogo muestra únicamente adjuntos del responsable,
+la tarjeta solo permite consultar el listado, sin subir archivos desde ahí.
+La carga (arrastrar o seleccionar varios) se realiza exclusivamente dentro del
+diálogo de adjuntos. El diálogo muestra únicamente adjuntos del responsable,
 permite previsualizar, descargar y eliminar con confirmación al tener permisos
 vigentes. La subida se hace secuencialmente con el servicio actual y conserva los
 bloqueos de operaciones; el selector cancelado no cierra la visita. Ver caso
