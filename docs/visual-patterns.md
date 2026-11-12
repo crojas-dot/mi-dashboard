@@ -304,7 +304,7 @@ nuevos scrolls ni duplicar acciones.
 
 Se habilita readingLayout solo desde QuejaColaboradorPanel. Modal y CaseWorkspace
 siguen siendo componentes compartidos, pero su alternativa visual utiliza clase
-mis-quejas-reading, System UI, ancho de lectura 768px, contenido 16px/1.6,
+mis-quejas-reading, System UI, ancho útil de lectura 768px, contenido 17px/1.625,
 tarjetas y botones con acabados suaves, y columnas laterales 280px/300px en
 pantallas anchas. No cambia el tema global, los procesos, ni Quejas. El nuevo HTML
 no autoriza emojis, Font Awesome, miniaturas externas, ni adjuntos en el lienzo.
@@ -313,3 +313,10 @@ La corrección tipográfica posterior aplica directamente la pila System UI al n
 Tiptap editable, al placeholder y al contenido guardado (incluyendo Markdown),
 en lugar de confiar en la herencia del body con Inter. Se igualaron los valores
 exactos del HTML de referencia: 16px, interlineado 1.6 y #1f2937.
+
+La variante final del piloto toma el ejemplo de tres columnas: párrafos de 17px,
+interlineado relajado 1.625 y separación vertical de 16px entre párrafos
+normales, conservando fuente System UI y gris oscuro. Para hacer coincidir
+el ancho de texto con `max-w-3xl` del ejemplo, la caja editable mide hasta
+848px incluyendo 40px de padding lateral por lado; la zona de lectura real
+sigue siendo de máximo 768px, al igual que la resolución ya registrada.
