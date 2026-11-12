@@ -349,3 +349,87 @@
     padding-right: calc(1rem + var(--qms-case-scrollbar-width, 0px));
   }
 }
+
+
+/* Piloto visual de Mis Quejas: no modifica Quejas ni los tokens institucionales.
+   Columna central libre y un único scroll; el ancho de lectura se limita al texto. */
+.mis-quejas-reading {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #1f2937;
+}
+.mis-quejas-reading [data-case-workspace],
+.mis-quejas-reading [data-case-scroll],
+.mis-quejas-reading [data-case-document] {
+  background-color: #f3f4f6;
+}
+.mis-quejas-reading :is([data-case-request], [data-investigation-files-card], [data-investigation-notes-card], [data-case-action] > section) {
+  border-radius: 8px;
+  border-color: var(--color-qms-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+}
+.mis-quejas-reading [data-case-request] {
+  padding: 20px;
+}
+.mis-quejas-reading :is([data-investigation-files-card], [data-investigation-notes-card]) {
+  transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+.mis-quejas-reading :is([data-investigation-files-card], [data-investigation-notes-card]):hover {
+  border-color: #c4cbd3;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, .08);
+}
+.mis-quejas-reading .ui-button:not(.ui-button-icon) {
+  font-size: 15px;
+}
+.mis-quejas-reading [data-resolution-inline] {
+  border-radius: 8px;
+}
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 768px;
+  margin-inline: auto;
+  padding: 24px 20px;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 17px;
+  line-height: 1.625;
+  overflow-wrap: break-word;
+}
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+  box-sizing: border-box;
+  left: 50%;
+  right: auto;
+  top: 24px;
+  width: min(100%, 768px);
+  transform: translateX(-50%);
+  padding-inline: 20px;
+  font-size: 17px;
+}
+.mis-quejas-reading .mis-quejas-reading-copy {
+  width: 100%;
+  max-width: 768px;
+  margin-inline: auto;
+  color: #1f2937;
+  font-size: 17px;
+  line-height: 1.625;
+}
+@media (min-width: 640px) {
+  .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
+    padding: 30px 40px;
+  }
+  .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+    top: 30px;
+    padding-inline: 40px;
+  }
+}
+/* Las columnas del ciclo y del editor comparten un mismo ancho útil. */
+@container workspace (min-width: 1100px) {
+  .mis-quejas-reading [data-case-header-grid="true"] {
+    padding-right: calc(1.25rem + var(--qms-case-scrollbar-width, 0px));
+  }
+}
+@container workspace (min-width: 1360px) {
+  .mis-quejas-reading [data-case-header-grid="true"] {
+    padding-right: calc(1.5rem + var(--qms-case-scrollbar-width, 0px));
+  }
+}
