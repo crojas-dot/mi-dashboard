@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
 
 const { getCaseProcessCycle } = loadModule('app/quejas/components/quejaExpedienteModel.ts')
-const { CaseCycle, CaseWorkspace, CaseAction, CaseRequestHeader } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
+const { CaseCycle, CaseProcessHeader, CaseSidebarShortcut, CaseWorkspace, CaseAction, CaseRequestHeader } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
 const queja = { id: 'case', folio: '2026-001', cliente_nombre: 'Cliente de prueba', estado: 'En Investigación', estado_color: 'blue' }
 const html = (Component, props) => renderToStaticMarkup(createElement(Component, props))
 
@@ -78,6 +78,45 @@ test('Mis Quejas deja los dos laterales sticky en el scroll único del expedient
   }
   assert.match(result, /data-case-scroll[^>]*overflow-y-auto/)
   assert.doesNotMatch(result, /data-case-top-cycle/)
+})
+
+test('Quejas y Mis Quejas recuperan los cuatro segmentos al contraer el modal', () => {
+  for (const expanded of [false, true]) {
+    const result = html(CaseWorkspace, {
+      documentKey: 'case', presentation: 'reference', expanded, cyclePlacement: 'header',
+      compact: createElement(CaseCycle, { queja, process: true, currentOnly: true }),
+      cycle: createElement(CaseCycle, { queja, process: true }),
+      request: createElement('span', null, 'Cliente'),
+      requestFooter: createElement('div', null, 'Historial'),
+      action: createElement('span', null, 'Acciones'),
+      children: createElement('div', null, 'Documento'),
+    })
+    assert.equal((result.match(/data-case-top-cycle/g) || []).length, expanded ? 0 : 1)
+    assert.equal((result.match(/data-case-cycle-compact/g) || []).length, expanded ? 0 : 1)
+    if (!expanded) assert.match(result, /Investigación · paso 2 de 4/)
+    assert.equal((result.match(/Historial/g) || []).length, 1)
+    assert.equal((result.match(/Acciones/g) || []).length, 1)
+  }
+})
+
+test('un único componente de progreso sirve para los encabezados de Quejas y Mis Quejas', () => {
+  const result = html(CaseProcessHeader, { queja })
+  assert.match(result, /data-case-process-header/)
+  assert.match(result, /data-case-cycle-line/)
+  assert.equal((result.match(/data-case-cycle-line/g) || []).length, 4)
+  assert.match(result, /4\. Cierre/)
+})
+
+test('las tarjetas laterales conservan acciones accesibles sin duplicar botones del encabezado', () => {
+  const card = html(CaseSidebarShortcut, {
+    title: 'Historial y observaciones', description: 'Consultar movimientos',
+    icon: createElement('span', null, 'Icono'), actionLabel: 'Ver actividad',
+    onClick() {}, count: 7,
+  })
+  assert.match(card, /aria-label="Ver actividad"/)
+  assert.match(card, /Historial y observaciones/)
+  assert.match(card, /Consultar movimientos/)
+  assert.match(card, />7<\/span>/)
 })
 
 test('el panel de referencia conserva el color configurado del estado sin añadir otro plazo al finalizar', () => {
