@@ -146,11 +146,9 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
   A la derecha quedan Acción actual y la devolución real de Calidad,
   en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
-  Ver caso completo
-  usa fondo rojo institucional `qms-brand-red`, hover blanco con texto/icono/borde
-  rojos, y queda en Acción actual, encima del
-  envío a GC; investigación omite la descripción
-  redundante de esa tarjeta. Ese único acceso abre Análisis. Ver
+  Durante el piloto de Mis Quejas, «Ver caso completo» es secundario (blanco
+  con borde) y «Enviar a GC» conserva el azul institucional como acción principal.
+  Los permisos, el contenido y el comportamiento de ambos botones no cambian. Ese único acceso abre Análisis. Ver
   [investigación con consulta lateral](quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
 - En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
   ampliar el documento. Resolución se edita en la página, con Guardar junto a Asistencia
@@ -300,3 +298,13 @@ y **Historial y observaciones** aparecen como accesos laterales bajo los datos
 del cliente, conservando sus diálogos, permisos y operaciones. Las tarjetas de
 acceso utilizan el patrón visual compartido de `CaseSidebarShortcut`, sin añadir
 nuevos scrolls ni duplicar acciones.
+
+
+## Piloto de ergonomía exclusivo de Mis Quejas (12 noviembre 2026)
+
+Se habilita readingLayout solo desde QuejaColaboradorPanel. Modal y CaseWorkspace
+siguen siendo componentes compartidos, pero su alternativa visual utiliza clase
+mis-quejas-reading, System UI, ancho de lectura 768px, contenido 17px/1.625,
+tarjetas y botones con acabados suaves, y columnas laterales 280px/300px en
+pantallas anchas. No cambia el tema global, los procesos, ni Quejas. El nuevo HTML
+no autoriza emojis, Font Awesome, miniaturas externas, ni adjuntos en el lienzo.
