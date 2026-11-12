@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Maximize, Minimize, Paperclip, Pencil, Save, Send } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Maximize, Minimize, Pencil, Save, Send } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -27,9 +27,8 @@ import { CaseCompletionDate, CaseCycle, CaseRequestHeader, CaseSection, CaseWork
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
-import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
-import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import { caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
+import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
+import { caseDate, caseDeadline, getCaseProcessCycle } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
@@ -50,7 +49,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const draftVersions = useRef({ nota: 0, resolucion: 0 })
   const [analisisAbierto, setAnalisisAbierto] = useState(false)
   const [panelNotas, setPanelNotas] = useState(false)
-  const attachmentInput = useRef<HTMLInputElement>(null)
+  const [panelAdjuntos, setPanelAdjuntos] = useState(false)
   const resolutionContainer = useRef<HTMLDivElement>(null)
   const resolutionCaret = useRef<{ range: Range; version: number } | null>(null)
   const [resolucion, setResolucion] = useState('')
@@ -93,26 +92,18 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const resolutionDirty = borradorGuardado ? resolucion !== borradorGuardado.contenido || resolucionFormato !== borradorGuardado.formato : !!resolucion.trim()
   const resolutionSaved = !!borradorGuardado && !resolutionDirty
   const resolutionPending = loading || guardandoResolucion || investigando && borradorVersion === null || subiendoAdjuntoAnalisis || !!eliminandoAdjunto || aiAutoLoading || chatLoading
-  const navigationLocked = analisisAbierto || panelNotas || resolutionPending || agregandoNota || operandoNota || resolutionDirty || !!nota.trim() || !!notaEditando || !!aiResult.trim()
+  const navigationLocked = analisisAbierto || panelNotas || panelAdjuntos || resolutionPending || agregandoNota || operandoNota || resolutionDirty || !!nota.trim() || !!notaEditando || !!aiResult.trim()
   useEffect(() => {
     onNavigationLockChange?.(!!queja && navigationLocked)
     return () => onNavigationLockChange?.(false)
   }, [queja, navigationLocked, onNavigationLockChange])
-  // React no delega «cancel» en un input: se corta aquí para que cancelar el
-  // selector de archivos no alcance al diálogo que contiene el expediente.
-  useEffect(() => {
-    const input = attachmentInput.current
-    if (!input) return
-    const stopCancel = (event: Event) => event.stopPropagation()
-    input.addEventListener('cancel', stopCancel)
-    return () => input.removeEventListener('cancel', stopCancel)
-  }, [editandoResolucion, investigando])
   const handleClose = useCallback(() => {
     scope.invalidate()
     resolutionCaret.current = null
     setIsExpanded(false)
     setAnalisisAbierto(false)
     setPanelNotas(false)
+    setPanelAdjuntos(false)
     setNotaMenu(null); setNotaEliminar(null)
     setAssistanceOpen(false)
     onNavigationLockChange?.(false)
@@ -137,6 +128,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setNotaEditando(null); setNotaEdicion(''); setNotaMenu(null); setNotaEliminar(null); setOperandoNota(false)
     setAnalisisAbierto(false)
     setPanelNotas(false)
+    setPanelAdjuntos(false)
     setNota(''); setAssistanceOpen(false); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
   }
   if (!queja) return null
@@ -152,6 +144,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     }
   }
   const deadline = caseDeadline(queja, runs)
+  const etapas = getCaseProcessCycle(queja)
+  const pasoActual = etapas.steps.findIndex(step => step.current)
+  const pasoVisible = pasoActual < 0 ? etapas.steps.length - 1 : pasoActual
   const devolucion = obtenerDevolucionPendiente(estado, actividad)
   const devoluciones = devolucion ? obtenerHistorialDevoluciones(actividad) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
@@ -278,7 +273,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       operation.finish()
     }
   }
-  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => adjunto.usuario_id === null ? user?.rol === 'admin' : canEdit
+  const adjuntosAnalisis = adjuntos.filter(adjunto => !!adjunto.usuario_id)
+  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => investigando && !!adjunto.usuario_id && canEdit
+  const agregarAdjuntosAnalisis = async (files: File[]) => {
+    if (!investigando || resolutionPending) return
+    // El servicio usa un candado por archivo, así que los soltados juntos se suben en orden.
+    for (const file of files) await handleSubirAdjuntoAnalisis(file)
+  }
   const capturarPuntoResolucion = () => {
     const selection = window.getSelection()
     const range = selection?.rangeCount ? selection.getRangeAt(0) : null
@@ -296,6 +297,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const abrirAnalisis = () => {
     capturarPuntoResolucion()
     setPanelNotas(false)
+    setPanelAdjuntos(false)
     setAnalisisAbierto(true)
   }
   const cerrarAnalisis = () => {
@@ -304,6 +306,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   }
   const abrirNotas = () => {
     capturarPuntoResolucion()
+    setPanelAdjuntos(false)
     setAnalisisAbierto(false)
     setNotaMenu(null); setNotaEliminar(null)
     setPanelNotas(true)
@@ -311,6 +314,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const cerrarNotas = () => {
     setPanelNotas(false)
     setNotaMenu(null); setNotaEliminar(null)
+    restaurarPuntoResolucion()
+  }
+  const abrirAdjuntos = () => {
+    capturarPuntoResolucion()
+    setAnalisisAbierto(false)
+    setPanelNotas(false)
+    setPanelAdjuntos(true)
+  }
+  const cerrarAdjuntos = () => {
+    setPanelAdjuntos(false)
     restaurarPuntoResolucion()
   }
   const prepararResolucion = () => {
@@ -325,19 +338,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const action = investigando ? null : estado === 'Pendiente de Revisión GC' ? 'Gestión de Calidad revisará la propuesta. Si requiere ajustes, volverá a investigación.' : 'El expediente conserva el trabajo y las evidencias registradas.'
   const tieneDocumentoRegistrado = !!(queja.resolucion || queja.numero_oficio_resolucion)
   const documentoAprobado = ['Resuelto', 'Finalizado', 'No Procede'].includes(estado)
-  const adjuntar = <>
-    <Button size="sm" variant="secondary" className="px-2! sm:px-3!" onClick={() => attachmentInput.current?.click()} loading={subiendoAdjuntoAnalisis} loadingLabel="Subiendo…" disabled={resolutionPending}><Paperclip aria-hidden="true" className="size-4 shrink-0" />Adjuntar</Button>
-    {/* El cancel del selector de archivos burbujea hasta el diálogo; ese evento no cierra el expediente. */}
-    <input ref={attachmentInput} aria-label="Adjuntar evidencia de investigación" type="file" hidden disabled={resolutionPending} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file && investigando && !resolutionPending) void handleSubirAdjuntoAnalisis(file) }} />
-  </>
-  const listaAdjuntos = adjuntosLoading
-    ? <LoadingSkeleton variant="list" label="Cargando archivos adjuntos…" framed={false} />
-    : adjuntosError
-      ? <div role="alert" className="flex flex-wrap items-center gap-2"><p className="text-sm text-qms-muted">No se pudieron cargar los archivos.</p><Button size="sm" variant="ghost" onClick={() => { void refetchAdjuntos() }}>Reintentar archivos</Button></div>
-      : adjuntos.length
-        ? <ListaAdjuntos adjuntos={adjuntos} layout="cards" onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={adjunto => !resolutionPending && puedeEliminarAdjunto(adjunto)} onEliminar={adjunto => setConfirmarEliminacion(adjunto.id)} />
-        : <p className="text-sm text-qms-muted">Sin archivos adjuntos todavía.</p>
-
   // La ayuda se despliega fuera de la cabecera para no comprimir sus controles.
   const assistance = <div id={`queja-${queja.id}-asistencia`} data-resolution-assistance role="region" aria-label="Asistencia para la resolución" hidden={!assistanceOpen || !investigando || !editandoResolucion} className="min-w-0 shrink-0 border-b border-qms-border px-4 py-3"><div className="max-h-[30dvh] overflow-y-auto overscroll-contain">
                 <p className="text-xs text-qms-muted">La sugerencia no se guarda ni se envía. Revisala antes de usarla en la resolución.</p>
@@ -350,14 +350,25 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
               </div></div>
 
   return <>
-    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerActions={<>
+    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
+      headerCenter={<div className="w-full min-w-0">
+        <div className="hidden @min-[1120px]/workspace:block"><CaseCycle queja={queja} process /></div>
+        <p className="hidden truncate text-center text-xs font-medium text-qms-muted @min-[640px]/workspace:block @min-[1120px]/workspace:hidden">
+          {etapas.steps[pasoVisible]?.label ?? 'Etapa por verificar'} · {pasoVisible + 1} de {etapas.steps.length}
+        </p>
+      </div>} headerActions={<>
       <Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationLocked} onClick={onPrevious}><ArrowLeft className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationLocked} onClick={onNext}><ArrowRight className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} title={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} onClick={() => setIsExpanded(value => !value)}>{isExpanded ? <Minimize className="size-5" /> : <Maximize className="size-5" />}</Button>
     </>}>
-      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="top" presentation="reference" documentStyle="cards"
+      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards"
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
-        requestFooter={<QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />}
+        requestFooter={<div className="space-y-4">
+          <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
+          <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
+            canUpload={investigando && !resolutionPending} uploading={subiendoAdjuntoAnalisis}
+            onOpen={abrirAdjuntos} onFiles={files => { void agregarAdjuntosAnalisis(files) }} />
+        </div>}
         compact={<CaseCycle queja={queja} process currentOnly />} cycle={<CaseCycle queja={queja} process />}
         action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />Acción actual</h3>
@@ -372,18 +383,23 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} devoluciones={devoluciones} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
         {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{adjuntar}{editandoResolucion
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
             ? <Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button>
             : <Button data-resolution-edit size="sm" className="px-2! sm:px-3!" variant="secondary" title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'} disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}><Pencil aria-hidden="true" className="size-4 shrink-0" />Editar</Button>}{editandoResolucion && <Button size="sm" className="px-2! sm:px-3!" variant="secondary" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} disabled={resolutionPending} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" />Asistencia</Button>}</div><span role="status" className="sr-only">{guardandoResolucion ? 'Guardando borrador…' : borradorVersion === null ? 'Cargando borrador…' : resolutionSaved ? 'Borrador guardado' : resolutionDirty ? 'Cambios sin guardar' : 'Sin contenido todavía'}</span></div>
           {assistance}
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          <div className="flex h-[min(70dvh,720px)] min-h-[420px] min-w-0 flex-col"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución" placeholder="Documentá la conclusión y los hallazgos de tu investigación..." value={resolucion} format={resolucionFormato} onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }} variant="document" layout="fill" maxLength={DOCUMENT_LIMIT} required readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null} className="mis-quejas-resolution-editor" /></div>
-          <div data-resolution-attachments className="border-t border-qms-border px-5 py-3 sm:px-8">{listaAdjuntos}</div>
+          <div className="flex h-[min(80dvh,900px)] min-h-[480px] min-w-0 flex-col"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución" placeholder="Documentá la conclusión y los hallazgos de tu investigación..." value={resolucion} format={resolucionFormato} onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }} variant="document" layout="fill" maxLength={DOCUMENT_LIMIT} required readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null} className="mis-quejas-resolution-editor" /></div>
         </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel">{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
           {queja.numero_oficio_resolucion && <p className="mt-3 break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}
-          <div data-resolution-attachments className="mt-4 border-t border-qms-border pt-4">{listaAdjuntos}</div>
         </CaseSection>}
       </CaseWorkspace>
+      <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
+        adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
+        onRetry={() => { void refetchAdjuntos() }} canUpload={investigando && !resolutionPending}
+        uploading={subiendoAdjuntoAnalisis} canDelete={adjunto => !resolutionPending && puedeEliminarAdjunto(adjunto)}
+        onFiles={files => { void agregarAdjuntosAnalisis(files) }}
+        onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
+        onDelete={adjunto => setConfirmarEliminacion(adjunto.id)} />
       <QuejaNotasPanel open={panelNotas} folio={queja.folio} onClose={cerrarNotas} notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onRetry={() => { void refetchActividad() }} canEdit={canEdit} nota={nota} maxLength={DOCUMENT_LIMIT} saving={agregandoNota} onChange={value => { draftVersions.current.nota++; setNota(value) }} onAdd={handleAgregarNota}
         puedeModificar={puedeModificarNota} menuId={notaMenu} editingId={notaEditando?.id ?? null} editValue={notaEdicion} deletingId={notaEliminar} operating={operandoNota}
         onToggleMenu={alternarMenuNota} onEdit={iniciarEdicionNota} onEditChange={setNotaEdicion} onCancelEdit={cancelarEdicionNota}
