@@ -390,6 +390,21 @@ test('el editor de informe ocupa el viewport sin alterar las variantes existente
   assert.match(documentDialog.props.className, /\bmax-w-\[1040px\]/)
 })
 
+test('los diálogos usan cabecera clara y la variante alta reserva espacio a la lista de adjuntos', () => {
+  const { dialog } = modalFixture({ tall: true, variant: 'dialog' })
+  const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.match(dialog.props.className, /h-\\[min\\(76dvh,720px\\)\\]/)
+  assert.match(header.props.className, /bg-qms-surface/)
+  assert.doesNotMatch(header.props.className, /bg-qms-dark/)
+  assert.match(dialog.props.children[1].props.className, /flex min-h-0 flex-1 flex-col overflow-hidden/)
+
+  const workspace = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Etapas del expediente' })
+  const workspaceHeader = workspace.dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.match(workspaceHeader.props.className, /@min-\\[1100px\\]\\/workspace:grid-cols-\\[220px_minmax\\(0,1fr\\)_260px\\]/)
+  assert.equal(workspaceHeader.props.children[1].props.children, 'Etapas del expediente')
+  assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
+})
+
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
