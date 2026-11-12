@@ -148,27 +148,47 @@ test('el pie de Análisis vuelve al editor y conserva la amplitud anterior del t
   assert.equal(panel.editor().props.value, 'Conclusión')
 })
 
-test('la devolución previa exige el nombre de reenvío y oculta el mensaje mientras reenvía', () => {
+test('la devolución activa muestra el aviso y cambia el botón a Reenviar a Revisión GC', () => {
   const panel = fixture({ actividad: [{ id: 'return', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: Falta documentar evidencia.', created_at: '2026-11-11T12:00:00Z' }] })
   panel.select('A')
-  assert.ok(panel.button('Reenviar revisión a GC'))
+  assert.ok(panel.button('Reenviar a Revisión GC'))
   assert.equal(panel.button('Enviar a Revisión GC'), undefined)
-  assert.equal(panel.nodes().some(node => node.props['data-investigation-return']), false)
+  assert.ok(panel.nodes().some(node => node.props['data-investigation-return']))
+  assert.equal(panel.button('Ver más'), undefined)
   const empty = fixture()
   empty.select('A')
+  assert.ok(empty.button('Enviar a Revisión GC'))
   assert.equal(empty.nodes().some(node => node.props['data-investigation-return']), false)
 })
 
-test('un mensaje de devolución muy largo abre el modal de ver más', () => {
-  const panel = fixture({ actividad: [{ id: 'return', queja_id: 'A', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: ' + 'x'.repeat(300), created_at: '2026-11-11T19:00:00Z' }] })
-  panel.select('A', { estado: 'Pendiente de Revisión GC' })
-  const list = panel.nodes().find(node => node.props['data-investigation-return'])
-  assert.ok(list)
+test('un mensaje de devolución largo se resume y abre el modal con el texto íntegro', () => {
+  const motivo = 'x'.repeat(300)
+  const panel = fixture({ actividad: [{ id: 'return', queja_id: 'A', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: ' + motivo, created_at: '2026-11-11T19:00:00Z' }] })
+  panel.select('A')
+  const aviso = panel.nodes().find(node => node.props['data-investigation-return'])
+  assert.ok(aviso)
   assert.ok(panel.button('Ver más'))
   panel.button('Ver más').props.onClick(); panel.render()
   const modal = panel.nodes().find(node => node.type === 'Modal' && node.props.title === 'Devolución de Calidad')
   assert.ok(modal)
   assert.equal(modal.props.open, true)
+  const motivos = modal.props.children.props.children.map(item => item.props.children[1].props.children)
+  assert.deepEqual(motivos, [motivo])
+})
+
+test('dos devoluciones cortas también habilitan Ver más y se muestran de nueva a antigua', () => {
+  const panel = fixture({ actividad: [
+    { id: 'r2', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: Segunda observación.', created_at: '2026-11-12T19:00:00Z' },
+    { id: 'n', tipo: 'nota', descripcion: 'Nota del responsable', created_at: '2026-11-11T20:00:00Z' },
+    { id: 'r1', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: Primera observación.', created_at: '2026-11-11T19:00:00Z' },
+  ] })
+  panel.select('A')
+  assert.ok(panel.button('Reenviar a Revisión GC'))
+  assert.ok(panel.button('Ver más'))
+  panel.button('Ver más').props.onClick(); panel.render()
+  const modal = panel.nodes().find(node => node.type === 'Modal' && node.props.title === 'Devolución de Calidad')
+  const motivos = modal.props.children.props.children.map(item => item.props.children[1].props.children)
+  assert.deepEqual(motivos, ['Segunda observación.', 'Primera observación.'])
 })
 
 test('la propuesta captura revisión al editar y conserva borrador y formato ante conflicto', async () => {
