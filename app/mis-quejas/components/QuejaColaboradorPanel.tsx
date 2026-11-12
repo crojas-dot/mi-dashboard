@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Maximize, Minimize, Pencil, Save, Send } from 'lucide-react'
 import Modal from '@/components/Modal'
@@ -51,6 +51,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [panelNotas, setPanelNotas] = useState(false)
   const [panelAdjuntos, setPanelAdjuntos] = useState(false)
   const resolutionContainer = useRef<HTMLDivElement>(null)
+  const resolutionHeaderRef = useRef<HTMLDivElement>(null)
   const resolutionCaret = useRef<{ range: Range; version: number } | null>(null)
   const [resolucion, setResolucion] = useState('')
   const [resolucionFormato, setResolucionFormato] = useState<'plain' | 'markdown'>('plain')
@@ -97,6 +98,20 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     onNavigationLockChange?.(!!queja && navigationLocked)
     return () => onNavigationLockChange?.(false)
   }, [queja, navigationLocked, onNavigationLockChange])
+  // La barra de formato se fija justo debajo del encabezado real del editor.
+  // Su altura puede variar cuando cambian el ancho, el idioma o los controles.
+  useLayoutEffect(() => {
+    if (!investigando) return
+    const container = resolutionContainer.current
+    const header = resolutionHeaderRef.current
+    if (!container || !header) return
+    const syncHeaderHeight = () => container.style.setProperty('--qms-resolution-header-height', `${header.offsetHeight}px`)
+    syncHeaderHeight()
+    const observer = new ResizeObserver(syncHeaderHeight)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [quejaId, investigando])
+
   const handleClose = useCallback(() => {
     scope.invalidate()
     resolutionCaret.current = null
@@ -352,8 +367,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   return <>
     <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
       headerCenter={<div className="w-full min-w-0">
-        <div className="hidden @min-[1120px]/workspace:block"><CaseCycle queja={queja} process /></div>
-        <p className="hidden truncate text-center text-xs font-medium text-qms-muted @min-[640px]/workspace:block @min-[1120px]/workspace:hidden">
+        <div className="hidden @min-[1100px]/workspace:block"><CaseCycle queja={queja} process /></div>
+        <p className="hidden truncate text-center text-xs font-medium text-qms-muted @min-[640px]/workspace:block @min-[1100px]/workspace:hidden">
           {etapas.steps[pasoVisible]?.label ?? 'Etapa por verificar'} · {pasoVisible + 1} de {etapas.steps.length}
         </p>
       </div>} headerActions={<>
@@ -381,8 +396,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           </div>
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} devoluciones={devoluciones} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
-        {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
+        {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-card border border-qms-border bg-qms-surface shadow-sm">
+          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-card border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
             ? <Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button>
             : <Button data-resolution-edit size="sm" className="px-2! sm:px-3!" variant="secondary" title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'} disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}><Pencil aria-hidden="true" className="size-4 shrink-0" />Editar</Button>}{editandoResolucion && <Button size="sm" className="px-2! sm:px-3!" variant="secondary" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} disabled={resolutionPending} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" />Asistencia</Button>}</div><span role="status" className="sr-only">{guardandoResolucion ? 'Guardando borrador…' : borradorVersion === null ? 'Cargando borrador…' : resolutionSaved ? 'Borrador guardado' : resolutionDirty ? 'Cambios sin guardar' : 'Sin contenido todavía'}</span></div>
           {assistance}
