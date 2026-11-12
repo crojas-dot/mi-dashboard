@@ -174,3 +174,16 @@ separación de 16px entre párrafos (sin alterar párrafos de listas) y ancho
 en escritorio, por lo que su ancho exterior máximo es 848px. El placeholder
 y la resolución final conservan el mismo estilo. Sin cambios en Quejas ni
 en la gestión de adjuntos.
+
+
+## Clon visual limitado a Mis Quejas (12 noviembre 2026)
+
+Se ajustó el piloto a los colores exactos del HTML entregado: fuente
+System UI, texto #1f2937 (17px, interlineado 1.625), secundario #6b7280,
+fondo #f3f4f6, tarjetas blancas con borde #e5e7eb, botones primarios
+#2563eb y hover #1d4ed8, secundarios blancos y borde #d1d5db.
+«En Investigación» es azul oscuro #1e3a8a solo como presentación de esta
+pantalla. Se respeta el ancho útil de lectura 768px, los párrafos a 16px
+de separación, y el patrón de botones/tablas/iconos Lucide sin emojis.
+El cambio se configura con variables CSS locales de `mis-quejas-reading`:
+el tema global de ECA-QMS y el flujo de procesos no cambiaron.
