@@ -352,9 +352,10 @@
 
 
 /* Piloto visual de Mis Quejas: no modifica Quejas ni los tokens institucionales.
-   Columna central libre y un único scroll; el ancho de lectura se limita al texto. */
+   La referencia usa System UI con un lienzo de 16px / interlineado 1.6. */
 .mis-quejas-reading {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mis-quejas-document-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--mis-quejas-document-font);
   color: #1f2937;
 }
 .mis-quejas-reading [data-case-workspace],
@@ -399,9 +400,9 @@
   margin-inline: auto;
   padding: 24px 20px;
   color: #1f2937;
-  font-family: inherit;
-  font-size: 17px;
-  line-height: 1.625;
+  font-family: var(--mis-quejas-document-font);
+  font-size: 16px;
+  line-height: 1.6;
   overflow-wrap: break-word;
 }
 .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
@@ -412,7 +413,9 @@
   width: min(100%, 768px);
   transform: translateX(-50%);
   padding-inline: 20px;
-  font-size: 17px;
+  font-family: var(--mis-quejas-document-font);
+  font-size: 16px;
+  line-height: 1.6;
 }
 .mis-quejas-reading .mis-quejas-reading-copy,
 .mis-quejas-reading .mis-quejas-reading-copy > div {
@@ -420,8 +423,17 @@
   max-width: 768px;
   margin-inline: auto;
   color: #1f2937;
-  font-size: 17px;
-  line-height: 1.625;
+  font-family: var(--mis-quejas-document-font);
+  font-size: 16px;
+  line-height: 1.6;
+}
+/* Los nodos de ReactMarkdown y ProseMirror deben conservar la misma fuente;
+   no dejar que sus clases text-base/text-sm restauren Inter o el tamaño previo. */
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap :is(p, li, blockquote),
+.mis-quejas-reading .mis-quejas-reading-copy :is(p, li, blockquote) {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
 }
 @media (min-width: 640px) {
   .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
