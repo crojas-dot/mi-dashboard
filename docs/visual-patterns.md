@@ -4,6 +4,11 @@ El panel utiliza React y Tailwind v4, sin Bootstrap ni CoreUI.
 La referencia traducida inspira los controles y la distribución; no se instala
 como otra biblioteca. El azul de marca es **#024796**.
 
+La fuente global se define en `app/styles/theme.css` mediante `--font-sans`:
+`-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`.
+`app/globals.css` la aplica al `body`; `app/layout.tsx` y `app/global-error.tsx`
+ya no descargan Inter. Se conservan los tamaños de texto, colores y espaciados.
+
 ## Dónde modificar cada cosa
 
 | Cambio | Archivo |

@@ -10,7 +10,7 @@
 body {
   background-color: var(--color-qms-background);
   color: var(--color-qms-dark);
-  font-family: inherit;
+  font-family: var(--font-sans);
   font-size: 1rem;
   line-height: 1.5;
 }
