@@ -44,10 +44,10 @@ Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ám
 sin modificar otra visita o identidad. El borrador guardado permite navegar entre
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
-El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
-a fondo blanco con texto, icono y borde rojos. Guardar y Asistencia permanecen juntos
-solo en modo de escritura, en escritorio y móvil. El scroll del editor sigue
-dependiendo del foco.
+En el piloto visual exclusivo de Mis Quejas, «Ver caso completo» usa el botón
+secundario del kit, blanco con borde; enviar a GC conserva el primario institucional.
+Guardar y Asistencia permanecen juntos en escritura. El documento crece sin scroll
+interno: el expediente mantiene un único desplazamiento principal.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
 última fecha o Sin notas todavía. Ver notas abre un diálogo centrado con las notas
@@ -145,3 +145,19 @@ La vista contraída vuelve a mostrar el resumen del proceso y sus cuatro líneas
 bajo el encabezado. En la vista ampliada, ambas pantallas comparten el mismo
 progreso con cuatro líneas dentro del encabezado, alineado al ancho útil del
 lienzo central (se descuenta el gutter real del scroll). No altera los estados.
+
+
+## Piloto visual exclusivo de Mis Quejas (12 noviembre 2026)
+
+El HTML externo es referencia de ergonomía, no código de producción. Se conserva
+Lucide outline, los colores institucionales ECA, los componentes y la gestión de
+adjuntos únicamente en su modal (filas, nombres completos, vista previa y acciones).
+La tipografía System UI se aplica solo al workspace opt-in de Mis Quejas. El editor
+utiliza 17px, interlineado 1.625, gris #1f2937 y máximo 768px centrado,
+incluyendo el texto de lectura y su placeholder. Controles de 15px, secundarios
+existentes de 14px y título de resolución de 18px.
+
+La geometría opt-in usa 240px/centro/260px desde 1100px de contenedor y
+280px/centro/300px desde 1360px. El ancho del proceso, márgenes y gutters
+coinciden con el documento; los laterales y el encabezado continúan sticky,
+sin scroll anidado. Quejas no activa esta configuración visual.
