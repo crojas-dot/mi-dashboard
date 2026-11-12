@@ -383,6 +383,15 @@
 .mis-quejas-reading [data-resolution-inline] {
   border-radius: 8px;
 }
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-toolbar] {
+  background-color: #f9fafb;
+  border-color: var(--color-qms-border);
+  gap: 8px;
+  padding: 8px 14px;
+}
+.mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-toolbar] button:not(:disabled):hover {
+  background-color: #e5e7eb;
+}
 .mis-quejas-reading .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;
@@ -405,7 +414,8 @@
   padding-inline: 20px;
   font-size: 17px;
 }
-.mis-quejas-reading .mis-quejas-reading-copy {
+.mis-quejas-reading .mis-quejas-reading-copy,
+.mis-quejas-reading .mis-quejas-reading-copy > div {
   width: 100%;
   max-width: 768px;
   margin-inline: auto;
