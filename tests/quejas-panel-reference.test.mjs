@@ -33,12 +33,15 @@ test('contraído presenta solo el paso actual y cuatro segmentos con el avance',
   assert.equal((result.match(/bg-qms-primary/g) || []).length, 1)
 })
 
-test('ampliado presenta los cuatro pasos y el tramo cumplido en verde', () => {
+test('ampliado presenta las etapas con líneas bajo las etiquetas, sin checks ni círculos', () => {
   const result = html(CaseCycle, { queja, process: true })
   assert.match(result, /aria-current="step"/)
   assert.match(result, /Revisión de Calidad/)
-  assert.equal((result.match(/data-case-cycle-connector/g) || []).length, 3)
-  assert.match(result, /data-case-cycle-connector[^>]*bg-qms-success/)
+  assert.match(result, /data-case-process-lines[^>]*w-full/)
+  assert.equal((result.match(/data-case-cycle-line/g) || []).length, 4)
+  assert.equal((result.match(/data-case-cycle-connector/g) || []).length, 0)
+  assert.match(result, /data-case-cycle-line[^>]*bg-qms-success/)
+  assert.match(result, /data-case-cycle-line[^>]*bg-qms-primary/)
 })
 
 test('las dos disposiciones conservan una sola instancia de acción, solicitud y documento', () => {
@@ -56,6 +59,25 @@ test('las dos disposiciones conservan una sola instancia de acción, solicitud y
     assert.doesNotMatch(result, /Estado del trámite/)
     assert.equal(/data-case-request-region="true" hidden=""/.test(result), !expanded)
   }
+})
+
+test('Mis Quejas deja los dos laterales sticky en el scroll único del expediente', () => {
+  const result = html(CaseWorkspace, {
+    documentKey: 'case', presentation: 'reference', expanded: true, cyclePlacement: 'header',
+    request: createElement('div', null, 'Datos'),
+    requestFooter: createElement('div', null, 'Notas y archivos'),
+    action: createElement('div', null, 'Acción'),
+    compact: null, cycle: null, children: createElement('div', null, 'Documento extenso'),
+  })
+  const left = result.match(/<aside data-case-request-region[^>]+>/)?.[0] ?? ''
+  const right = result.match(/<aside data-case-action[^>]+>/)?.[0] ?? ''
+  for (const panel of [left, right]) {
+    assert.match(panel, /@min-\\[1100px\\]:sticky/)
+    assert.match(panel, /@min-\\[1100px\\]:top-4/)
+    assert.doesNotMatch(panel, /overflow-y-auto|max-h-\\[calc/)
+  }
+  assert.match(result, /data-case-scroll[^>]*overflow-y-auto/)
+  assert.doesNotMatch(result, /data-case-top-cycle/)
 })
 
 test('el panel de referencia conserva el color configurado del estado sin añadir otro plazo al finalizar', () => {
