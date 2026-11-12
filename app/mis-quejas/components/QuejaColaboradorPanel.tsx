@@ -382,7 +382,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           <CaseCompletionDate queja={queja} />
           <div className="mt-3" title={deadline.stageTitle}>{plazo}{plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}</div>
           {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
-          <div className="mt-4 space-y-2">
+          <div className="mt-6 space-y-3">
             <Button aria-label="Ver caso completo" variant="secondary" className="w-full min-w-0 text-qms-dark" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver caso completo</Button>
             {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
           </div>
