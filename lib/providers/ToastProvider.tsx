@@ -1,9 +1,33 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Toaster } from 'sonner'
 
 export default function ToastProvider() {
-  return (
+  const [activeDialog, setActiveDialog] = useState<HTMLDialogElement | null>(null)
+
+  useEffect(() => {
+    // Los diálogos nativos abiertos con showModal viven en la top layer del
+    // navegador: un z-index alto fuera del diálogo no hace visibles los avisos.
+    const findTopDialog = () => {
+      const dialogs = [...document.querySelectorAll<HTMLDialogElement>('dialog:modal')]
+      setActiveDialog(current => {
+        if (current && current.isConnected && current.matches(':modal')) {
+          // Un modal nuevo puede abrirse sobre uno anterior (confirmaciones/visores).
+          const last = dialogs.at(-1) ?? null
+          return last === current ? current : last
+        }
+        return dialogs.at(-1) ?? null
+      })
+    }
+    findTopDialog()
+    const observer = new MutationObserver(findTopDialog)
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] })
+    return () => observer.disconnect()
+  }, [])
+
+  const toaster = (
     <Toaster
       position="bottom-right"
       theme="light"
@@ -26,4 +50,6 @@ export default function ToastProvider() {
       }}
     />
   )
+
+  return activeDialog ? createPortal(toaster, activeDialog) : toaster
 }
