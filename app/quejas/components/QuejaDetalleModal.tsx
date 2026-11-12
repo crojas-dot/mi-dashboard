@@ -41,7 +41,7 @@ import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
 import { CASE_ACTIONS, caseDate } from '@/app/quejas/components/quejaExpedienteModel'
-import { CaseSection, CaseCycle, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseSection, CaseCycle, CaseProcessHeader, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
@@ -480,14 +480,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
+      headerCenter={<CaseProcessHeader queja={queja} />}
       headerActions={<>
-        {esStaff && <Button size="sm" variant="link" aria-label="Generar expediente" title="Generar expediente editable" disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}><FileText className="size-5" /></Button>}
         {(onPrevious || onNext) && <div className="hidden items-center gap-1 @min-[600px]/workspace:flex"><Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationDisabled} onClick={onPrevious}><ChevronLeft className="size-5" /></Button><Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationDisabled} onClick={onNext}><ChevronRight className="size-5" /></Button></div>}
-        <Button size="sm" variant="link" className="h-10 [&:not(:disabled):hover]:bg-transparent" onClick={() => setActivityOpen(true)} aria-label="Ver actividad" title="Actividad del expediente"><History className="size-5" /></Button>
         <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} aria-pressed={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}</Button>
       </>}>
-      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="top"
+      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header"
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
+        requestFooter={<div className="space-y-4">
+          {esStaff && <CaseSidebarShortcut title="Generar expediente" description="Preparar o continuar el informe editable del caso." actionLabel="Generar expediente" icon={<FileText className="size-4" />}
+            disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)} />}
+          <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
+            actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
+        </div>}
         compact={<CaseCycle queja={queja} process currentOnly />}
         cycle={<CaseCycle queja={queja} process />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
