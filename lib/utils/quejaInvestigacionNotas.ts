@@ -28,3 +28,16 @@ export function obtenerDevolucionPendiente(
     fecha: ultimaDecision.created_at,
   }
 }
+
+/** Historial de devoluciones de GC, separado de las notas del responsable. */
+export function obtenerHistorialDevoluciones(
+  actividad: readonly { tipo: string; descripcion: string; created_at: string }[],
+): { motivo: string; fecha: string }[] {
+  return actividad
+    .filter(item => item.tipo === 'nota' && item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX))
+    .map(item => ({
+      motivo: item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim(),
+      fecha: item.created_at,
+    }))
+    .sort((a, b) => b.fecha.localeCompare(a.fecha))
+}
