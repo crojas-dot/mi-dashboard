@@ -12,13 +12,15 @@ type OnFiles = (files: File[]) => void
 
 function dropHandlers(canUpload: boolean, onFiles: OnFiles) {
   const isFileDrag = (event: DragEvent<HTMLElement>) =>
-    canUpload && Array.from(event.dataTransfer.types).includes('Files')
+    Array.from(event.dataTransfer.types).includes('Files')
   return {
     onDragOver(event: DragEvent<HTMLElement>) {
       if (!isFileDrag(event)) return
+      // Incluso cuando no se permite subir, impedir que el navegador abra
+      // el archivo soltado y haga perder el documento sin guardar.
       event.preventDefault()
-      event.dataTransfer.dropEffect = 'copy'
-      event.currentTarget.dataset.dragging = 'true'
+      event.dataTransfer.dropEffect = canUpload ? 'copy' : 'none'
+      if (canUpload) event.currentTarget.dataset.dragging = 'true'
     },
     onDragLeave(event: DragEvent<HTMLElement>) {
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -27,10 +29,10 @@ function dropHandlers(canUpload: boolean, onFiles: OnFiles) {
     },
     onDrop(event: DragEvent<HTMLElement>) {
       delete event.currentTarget.dataset.dragging
-      if (!canUpload || !event.dataTransfer.files.length) return
+      if (!event.dataTransfer.files.length) return
       event.preventDefault()
       event.stopPropagation()
-      onFiles(Array.from(event.dataTransfer.files))
+      if (canUpload) onFiles(Array.from(event.dataTransfer.files))
     },
   }
 }
