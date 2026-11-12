@@ -161,6 +161,27 @@ test('la devolución activa muestra el aviso y cambia el botón a Reenviar a Rev
   assert.equal(empty.nodes().some(node => node.props['data-investigation-return']), false)
 })
 
+test('el spinner de reenvío sustituye al icono sin agregar ancho o una segunda línea', async () => {
+  const panel = fixture({ actividad: [{
+    id: 'return', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: Completar evidencia.',
+    created_at: '2026-11-11T12:00:00Z',
+  }] })
+  panel.select('A')
+  panel.editor().props.onChange('Propuesta corregida', 'plain'); panel.render()
+  const initial = panel.button('Reenviar a Revisión GC')
+  assert.equal(initial.props.loading, false)
+  assert.ok(initial.props.children[0])
+  const pending = initial.props.onClick()
+  panel.render()
+  const busy = panel.button('Reenviar a Revisión GC')
+  assert.equal(busy.props.loading, true)
+  assert.equal(busy.props.disabled, true)
+  assert.equal(busy.props.children[0], null, 'el icono se retira mientras el spinner ocupa el mismo lugar')
+  assert.equal(busy.props.className, initial.props.className)
+  await pending; panel.render()
+  assert.equal(panel.button('Reenviar a Revisión GC').props.loading, false)
+})
+
 test('un mensaje de devolución largo se resume y abre el modal con el texto íntegro', () => {
   const motivo = 'x'.repeat(300)
   const panel = fixture({ actividad: [{ id: 'return', queja_id: 'A', tipo: 'nota', descripcion: 'Devuelta a investigación. Motivo: ' + motivo, created_at: '2026-11-11T19:00:00Z' }] })
