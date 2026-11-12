@@ -1,5 +1,32 @@
 # Base de datos: esquema, políticas y motor QMS
 
+12 noviembre, **sin aplicar**: `20261112054513_quejas_notas_investigacion` añade
+`qms_update_investigation_note` y `qms_delete_investigation_note` (invoker) que
+delegan en `qms_private`, con guard de identidad activa, acceso al expediente,
+responsable vigente, estado En Investigación, autor propio y CAS de contenido.
+RLS de `quejas_actividad` sigue sin UPDATE/DELETE: la escritura directa no reescribe
+el historial ni las notas de devolución/aprobación/cierre. 55 comprobaciones
+PostgreSQL aisladas; no hubo escrituras en ECA-QMS. La edición/borrado de notas del
+cliente queda inactiva hasta aplicar la migración.
+[Contrato](../mis-quejas-borrador-resolucion-2026-11-11.md).
+
+11 noviembre local (12 UTC), aplicada: `20261112030353_quejas_borrador_resolucion`
+añade `queja_resolution_drafts`, RLS de lectura autorizada y RPC invoker para guardar
+y enviar con revisión/versión explícitas. Guardar no actualiza Queja ni publica;
+el cambio de estado/responsable limpia el borrador, preservando la propuesta enviada.
+48 comprobaciones PostgreSQL aisladas; esquema/grants/guards sin usuario y asesores
+remotos verificados, sin cambios en sus hallazgos existentes ni datos de negocio.
+[Contrato y evidencia](../mis-quejas-borrador-resolucion-2026-11-11.md). Cliente web local.
+
+11 noviembre, aplicada: `20261111184056_agenda_hoy_recibidas_y_proximas` incorpora
+novedades accionables del día y ventana de dos días hábiles, excluyendo vencidas y
+finalizadas. Conserva RLS/invoker/ACL, calendario histórico del plazo y límite 20.
+Verificación autenticada del folio 2026-090 y asesores sin cambios. [Contrato](../agenda-hoy-2026-11-11.md).
+
+11 noviembre: qms_get_agenda_hoy invoker y puente privado de eventos con autorización
+explícita; migración 20261111172515 aplicada. Sin cambios a policies de registros ni
+estados. [Contrato, fuentes y pruebas](../agenda-hoy-2026-11-11.md).
+
 10 noviembre, aplicadas: `20261110203610` y `20261110212506`, cola urgente ciudadana
 y despertador transaccional pg_net. Settings privados, clave dedicada en Vault,
 RPC service-only y activación verificada tras autorizar ejecución/Drive del emisor.
@@ -183,6 +210,11 @@ Esta capa se aplicó en la migración remota `etapas_versionadas`. **Existe y ej
 El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha_sla en la UI son una capa anterior. Antes de cambiarlos, reconciliar visualización y escritura con estos snapshots; no ajustar el trigger para mantener una UI vieja engañosa.
 
 ### Folios
+
+- Corrección posterior 20261111155021, autorizada solo para altas futuras: Quejas
+  2026 pasó de contador 2089 a 89, siguiente `2026-090`. Las 153 filas previas no
+  cambian; el generador salta históricos ocupados. No recortar ni aplicar módulo
+  1000 al formato. El borrado de datos para lanzamiento sigue aplazado.
 
 - Desde `20261111151343`, los cinco generadores usan `qms_private.next_annual_folio` con la fecha de la transacción en Costa Rica. Quejas conserva su única tabla `folios_quejas_anuales(anio,ultimo)`; otros módulos usan `qms_private.folios_anuales(modulo,anio,ultimo)`, sin acceso cliente.
 - UPSERT por módulo/año: mínimo tres dígitos (`AAAA-001`), crece a 1000 sin truncar y el nuevo año comienza en 001 salvo histórico ya existente. No requiere reset manual ni cron. Los prefijos SACP-/AUD-/RIESGO-/DOC- se conservan; ningún folio previo se reescribe.

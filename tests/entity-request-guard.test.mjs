@@ -17,7 +17,7 @@ function panelHarness(kind = 'colaborador') {
   const slots = [], pendingEffects = new Map(), requests = [], updates = [], invalidations = [], toasts = []
   let cursor = 0, changed = false, tree, entity
   const guards = []
-  const queryClient = { invalidateQueries: ({ queryKey }) => invalidations.push(queryKey) }
+  const queryClient = { invalidateQueries: ({ queryKey }) => invalidations.push(queryKey), setQueryData() {} }
   const invalidateContext = queryContexts.activateQueryContext(queryClient)
   const react = {
     useState(initial) {
@@ -66,12 +66,16 @@ function panelHarness(kind = 'colaborador') {
     'react-markdown': { default: 'Markdown' },
     '@/lib/services/errorToast': { showError: (...args) => toasts.push(args), showSuccess: (...args) => toasts.push(args) },
     '@/lib/store/auth-store': { useAuthStore: (select) => select({ user: { id: 'user', rol: kind === 'colaborador' ? 'colaborador' : 'admin' } }) },
-    '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}), useCrearQuejaActividad: () => ({ mutateAsync: (input) => request('note', input) }) },
+    '@/lib/queries/useQuejaActividad': { quejaActividadKey: id => ['quejas', 'actividad', id], useQuejaActividad: () => ({}), useCrearQuejaActividad: () => ({ mutateAsync: (input) => request('note', input) }) },
+    '@/lib/services/quejaInvestigacionService': { actualizarNotaInvestigacion: async () => {}, eliminarNotaInvestigacion: async () => {} },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
+    '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: () => ({ data:null,isFetching:false,error:null }) },
     '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => ({ data: false }) },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({}), quejaAdjuntosKey: (id) => ['attachments', id] },
     '@/lib/services/quejaWorkflowService': {
       transicionarQueja: (...input) => request('transition', input),
+      enviarResolucionBorradorRevision: (q,version,resolucion,resolucionFormato) => request('transition',[q,'Pendiente de Revisión GC',{ version,resolucion,resolucionFormato }]),
+      guardarResolucionBorrador: (...input) => request('draft',input),
       revisarResolucionQueja: (...input) => request('review', input),
       actualizarDetallesQueja: (...input) => request('details', input),
       actualizarRegistroQueja: (...input) => request('register', input),
@@ -82,7 +86,7 @@ function panelHarness(kind = 'colaborador') {
       descargarAdjuntoQueja: (...input) => request('download', input),
     },
     '@/lib/services/aiService': { analizarIA: (input) => request('ai', input) },
-  }, { crypto: webcrypto })
+  }, { crypto: webcrypto, window: { getSelection: () => null }, requestAnimationFrame() {} })
   function render() {
     do {
       changed = false
@@ -98,24 +102,25 @@ function panelHarness(kind = 'colaborador') {
   }
   function visit(value) {
     if (Array.isArray(value)) return value.flatMap(visit)
-    if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return []
-    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return visit(value.type(value.props))
+    if (value?.props?.hidden && value.type !== 'input' || value?.type === 'Modal' && !value.props.open) return []
+    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return visit(value.type(value.props))
     // El workspace renderiza estas ranuras además del documento central.
-    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request)] : []
+    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter)] : []
   }
   const nodes = () => visit(tree)
   function text(value) {
     if (Array.isArray(value)) return value.map(text).join('')
     if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return ''
-    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent'].includes(value.type.name)) return text(value.type(value.props))
-    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) : typeof value === 'string' ? value : ''
+    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return text(value.type(value.props))
+    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) + text(value.props.requestFooter) : typeof value === 'string' ? value : ''
   }
-  const button = (label) => nodes().find((node) => ['Button', 'CButton'].includes(node.type) && text(node) === label)
+  const button = (label) => nodes().find((node) => ['Button', 'CButton'].includes(node.type) && text(node).trim() === label.trim())
   return {
     requests, updates, guards, invalidations, toasts, render, nodes, button, invalidateContext,
     select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
-    tab(label) { nodes().find((node) => node.type === 'button' && text(node).trim() === label).props.onClick(); render() },
     assistance() { nodes().find(node => node.props['aria-label'] === 'Asistencia para la resolución').props.onClick(); render() },
+    analysis() { nodes().find(node => node.props['aria-label'] === 'Ver caso completo').props.onClick(); render() },
+    notes() { nodes().find(node => node.props['data-investigation-notes-card']).props.onClick(); render() },
     activity() { nodes().find(node => node.props['aria-label'] === 'Ver actividad').props.onClick(); render() },
     input(placeholder, value) { const node = nodes().find(node => ['textarea', 'RichTextEditor'].includes(node.type) && node.props.placeholder?.includes(placeholder)); node.props.onChange(node.type === 'RichTextEditor' ? value : { target: { value } }, 'markdown'); render() },
     contents: () => text(tree),
@@ -127,6 +132,7 @@ for (const kind of ['detalle', 'colaborador']) {
   test(`${kind}: la justificación explícita no vuelve a salir como análisis legacy`, () => {
     const panel = panelHarness(kind)
     panel.select('A', { notas: '\n[Procede] **Decisión sintética**\n\nPrueba', notas_formato: 'plain', justificacion_procede: '**Decisión sintética**\n\nPrueba', justificacion_procede_formato: 'markdown' })
+    if (kind === 'colaborador') panel.analysis()
     assert.equal(panel.contents().split('Decisión sintética').length - 1, 1)
     assert.doesNotMatch(panel.contents(), /\[Procede\]/)
     panel.unmount()
@@ -135,6 +141,7 @@ for (const kind of ['detalle', 'colaborador']) {
   test(`${kind}: separar la justificación conserva notas reales y su formato literal`, () => {
     const panel = panelHarness(kind)
     panel.select('A', { notas: 'Dato literal **sin formato**\n[Procede] Decisión sintética\n[Reapertura] Nuevo documento', notas_formato: 'plain', justificacion_procede: 'Decisión sintética' })
+    if (kind === 'colaborador') panel.analysis()
     assert.equal(panel.contents().split('Decisión sintética').length - 1, 1)
     assert.match(panel.contents(), /Dato literal \*\*sin formato\*\*/)
     assert.match(panel.contents(), /\[Reapertura\] Nuevo documento/)
@@ -144,7 +151,7 @@ for (const kind of ['detalle', 'colaborador']) {
 
 test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue siendo otra visita', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Resolución'); panel.assistance()
+  panel.select('A'); panel.assistance()
   const first = panel.button('Análisis IA').props.onClick()
   panel.select('B')
   panel.select('A')
@@ -165,7 +172,7 @@ test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue sien
 test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', async () => {
   for (const action of ['close', 'unmount']) {
     const panel = panelHarness()
-    panel.select('A'); panel.tab('Resolución'); panel.assistance()
+    panel.select('A'); panel.assistance()
     const pending = panel.button('Análisis IA').props.onClick()
     if (action === 'close') panel.nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace').props.onClose()
     else panel.unmount()
@@ -177,7 +184,7 @@ test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', asyn
 
 test('fallo tardío del chat de A no elimina mensajes ni loading del chat de B', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Resolución'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta A')
+  panel.select('A'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta A')
   const first = panel.button(' Enviar').props.onClick()
   panel.select('B'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta B')
   const current = panel.button(' Enviar').props.onClick()
@@ -194,7 +201,7 @@ test('fallo tardío del chat de A no elimina mensajes ni loading del chat de B',
 
 test('la transición confirmada actualiza A aunque se abra B, sin limpiar la resolución de B', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Resolución'); panel.input('Documentá la conclusión', 'Resolución A')
+  panel.select('A'); panel.input('Documentá la conclusión', 'Resolución A')
   const first = panel.button('Enviar a Revisión GC').props.onClick()
   panel.select('B'); panel.input('Documentá la conclusión', 'Borrador B')
   panel.requests[0].resolve({ id: 'A', estado: 'Pendiente de Revisión GC', resolucion: 'Resolución A' })
@@ -223,7 +230,7 @@ test('Quejas permite editar el área solo en Recibido y descarta el borrador al 
 test('subida tardía invalida adjuntos de A sin finalizar la subida que está activa en B', async () => {
   const panel = panelHarness()
   const upload = () => panel.nodes().find((node) => node.type === 'input' && node.props.type === 'file')
-  panel.select('A'); panel.tab('Análisis')
+  panel.select('A')
   upload().props.onChange({ target: { files: [new File(['a'], 'a.txt')], value: '' } })
   panel.select('B')
   upload().props.onChange({ target: { files: [new File(['b'], 'b.txt')], value: '' } })
@@ -240,7 +247,7 @@ test('subida tardía invalida adjuntos de A sin finalizar la subida que está ac
 
 test('una nota enviada no elimina un borrador escrito durante la espera', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Análisis'); panel.input('Registrá un avance', 'Primera nota')
+  panel.select('A'); panel.notes(); panel.input('Registrá un avance', 'Primera nota')
   const pending = panel.button(' Agregar nota').props.onClick()
   panel.input('Registrá un avance', 'Próxima nota')
   panel.requests[0].resolve()
@@ -326,7 +333,7 @@ test('la selección rechaza otra visita, otro ID y revisiones inferiores al ejec
 
 test('la escritura de otra visita de A notifica el origen y entrega un guard que impide reemplazar la selección', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.tab('Resolución'); panel.input('Documentá la conclusión', 'Primera visita')
+  panel.select('A'); panel.input('Documentá la conclusión', 'Primera visita')
   const pending = panel.button('Enviar a Revisión GC').props.onClick()
   panel.select('B'); panel.select('A')
   panel.input('Documentá la conclusión', 'Nueva visita')
@@ -341,7 +348,6 @@ for (const kind of ['colaborador', 'detalle']) {
   test(kind + ': subir dos veces en el mismo tick envía un solo archivo', async () => {
     const panel = panelHarness(kind)
     panel.select('A')
-    if (kind === 'colaborador') panel.tab('Análisis')
     const input = panel.nodes().find(node => node.type === 'input' && node.props.type === 'file')
     for (const name of ['uno.txt', 'dos.txt']) input.props.onChange({ target: { files: [new File(['x'], name)], value: '' } })
     assert.equal(panel.requests.length, 1)
@@ -355,7 +361,6 @@ for (const kind of ['colaborador', 'detalle']) {
     for (const endContext of [false, true]) {
       const panel = panelHarness(kind)
       panel.select('A')
-      if (kind === 'colaborador') panel.tab('Análisis')
       panel.nodes().find(node => node.type === 'input' && node.props.type === 'file').props.onChange({ target: { files: [new File(['x'], 'archivo.txt')], value: '' } })
       panel.unmount()
       if (endContext) panel.invalidateContext()
@@ -379,7 +384,7 @@ for (const kind of ['colaborador', 'detalle']) {
 
 test('un conflicto conserva resolución y revisión editadas sin reintentar ni doble enviar', async () => {
   const panel = panelHarness()
-  panel.select('A', { revision: 17 }); panel.tab('Resolución'); panel.input('Documentá la conclusión', 'Borrador')
+  panel.select('A', { revision: 17 }); panel.input('Documentá la conclusión', 'Borrador')
   const submit = panel.button('Enviar a Revisión GC').props.onClick
   const first = submit(), duplicate = submit()
   assert.equal(panel.requests.length, 1)
@@ -395,8 +400,8 @@ for (const kind of ['colaborador', 'detalle']) {
   test(kind + ': escribir otro borrador con el mismo texto durante el guardado no lo elimina', async () => {
     const panel = panelHarness(kind)
     panel.select('A')
-    if (kind === 'colaborador') panel.tab('Análisis')
-    else panel.activity()
+    if (kind !== 'colaborador') panel.activity()
+    else panel.notes()
     const placeholder = kind === 'colaborador' ? 'Registrá un avance' : 'Escribí una observación'
     const label = kind === 'colaborador' ? ' Agregar nota' : 'Agregar'
     panel.input(placeholder, 'Mismo texto')

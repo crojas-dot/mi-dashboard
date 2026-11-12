@@ -17,14 +17,10 @@ import {
   type IParagraphOptions,
 } from 'docx'
 import { richTextExtensions } from '@/lib/utils/richTextExtensions'
+import { INFORME_DESIGN } from '@/lib/constants/informeDesign'
 
 // Diseño de exportación A4 equivalente al PDF. Medidas Word en twips.
-const BLUE = '15345C'
-const TEXT = '252B35'
-const MUTED = '64748B'
-const SOFT_BLUE = 'E6EFFB'
-const BORDER = 'D5DDE8'
-const FONT = 'Arial'
+const { accent: BLUE, text: TEXT, muted: MUTED, border: BORDER, bodyFont: FONT, headingFont: HEADING_FONT } = INFORME_DESIGN
 
 const LABELS = /^(INFORME N[°ºo]\.?(?:\s*)|A|DE|FECHA|ASUNTO|Folio|Recepción|Estado al generar|Área afectada):\s*(.*)$/i
 const SECTION = /^(?:\d+(?:\.\d+)*[.)]?\s+\S|Anexos\s*$)/i
@@ -108,7 +104,7 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
       const label = `${metadata[1].trim()}:`
       paragraphs.push(new Paragraph({
         children: [
-          new TextRun({ text: label, bold: true, color: BLUE }),
+          new TextRun({ text: label, bold: true, color: TEXT }),
           new TextRun({ children: [new Tab()] }),
           new TextRun({ text: metadata[2] || '' }),
         ],
@@ -123,8 +119,8 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
     if (node.type === 'heading' || (isBoldOnly(node) && text.length < 120 && !numberingInfo)) {
       if (isInstitution(text)) {
         paragraphs.push(new Paragraph({
-          heading: HeadingLevel.HEADING_1,
-          children: [new TextRun({ text, bold: true, color: BLUE, size: 30 })],
+          style: 'Title',
+          children: [new TextRun({ text, bold: true, font: HEADING_FONT, color: TEXT, size: 30 })],
           spacing: { before: 0, after: 100, line: 340 },
           keepNext: true,
           keepLines: true,
@@ -135,10 +131,8 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
       if (SECTION.test(text)) {
         paragraphs.push(new Paragraph({
           heading: HeadingLevel.HEADING_1,
-          children: [new TextRun({ text, bold: true, color: BLUE, size: 24 })],
-          shading: { fill: SOFT_BLUE },
-          indent: { left: 135, right: 135 },
-          spacing: { before: 195, after: 145, line: 330 },
+          children: [new TextRun({ text, bold: true, font: HEADING_FONT, color: BLUE, size: 24 })],
+          spacing: { before: 300, after: 130, line: 300 },
           keepNext: true,
           keepLines: true,
         }))
@@ -147,7 +141,7 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
 
       paragraphs.push(new Paragraph({
         heading: HeadingLevel.HEADING_2,
-        children: [new TextRun({ text, bold: true, color: BLUE, size: text === 'Gestión de Calidad' ? 21 : 22 })],
+        children: [new TextRun({ text, bold: true, font: HEADING_FONT, color: text === 'Gestión de Calidad' ? MUTED : TEXT, size: text === 'Gestión de Calidad' ? 21 : 22 })],
         spacing: { before: text === 'Gestión de Calidad' ? 0 : 170, after: 105, line: 300 },
         keepNext: true,
         keepLines: true,
@@ -162,7 +156,15 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
   }
 
   const visit = (nodes: JSONContent[] = [], level = 0, quote = false): void => {
-    for (const node of nodes) {
+    for (const [index, node] of nodes.entries()) {
+      if (isEmpty(node)) {
+        // Conservar un espacio editable tras un título vacío (Conclusión), sin
+        // encadenar keepNext hasta Anexos ni exportar todos los Enter de paginación.
+        if (nodes[index - 1]?.type === 'heading') {
+          paragraphs.push(new Paragraph({ children: [], spacing: { line: 300, after: 120 }, keepNext: false }))
+        }
+        continue
+      }
       if (node.type === 'bulletList' || node.type === 'orderedList') {
         const ordered = node.type === 'orderedList'
         const reference = `eca-informe-lista-${++listCounter}`
@@ -219,8 +221,7 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
     }
   }
 
-  // Se omiten los párrafos vacíos producidos por Enter repetidos al paginar.
-  // Los espacios normales entre bloques los controlan los estilos del documento.
+  // El espaciado de títulos y párrafos controla el ritmo de la página.
   visit(tree.content)
 
   const doc = new Document({
@@ -234,6 +235,11 @@ export async function crearInformeWord(contenido: string): Promise<Blob> {
           paragraph: { spacing: { line: 310, after: 150 } },
         },
       },
+      paragraphStyles: [
+        { id: 'Title', name: 'Title', basedOn: 'Normal', next: 'Normal', run: { font: HEADING_FONT, size: 30, bold: true, color: TEXT } },
+        { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', next: 'Normal', run: { font: HEADING_FONT, size: 24, bold: true, color: BLUE }, paragraph: { keepNext: true, keepLines: true } },
+        { id: 'Heading2', name: 'Heading 2', basedOn: 'Normal', next: 'Normal', run: { font: HEADING_FONT, size: 22, bold: true, color: TEXT }, paragraph: { keepNext: true, keepLines: true } },
+      ],
     },
     numbering: { config: numbering },
     sections: [{

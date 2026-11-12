@@ -6,6 +6,10 @@ Las rutas de código de estas tablas parten de la raíz del proyecto.
 
 ## Ruta rápida
 
+[Agenda de hoy](../agenda-hoy-2026-11-11.md): qms_get_agenda_hoy y puente privado
+de eventos autorizados; useAgendaHoy con caché de cinco minutos y widget controlado
+por Header. Quejas/Auditorías, sin nueva suscripción Realtime. Alias /dashboard → /.
+
 [Consecutivos anuales — 11 noviembre](../consecutivos-anuales-2026-11-11.md)
 ubica el contador por módulo/año de Costa Rica, `qms_private.next_annual_folio`, los
 triggers de alta de SACP/Auditorías/Riesgos y la compatibilidad con RPC anteriores.

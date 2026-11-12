@@ -59,6 +59,7 @@ test('Select permite que un ancho de wrapper específico reemplace el ancho de 1
   assert.match(fluid, /class="relative min-w-0 w-full"/)
   const styles = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.match(styles, /\.mis-quejas-resolution-editor \[data-rich-text-toolbar\]\s*\{[^}]*flex-wrap:\s*wrap;[^}]*overflow:\s*visible;/)
+  assert.match(styles, /\.mis-quejas-resolution-editor\[data-rich-text-readonly\] \[data-rich-text-viewport\]\s*\{[^}]*overflow-y:\s*auto;/)
 })
 
 test('cancelación nativa del diálogo consume Escape antes del panel de fondo', () => {
@@ -68,6 +69,19 @@ test('cancelación nativa del diálogo consume Escape antes del panel de fondo',
   top.dialog.props.onCancel(event)
   assert.equal(top.closes(), 1)
   assert.deepEqual(effects, ['prevent', 'stop'])
+})
+
+test('cancelar el selector de archivos no cierra el expediente que lo abrió', () => {
+  const { dialog, closes } = modalFixture({ variant: 'workspace' })
+  const input = { tagName: 'INPUT' }
+  let prevented = false
+  // El cancel del input burbujea hasta el diálogo: su target no es el diálogo.
+  dialog.props.onCancel({ target: input, currentTarget: dialog, preventDefault() { prevented = true }, stopPropagation() {} })
+  assert.equal(closes(), 0)
+  assert.equal(prevented, false)
+  // Escape con el foco en el propio diálogo sí conserva el cierre.
+  dialog.props.onCancel({ target: dialog, currentTarget: dialog, preventDefault() {}, stopPropagation() {} })
+  assert.equal(closes(), 1)
 })
 
 test('arrastrar desde el contenido al fondo no cierra el modal; pulsar el fondo sí', () => {
@@ -114,6 +128,7 @@ function modalLifecycleHarness({ mobile = false } = {}) {
   class Element {
     isConnected = true
     focus() { document.activeElement = this }
+    contains(other) { for (let node = other; node; node = node.parent) if (node === this) return true; return false }
   }
   const origin = new Element()
   const document = {
@@ -175,8 +190,10 @@ function modalLifecycleHarness({ mobile = false } = {}) {
   }
   const mount = (props = {}, existing) => {
     hooks = { effects: [], refs: [] }
-    const element = Modal({ open: true, title: 'Expediente', children: null, onClose() {}, ...props })
+    const { parent, ...modalProps } = props
+    const element = Modal({ open: true, title: 'Expediente', children: null, onClose() {}, ...modalProps })
     const dialog = existing ?? new Dialog()
+    dialog.parent = parent?.dialog
     if (!existing) dialogs.push(dialog)
     hooks.refs[0].current = dialog
     const cleanups = hooks.effects.map(effect => effect())
@@ -225,6 +242,38 @@ test('workspace ampliado y diálogo superior conservan el bloqueo hasta cerrar e
   editor.close()
   assert.equal(browser.document.body.style.overflow, 'hidden')
   workspace.close()
+  assert.equal(browser.document.body.style.overflow, 'auto')
+})
+
+test('un lateral de consulta dentro del expediente ampliado comparte su plano sin otro bloqueo modal', () => {
+  const browser = modalLifecycleHarness()
+  const workspace = browser.mount({ variant: 'workspace', expanded: true })
+  const analysis = browser.mount({ variant: 'workspace', size: 'sm', parent: workspace })
+  assert.equal(analysis.dialog.open, true)
+  assert.equal(analysis.dialog.modal, false)
+  assert.deepEqual(browser.topLayer, [workspace.dialog])
+  assert.match(analysis.element.props.className, /lg:w-\[560px\]/)
+  analysis.close()
+  assert.equal(workspace.dialog.open, true)
+  assert.equal(browser.document.body.style.overflow, 'hidden')
+  workspace.close()
+  assert.equal(browser.document.body.style.overflow, 'auto')
+})
+
+test('ampliar y reducir el análisis anidado conserva el expediente y el bloqueo correctos', () => {
+  const browser = modalLifecycleHarness()
+  const workspace = browser.mount({ variant: 'workspace', expanded: true })
+  let analysis = browser.mount({ variant: 'workspace', size: 'sm', parent: workspace })
+  const node = analysis.dialog
+  analysis.close()
+  analysis = browser.mount({ variant: 'workspace', size: 'sm', parent: workspace, expanded: true }, node)
+  assert.deepEqual(browser.topLayer, [workspace.dialog, node])
+  analysis.close()
+  analysis = browser.mount({ variant: 'workspace', size: 'sm', parent: workspace }, node)
+  assert.equal(node.open, true)
+  assert.equal(node.modal, false)
+  assert.deepEqual(browser.topLayer, [workspace.dialog])
+  analysis.close(); workspace.close()
   assert.equal(browser.document.body.style.overflow, 'auto')
 })
 

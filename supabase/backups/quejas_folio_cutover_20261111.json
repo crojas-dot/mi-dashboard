@@ -1,0 +1,19 @@
+{
+  "migration": "20261111155021_quejas_corregir_arrastre_consecutivo.sql",
+  "project": "fykhrrpeoehwqznccmfp",
+  "scope": "Solo futuras altas de Quejas; retirar arrastre de 2000 de 2026",
+  "counterBefore": 2089,
+  "counterAfter": 89,
+  "nextCandidate": "2026-090",
+  "countBefore": 153,
+  "countAfter": 153,
+  "idFolioDigestBefore": "4ef9bd7c56d90e7774097c5df196a253",
+  "idFolioDigestAfter": "4ef9bd7c56d90e7774097c5df196a253",
+  "generatorAclUnchanged": true,
+  "isolatedPostgresChecks": 162,
+  "businessRecordsCreated": 0,
+  "emailsSent": 0,
+  "historicalRenumbered": false,
+  "launchCleanupExecuted": false,
+  "webDeployment": false
+}

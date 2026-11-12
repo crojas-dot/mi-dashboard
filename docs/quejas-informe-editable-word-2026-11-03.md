@@ -1,5 +1,27 @@
 # Informe editable y exportación Word de Quejas
 
+## Identidad documental y separación de secciones — 11 noviembre
+
+El exportador Word omitía todos los párrafos vacíos y asignaba el mismo sombreado
+a los títulos. Una Conclusión vacía quedaba contigua a Anexos y Word unía sus fondos.
+Ahora no se sombrean las secciones y se conserva un único párrafo editable tras un
+título vacío. Se mantienen los estilos nativos de Word, listas y paginación A4.
+El contenido/versiones de los informes guardados no se reescriben.
+
+`lib/constants/informeDesign.ts` recoge la guía de identidad facilitada por el
+propietario: azul #2A61B0 en secciones, negro #1A1718 en institución/cuerpo y gris
+#E6E5E5 para divisores. Word y editor usan Century Gothic para títulos y Arial 11pt
+para el cuerpo, ambas fuentes secundarias autorizadas. Gilroy no está incluida
+ni se redistribuye; PDF conserva su Helvetica integrada y comparte la jerarquía
+de color sin franjas de fondo. Estos valores documentales no cambian el azul del
+resto de la aplicación.
+
+Verificación local: 25 pruebas de informe/editor correctas, TypeScript, lint focalizado,
+capa visual y compilación de producción. Se generaron DOCX reales de conclusión vacía, completa y expediente
+extenso con datos sintéticos, renderizados mediante LibreOffice; se inspeccionaron
+sus cuatro páginas sin unión de títulos, recortes ni solapamientos. Artefactos en
+`.performance/informe-identidad-20261111/`. Sin escrituras remotas ni publicación web.
+
 Implementación local del 3 noviembre. Web **sin publicar**. La persistencia está
 activada en ECA-QMS (`fykhrrpeoehwqznccmfp`) mediante la migración
 `20261104001552_queja_informes_editables`, tras autorización y reconexión OAuth

@@ -1,0 +1,16 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": "20261111175442_agenda_hoy_fecha_limite.sql",
+  "rpcInvoker": true,
+  "anonExecute": false,
+  "authenticatedExecute": true,
+  "withoutIdentity": [],
+  "postgresIsolatedChecks": 19,
+  "nodeChecks": 10,
+  "browserChecks": 30,
+  "widths": [320, 390, 1440],
+  "webPublished": false,
+  "businessRecordsCreated": 0,
+  "emailsSent": 0,
+  "checks": ["TypeScript", "lint", "build", "structure", "visual"]
+}

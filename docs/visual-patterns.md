@@ -137,11 +137,39 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   mismas esquinas redondeadas arriba y abajo; el borde inferior permanece visible
   al desplazar. Al ampliar no se añade ese marco ni margen. El expediente comienza con Descripción, sin el resumen
   superior de resultado ni la etiqueta Cliente encima;
-  Mis Quejas tiene Análisis y Resolución, con un único editor. Ver
-  [revisión local del 3 noviembre](quejas-claridad-y-acuse-2026-11-03.md).
-- En Resolución de Mis Quejas y revisión de GC, el ciclo se presenta arriba en
-  horizontal para ampliar el documento. Resolución sitúa el editor bajo las
-  pestañas y Asistencia en esa misma fila. GC muestra primero la propuesta;
+  Mis Quejas prioriza Resolución en una tarjeta central amplia, sin bloques debajo.
+  Notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver notas
+  abre un diálogo centrado (`variant="dialog"`) con lectura y alta. En contraído sigue
+  visible sin mostrar el contacto. Adjuntar está en el encabezado, a la izquierda de
+  Guardar/Editar, y abre el selector directamente. Los adjuntos se listan bajo el
+  lienzo con `ListaAdjuntos layout="cards"`, también al editar, sin sheet aparte.
+  Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
+  A la derecha quedan Acción actual y la devolución real de Calidad,
+  en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
+  Ver caso completo
+  usa fondo rojo institucional `qms-brand-red`, hover blanco con texto/icono/borde
+  rojos, y queda en Acción actual, encima del
+  envío a GC; investigación omite la descripción
+  redundante de esa tarjeta. Ese único acceso abre Análisis. Ver
+  [investigación con consulta lateral](quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
+- En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
+  ampliar el documento. Resolución se edita en la página, con Guardar junto a Asistencia
+  secundaria; Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
+  Guardar es azul solo con cambios. Tras confirmación muestra check y Guardado neutral
+  deshabilitado, con fecha real en su título; no hay autoguardado ficticio.
+  El lienzo mide hasta 720px de alto (70dvh, mínimo 420px), sin reducir la columna central.
+  El envío queda siempre en Acción actual; no se duplica al pie del editor.
+  Las tarjetas usan radios/tokens del sistema: azul para edición,
+  amarillo para devolución y púrpura en el icono
+  de notas. Los iconos Lucide son estáticos y decorativos junto a etiquetas accesibles.
+  Análisis usa el mismo modal document/xl de procedencia (1040px máximos, 90dvh),
+  centrado y nativo en todos los tamaños, sin ampliar el workspace al abrir.
+  Primero muestra Observación de Calidad y Procede azul, después Descripción del
+  cliente. Su pie ofrece Preparar resolución. Resolución contiene el scroll cuando
+  el texto o su barra de formato tienen foco, incluso en los límites y estando vacío.
+  Sin foco, desplaza el expediente; conserva el scroll interno y el ancho mediante
+  gutter estable. El editor conserva su nodo y borrador
+  al consultar. GC muestra primero la propuesta;
   Solicitud y antecedentes conserva el contenido íntegro en un desplegable.
   El selector de formato conserva su ancho explícito y la barra envuelve sus controles
   cuando hace falta, sin ocultarlos detrás de un scroll horizontal. El encabezado existente añade la fecha real, sin otra ficha grande. El resto

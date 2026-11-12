@@ -36,7 +36,7 @@ fechada registra web, migración, cortes y emisor activos; falta aceptación ins
 | --- | --- | --- |
 | `/` | PageHeader, QuejasSummary lazy/Suspense, indicadores por módulo, ocho expedientes próximos y actividad real | No monta los tabs analíticos alternativos |
 | `/quejas` | Tabla con filtros, paginación, tipo/estado, vencimiento por etapa, vistas locales, precarga de adjuntos, alta y detalle | Edición y transición por wrappers QMS con revisión esperada; oficio/área/observaciones integrados |
-| `/mis-quejas` | Filtra responsable_id=usuario real, tabla y workspace compartido con Análisis/Resolución | No permite adoptar otro responsable simulando rol; propuesta enviada persiste, borradores de visita son locales |
+| `/mis-quejas` | Filtra responsable_id=usuario real, workspace con resolución integrada y consulta de Análisis en modal | Guardar conserva un borrador remoto; Enviar a GC es independiente. Cambios sin guardar son locales; sin adoptar otro responsable simulando rol. [Contrato](../mis-quejas-borrador-resolucion-2026-11-11.md) |
 | `/configuracion` | Siete secciones agrupadas en Organización/Acceso/Servicios; solo admin | Editor de SLA legacy no publica versiones QMS |
 | `/procesos` | Listado paginado y alta nombre/tipo/objetivo/estado | Documentos vinculados/KPIs no constituyen un gestor completo |
 | `/auditorias` | Listado paginado, alta y modal de hallazgos asociados | Hallazgos de solo lectura, sin CRUD/derivación UI |

@@ -1,0 +1,54 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": "20261112030353_quejas_borrador_resolucion",
+  "local_matches_applied": true,
+  "remote_checks": {
+    "rls_enabled": true,
+    "anonymous_select": false,
+    "authenticated_direct_insert": false,
+    "authenticated_direct_update": false,
+    "authenticated_direct_delete": false,
+    "public_functions_security_invoker": true,
+    "anonymous_execute": false,
+    "unauthenticated_save_rejected": true,
+    "unauthenticated_submit_rejected": true,
+    "empty_search_paths": true
+  },
+  "local_db_checks": 48,
+  "remote_business_writes": 0,
+  "remote_test_cases_created": 0,
+  "mail_sent": 0,
+  "web_published": false,
+  "security_advisors": [
+    {
+      "name": "rls_enabled_no_policy",
+      "before_count": 12,
+      "after_count": 12,
+      "new_findings": 0
+    },
+    {
+      "name": "extension_in_public",
+      "before_count": 1,
+      "after_count": 1,
+      "new_findings": 0
+    },
+    {
+      "name": "anon_security_definer_function_executable",
+      "before_count": 6,
+      "after_count": 6,
+      "new_findings": 0
+    },
+    {
+      "name": "authenticated_security_definer_function_executable",
+      "before_count": 24,
+      "after_count": 24,
+      "new_findings": 0
+    },
+    {
+      "name": "auth_leaked_password_protection",
+      "before_count": 1,
+      "after_count": 1,
+      "new_findings": 0
+    }
+  ]
+}

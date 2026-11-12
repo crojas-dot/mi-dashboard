@@ -2,6 +2,7 @@ import { MarkdownManager } from '@tiptap/markdown'
 import type { JSONContent } from '@tiptap/core'
 import { jsPDF } from 'jspdf'
 import { richTextExtensions } from '@/lib/utils/richTextExtensions'
+import { INFORME_DESIGN, informeRgb } from '@/lib/constants/informeDesign'
 
 // Medidas en puntos: A4 y márgenes equivalentes al Word.
 const MARGIN_X = 62
@@ -9,10 +10,9 @@ const MARGIN_TOP = 66
 const MARGIN_BOTTOM = 66
 const BODY_SIZE = 11
 const LINE_HEIGHT = 15.5
-const BLUE: [number, number, number] = [21, 52, 92]
-const TEXT: [number, number, number] = [37, 43, 53]
-const MUTED: [number, number, number] = [100, 116, 139]
-const SOFT_BLUE: [number, number, number] = [230, 239, 251]
+const BLUE = informeRgb(INFORME_DESIGN.accent)
+const TEXT = informeRgb(INFORME_DESIGN.text)
+const MUTED = informeRgb(INFORME_DESIGN.muted)
 
 const LABELS = /^(INFORME N[°ºo]\.?(?:\s*)|A|DE|FECHA|ASUNTO|Folio|Recepción|Estado al generar|Área afectada):\s*(.*)$/i
 const SECTION = /^(?:\d+(?:\.\d+)*[.)]?\s+\S|Anexos\s*$)/i
@@ -155,13 +155,13 @@ export async function crearInformePdf(contenido: string): Promise<Blob> {
 
   const drawMetadata = (label: string, value: string) => {
     const column = 120
-    setText(10.5, BLUE, true)
+    setText(10.5, TEXT, true)
     const wrapped = wrapSpans([{ text: value, bold: false, italic: false }], contentWidth - column, 11)
     // La etiqueta y su valor comienzan siempre en la misma línea.
     for (const [i, line] of wrapped.entries()) {
       ensureSpace(LINE_HEIGHT)
       if (i === 0) {
-        setText(10.5, BLUE, true)
+        setText(10.5, TEXT, true)
         doc.text(label, MARGIN_X, y + 11)
       }
       let advance = 0
@@ -201,31 +201,24 @@ export async function crearInformePdf(contenido: string): Promise<Blob> {
       const size = 15
       const lines = wrapSpans([{ text: title, bold: true, italic: false }], contentWidth, size)
       ensureSpace(lines.length * 19 + 18)
-      paintLines(lines, MARGIN_X, size, 19, BLUE)
+      paintLines(lines, MARGIN_X, size, 19, TEXT)
       addSpace(5)
       return
     }
     if (SECTION.test(title)) {
       const size = 12
-      const lines = wrapSpans([{ text: title, bold: true, italic: false }], contentWidth - 20, size)
-      const bandHeight = Math.max(27, lines.length * 16 + 10)
-      ensureSpace(bandHeight + 27)
-      addSpace(12)
-      ensureSpace(bandHeight + 15)
-      doc.setFillColor(...SOFT_BLUE)
-      doc.roundedRect(MARGIN_X, y, contentWidth, bandHeight, 3, 3, 'F')
-      const bandTop = y
-      y += 5
-      paintLines(lines, MARGIN_X + 9, size, 16, BLUE)
-      y = bandTop + bandHeight
-      addSpace(9)
+      const lines = wrapSpans([{ text: title, bold: true, italic: false }], contentWidth, size)
+      ensureSpace(lines.length * 16 + 42)
+      addSpace(15)
+      paintLines(lines, MARGIN_X, size, 16, BLUE)
+      addSpace(7)
       return
     }
     const size = title === 'Gestión de Calidad' ? 10.5 : 11
     const lines = wrapSpans([{ text: title, bold: true, italic: false }], contentWidth, size)
     ensureSpace(lines.length * 15 + 18)
     if (title !== 'Gestión de Calidad') addSpace(6)
-    paintLines(lines, MARGIN_X, size, 15, BLUE)
+    paintLines(lines, MARGIN_X, size, 15, title === 'Gestión de Calidad' ? MUTED : TEXT)
     addSpace(5)
   }
 

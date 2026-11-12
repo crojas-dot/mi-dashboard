@@ -5,7 +5,7 @@ import { loadModule } from './load-module.mjs'
 
 // Ejercita los listeners del Header activo con DOM y sesión ficticios.
 function fixture() {
-  const listeners = new Map(), effects = [], updates = [], refs = []
+  const listeners = new Map(), effects = [], updates = [], refs = [], subscriptions = []
   const document = { activeElement: null, addEventListener: (kind, fn) => listeners.set(kind, fn), removeEventListener: kind => listeners.delete(kind) }
   let stateIndex = 0
   const { default: Header } = loadModule('components/Header.tsx', {
@@ -21,18 +21,19 @@ function fixture() {
       useMarcarNotificacionLeida: () => ({}), useMarcarTodasLeidas: () => ({}),
       useArchivarNotificacion: () => ({}), useArchivarTodas: () => ({}),
     },
+    '@/lib/queries/useAgendaHoy': { useAgendaHoy: () => ({ data: [], isPending: false, isError: false, refetch() {} }) },
     '@/lib/supabase': { supabase: {} },
     '@/lib/services/errorToast': { showError() {}, showSuccess() {} },
     '@/lib/services/sonidosNotificacion': { SONIDO_DEFAULT: 'test', SONIDOS_NOTIFICACION: [], playNotificationSound() {} },
     '@/components/usuarios/CambiarMiPasswordModal': { default: 'PasswordModal' },
-    '@/hooks/useRealtimeSubscription': { useRealtimeSubscription() {} },
+    '@/hooks/useRealtimeSubscription': { useRealtimeSubscription(options) { subscriptions.push(options) } },
   }, { document })
   Header()
   let focusCalls = 0
   const trigger = { focus() { focusCalls++; document.activeElement = trigger } }
   refs.at(-1).current = { contains: node => node === trigger, querySelector: () => trigger }
   const cleanup = effects.at(-1)()
-  return { listeners, updates, trigger, document, cleanup, focusCalls: () => focusCalls }
+  return { listeners, updates, trigger, document, cleanup, subscriptions, focusCalls: () => focusCalls }
 }
 
 test('Escape cierra el menú activo y devuelve el foco a su disparador', () => {
@@ -52,5 +53,13 @@ test('cerrar el menú con un clic externo no roba el foco de otro control', () =
   assert.equal(menu.updates.at(-1), null)
   assert.equal(menu.document.activeElement, outside)
   assert.equal(menu.focusCalls(), 0)
+  menu.cleanup()
+})
+
+test('la misma suscripción de avisos invalida agenda sin crear otro canal', () => {
+  const menu = fixture()
+  assert.equal(menu.subscriptions.length,1)
+  assert.equal(menu.subscriptions[0].table,'notificaciones')
+  assert.deepEqual(Array.from(menu.subscriptions[0].invalidateKeys[1]),['dashboard','agenda_hoy'])
   menu.cleanup()
 })

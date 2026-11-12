@@ -1,0 +1,16 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": "20261111172515_agenda_hoy.sql",
+  "rpcInvoker": true,
+  "authenticatedExecute": true,
+  "anonExecute": false,
+  "anonPrivateEventsExecute": false,
+  "resultWithoutIdentity": [],
+  "postgresIsolatedChecks": 17,
+  "nodeChecks": 19,
+  "browserChecks": 15,
+  "widths": [320, 390, 1440],
+  "businessWrites": 0,
+  "emailsSent": 0,
+  "webPublished": false
+}

@@ -95,6 +95,27 @@
   overflow: visible;
 }
 
+/* Sin foco, la rueda navega el expediente. hidden conserva el punto de lectura
+   del texto; el gutter evita que cambie de ancho al empezar o terminar la edición. */
+.mis-quejas-resolution-editor [data-rich-text-viewport] {
+  overflow-y: hidden;
+  overscroll-behavior: auto;
+  scrollbar-gutter: stable;
+}
+
+/* También incluye los controles de formato, para no sacar el lienzo de la vista
+   al llegar al primer/último párrafo o al editar todavía un documento vacío. */
+.mis-quejas-resolution-editor:not([data-rich-text-readonly]):focus-within [data-rich-text-viewport] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Guardado: la lectura del documento conserva su propio desplazamiento. */
+.mis-quejas-resolution-editor[data-rich-text-readonly] [data-rich-text-viewport] {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 @utility ui-table {
   @apply w-full select-text text-left text-sm;
   & th { @apply whitespace-nowrap border-b border-qms-border bg-qms-table-head px-4 py-3 text-left font-semibold text-qms-dark; }
@@ -168,7 +189,7 @@
   padding: 0 20mm;
   background: #fff;
   box-shadow: 0 2px 8px rgb(20 35 60 / 8%);
-  color: #252b35;
+  color: #1a1718;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11pt;
   line-height: 1.5;
@@ -226,27 +247,27 @@
 
 .queja-informe-editor .tiptap > h2:first-of-type {
   margin: 0 0 8px;
-  color: #15345c;
-  font-size: 18px;
+  color: #1a1718;
+  font-family: "Century Gothic", Arial, sans-serif;
+  font-size: 15pt;
   font-weight: 700;
   line-height: 1.35;
 }
 
 .queja-informe-editor .tiptap > h2:not(:first-of-type) {
-  margin: 22px 0 12px;
-  border-radius: 4px;
-  background: #e6effb;
-  padding: 9px 12px;
-  color: #15345c;
-  font-size: 15px;
-  font-weight: 600;
+  margin: 20px 0 9px;
+  color: #2a61b0;
+  font-family: "Century Gothic", Arial, sans-serif;
+  font-size: 12pt;
+  font-weight: 700;
   line-height: 1.4;
 }
 
 .queja-informe-editor .tiptap > h3 {
   margin: 18px 0 8px;
-  color: #15345c;
-  font-size: 14px;
+  color: #1a1718;
+  font-family: "Century Gothic", Arial, sans-serif;
+  font-size: 11pt;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -262,13 +283,13 @@
 }
 
 .queja-informe-editor .tiptap > p:has(> strong:first-child) > strong {
-  color: #15345c;
+  color: #1a1718;
   font-weight: 600;
 }
 
 .queja-informe-editor .tiptap > p:nth-of-type(6) {
   margin-bottom: 20px;
-  border-bottom: 1px solid #d5dde8;
+  border-bottom: 1px solid #e6e5e5;
   padding-bottom: 14px;
 }
 
@@ -283,15 +304,15 @@
 }
 
 .queja-informe-editor .tiptap blockquote {
-  border-left: 3px solid #d5dde8;
+  border-left: 3px solid #e6e5e5;
   padding-left: 14px;
-  color: #64748b;
+  color: #626162;
 }
 
 .queja-informe-editor .tiptap hr {
   margin: 16px 0;
   border: 0;
-  border-top: 1px solid #d5dde8;
+  border-top: 1px solid #e6e5e5;
 }
 
 .queja-informe-editor > p:not([role="status"]) {

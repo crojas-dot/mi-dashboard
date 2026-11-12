@@ -1,0 +1,24 @@
+{
+  "project": "fykhrrpeoehwqznccmfp",
+  "migration": "20261111184056_agenda_hoy_recibidas_y_proximas",
+  "applied": true,
+  "security": {
+    "invoker": true,
+    "anon_execute": false,
+    "authenticated_execute": true,
+    "without_identity": [],
+    "new_security_advisor_findings": 0,
+    "table_policies_or_grants_changed": false
+  },
+  "read_only_verification": {
+    "profile": "active admin",
+    "role": "authenticated",
+    "total": 5,
+    "new_case": { "codigo": "2026-090", "motivo": "recibida_hoy", "fecha_limite": "2026-11-16" },
+    "no_overdue": true,
+    "no_finalized": true
+  },
+  "validation": { "isolated_postgres_checks": 36, "node_tests": 11, "browser_checks": 33, "typescript": "passed", "eslint": "passed", "build": "passed" },
+  "remote_business_writes": 0,
+  "web_published": false
+}

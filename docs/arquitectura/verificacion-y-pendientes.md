@@ -1,6 +1,16 @@
 # Verificación, despliegue y pendientes
 
+Agenda de hoy, 11 noviembre: 17 checks PostgreSQL aislado, 19 Node y 15 de navegador
+sintético a 320/390/1440 px; TypeScript, lint, build, estructura y capa visual correctos.
+RPC aplicado, cabecera local sin publicar. [Contrato](../agenda-hoy-2026-11-11.md).
+
 Contrato actual consolidado en [AGENTS.md](../../AGENTS.md), revisión del 11 noviembre.
+
+Corrección posterior del contador de Quejas: migración 20261111155021 aplicada,
+2089 → 89, siguiente candidato 2026-090; mismas 153 filas y digest de ID/folio,
+sin correos ni registros de prueba reales. PostgreSQL aislado 162 comprobaciones,
+incluido salto de históricos ocupados. No se renumeraron históricos ni se realizó
+la limpieza futura para lanzamiento. [Contrato](../consecutivos-anuales-2026-11-11.md).
 
 11 noviembre: [consecutivos anuales](../consecutivos-anuales-2026-11-11.md), 157
 comprobaciones PostgreSQL aisladas, cinco series, cambio de año CR en tres zonas de

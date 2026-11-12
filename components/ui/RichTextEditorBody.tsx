@@ -285,6 +285,7 @@ export default function RichTextEditorBody({
   onChange,
   onInitialized,
   disabled = false,
+  readOnly = false,
   autoFocus = false,
   placeholder,
   required,
@@ -352,7 +353,7 @@ export default function RichTextEditorBody({
   const editor = useEditor({
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
-    editable: !disabled,
+    editable: !disabled && !readOnly,
     extensions,
 
     content:
@@ -427,9 +428,9 @@ export default function RichTextEditorBody({
 
   useEffect(() => {
     if (editor) {
-      editor.setEditable(!disabled, false)
+      editor.setEditable(!disabled && !readOnly, false)
     }
-  }, [editor, disabled])
+  }, [editor, disabled, readOnly])
 
   useEffect(() => {
     if (!editor) return
@@ -460,10 +461,10 @@ export default function RichTextEditorBody({
   }, [editor, value, format])
 
   useEffect(() => {
-    if (editor && autoFocus && !disabled) {
+    if (editor && autoFocus && !disabled && !readOnly) {
       editor.commands.focus('end')
     }
-  }, [editor, autoFocus, disabled])
+  }, [editor, autoFocus, disabled, readOnly])
 
   const reactiveState = useEditorState({
     editor,
@@ -548,6 +549,7 @@ export default function RichTextEditorBody({
       data-qms-paginated={
         isPagedDocument ? 'true' : undefined
       }
+      data-rich-text-readonly={readOnly || undefined}
       className={[
         'min-w-0',
         fill ? 'flex min-h-0 flex-1 flex-col' : '',
@@ -591,9 +593,10 @@ export default function RichTextEditorBody({
       >
         <div
           data-rich-text-toolbar
+          hidden={readOnly}
           role="group"
           aria-label={`Formato de ${label}`}
-          className="flex shrink-0 flex-nowrap items-center gap-1 overflow-x-auto border-b border-qms-border bg-qms-surface px-2 py-1"
+          className={`${readOnly ? 'hidden' : 'flex'} shrink-0 flex-nowrap items-center gap-1 overflow-x-auto border-b border-qms-border bg-qms-surface px-2 py-1`}
         >
           <Select
             aria-label="Estilo de texto"
@@ -606,7 +609,7 @@ export default function RichTextEditorBody({
                   ? 'h3'
                   : 'paragraph'
             }
-            disabled={disabled || !editor}
+            disabled={disabled || readOnly || !editor}
             onChange={event => {
               const selected = event.target.value
 
@@ -658,7 +661,7 @@ export default function RichTextEditorBody({
                     : Boolean(active)
                 }
                 disabled={
-                  disabled ||
+                  disabled || readOnly ||
                   !editor ||
                   unavailable
                 }
@@ -747,7 +750,7 @@ export default function RichTextEditorBody({
               ? 'status'
               : undefined
           }
-          className={`mt-1 shrink-0 text-xs ${
+          className={`${readOnly ? 'sr-only' : 'mt-1 shrink-0 text-xs'} ${
             isDocument
               ? 'px-5 py-1 sm:px-8'
               : ''

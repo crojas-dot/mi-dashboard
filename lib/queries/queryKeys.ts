@@ -6,6 +6,7 @@
 export const queryKeys = {
   publicFormulario: ['publicFormulario'] as const,
   dashboard: ['dashboard'] as const,
+  agendaHoy: ['dashboard', 'agenda_hoy'] as const,
   quejas: ['quejas'] as const,
   catalogos: ['catalogos'] as const,
   slaConfig: ['sla_config'] as const,

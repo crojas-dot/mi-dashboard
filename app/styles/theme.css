@@ -24,6 +24,8 @@
   --color-qms-primary-dark: #013b7d;
   --color-qms-primary-hover: #013b7d;
   --color-qms-primary-soft: #e7edf5;
+  /* Rojo institucional de la guía ECA; independiente de las alertas de peligro. */
+  --color-qms-brand-red: #de4041;
   --color-qms-focus-border: color-mix(in srgb, var(--color-qms-primary) 50%, white);
   --color-qms-focus-ring: color-mix(in srgb, var(--color-qms-primary) 25%, transparent);
   --color-qms-dark: #212529;
@@ -47,6 +49,7 @@
   --color-qms-investigacion-text: #ffffff;
   --color-qms-info: #024796;
   --color-qms-purple: #6f42c1;
+  --color-qms-indigo: #4f46e5;
   --color-qms-hover-bg: #f8f9fa;
   --color-qms-scroll: #cbd5e1;
   --color-qms-scroll-hover: #94a3b8;

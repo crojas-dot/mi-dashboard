@@ -12,6 +12,8 @@ export interface RichTextEditorProps {
   onChange: (value: string, format: RichTextFormat) => void
   onInitialized?: (value: string) => void
   disabled?: boolean
+  /** Lectura del mismo documento, sin atenuarlo ni remontar el editor. */
+  readOnly?: boolean
   /** Enfoca al habilitar el editor, incluso si su carga lazy termina después. */
   autoFocus?: boolean
   placeholder?: string

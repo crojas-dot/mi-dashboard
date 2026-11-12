@@ -1,5 +1,143 @@
 # Quejas: lectura y procesamiento del expediente
 
+## Refinamiento de la investigación según referencia HTML — 11 noviembre
+
+La referencia `workspace_de_resoluci_n_mis_quejas.html` inspira la jerarquía y los
+acentos visuales del módulo. Resolución pasa a la primera tarjeta central, con
+Guardar junto a Asistencia secundaria. Guardar es azul únicamente con cambios;
+tras confirmación muestra check y Guardado neutral/deshabilitado, con fecha real
+en su título. Conserva texto/formato en el expediente sin enviar a GC; al reabrir
+recupera la versión remota. Refetch/conflictos conservan la edición y versión capturada.
+El lienzo conserva todo el ancho de la columna y mide `min(70dvh,720px)`, mínimo
+420px. No hay listas ni acciones debajo. Notas pasa a una tarjeta compacta debajo
+del cliente, con cantidad/última fecha o Sin notas todavía. Ver notas abre un diálogo
+centrado con todas las notas y el campo para agregar; al cerrar conserva el borrador.
+En contraído la tarjeta permanece accesible sin restaurar los datos del cliente.
+Adjuntar está en el encabezado, a la izquierda de Guardar/Editar, y abre el selector
+nativo. Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo, también
+al editar, con `ListaAdjuntos layout="cards"` y los servicios/permisos existentes. No
+se duplican consultas ni se añade un sheet.
+
+Acción actual y la devolución real de Calidad comparten el lateral derecho. Por
+petición del propietario se retiró el bloque Contexto del caso, con sus extractos de
+Cliente/Calidad y decisión repetida. Solo se conserva la devolución amarilla si existe;
+en su ausencia no se reserva espacio. Ver caso completo queda en Acción actual, justo encima de Enviar a Revisión
+GC, con fondo rojo institucional `qms-brand-red` y hover blanco con texto/icono/borde
+rojos; investigación omite
+«Registrá tus hallazgos…» para compactar esa tarjeta.
+La consulta Análisis pasa a `Modal variant="document" size="xl"`, igual que la
+procedencia: cuadro centrado de hasta 1040px y 90dvh, con Observación de Calidad y
+etiqueta Procede azul primero, después Descripción del cliente. No amplía el workspace
+al abrir y conserva borrador/cursor al cerrar; Preparar resolución vuelve al editor.
+La rueda se queda dentro del editor cuando el texto o su barra de formato tienen
+foco, incluso con texto vacío o al llegar al límite. Al salir del editor, desplaza
+el expediente sin consumir el scroll en el texto; se conserva su posición interna
+y ancho con gutter estable. Enviar a Revisión GC utiliza el mismo
+handler/revisión y permanece en Acción actual en todos los tamaños, sin duplicarse
+al pie del editor.
+
+Se usan tokens ECA, Lucide, radios pequeños y tarjetas de borde suave del kit.
+El contacto compartido añade iconos estáticos de persona/correo/teléfono/fecha/tipo,
+conservando texto íntegro y saltos de línea. `CaseWorkspace documentStyle="cards"`
+solo cambia las superficies del centro; Quejas mantiene su hoja predeterminada.
+El HTML no se incorpora como aplicación paralela: Tiptap, carga de evidencias,
+asistencia y notas siguen usando sus servicios reales. Las ediciones sin guardar son
+de la visita; Guardar sí persiste el borrador con versión en DB. No hay autoguardado.
+[Contrato de guardado y activación](mis-quejas-borrador-resolucion-2026-11-11.md).
+
+Verificación de la distribución final de notas/evidencias: 120 pruebas Node y 42
+comprobaciones en Chrome con datos sintéticos a 1920/1536/390/320px. Incluye alta
+de nota, conservación de ambos borradores al cerrar, contador real, selector de
+archivos, visor/descarga/eliminación con los permisos existentes, Guardado neutral,
+contención/liberación de la rueda y composición original de Quejas. TypeScript,
+lint focalizado, capa visual, estructura y compilación de producción correctos.
+Evidencia local en `.performance/mis-quejas-panels-20261111/`; sin red externa en
+las pruebas de UI, sin escrituras de negocio ni publicación web.
+
+Verificación del foco y rojo institucional: 59 pruebas de panel/editor/modal y
+29 comprobaciones de navegador a 1920/390/320px. Incluye texto vacío/largo,
+contención en ambos límites con foco, uso de toolbar, liberación al salir,
+conservación de posición/ancho, color/hover/icono y consulta sin perder borrador.
+TypeScript, lint y capa visual correctos; evidencia sintética sin red externa en
+`.performance/mis-quejas-focus-scroll-20261111/`. Web sin publicar.
+
+Verificación anterior del modal: 59 pruebas de panel/editor/modal; 29 comprobaciones
+de navegador a 1920/390/320px. Incluye orden Calidad/Cliente, Procede azul, tamaño y
+modalidad nativa, cierre por Escape sin cerrar el trabajo, borrador/cursor y scroll
+real con rueda sobre texto vacío/largo y al alcanzar el límite. TypeScript, lint
+focalizado y capa visual correctos. Evidencia en `.performance/mis-quejas-modal-20261111/`,
+sin red externa, escrituras de negocio ni publicación web.
+
+Verificación de la referencia anterior: 52 pruebas de panel/modal/ciclo; 44 comprobaciones de navegador
+con datos ficticios a 1920/390/320px, incluyendo editor primero, ancho superior a
+1100px y lienzo útil superior a 600px en escritorio, posición del contexto y una
+sola acción visible de envío. Borrador/cursor, consulta lateral, carga de evidencias
+y transición a GC conservados. TypeScript/build, lint focalizado y capa visual
+(108 archivos React) correctos. Capturas en `.performance/mis-quejas-estetica-20261111/`;
+sin publicación web ni escrituras de negocio.
+
+## Investigación integrada y Análisis lateral — 11 noviembre
+
+Esta composición local posterior sustituye el modal de resolución de la sección
+siguiente, por instrucción del propietario. `QuejaColaboradorPanel` conserva el
+workspace y el ciclo, y el centro muestra `QuejaInvestigacionResumen`: Cliente y
+Gestión de Calidad con extractos de hasta tres líneas del texto registrado, decisión
+si consta y devolución fechada en amarillo solo cuando existe. El único acceso es
+Ver caso completo; no se añaden enlaces repetidos por bloque ni se generan resúmenes
+por IA. Después aparecen evidencias, notas acotadas por scroll, editor integrado y
+Enviar a Revisión GC. Las notas no vuelven a repetir el motivo de devolución.
+
+`QuejaAnalisisPanel` recibe los datos del mismo padre: cliente, descripción íntegra,
+área, evaluación, análisis distinto, archivos, propuesta anterior/documento, observación
+e historial. Es un `Modal variant="workspace" size="sm"` de 560px en escritorio,
+contenido por el workspace principal para compartir su plano de presentación. El
+guard de Modal permite un lateral modeless dentro de su ancestro modal, pero sigue
+esperando a los diálogos superiores ajenos/descendientes. Móvil y Análisis ampliado
+usan modalidad nativa; ampliar/reducir conserva el editor principal.
+
+Abrir la consulta desde el contraído amplía el trabajo en escritorio y muestra el
+editor a su lado. Preparar resolución en el pie de Análisis lo cierra y enfoca el
+editor integrado. Cerrar conserva texto, formato y revisión; se recupera el cursor
+anterior solo si no hubo nuevas ediciones. Escape desde el editor con Análisis abierto
+cierra primero la consulta. Sin autoguardado remoto nuevo ni nuevas consultas/canales.
+Los estados/asignación siguen retirando la edición y los adjuntos pendientes bloquean
+el envío. DB, permisos, correos y Quejas de Calidad no cambian; web local sin publicar.
+
+Verificación: 52 pruebas de panel/ciclo/modal y 36 comprobaciones sintéticas de
+navegador, incluyendo consulta desde contraído, edición con lateral abierto,
+ampliar/reducir sin remontar Tiptap, cursor, adjuntos y transición única. Capturas
+a 1920/390/320 px en `.performance/mis-quejas-inline-20261111/`; sin red remota ni
+escrituras de negocio. Lint focalizado, capa visual (108 archivos React) y build
+de producción con TypeScript correctos.
+
+## Resolución en modal — 11 noviembre
+
+Ajuste local de `app/mis-quejas/components/QuejaColaboradorPanel.tsx` solicitado
+por el propietario: el centro comienza directamente con Descripción, sin la barra
+Análisis/Resolución. Solo la etiqueta Análisis se mueve debajo de la ficha de
+contacto izquierda al ampliar. El contenido completo, área, evidencias, notas y
+propuesta registrada continúan en el documento central. Contraído conserva su
+geometría compartida y el contacto oculto.
+
+Preparar resolución abre `Modal variant="document" size="xl"`, la misma variante
+de procedencia, con título Resolución, Tiptap y Asistencia secundaria. El pie contiene
+Adjuntar, Cerrar y Enviar a Revisión GC; la lista interna de evidencias de investigación
+usa altura acotada para dejar disponible el editor. Reutiliza el mismo hook de
+adjuntos, caché, visor y acciones; las evidencias del cliente siguen en el expediente.
+
+Cerrar/reabrir conserva texto, formato y revisión capturada durante la visita.
+Un error/conflicto conserva el modal y el borrador; la confirmación del envío lo
+cierra y entrega la transición existente a Pendiente de Revisión GC. Cargar/eliminar
+archivos o enviar bloquea acciones concurrentes del modal. Los estados de lectura
+y una reasignación retiran la edición; ninguna acción publica ni notifica al cliente.
+Sin cambios de esquema, permisos, correo ni publicación web.
+
+Verificado con 51 pruebas de panel/modal y 28 comprobaciones de navegador sintéticas
+a 1920/390/320 px: posición de la etiqueta, modal nativo, borrador al reabrir,
+selección de adjuntos, Escape y transición única a GC. TypeScript, lint focalizado,
+capa visual y compilación de producción correctos. Capturas/evidencia local en
+`.performance/mis-quejas-resolucion-20261111/`; sin solicitudes remotas.
+
 ## Limpieza compartida de lectura — 10 noviembre
 
 Quejas y Mis Quejas conservan una selección discreta de fila mediante

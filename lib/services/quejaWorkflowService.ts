@@ -75,6 +75,23 @@ export interface TransicionQuejaParams {
   justificacionFormato?: 'plain' | 'markdown'
 }
 
+function resolucionBorradorArgs(queja: ExpedienteVersionado, version: number, contenido: string, formato: 'plain' | 'markdown') {
+  if (!Number.isSafeInteger(version) || version < 0 || contenido.length > 10000 || !['plain', 'markdown'].includes(formato)) {
+    throw new Error('Revisá el contenido y formato de la resolución antes de guardar.')
+  }
+  return { p_id: queja.id, p_expected: revisionEsperada(queja), p_version: version, p_content: contenido, p_format: formato }
+}
+
+/** Borrador versionado: no sustituye la propuesta enviada ni cambia el estado. */
+export function guardarResolucionBorrador(queja: ExpedienteVersionado, version: number, contenido: string, formato: 'plain' | 'markdown') {
+  return callRpc<import('@/lib/queries/useQuejaResolucionDraft').QuejaResolucionDraft>('qms_save_resolution_draft', resolucionBorradorArgs(queja,version,contenido,formato))
+}
+
+export function enviarResolucionBorradorRevision(queja: ExpedienteVersionado, version: number, contenido: string, formato: 'plain' | 'markdown') {
+  if (!contenido.trim()) throw new Error('Escribí la resolución antes de enviarla a revisión.')
+  return callRpc<Queja>('qms_submit_resolution_draft', resolucionBorradorArgs(queja,version,contenido,formato))
+}
+
 export function transicionarQueja(queja: ExpedienteVersionado, nuevoEstado: string, params: TransicionQuejaParams = {}) {
   const codigo = CODIGOS_ESTADO_QUEJA[nuevoEstado]
   if (!codigo) throw new Error('Estado no reconocido.')

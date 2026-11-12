@@ -34,6 +34,13 @@
 
 ### Errores y operaciones concurrentes
 
+- Resolución de Mis Quejas lee `useQuejaResolucionDraft` solo al investigar, bajo el
+  prefijo Quejas y con señal de cancelación. La primera lectura hidrata la visita;
+  refetch no reemplaza texto/versiones editados. Guardar/Enviar comparten el lock del
+  workflow; CAS de Queja y borrador evita sobrescribir otra computadora. Confirmación
+  tardía actualiza solo la caché de origen si sigue vigente su ámbito, nunca otra visita.
+  [Contrato](../mis-quejas-borrador-resolucion-2026-11-11.md).
+
 - `lib/errors/userError.ts` y `httpError.ts`: mensajes seguros, recuperación, SQLSTATE/HTTP y conservación del status en los consumidores que los usan. No enviar diagnostics SQL/URLs/credenciales crudos a la UI.
 - `errorToast.ts` envuelve sonner con mensajes seguros; el logger usa `normalizeApiError` para contexto HTTP/código sin diagnóstico. El wrapper `useApiError` sin consumidores fue retirado.
 - `logger.ts`: niveles ERROR/WARN/INFO/DEBUG, timestamp ISO, módulo/acción/usuario/status/código, detección server/client. Usa consola también en producción; Sentry/LogRocket no están integrados. Dashboard y caché lo consumen; persisten console.* legacy en otros módulos.

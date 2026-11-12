@@ -31,7 +31,7 @@ export const MODULOS_PERMISOS = (Object.keys(MODULOS) as ModuloId[])
   .map(key => ({ key, label: MODULOS[key].label }))
 
 export const MODULOS_DE_RUTA: Record<string, ModuloId> = Object.fromEntries(
-  Object.entries(MODULOS).map(([id, modulo]) => [modulo.ruta.slice(1), id as ModuloId]),
+  [...Object.entries(MODULOS).map(([id, modulo]) => [modulo.ruta.slice(1), id as ModuloId]), ['dashboard','dashboard']],
 )
 
 const TITULOS_DE_RUTA: Record<string, string> = Object.fromEntries(
@@ -40,6 +40,7 @@ const TITULOS_DE_RUTA: Record<string, string> = Object.fromEntries(
 
 /** El encabezado conserva coincidencia exacta; los guards usan el primer segmento. */
 export function tituloDeRuta(pathname: string): string {
+  if (pathname === '/dashboard') return MODULOS.dashboard.label
   return TITULOS_DE_RUTA[pathname] || 'QMS'
 }
 

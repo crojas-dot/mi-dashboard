@@ -43,12 +43,15 @@ No cargar todos los documentos para una modificación aislada.
 | Controles, modales y cargas | components/ui/ y components/Modal.tsx |
 | Páginas y editores | app/<modulo>/page.tsx y sus components/ |
 | Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol |
+| Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md) |
+| Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
 | Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
+| Agenda de hoy | lib/queries/useAgendaHoy.ts; components/ui/AgendaHoyWidget.tsx; components/Header.tsx; RPC qms_get_agenda_hoy, migración 20261111172515; [contrato](docs/agenda-hoy-2026-11-11.md) |
 | Workflow/mutaciones | lib/services/; guards privilegiados en lib/server/ |
 | Consecutivos anuales | qms_private.next_annual_folio; folios_quejas_anuales / qms_private.folios_anuales; migración 20261111151343 y [contrato](docs/consecutivos-anuales-2026-11-11.md) |
 | Lectura de justificación/análisis de Quejas | lib/utils/quejaContent.ts y lib/utils/richText.ts |
@@ -95,7 +98,7 @@ evidencia disponible, no garantizan que un despliegue posterior conserve ese est
 ### Modelo mental del sistema
 
 - **Presentación:** `app/` contiene rutas, páginas y API; `components/` contiene el shell, controles y paneles. Las páginas operativas son Client Components. El layout servidor monta metadata/fuente y los proveedores de autenticación y notificaciones.
-- **Estado:** TanStack Query administra datos remotos a través de `lib/queries/`; `lib/store/` (Zustand) administra sesión y estado de interfaz. Los borradores de visita permanecen locales; informe y respuesta al cliente tienen guardado remoto versionado.
+- **Estado:** TanStack Query administra datos remotos a través de `lib/queries/`; `lib/store/` (Zustand) administra sesión y estado de interfaz. Las ediciones sin guardar permanecen locales; resolución, informe y respuesta al cliente tienen guardado remoto versionado.
 - **Lecturas y escrituras:** los hooks/queries leen datos; `lib/services/` concentra flujos y mutaciones. Las lecturas de navegador usan el cliente Supabase sujeto a RLS. Las operaciones privilegiadas atraviesan API/`lib/server/`, que autentican y autorizan antes de usar service role.
 - **Identidad y acceso:** `lib/store/auth-store.ts`, `lib/auth.ts` y `components/AuthShell.tsx` coordinan sesión y protección de rutas; `proxy.ts` participa en el límite de entrada. La autorización de servidor y RLS siguen siendo necesarias aunque la UI oculte una acción.
 - **Persistencia e integraciones:** `supabase/migrations/` conserva cambios de esquema; `supabase/backups/` y las referencias de arquitectura aportan evidencia. Drive e IA se conectan desde APIs de servidor con límites y permisos propios.
@@ -122,6 +125,34 @@ evidencia disponible, no garantizan que un despliegue posterior conserve ese est
 Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
 
 ## Datos, rendimiento y cargas
+
+- Agenda: RPC invoker de Quejas/Auditorías, permisos y fechas CR, máximo 20 y un
+  motivo prioritario por registro. Caché de cinco minutos por perfil, sin canal
+  Realtime adicional ni hover. Los avisos existentes invalidan también Agenda.
+  Header controla apertura/cierre; UI solo recibe datos/callbacks.
+  /dashboard es alias protegido del panel en /. Asignación/devolución salen de
+  eventos reales. SQL aplicado; cliente local sin publicar. [Contrato](docs/agenda-hoy-2026-11-11.md).
+- Agenda compacta (máximo 320px) abre en calendario con semana D/L/M/X/J/V/S,
+  flechas de mes anterior/siguiente, selección circular y puntos por fecha_limite
+  real y prioridad. El RPC añade fecha_limite civil CR (null si no existe), caché
+  de contrato v3, cinco minutos. «Ver agenda» muestra cinco tarjetas y «Volver al
+  calendario» regresa. Si hay más de cinco, «Ver más» aparece dentro del scroll y
+  despliega ahí los restantes recibidos, sin navegar a otro panel. Navegar meses no consulta
+  otras agendas ni inventa eventos: puntos solo para los registros recibidos.
+  Cada apertura restablece mes actual y selección. Migración 20261111175442 aplicada;
+  UI local sin publicar. [Contrato](docs/agenda-hoy-2026-11-11.md).
+- Calendario de Agenda: mes a la izquierda y las dos flechas juntas a la derecha,
+  con área 32px e iconos 20px. Grillas gap-1, días 32px y puntos de 4px. Pie de una
+  sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
+  relleno ni elementos apilados. Check y «Ver agenda» usan qms-primary; el día
+  seleccionado usa fondo qms-primary y texto blanco, sin cambiar la marca global.
+- Agenda de hoy reúne novedades accionables de hoy (recepción, asignación, propuesta
+  para GC, devolución, lista para publicar y programación) y plazos de hoy o dentro
+  de dos días hábiles. La ventana incluye un día hábil con etiqueta precisa.
+  Excluye vencidas y finalizadas; novedades antiguas solo reaparecen por vencimiento.
+  Calidad ve recepción/revisión/publicación; el colaborador solo su investigación.
+  Quejas usa el calendario de su run persistido; Auditorías usa el calendario vigente.
+  No inferir novedades a partir de la creación si su evento real es otro.
 
 - TanStack es estado remoto; Zustand gestiona sesión/UI. No duplicar consultas en estado global ni globalizar borradores locales.
 - Compartir queryKeys y queryFn entre vista/precarga; invalidar el prefijo del módulo tras mutar. Una queryFn recibe contexto: pasar solo context.signal a abortSignal.
@@ -171,6 +202,11 @@ permisos ni datos persistidos.
   desde UI. Los RPC legacy se conservan para compatibilidad del cliente publicado.
   DB aplicada el 11 noviembre; cliente local y calendario adicional aplazado.
   [Contrato y evidencia](docs/consecutivos-anuales-2026-11-11.md).
+- Corrección posterior autorizada del 11 noviembre: solo futuras altas de Quejas,
+  contador 2026 de 2089 a 89 (siguiente `2026-090`), retirando el arrastre de 2000.
+  Migración 20261111155021 aplicada. No renumerar ni borrar las 153 quejas existentes;
+  el generador salta números ya ocupados y conserva el crecimiento después de 999.
+  El borrado para lanzamiento es un trabajo futuro, todavía no autorizado para ejecutar.
 - Procede requiere justificación y responsable. Investigación prepara la propuesta;
   enviarla a Revisión GC no publica ni notifica al cliente. Aprobar y continuar pasa
   a Resuelto; Calidad prepara después la comunicación final. Publicar respuesta
@@ -194,8 +230,18 @@ permisos ni datos persistidos.
   Configuración administra `quejas/area_afectada`: editar, desactivar y restaurar sin
   borrar históricos ni asignar automáticamente una opción nueva al expediente.
 - Observaciones agrupa comentarios de Actividad y conserva la observación histórica
-  sin inventar autor/fecha. Notas de investigación y propuesta enviada sí persisten;
-  los borradores de análisis/resolución aún no enviados son de la visita.
+  sin inventar autor/fecha. Notas de investigación y propuesta enviada sí persisten.
+  Editar o eliminar una nota propia solo se permite En Investigación y compara el
+  contenido esperado (CAS); el historial de devolución/aprobación/cierre y las notas
+  ajenas no se reescriben. Migración 20261112054513 sin aplicar: sin ella la UI
+  conserva el error visible, no una edición remota.
+  Resolución ofrece Guardar junto a Asistencia: borrador remoto/versionado, sin cambiar
+  estado, revisión de Queja, propuesta enviada ni avisar a GC/cliente. Las ediciones
+  posteriores sin guardar siguen siendo de la visita; no hay autoguardado.
+  Guardar y Enviar comparan revisión de expediente y versión de borrador; no forzar
+  reintentos con una lectura nueva. Al enviar/reasignar/cambiar estado, DB limpia el
+  borrador sin borrar la propuesta anterior. Migración 20261112030353 aplicada;
+  cliente local. [Contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md).
 - Decisiones/resoluciones usan Tiptap lazy, límite 10.000 y formato plain/markdown
   explícito. `quejaContent` omite
   solo la copia plain exacta `[Procede]` de una justificación separada; conserva otras
@@ -230,9 +276,50 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
   expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
   Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
-- Mis Quejas conserva Análisis/Resolución. En Resolución, editor bajo las pestañas
-  y Asistencia en esa misma fila; no anteponer grandes bloques vacíos. Enviar a
-  Revisión GC está debajo de Volver al análisis, en las acciones, liberando el editor.
+- Mis Quejas trabaja sin pestañas ni modal de escritura. Resolución es la primera
+  tarjeta central, con ancho completo y lienzo `min(70dvh,720px)`, mínimo 420px;
+  no hay secciones ni acciones debajo del editor. `CaseWorkspace documentStyle="cards"` conserva
+  las columnas; la hoja de Quejas sigue siendo el valor predeterminado.
+  Notas es una tarjeta compacta debajo del cliente (`requestFooter`): cantidad real,
+  última fecha o Sin notas todavía; abre un diálogo centrado (`variant="dialog"`) para
+  leer/agregar. Cada nota propia de esta investigación ofrece menú de tres puntos con
+  Editar/Eliminar y confirmación en línea; Escape o pulsar fuera lo cierra. Las notas
+  de devolución de Calidad conservan su historial sin acciones. En contraído la
+  tarjeta sigue disponible y el contacto permanece oculto. El borrador de nota
+  pertenece a la visita y no se pierde al cerrar ese panel.
+  Adjuntar evidencia abre el selector nativo desde el botón Adjuntar del encabezado,
+  a la izquierda de Guardar/Editar; cancelar el selector no cierra el expediente.
+  Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo, tanto al
+  editar como con el borrador guardado, con `ListaAdjuntos layout="cards"`; comparten
+  la consulta y los permisos existentes, sin sheet ni contador adicional.
+  Acción actual queda a la derecha. `QuejaInvestigacionResumen` muestra únicamente
+  la devolución real de Calidad en amarillo cuando existe; sin ella no reserva espacio.
+  No repetir ahí el contexto, Cliente, evaluación ni Procede. Ver caso completo queda en Acción actual, encima de
+  Enviar a Revisión GC, con fondo rojo institucional `qms-brand-red`, hover blanco
+  con texto/icono/borde rojos; investigación
+  omite la descripción redundante de esa tarjeta.
+  Ese único acceso abre `QuejaAnalisisPanel` en `Modal variant="document" size="xl"`,
+  como procedencia: primero Observación de Calidad con Procede azul, después
+  Descripción del cliente. Su pie Preparar resolución vuelve al editor.
+  Enviar a Revisión GC permanece en Acción actual, también en espacios estrechos:
+  un único control, mismo handler/revisión. Con el borrador guardado el encabezado
+  cambia Guardar por Editar: el lienzo pasa a solo lectura y Editar devuelve al modo
+  de escritura con Guardar. Asistencia es secundaria y comparte fila con Guardar solo
+  al editar: azul con cambios; Guardado con check, neutral y deshabilitado tras
+  confirmación remota. La fecha real está en el título de Editar; no inventar
+  autoguardado. Adjuntos/actividad se consultan una sola vez y se comparten.
+  Si la investigación tiene devolución previa (reenvío), el mismo control se llama
+  «Reenviar revisión a GC»; el mensaje de devolución deja de mostrarse en ese contexto
+  y el envío actual entrega la propuesta corregida. Un mensaje de devolución muy
+  largo se resume en línea y abre modal «Ver más» para revisarlo completo.
+- Análisis es un modal nativo centrado de hasta 1040px y 90dvh; no amplía el workspace
+  al abrir. Conservar nodo/editor/borrador, cursor y revisión al consultar/cerrar.
+  El scroll de Resolución depende del foco: texto o barra de formato enfocados
+  contienen el desplazamiento, incluso al llegar al límite o estar vacío. Sin foco,
+  la rueda desplaza el expediente y conserva el punto de lectura interno.
+  Gutter estable; sin remontar el editor ni cambiar el borrador.
+  Conflictos conservan la propuesta; cargas
+  pendientes bloquean envío. El pie de lectura no permite editar casos de solo lectura.
 - Estados de Quejas/Mis Quejas: usar primero `estado_color` del catálogo y la paleta
   original de Badge; mapa histórico de `estados.ts` como fallback. No imponer los
   colores de una maqueta ni cambiar los códigos guardados. Otros estados neutros
@@ -269,6 +356,11 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   secciones del caso, Conclusión y Resolución y anexos como nombres de archivo.
   El informe admite 100.000 caracteres (`INFORME_MAX_LENGTH`, validado en editor/API).
   Exporta Word/PDF; guardar/exportar están en las acciones del encabezado.
+- Diseño del informe: `lib/constants/informeDesign.ts` centraliza azul documental
+  #2A61B0, negro #1A1718 y divisores #E6E5E5 de la guía de identidad. Word/editor usan
+  Century Gothic en títulos y Arial en cuerpo; PDF conserva Helvetica integrada.
+  Sin franjas de fondo en títulos; Word conserva un párrafo editable después de un
+  título vacío para separar Conclusión de Anexos. No reescribir informes guardados.
 - Respuesta al cliente no vuelve a montar el informe como cuerpo del correo. Arriba:
   oficio editable, selector del informe guardado o documento subido, Adjuntar,
   Visualizar y Editar informe. Volver del editor conserva asunto, mensaje y selección.

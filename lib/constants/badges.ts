@@ -7,6 +7,7 @@ export const ESTILOS_BADGE = {
   orange: 'bg-qms-orange text-white',
   investigacion: 'bg-qms-investigacion text-qms-investigacion-text',
   purple: 'bg-qms-purple text-white',
+  indigo: 'bg-qms-indigo text-white',
   gray: 'bg-qms-muted text-white',
   neutral: 'bg-qms-neutral-soft text-qms-dark',
 } as const

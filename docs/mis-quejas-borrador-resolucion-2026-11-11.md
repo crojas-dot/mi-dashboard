@@ -1,0 +1,123 @@
+# Mis Quejas: guardar resolución sin enviarla
+
+Guardar está junto a Asistencia. Conserva texto y formato del borrador en el
+expediente para retomarlo después; no cambia el estado, calendario, revisión de
+Queja ni propuesta enviada, y no encola avisos o correo. No hay autoguardado.
+Enviar a Revisión GC sigue siendo la acción independiente que entrega la propuesta.
+
+## Persistencia y autorización
+
+Migración **20261112030353** aplicada a ECA-QMS el 12 noviembre UTC (11 local).
+`queja_resolution_drafts` mantiene una fila por expediente, versión, revisión de
+origen, contenido/formato, autor operativo y fecha real. Admite hasta 10.000
+caracteres en plain/markdown; permite guardar vacío para limpiar un borrador previo.
+
+RLS permite leer solo a perfiles activos autorizados: admin, Calidad con escritura
+de Quejas, o colaborador con escritura de Mis Quejas y responsable propio, mientras
+el caso esté En Investigación. Anon no tiene SELECT; authenticated no tiene escritura
+directa. Los RPC públicos `qms_save_resolution_draft` y `qms_submit_resolution_draft`
+son invoker; delegan en la implementación privada con guard explícito y search_path
+vacío. No se reabren funciones legacy ni permisos de casos/adjuntos.
+
+Guardar compara revisión del expediente y versión del borrador bajo lock, en ese
+orden. Enviar verifica ambos y llama al workflow existente en la misma transacción.
+Un conflicto conserva el texto del usuario; no se obtiene una revisión nueva para
+forzar la escritura. Cambiar estado o responsable retira el borrador mediante
+trigger. La propuesta anterior permanece en `quejas.resolucion`, sin sobrescribirla
+al guardar; una devolución nueva comienza sin recuperar un borrador de otra etapa.
+
+## Cliente y revisión de visita
+
+`useQuejaResolucionDraft` lee solo al investigar, con la clave
+`['quejas','resolucion-borrador',id]`, señal de cancelación y sin Realtime adicional.
+La primera lectura confirmada hidrata la visita. Mientras falta, no se permite
+escribir encima de un borrador desconocido; un fallo ofrece Reintentar borrador.
+Un refetch posterior no reemplaza texto ni versión capturados.
+
+Guardar y Enviar comparten el lock síncrono del workflow. Durante el guardado se
+bloquea el doble envío; el editor conserva su nodo. Guardar es azul solo con cambios;
+tras confirmación remota muestra check y el encabezado pasa a ofrecer Editar, con la
+fecha real en su título. Editar devuelve al modo de escritura: Guardar y Asistencia
+reaparecen y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
+mismo modo de lectura.
+Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ámbito,
+sin modificar otra visita o identidad. El borrador guardado permite navegar entre
+expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
+
+El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
+a fondo blanco con texto, icono y borde rojos. Guardar y Asistencia permanecen juntos
+solo en modo de escritura, en escritorio y móvil. El scroll del editor sigue
+dependiendo del foco.
+
+Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
+última fecha o Sin notas todavía. Ver notas abre un diálogo centrado con las notas
+completas y el campo para agregar; cerrar conserva la nota aún no enviada en la
+visita. Cada nota propia de esta investigación ofrece un menú de tres puntos con
+Editar y Eliminar (confirmación en línea; Escape o pulsar fuera cierra el menú); las
+notas de devolución de Calidad solo se leen y conservan su historial. El centro queda
+libre de listas y formularios secundarios. Adjuntar abre el selector nativo desde el
+encabezado, a la izquierda de Guardar/Editar, y cancelar el selector no cierra el
+expediente. Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo,
+también al editar, con `ListaAdjuntos layout="cards"`; no hay sheet ni contador
+aparte. Diálogo, visor y permisos reutilizan las lecturas y servicios existentes. El
+envío a GC permanece en Acción actual, sin otro botón debajo del
+editor. Si la investigación tiene devolución previa, el control se llama
+«Reenviar revisión a GC» y el mensaje de devolución no se muestra en ese contexto;
+el envío actual entrega la propuesta corregida. Un mensaje de devolución muy largo
+se resume en línea y abre modal «Ver más» para revisarlo completo. Ampliar, consultar y cerrar paneles no remonta el editor ni cambia su
+revisión o borrador.
+
+## Notas de investigación
+
+La tarjeta y el diálogo reutilizan `quejas_actividad`; el alta sigue siendo el
+insert existente. Editar o eliminar solo alcanza notas propias de la investigación
+en curso: RLS no expone UPDATE/DELETE, así que `qms_update_investigation_note` y
+`qms_delete_investigation_note` (invoker) delegan en `qms_private` con
+`search_path` vacío. El guard exige identidad operativa activa, acceso al
+expediente, responsable vigente, estado En Investigación, autor propio de la nota y
+contenido esperado (CAS). Las notas de devolución, aprobación y cierre del trámite
+no se reescriben, ni siquiera por admin, y el texto nuevo tampoco puede imitar esos
+avisos. La fecha original de la nota se conserva.
+
+La migración **20261112054513** existe y pasó 55 comprobaciones PostgreSQL aisladas,
+pero **no está aplicada** en ECA-QMS: sin ella la UI muestra un error seguro al
+editar o eliminar y no debe reintentarse con otra revisión. La lectura, el alta y
+los contadores existentes no dependen de esta migración.
+
+## Fuentes y verificación
+
+- UI: `app/mis-quejas/components/QuejaColaboradorPanel.tsx`.
+- Paneles: `QuejaNotasPanel.tsx` en la misma carpeta; los adjuntos reutilizan
+  `components/quejas/ListaAdjuntos.tsx`.
+- Lectura: `lib/queries/useQuejaResolucionDraft.ts`.
+- Mutaciones: `guardarResolucionBorrador` / `enviarResolucionBorradorRevision` en
+  `lib/services/quejaWorkflowService.ts`.
+- Notas: `lib/services/quejaInvestigacionService.ts`, `lib/utils/quejaInvestigacionNotas.ts`;
+  SQL `supabase/migrations/20261112054513_quejas_notas_investigacion.sql` y verificación
+  `scripts/test-investigation-notes-db.mjs` (sin aplicar en ECA-QMS).
+- SQL: `supabase/migrations/20261112030353_quejas_borrador_resolucion.sql`.
+- Activación: `supabase/backups/quejas_resolution_draft_activation_20261111.json`.
+
+48 comprobaciones PostgreSQL aisladas verifican RLS/grants, perfiles/identidades,
+casos ajenos, inactivos, estados, límites, CAS, carrera de dos computadoras,
+guardado sin transición y limpieza al enviar/reasignar. Node verifica servicios,
+carga, reanudación, errores/conflictos, exclusión y respuesta tardía entre visitas.
+24 comprobaciones de navegador con datos sintéticos a 1920/390/320px verifican
+guardado/reapertura, formato, errores/conflicto y hover/controles sin desbordar.
+Las lecturas remotas comprueban metadatos y rechazo sin usuario; asesores antes y
+después conservan sus hallazgos previos. No se crearon quejas ni se enviaron correos.
+DB activa; cambios web locales, sin publicar.
+
+El refinamiento posterior del lienzo pasó 120 pruebas Node y 42 comprobaciones de
+Chrome a 1920/1536/390/320px: notas/evidencias, alta de nota, contador y acciones de
+archivos con permisos existentes, conservación del editor/borradores y el entonces
+vigente Guardado neutral. TypeScript, lint, capa visual, estructura y build
+correctos. Evidencia sintética local en `.performance/mis-quejas-panels-20261111/`.
+
+El ajuste del 12 noviembre pasó la suite completa (932 pruebas Node), TypeScript,
+lint, estructura, capa visual y build: diálogo centrado de notas con menú de tres
+puntos para editar/eliminar notas propias, «Editar» tras guardar con lienzo de solo
+lectura, adjuntos debajo del lienzo dentro de la tarjeta y selector de archivos
+cancelable sin cerrar el expediente. La migración de notas añadió 55 comprobaciones
+PostgreSQL aisladas sobre RLS/grants, autor propio, responsables, estados, CAS,
+límites y escritura directa bloqueada; no se ejecutó SQL contra ECA-QMS.

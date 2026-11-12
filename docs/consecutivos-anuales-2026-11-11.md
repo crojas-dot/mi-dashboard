@@ -1,5 +1,24 @@
 # Consecutivos anuales — 11 de noviembre de 2026
 
+## Corrección posterior: retirar arrastre de pruebas en nuevas altas
+
+El propietario aclaró que el cambio debe verse desde el siguiente registro y que
+los registros existentes pueden conservar su numeración. Se aplicó
+`20261111155021_quejas_corregir_arrastre_consecutivo.sql`: contador de Quejas de
+2026 `2089 → 89`; siguiente candidato `2026-090`. No es un formato que recorte los
+últimos tres dígitos: después de 999 sigue 1000 y enero de 2027 comienza en 001.
+El generador omite números históricos ya ocupados bajo el mismo lock del contador.
+
+Las 153 filas y sus identificadores/folios quedaron intactos, sin modificar carpetas,
+adjuntos, informes ni correos anteriores. La lectura remota confirmó el mismo digest
+de IDs/folios y las mismas ACL. 162 comprobaciones de PostgreSQL aislado, incluidas
+las cinco nuevas del corte, preservación de históricos y salto de números ocupados.
+Evidencia: `supabase/backups/quejas_folio_cutover_20261111.json`.
+
+La limpieza de datos para lanzamiento mencionada por el propietario es futura: no
+se ejecutó ni debe inferirse autorización para borrar datos ahora. Los párrafos
+inferiores describen la primera entrega anterior a esta corrección del contador.
+
 ## Contrato vigente
 
 El año se obtiene en PostgreSQL de la fecha de registro de la transacción en

@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { Check, ChevronDown } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, Mail, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -31,7 +31,7 @@ export function CaseFinalMailStatus({ messages, loading, error, onRetry }: { mes
   </div>
 }
 
-export function CaseSection({ title, children, headerActions, variant = 'panel', source }: { title: string; children: ReactNode; headerActions?: ReactNode; variant?: CaseSectionVariant; source?: 'Cliente' | 'Gestión de Calidad' | 'Responsable' | 'Gestión interna' }) {
+export function CaseSection({ title, children, headerActions, variant = 'panel', source }: { title: ReactNode; children: ReactNode; headerActions?: ReactNode; variant?: CaseSectionVariant; source?: 'Cliente' | 'Gestión de Calidad' | 'Responsable' | 'Gestión interna' }) {
   // 'document': hoja del centro (sin borde propio, con padding de página).
   // 'plain': barras laterales silenciosas, sin tarjeta ni borde.
   // 'panel': tarjeta independiente (Actividad, revisión, Mis Quejas).
@@ -45,12 +45,12 @@ export function CaseRequestHeader({ queja, children, showReceivedAt = false, var
     // Variante lateral del expediente: datos del solicitante presentados estáticos,
     // sin el desplegable del resumen pegado arriba del documento.
     return <section data-case-request className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4">
-      <h3 className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium text-qms-dark">{queja.cliente_nombre}</h3>
+      <div className="flex min-w-0 items-start gap-3"><span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><UserRound className="size-4" /></span><h3 className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium text-qms-dark pt-1">{queja.cliente_nombre}</h3></div>
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 text-sm">
-        <div className="min-w-0"><dt className="break-words [overflow-wrap:anywhere] text-xs text-qms-muted">Correo electrónico</dt><dd className="mt-1 break-all [overflow-wrap:anywhere]">{queja.email_cliente || 'Sin correo registrado'}</dd></div>
-        <div className="min-w-0"><dt className="break-words [overflow-wrap:anywhere] text-xs text-qms-muted">Teléfono</dt><dd className="mt-1 break-words [overflow-wrap:anywhere]">{queja.telefono || 'Sin registrar'}</dd></div>
-        <div className="min-w-0"><dt className="text-xs text-qms-muted">Recibida</dt><dd className="mt-1">{caseDate(queja.fecha)}</dd></div>
-        <div className="min-w-0"><dt className="text-xs text-qms-muted">{reference ? 'Tipo' : 'Tipo recibido'}</dt><dd className="mt-1">{tipoVisible(queja)}</dd></div>
+        <div className="min-w-0"><dt className="flex items-center gap-2 text-xs text-qms-muted"><Mail aria-hidden="true" className="size-3.5 shrink-0" />Correo electrónico</dt><dd className="mt-1 break-all [overflow-wrap:anywhere]">{queja.email_cliente || 'Sin correo registrado'}</dd></div>
+        <div className="min-w-0"><dt className="flex items-center gap-2 text-xs text-qms-muted"><Phone aria-hidden="true" className="size-3.5 shrink-0" />Teléfono</dt><dd className="mt-1 break-words [overflow-wrap:anywhere]">{queja.telefono || 'Sin registrar'}</dd></div>
+        <div className="min-w-0"><dt className="flex items-center gap-2 text-xs text-qms-muted"><CalendarDays aria-hidden="true" className="size-3.5 shrink-0" />Recibida</dt><dd className="mt-1">{caseDate(queja.fecha)}</dd></div>
+        <div className="min-w-0"><dt className="flex items-center gap-2 text-xs text-qms-muted"><Tag aria-hidden="true" className="size-3.5 shrink-0" />{reference ? 'Tipo' : 'Tipo recibido'}</dt><dd className="mt-1">{tipoVisible(queja)}</dd></div>
       </dl>
       {children}
     </section>
@@ -75,7 +75,7 @@ export function CaseRequestHeader({ queja, children, showReceivedAt = false, var
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, cycle, action, headerMeta, request, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default' }: { children: ReactNode; compact: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top'; presentation?: 'default' | 'reference' }) {
+export function CaseWorkspace({ children, compact, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet' }: { children: ReactNode; compact: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards' }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0 }, [documentKey])
@@ -87,8 +87,10 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
         <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `p-3 sm:p-4 ${referenceColumns} @min-[1100px]:items-start @min-[1100px]:py-5` : ''}`}>
-          <aside data-case-request-region hidden={!expanded} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-5 @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-10rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:[will-change:transform]' : ''}`}>{request}</aside>
-          <main data-case-document className={`order-3 min-w-0 divide-y divide-qms-border bg-qms-surface pb-6 ${expanded ? 'rounded-card border border-qms-border @min-[1100px]:order-none' : ''}`}>{children}</main>
+          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-5 @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-10rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:[will-change:transform]' : ''}`}>
+            {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
+          </aside>
+          <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? 'space-y-4 bg-qms-hover-bg' : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
           <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-5 @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-10rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:bg-transparent @min-[1100px]:p-0 @min-[1100px]:[will-change:transform]' : 'border-b border-qms-border'}`}>{action}</aside>
         </div>
       </div>
@@ -96,7 +98,7 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
   </div>
   // Con solicitud en lateral, el avance vive en la línea superior y la solicitud ocupa el hueco izquierdo.
   const leftContent = request ?? cycle
-  const showLeft = cyclePlacement === 'side' || !!request
+  const showLeft = cyclePlacement === 'side' || !!request || !!requestFooter
   const layoutWidth = request ? 'max-w-[1600px]' : 'max-w-[1440px]'
   const layoutColumns = cyclePlacement === 'top'
     ? request ? '@min-[1100px]:grid-cols-[minmax(0,220px)_minmax(0,1fr)_minmax(220px,240px)]' : '@min-[1100px]:grid-cols-[minmax(0,1fr)_240px]'
@@ -120,7 +122,7 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
     <div data-case-layout className={`mx-auto ${layoutGrid} ${layoutPadding}`}>
       {/* Los laterales sticky llevan su propia capa: así el compositor reubica
           su offset durante el desplazamiento sin esperar al hilo principal. */}
-      <aside className={`sticky top-5 hidden max-h-[calc(100dvh-10rem)] overflow-y-auto [will-change:transform] ${showLeft ? '@min-[1100px]:block' : ''}`}>{leftContent}</aside>
+      <aside className={`sticky top-5 hidden max-h-[calc(100dvh-10rem)] overflow-y-auto [will-change:transform] ${showLeft ? '@min-[1100px]:block' : ''}`}>{leftContent}{requestFooter && <div className="mt-4">{requestFooter}</div>}</aside>
       <main data-case-document className={`min-w-0 divide-y divide-qms-border bg-qms-surface pb-6 ${expanded ? 'rounded-card border border-qms-border shadow-sm' : ''}`}>{children}</main>
       <aside className="sticky top-5 hidden min-w-0 max-h-[calc(100dvh-10rem)] overflow-y-auto [will-change:transform] @min-[1100px]:block">{action}</aside>
     </div>

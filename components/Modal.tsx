@@ -57,7 +57,8 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
       if (dialog.open && dialog.matches(':modal') === Boolean(modal)) return
       // Un cambio de viewport no debe subir el panel por encima de su editor/visor.
       // El observer retoma la presentación al cerrar el diálogo superior.
-      if (workspace && [...document.querySelectorAll('dialog:modal')].some(element => element !== dialog)) return
+      // Un lateral contenido por el modal activo sí puede abrirse en su mismo plano.
+      if (workspace && [...document.querySelectorAll('dialog:modal')].some(element => element !== dialog && !element.contains(dialog))) return
       if (dialog.open) dialog.close()
       if (modal) {
         dialog.showModal()
@@ -80,7 +81,7 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
       observer?.disconnect()
       dialog.close()
       releaseScroll()
-      if (document.activeElement === document.body && origin?.isConnected) origin.focus()
+      if (document.activeElement === document.body && origin?.isConnected) origin.focus({ preventScroll: true })
     }
   }, [open, workspace, expanded])
 
@@ -99,17 +100,23 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
       aria-describedby={descriptionId}
       aria-modal={workspace ? undefined : true}
       data-qms-modal
-      className={`${workspace ? '@container/workspace ' : ''}fixed flex-col overflow-hidden border-0 p-0 open:flex ${report ? 'z-[100] inset-0 m-0 h-dvh max-h-[100dvh] w-screen max-w-none rounded-none bg-white text-qms-dark shadow-none' : 'shadow-lg'} ${report || workspace && expanded ? 'backdrop:bg-transparent' : 'backdrop:bg-black/50'} ${confirmation ? 'inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-[480px] rounded-[12px] border border-qms-border bg-white text-qms-dark shadow-md' : sheet && !report ? `inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full ${workspace ? expanded ? 'max-w-none' : 'z-50 max-w-none lg:w-[40vw]' : expanded ? 'max-w-none' : size === 'sm' ? 'max-w-[420px]' : 'max-w-[790px]'} border-l border-qms-border bg-qms-surface text-qms-dark` : drawer ? 'inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(20rem,calc(100%-2rem))] max-w-none bg-qms-dark text-white' : !report && !confirmation ? `inset-0 m-auto max-h-[90dvh] ${documentView && height === 'fill' ? 'h-[90dvh]' : ''} w-[calc(100%-2rem)] rounded-modal bg-qms-surface text-qms-dark ${sizes[size]}` : ''}`}
-      onCancel={(event) => { event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose() }}
+      className={`${workspace ? '@container/workspace ' : ''}fixed flex-col overflow-hidden border-0 p-0 open:flex ${report ? 'z-[100] inset-0 m-0 h-dvh max-h-[100dvh] w-screen max-w-none rounded-none bg-white text-qms-dark shadow-none' : 'shadow-lg'} ${report || workspace && expanded ? 'backdrop:bg-transparent' : 'backdrop:bg-black/50'} ${confirmation ? 'inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-[480px] rounded-[12px] border border-qms-border bg-white text-qms-dark shadow-md' : sheet && !report ? `inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full ${workspace ? expanded ? 'max-w-none' : `z-50 max-w-none ${size === 'sm' ? 'lg:w-[560px]' : 'lg:w-[40vw]'}` : expanded ? 'max-w-none' : size === 'sm' ? 'max-w-[420px]' : 'max-w-[790px]'} border-l border-qms-border bg-qms-surface text-qms-dark` : drawer ? 'inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(20rem,calc(100%-2rem))] max-w-none bg-qms-dark text-white' : !report && !confirmation ? `inset-0 m-auto max-h-[90dvh] ${documentView && height === 'fill' ? 'h-[90dvh]' : ''} w-[calc(100%-2rem)] rounded-modal bg-qms-surface text-qms-dark ${sizes[size]}` : ''}`}
+      onCancel={(event) => {
+        // El selector de archivos también emite cancel y burbujea hasta dialog.
+        if (event.target !== event.currentTarget) return
+        event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose()
+      }}
       onKeyDownCapture={event => {
         // Consumir Escape aquí evita que ProseMirror o un diálogo de fondo cambien
         // el cierre solicitado por esta vista; el selector superior conserva su Escape.
-        const target = event.target instanceof HTMLElement ? event.target : null
+        const target = event.target && typeof (event.target as Element).closest === 'function' ? event.target as Element : null
         if (event.key === 'Escape' && target?.closest('[contenteditable="true"]') && target.closest('dialog') === event.currentTarget) {
           event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose()
         }
       }}
       onKeyDown={event => {
+        const target = event.target && typeof (event.target as Element).closest === 'function' ? event.target as Element : null
+        if (target && target.closest('dialog') !== event.currentTarget) return
         if (workspace && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose(); return }
         if (event.key !== 'Tab') return
         if (workspace && !event.currentTarget.matches(':modal')) return

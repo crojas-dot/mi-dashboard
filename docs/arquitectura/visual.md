@@ -123,11 +123,34 @@ los scrolls interiores de los modales usan 16px y puntas cuadradas, conservando
 la excepción nativa del scrollport principal. El resumen superior de resultado se
 retiró por petición del propietario: la lectura general comienza con Descripción,
 sin etiqueta Cliente encima. En Pendiente de Revisión GC se prioriza la propuesta
-y Solicitud y antecedentes queda desplegable; el ciclo va en horizontal. Mis Quejas
-también usa ciclo horizontal en Resolución, con barra de formato justo bajo las
-pestañas y Asistencia como acción secundaria. [Contrato de revisión](../quejas-resolucion-y-revision-gc-2026-11-03.md).
-Mis Quejas conserva solo Análisis y
-Resolución, con un editor de propuesta. [Detalle y límites](../quejas-claridad-y-acuse-2026-11-03.md).
+y Solicitud y antecedentes queda desplegable; el ciclo va en horizontal. El ajuste
+local posterior del 11 noviembre integra Resolución en Mis Quejas. El refinamiento
+basado en la referencia HTML coloca primero la tarjeta amplia del editor;
+acción y devolución de Calidad pasan a la derecha. Notas queda en su propia tarjeta
+compacta bajo el contacto, con cantidad/última fecha y un diálogo centrado para
+leer/agregar. Adjuntar está en el encabezado, a la izquierda de Guardar/Editar, y los
+adjuntos se listan bajo el lienzo con `ListaAdjuntos layout="cards"`, también al
+editar; no hay sheet aparte. No hay otras secciones debajo del lienzo más allá de
+esos adjuntos, y abrir los paneles no añade consultas. En contraído la tarjeta de
+notas sigue disponible sin mostrar el contacto.
+El bloque de contexto se retiró: solo aparece la devolución amarilla cuando existe, sin espacio
+reservado en su ausencia. Conserva la columna
+central y aumenta el lienzo a 70dvh/720px, mínimo 420px. El envío se ofrece una sola vez
+en Acción actual, también en espacios estrechos. Si la investigación tiene devolución
+previa, el control se llama «Reenviar revisión a GC» y el mensaje de devolución no se
+muestra en ese contexto; un mensaje muy largo se resume en línea y abre modal «Ver más».
+Ver caso completo queda en Acción actual,
+encima del envío a GC, con el rojo institucional `qms-brand-red`; el hover invierte
+a fondo blanco y texto/icono/borde rojos. Guardar comparte fila con Asistencia y
+confirma un borrador remoto sin transicionar: azul con cambios, neutral/deshabilitado
+con check y Guardado tras confirmación. Investigación omite la descripción redundante. Ese único acceso
+abre Análisis como modal document/xl de hasta 1040px y 90dvh, igual que procedencia,
+sin ampliar el workspace. Ordena primero Observación de Calidad con Procede azul y
+después Descripción del cliente; el pie vuelve al editor. Resolución contiene el
+scroll con foco en texto/formato y lo cede al expediente al salir del editor,
+conservando su posición interna y ancho. El editor y su revisión
+no se recrean al consultar; adjuntos e historial comparten las lecturas existentes.
+[Contrato actual](../quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
 RichTextEditor carga Tiptap lazy con toolbar accesible, listas dentro del padding y
 240 px mínimos. RichTextContent muestra plain literal y markdown con subconjunto
 seguro sin HTML/enlaces/imágenes. CaseRequestHeader conserva el mini desplegable

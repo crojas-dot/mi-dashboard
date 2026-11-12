@@ -16,8 +16,11 @@ import { SONIDO_DEFAULT, playNotificationSound } from '@/lib/services/sonidosNot
 import CambiarMiPasswordModal from '@/components/usuarios/CambiarMiPasswordModal'
 import NotificationDropdown from '@/components/header/NotificationDropdown'
 import UserMenuDropdown from '@/components/header/UserMenuDropdown'
+import AgendaHoyWidget from '@/components/ui/AgendaHoyWidget'
+import { useAgendaHoy } from '@/lib/queries/useAgendaHoy'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { notificacionesKey } from '@/lib/queries/useNotificaciones'
+import { queryKeys } from '@/lib/queries/queryKeys'
 import { Menu } from 'lucide-react'
 import { tituloDeRuta } from '@/lib/constants/modulos'
 import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
@@ -30,7 +33,8 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   const setPrefs = useAuthStore((s) => s.setPrefs)
   const [cambiarPasswordOpen, setCambiarPasswordOpen] = useState(false)
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
-  const [menuAbierto, setMenuAbierto] = useState<'notif' | 'user' | null>(null)
+  const [menuAbierto, setMenuAbierto] = useState<'agenda' | 'notif' | 'user' | null>(null)
+  const agenda = useAgendaHoy(user?.id ?? '')
 
   const title = tituloDeRuta(pathname)
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
@@ -51,7 +55,7 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   useRealtimeSubscription({
     table: 'notificaciones',
     filter: user ? `usuario_id=eq.${user.id}` : undefined,
-    invalidateKeys: [notificacionesKey(user?.id ?? '')],
+    invalidateKeys: [notificacionesKey(user?.id ?? ''), queryKeys.agendaHoy],
     events: ['INSERT', 'UPDATE'],
   })
 
@@ -136,6 +140,12 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
       </div>
 
       <div ref={rootRef} className="flex shrink-0 items-center gap-2">
+        <AgendaHoyWidget open={menuAbierto === 'agenda'} items={agenda.data ?? []} loading={agenda.isPending}
+          error={agenda.isError} onToggle={() => {
+            if (menuAbierto !== 'agenda' && agenda.isStale) void agenda.refetch({ cancelRefetch: false })
+            setMenuAbierto(menuAbierto === 'agenda' ? null : 'agenda')
+          }}
+          onClose={() => setMenuAbierto(null)} onRetry={() => { void agenda.refetch() }} />
         <NotificationDropdown
           open={menuAbierto === 'notif'}
           onToggle={() => setMenuAbierto(menuAbierto === 'notif' ? null : 'notif')}

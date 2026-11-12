@@ -140,7 +140,27 @@ try {
     check((await pool.query('SELECT ultimo FROM qms_private.folios_anuales WHERE modulo=$1 ORDER BY anio', [modulo])).rows, beforeDenied, 'Rechazo RLS no consume número')
   }
   check((await pool.query("SELECT has_sequence_privilege('anon','public.quejas_folio_seq','USAGE') AS anon,has_sequence_privilege('authenticated','public.seq_folio_sacp','UPDATE') AS authenticated")).rows[0], { anon:false, authenticated:false }, 'Secuencias retiradas cerradas')
-  const evidence = { checks, database: 'PostgreSQL aislado', remoteBusinessWrites: 0, series: series.map(([modulo])=>modulo), cases: ['cambio de año CR en tres zonas de sesión','200 asignaciones concurrentes','rollback por validación y RLS','compatibilidad RPC','históricos y reservas','999/1000'], migration: migrationName }
+  // Corte de la serie de pruebas: mantiene filas/IDs y modifica solo futuras altas.
+  await pool.query(`CREATE TABLE public.quejas(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),folio text UNIQUE);
+    INSERT INTO public.quejas(folio) VALUES('2026-2089'),('QUEJA-2026-0001');
+    UPDATE public.folios_quejas_anuales SET ultimo=2089 WHERE anio=2026;`)
+  const historical = (await pool.query('SELECT * FROM public.quejas ORDER BY folio')).rows
+  await pool.query('BEGIN')
+  await pool.query(fs.readFileSync('supabase/migrations/20261111155021_quejas_corregir_arrastre_consecutivo.sql','utf8'))
+  await pool.query('COMMIT')
+  check((await pool.query('SELECT * FROM public.quejas ORDER BY folio')).rows,historical,'Corte no renumera ni borra históricos')
+  check((await pool.query('SELECT ultimo FROM public.folios_quejas_anuales WHERE anio=2026')).rows[0].ultimo,89,'Elimina solo el arrastre de 2000')
+  await pool.query('BEGIN')
+  check(await next('quejas','2026-11-11T18:00:00Z'),'2026-090','Siguiente contador 090')
+  check(await next('quejas','2027-01-01T06:00:00Z'),'2027-001','Siguiente año sigue empezando en 001')
+  await pool.query('ROLLBACK')
+  const year = Number(new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'America/Costa_Rica'}).format(new Date()))
+  await pool.query('BEGIN')
+  await pool.query('INSERT INTO public.folios_quejas_anuales VALUES($1,2061) ON CONFLICT(anio) DO UPDATE SET ultimo=2061',[year])
+  await pool.query('INSERT INTO public.quejas(folio) VALUES($1),($2)',[year+'-2062',year+'-2063'])
+  check((await pool.query('SELECT public.generar_folio_queja() AS folio')).rows[0].folio,year+'-2064','Salta folios históricos ocupados')
+  await pool.query('ROLLBACK')
+  const evidence = { checks, database: 'PostgreSQL aislado', remoteBusinessWrites: 0, series: series.map(([modulo])=>modulo), cases: ['cambio de año CR en tres zonas de sesión','200 asignaciones concurrentes','rollback por validación y RLS','compatibilidad RPC','históricos y reservas','999/1000','corte 2089 a 089 sin renumerar y salto de históricos'], migration: migrationName }
   fs.writeFileSync(path.join(work, 'evidence.json'), JSON.stringify(evidence,null,2))
   console.log(JSON.stringify({ ...evidence, evidence: path.join(work, 'evidence.json') },null,2))
 } finally {
