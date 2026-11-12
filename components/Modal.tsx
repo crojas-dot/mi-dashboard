@@ -138,6 +138,7 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
     >
         {drawer ? <h2 id={titleId} className="sr-only">{title}</h2> : <div
           data-modal-header
+          data-case-header-grid={centeredWorkspaceHeader || undefined}
           className={`${report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark'} ${centeredWorkspaceHeader ? '@min-[1100px]/workspace:grid @min-[1100px]/workspace:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]/workspace:gap-4' : ''}`}
         >
           <div className={`flex min-w-0 items-center gap-3 ${headerCenter ? 'shrink-0' : 'flex-1'} ${report ? 'gap-2' : confirmation ? 'gap-3' : ''}`}>

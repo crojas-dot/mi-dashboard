@@ -405,6 +405,19 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
 })
 
+test('el progreso del encabezado descuenta el gutter real del editor', () => {
+  const { dialog } = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
+  const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.equal(header.props['data-case-header-grid'], true)
+  assert.match(header.props.className, /grid-cols-\\[220px_minmax/)
+  const stylesheet = fs.readFileSync('app/styles/components.css', 'utf8')
+  assert.match(stylesheet, /data-case-header-grid="true"/)
+  assert.match(stylesheet, /padding-right: calc\\(1rem \\+ var\\(--qms-case-scrollbar-width, 0px\\)\\)/)
+  const shared = fs.readFileSync('app/quejas/components/QuejaExpedientePanels.tsx', 'utf8')
+  assert.match(shared, /offsetWidth - scrollport.clientWidth/)
+  assert.match(shared, /--qms-case-scrollbar-width/)
+})
+
 test('la confirmación de cambios usa un diálogo compacto claro y bloquea el cierre exterior', () => {
   const { dialog, closes } = modalFixture({
     variant: 'confirmation',
@@ -481,10 +494,10 @@ function complaintPanelFixture() {
       tree = Panel({ queja: entity, onUpdated: noOp, onClose() { closed++ } })
     } while (changed)
   }
-  const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)] : []
+  const visit = value => Array.isArray(value) ? value.flatMap(visit) : value?.props ? [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter)] : []
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
-  return { render, closed: () => closed,
+  return { render, nodes, closed: () => closed,
     select(id) { entity = id ? { id, folio: '2026-001', revision: 1, estado: 'Recibido', cliente_nombre: 'Persona de prueba' } : null; render() },
     workspace: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace'),
     editor: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'document'),
@@ -503,6 +516,19 @@ test('cerrar el expediente ampliado y volver a abrirlo restablece el panel later
   assert.equal(panel.workspace().props.expanded, false)
   panel.select(null); panel.select('test-A')
   assert.equal(panel.workspace().props.expanded, false)
+})
+
+test('Quejas reutiliza las tarjetas laterales para generar expediente e historial', () => {
+  const panel = complaintPanelFixture()
+  panel.select('test-A')
+  const workspace = panel.nodes().find(node => node.type?.name === 'CaseWorkspace')
+  assert.equal(workspace.props.cyclePlacement, 'header')
+  assert.ok(panel.workspace().props.headerCenter)
+  const cards = panel.nodes().filter(node => node.type?.name === 'CaseSidebarShortcut')
+  assert.deepEqual(cards.map(card => card.props.actionLabel), ['Generar expediente', 'Ver actividad'])
+  assert.ok(cards.every(card => card.props.icon && card.props.onClick))
+  const headerButtons = panel.workspace().props.headerActions.props.children
+  assert.doesNotMatch(JSON.stringify(headerButtons), /Generar expediente|Ver actividad/)
 })
 
 test('el scrollport del expediente se promueve a capa compuesta al ampliar', () => {

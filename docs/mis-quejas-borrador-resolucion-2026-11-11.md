@@ -59,8 +59,8 @@ reservado al editor de resolución: el ciclo horizontal vive en el encabezado
 principal del modal, sin consumir otra franja. El lienzo ya no contiene listas de
 adjuntos y crece con su contenido, sin scroll interior ni altura fija. El
 expediente conserva un único desplazamiento principal; la columna izquierda
-no tiene scrollbar propia ni recorta la tarjeta de archivos. Debajo de Notas en la columna izquierda se muestra
-Adjuntos del análisis con cantidad, último nombre y acceso a un diálogo centrado;
+no tiene scrollbar propia ni recorta la tarjeta de archivos. En la columna izquierda se muestra primero **Adjuntos del análisis**, seguido de
+**Notas de investigación**, con cantidad, último nombre y acceso a un diálogo centrado;
 la tarjeta solo permite consultar el listado, sin subir archivos desde ahí.
 La carga (arrastrar o seleccionar varios) se realiza exclusivamente dentro del
 diálogo de adjuntos. El diálogo muestra únicamente adjuntos del responsable,
@@ -139,3 +139,9 @@ lectura, adjuntos debajo del lienzo dentro de la tarjeta y selector de archivos
 cancelable sin cerrar el expediente. La migración de notas añadió 55 comprobaciones
 PostgreSQL aisladas sobre RLS/grants, autor propio, responsables, estados, CAS,
 límites y escritura directa bloqueada; no se ejecutó SQL contra ECA-QMS.
+
+
+La vista contraída vuelve a mostrar el resumen del proceso y sus cuatro líneas
+bajo el encabezado. En la vista ampliada, ambas pantallas comparten el mismo
+progreso con cuatro líneas dentro del encabezado, alineado al ancho útil del
+lienzo central (se descuenta el gutter real del scroll). No altera los estados.

@@ -340,3 +340,12 @@
     gap: 8px;
   }
 }
+
+/* El scrollbar del expediente resta ancho real al documento, pero no al
+   encabezado del modal. Reservar exactamente ese gutter evita que Cierre
+   invada la columna de Acción actual. */
+@container workspace (min-width: 1100px) {
+  [data-case-header-grid="true"] {
+    padding-right: calc(1rem + var(--qms-case-scrollbar-width, 0px));
+  }
+}

@@ -32,7 +32,7 @@ Costa Rica. El archivo local coincide con la versión registrada por MCP.
 
 ## Interacción
 
-Admin/Calidad dispone de **Generar expediente** en el encabezado del caso. El
+Admin/Calidad dispone de **Generar expediente** en una tarjeta bajo los datos del cliente, junto a la tarjeta de Historial y observaciones. El
 botón espera la lectura completa de adjuntos para no omitir anexos. La primera
 apertura consulta el último informe guardado. Un error de lectura no se interpreta
 como ausencia de documento ni habilita una sobrescritura.

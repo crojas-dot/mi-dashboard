@@ -23,12 +23,12 @@ import { quejaResolucionDraftKey, useQuejaResolucionDraft, type QuejaResolucionD
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
-import { CaseCompletionDate, CaseCycle, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
-import { caseDate, caseDeadline, getCaseProcessCycle } from '@/app/quejas/components/quejaExpedienteModel'
+import { caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
@@ -159,9 +159,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     }
   }
   const deadline = caseDeadline(queja, runs)
-  const etapas = getCaseProcessCycle(queja)
-  const pasoActual = etapas.steps.findIndex(step => step.current)
-  const pasoVisible = pasoActual < 0 ? etapas.steps.length - 1 : pasoActual
   const devolucion = obtenerDevolucionPendiente(estado, actividad)
   const devoluciones = devolucion ? obtenerHistorialDevoluciones(actividad) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
@@ -366,12 +363,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
 
   return <>
     <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className="w-full min-w-0">
-        <div className="hidden @min-[1100px]/workspace:block"><CaseCycle queja={queja} process /></div>
-        <p className="hidden truncate text-center text-xs font-medium text-qms-muted @min-[640px]/workspace:block @min-[1100px]/workspace:hidden">
-          {etapas.steps[pasoVisible]?.label ?? 'Etapa por verificar'} · {pasoVisible + 1} de {etapas.steps.length}
-        </p>
-      </div>} headerActions={<>
+      headerCenter={<CaseProcessHeader queja={queja} />} headerActions={<>
       <Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationLocked} onClick={onPrevious}><ArrowLeft className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationLocked} onClick={onNext}><ArrowRight className="size-5" /></Button>
       <Button size="icon" variant="ghost" aria-label={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} title={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} onClick={() => setIsExpanded(value => !value)}>{isExpanded ? <Minimize className="size-5" /> : <Maximize className="size-5" />}</Button>
@@ -379,9 +371,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards"
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
         requestFooter={<div className="space-y-4">
-          <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
           <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
             onOpen={abrirAdjuntos} />
+          <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div>}
         compact={<CaseCycle queja={queja} process currentOnly />} cycle={<CaseCycle queja={queja} process />}
         action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">

@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronDown, Mail, Phone, Tag, UserRound } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronRight, Mail, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -79,10 +79,28 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
   const scrollRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0 }, [documentKey])
+  // Igualar el ancho del ciclo en la cabecera con el ancho *útil* del editor:
+  // el scrollport reserva un gutter de scrollbar que la cabecera no tiene.
+  useLayoutEffect(() => {
+    const scrollport = scrollRef.current
+    const modal = scrollport?.closest('dialog')
+    if (!scrollport || !modal) return
+    const syncGutter = () => {
+      const gutter = Math.max(0, scrollport.offsetWidth - scrollport.clientWidth)
+      modal.style.setProperty('--qms-case-scrollbar-width', `${gutter}px`)
+    }
+    syncGutter()
+    const observer = new ResizeObserver(syncGutter)
+    observer.observe(scrollport)
+    return () => {
+      observer.disconnect()
+      modal.style.removeProperty('--qms-case-scrollbar-width')
+    }
+  }, [presentation, expanded])
   const referenceColumns = '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
   if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" className={`@container flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
     {/* En escritorio el círculo ocupa el margen de página y su etiqueta se alinea con Descripción. */}
-    {cyclePlacement !== 'header' && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
+    {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
     <div data-case-frame className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
@@ -129,6 +147,37 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
     </div>
     </div>
   </div>
+}
+
+/** El progreso de lectura se reutiliza en los encabezados de Quejas y Mis Quejas. */
+export function CaseProcessHeader({ queja }: { queja: Queja }) {
+  return <div data-case-process-header className="w-full min-w-0">
+    <div className="hidden @min-[1100px]/workspace:block"><CaseCycle queja={queja} process /></div>
+  </div>
+}
+
+/** Patrón de acceso lateral: mismo aspecto que archivos/notas, contenido y acción independientes. */
+export function CaseSidebarShortcut({ title, description, actionLabel, icon, onClick, disabled = false, count }: {
+  title: string
+  description: string
+  actionLabel: string
+  icon: ReactNode
+  onClick: () => void
+  disabled?: boolean
+  count?: number
+}) {
+  return <button type="button" onClick={onClick} disabled={disabled} aria-label={actionLabel}
+    className="w-full min-w-0 cursor-pointer rounded-card border border-qms-border bg-qms-surface p-4 text-left shadow-sm transition-colors hover:bg-qms-hover-bg disabled:cursor-not-allowed disabled:opacity-60">
+    <span className="flex items-start gap-2">
+      <span aria-hidden="true" className="mt-0.5 shrink-0 text-qms-primary">{icon}</span>
+      <span className="min-w-0 flex-1 text-sm font-semibold text-qms-dark">{title}</span>
+      {count !== undefined && <span className="rounded-button bg-qms-primary-soft px-1.5 py-0.5 text-xs font-medium text-qms-primary">{count}</span>}
+    </span>
+    <span className="mt-3 block break-words text-xs leading-relaxed text-qms-muted">{description}</span>
+    <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-qms-primary">
+      {actionLabel}<ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+    </span>
+  </button>
 }
 
 export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false }: { queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; currentOnly?: boolean }) {
