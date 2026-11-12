@@ -55,11 +55,17 @@ completas y el campo para agregar; cerrar conserva la nota aún no enviada en la
 visita. Cada nota propia de esta investigación ofrece un menú de tres puntos con
 Editar y Eliminar (confirmación en línea; Escape o pulsar fuera cierra el menú); las
 notas de devolución de Calidad solo se leen y conservan su historial. El centro queda
-libre de listas y formularios secundarios. Adjuntar abre el selector nativo desde el
-encabezado, a la izquierda de Guardar/Editar, y cancelar el selector no cierra el
-expediente. Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo,
-también al editar, con `ListaAdjuntos layout="cards"`; no hay sheet ni contador
-aparte. Diálogo, visor y permisos reutilizan las lecturas y servicios existentes. El
+reservado al editor de resolución: el ciclo horizontal vive en el encabezado
+principal del modal, sin consumir otra franja. El lienzo ya no contiene listas de
+adjuntos y crece verticalmente. Debajo de Notas en la columna izquierda se muestra
+Adjuntos del análisis con cantidad, último nombre y acceso a un diálogo centrado;
+desde la tarjeta se pueden arrastrar archivos y desde el diálogo arrastrar o
+seleccionar varios. El diálogo muestra únicamente adjuntos del responsable,
+permite previsualizar, descargar y eliminar con confirmación al tener permisos
+vigentes. La subida se hace secuencialmente con el servicio actual y conserva los
+bloqueos de operaciones; el selector cancelado no cierra la visita. Ver caso
+completo presenta únicamente adjuntos del cliente, evitando duplicados con el
+diálogo del análisis. No se modifican consultas, servicios, RLS ni el visor. El
 envío a GC permanece en Acción actual, sin otro botón debajo del
 editor. Si la última decisión de Calidad es una devolución y la queja está de nuevo
 En Investigación, el control se llama «Reenviar a Revisión GC» y el mensaje
