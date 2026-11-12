@@ -6,11 +6,17 @@
   /* Fuente nativa de todo ECA-QMS, incluida la utilidad font-sans de Tailwind. */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Escala de lectura: texto auxiliar 14px, controles 15px y contenido 16px. */
-  --text-xs: 0.875rem;
+  /* Ajuste de +1px para compensar la apariencia más pequeña de la fuente nativa.
+     Mantener tamaños semánticos; no modificar documentos con medidas fijas. */
+  --text-xs: 0.9375rem;   /* 15px: textos auxiliares */
   --text-xs--line-height: 1.5;
-  --text-sm: 0.9375rem;
+  --text-sm: 1rem;        /* 16px: botones, formularios, tablas */
   --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem; /* 17px: lectura general */
+  --text-base--line-height: 1.5;
+  --text-lg: 1.1875rem;   /* 19px */
+  --text-xl: 1.3125rem;   /* 21px */
+  --text-2xl: 1.5625rem;  /* 25px */
   /* Radios "cuadraditos" */
   --radius-xs: 0.125rem;
   --radius-sm: 0.1875rem;   /* 3px */
