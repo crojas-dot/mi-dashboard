@@ -68,8 +68,12 @@ inicial muestra «Enviar a Revisión GC» sin mensaje. Al reenviar, la transici�
 a Pendiente de Revisión GC retira el aviso y el botón de la acción actual;
 el historial conserva el motivo anterior. Una aprobación posterior impide
 que una devolución histórica aparezca al reabrir. La devolución de Calidad
-refresca el historial de actividad compartido. Un mensaje de devolución muy largo
-se resume en línea y abre modal «Ver más» para revisarlo completo. Ampliar, consultar y cerrar paneles no remonta el editor ni cambia su
+refresca el historial de actividad compartido. El aviso lateral muestra siempre el motivo de la devolución más reciente:
+si supera 140 caracteres se presenta un extracto con «Ver más». Si hay dos o
+más devoluciones, «Ver más» aparece incluso cuando el último motivo es corto.
+Ese mismo modal presenta los motivos completos y sus fechas en orden descendente
+(del más nuevo al más antiguo), sin sobrescribir el historial y sin cargar datos
+adicionales. Cuando el expediente vuelve a revisión GC, no se muestra el aviso. Ampliar, consultar y cerrar paneles no remonta el editor ni cambia su
 revisión o borrador.
 
 ## Notas de investigación
