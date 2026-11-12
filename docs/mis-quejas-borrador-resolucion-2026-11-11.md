@@ -44,10 +44,10 @@ Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ám
 sin modificar otra visita o identidad. El borrador guardado permite navegar entre
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
-En el piloto visual exclusivo de Mis Quejas, «Ver caso completo» usa el botón
-secundario del kit, blanco con borde; enviar a GC conserva el primario institucional.
-Guardar y Asistencia permanecen juntos en escritura. El documento crece sin scroll
-interno: el expediente mantiene un único desplazamiento principal.
+El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
+a fondo blanco con texto, icono y borde rojos. Guardar y Asistencia permanecen juntos
+solo en modo de escritura, en escritorio y móvil. El scroll del editor sigue
+dependiendo del foco.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
 última fecha o Sin notas todavía. Ver notas abre un diálogo centrado con las notas
@@ -145,45 +145,3 @@ La vista contraída vuelve a mostrar el resumen del proceso y sus cuatro líneas
 bajo el encabezado. En la vista ampliada, ambas pantallas comparten el mismo
 progreso con cuatro líneas dentro del encabezado, alineado al ancho útil del
 lienzo central (se descuenta el gutter real del scroll). No altera los estados.
-
-
-## Piloto visual exclusivo de Mis Quejas (12 noviembre 2026)
-
-El HTML externo es referencia de ergonomía, no código de producción. Se conserva
-Lucide outline, los colores institucionales ECA, los componentes y la gestión de
-adjuntos únicamente en su modal (filas, nombres completos, vista previa y acciones).
-La tipografía System UI se aplica solo al workspace opt-in de Mis Quejas. El editor
-utiliza 17px, interlineado 1.625, gris #1f2937 y máximo 768px útiles centrados,
-incluyendo el texto de lectura y su placeholder. Controles de 15px, secundarios
-existentes de 14px y título de resolución de 18px.
-
-La geometría opt-in usa 240px/centro/260px desde 1100px de contenedor y
-280px/centro/300px desde 1360px. El ancho del proceso, márgenes y gutters
-coinciden con el documento; los laterales y el encabezado continúan sticky,
-sin scroll anidado. Quejas no activa esta configuración visual.
-
-Corrección visual posterior: se declaró explícitamente la fuente nativa System UI
-sobre el texto Tiptap y el contenido de lectura, además del placeholder, para que
-no dependan de Inter global. Tamaño e interlineado pasan a 16px y 1.6, exactamente
-como el elemento `.editor-area` de `ejemploparaqms(1).html`.
-
-
-Ajuste al ejemplo de tres columnas: se pasa de 16px/1.6 a 17px/1.625,
-separación de 16px entre párrafos (sin alterar párrafos de listas) y ancho
-útil de texto 768px. El contenedor TipTap incluye padding lateral de 40px
-en escritorio, por lo que su ancho exterior máximo es 848px. El placeholder
-y la resolución final conservan el mismo estilo. Sin cambios en Quejas ni
-en la gestión de adjuntos.
-
-
-## Clon visual limitado a Mis Quejas (12 noviembre 2026)
-
-Se ajustó el piloto a los colores exactos del HTML entregado: fuente
-System UI, texto #1f2937 (17px, interlineado 1.625), secundario #6b7280,
-fondo #f3f4f6, tarjetas blancas con borde #e5e7eb, botones primarios
-#2563eb y hover #1d4ed8, secundarios blancos y borde #d1d5db.
-«En Investigación» es azul oscuro #1e3a8a solo como presentación de esta
-pantalla. Se respeta el ancho útil de lectura 768px, los párrafos a 16px
-de separación, y el patrón de botones/tablas/iconos Lucide sin emojis.
-El cambio se configura con variables CSS locales de `mis-quejas-reading`:
-el tema global de ECA-QMS y el flujo de procesos no cambiaron.
