@@ -153,7 +153,7 @@ El HTML externo es referencia de ergonomía, no código de producción. Se conse
 Lucide outline, los colores institucionales ECA, los componentes y la gestión de
 adjuntos únicamente en su modal (filas, nombres completos, vista previa y acciones).
 La tipografía System UI se aplica solo al workspace opt-in de Mis Quejas. El editor
-utiliza 17px, interlineado 1.625, gris #1f2937 y máximo 768px centrado,
+utiliza 16px, interlineado 1.6, gris #1f2937 y máximo 768px centrado,
 incluyendo el texto de lectura y su placeholder. Controles de 15px, secundarios
 existentes de 14px y título de resolución de 18px.
 
@@ -161,3 +161,8 @@ La geometría opt-in usa 240px/centro/260px desde 1100px de contenedor y
 280px/centro/300px desde 1360px. El ancho del proceso, márgenes y gutters
 coinciden con el documento; los laterales y el encabezado continúan sticky,
 sin scroll anidado. Quejas no activa esta configuración visual.
+
+Corrección visual posterior: se declaró explícitamente la fuente nativa System UI
+sobre el texto Tiptap y el contenido de lectura, además del placeholder, para que
+no dependan de Inter global. Tamaño e interlineado pasan a 16px y 1.6, exactamente
+como el elemento `.editor-area` de `ejemploparaqms(1).html`.
