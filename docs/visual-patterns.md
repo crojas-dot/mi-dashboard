@@ -332,15 +332,29 @@ durante **Resuelto** (preparación del cierre), como tarjeta Documento del exped
 con acción azul suave. **Historial y observaciones** conserva el acceso compartido
 `CaseSidebarShortcut` en todas las etapas sin duplicar acciones.
 
-En **Respuesta al cliente**, el compositor es de lectura/escritura continua estilo
-Gmail: encabezado con folio, Para inalterable, Asunto en línea, mensaje blanco sin
-marcos internos, número de oficio, chips de adjuntos y pie fijo con Publicar respuesta,
-Descartar y Guardar borrador. El diálogo usa `Modal size="mail"` (896px máx. y
-90dvh) sin afectar otros modales; en móvil los controles se redistribuyen.
-**Generar expediente** es un clic explícito: si no existe informe guardado abre
-`QuejaInformeModal` para prepararlo; si existe, convierte esa versión a Word y sube
-el archivo. Guarda qué versión generó para reutilizarla y evitar duplicaciones.
-**Guardar borrador** solo persiste datos y **Publicar respuesta** exige el archivo
-ya generado o seleccionado; ninguno invoca conversión Word ni subidas implícitas.
-No Procede mantiene el mismo compositor y sus permisos/confirmaciones vigentes.
-La publicación se sigue realizando solo por acción explícita del usuario.
+En **Respuesta al cliente**, el compositor continúa al estilo Gmail, con
+`Modal size="mail"` (896px máx. y 90dvh). El renglón inicial alinea el destinatario
+no editable a la izquierda y el **N.º de oficio editable** a la derecha (apilados
+en móvil); Asunto tiene solo la línea inferior. El cuerpo es un lienzo sin recuadro
+que crece con el texto, de modo que la región de composición hace **un solo scroll**
+desde los destinatarios hasta los adjuntos. Hay más aire entre renglones y márgenes.
+El pie con Publicar respuesta, Descartar y Guardar borrador se mantiene fijo.
+
+La sección inferior contiene **Adjuntos seleccionados**, selector con opción vacía
+«Seleccionar PDF oficial», botón **Subir archivo** y **Visualizar** para el PDF
+seleccionado. No repite «Sin documento oficial seleccionado». El chip del archivo
+real también abre el visor y puede quitarse sin borrar el archivo almacenado. Si
+existe un PDF institucional previamente generado para el folio y versión guardada
+(`Expediente-<folio>-v<version>.pdf`), se selecciona por defecto sin generar ni
+subir nada. Una selección explícita o el PDF guardado en borrador tiene prioridad.
+Solo se acepta para nueva publicación un adjunto institucional de tipo
+`application/pdf` con nombre `.pdf`; el servicio valida el formato antes del RPC.
+
+**Generar expediente** solo aparece en Quejas durante `Resuelto`: abre el editor
+persistente del informe. Desde allí **Preparar PDF para cliente** exige que la
+versión esté guardada y genera/sube el PDF de esa versión **solo por clic**.
+No se convierte ni sube ningún documento al abrir el correo, Guardar borrador o
+Publicar respuesta. En la composición no hay botón de generación; si la respuesta
+es de **No Procede**, puede abrirse el editor específico para preparar su PDF.
+El exportador Word existente sigue disponible para uso interno pero no se acepta
+como adjunto del correo final. No se modifican permisos ni transiciones.
