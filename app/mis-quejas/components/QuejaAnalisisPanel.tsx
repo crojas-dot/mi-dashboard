@@ -78,7 +78,7 @@ export default function QuejaAnalisisPanel(props: Props) {
     </button>)}
   </div>
 
-  return <Modal open={props.open} onClose={props.onClose} title="Análisis del caso" titleSuffix={queja.folio} variant="document" size="xl" emphasizeTitle
+  return <Modal open={props.open} onClose={props.onClose} title="Análisis del caso" titleSuffix={queja.folio} variant="document" size="mail" emphasizeTitle
     headerActions={<div className="hidden min-w-0 items-center gap-3 md:flex">{tabButtons(false)}<span aria-hidden="true" className="h-5 w-px shrink-0 bg-qms-border" /></div>}
     footer={<div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button>{props.onPrepararResolucion && <Button className="min-w-0 whitespace-normal" onClick={props.onPrepararResolucion}>Preparar resolución</Button>}</div>}>
     <div className="shrink-0 border-b border-qms-border bg-qms-surface px-3 py-2 md:hidden">{tabButtons(true)}</div>
