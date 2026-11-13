@@ -97,7 +97,7 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
         <Button size="sm" aria-label="Agregar archivos" className="shrink-0" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={!props.canUpload || props.uploadDisabled || props.uploading}>
           Examinar
         </Button>
-        <input ref={inputRef} aria-label="Seleccionar adjuntos del análisis" type="file" multiple hidden
+        <input ref={inputRef} aria-label="Seleccionar mis adjuntos" type="file" multiple hidden
           disabled={!props.canUpload || props.uploadDisabled || props.uploading}
           onChange={event => {
             const files = Array.from(event.target.files ?? [])
@@ -108,16 +108,16 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
       </div>
       <div className="flex justify-end"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button></div>
     </div>}>
-    <div data-attachment-list-scroll role="region" aria-label="Lista de adjuntos del análisis" tabIndex={0}
+    <div data-attachment-list-scroll role="region" aria-label="Lista de mis adjuntos" tabIndex={0}
       className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-2">
         <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Evidencias</h3>
         {!props.loading && !props.error && <span className="rounded-button bg-qms-primary-soft px-2 py-0.5 text-xs font-medium text-qms-primary">{props.adjuntos.length}</span>}
       </div>
-      {props.loading ? <LoadingSkeleton variant="list" label="Cargando adjuntos del análisis…" framed={false} />
+      {props.loading ? <LoadingSkeleton variant="list" label="Cargando mis adjuntos…" framed={false} />
         : props.error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudieron cargar los archivos.<Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar</Button></div>
         : props.adjuntos.length ? <ListaAdjuntos adjuntos={props.adjuntos} layout="modal" onPreview={props.onPreview} onDownload={props.onDownload} puedeEliminar={props.canDelete} onEliminar={props.onDelete} />
-        : <div className="flex flex-col items-center gap-2 py-5 text-center text-qms-muted"><FileText aria-hidden="true" className="size-6" /><p className="text-sm">Sin adjuntos de investigación todavía.</p></div>}
+        : <div className="flex flex-col items-center gap-2 py-5 text-center text-qms-muted"><FileText aria-hidden="true" className="size-6" /><p className="text-sm">Aún no hay archivos del responsable.</p></div>}
     </div>
   </Modal>
 }
