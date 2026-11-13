@@ -586,6 +586,42 @@ test('Quejas y Mis Quejas comparten el espaciado compacto y el largo fijo de con
   assert.equal((investigator.match(/data-case-cycle-connector/g) || []).length, 2)
 })
 
+test('Mis Quejas limita la lectura solo al ampliar y no altera las columnas de Quejas', () => {
+  const { CaseWorkspace } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
+  const content = createElement('p', null, 'Resolución')
+  const props = {
+    documentKey: 'q-reading',
+    presentation: 'reference',
+    documentStyle: 'cards',
+    readingLayout: true,
+    compact: null,
+    cycle: null,
+    request: createElement('aside', null, 'Solicitante'),
+    action: createElement('aside', null, 'Acción'),
+  }
+  const expanded = renderToStaticMarkup(createElement(CaseWorkspace, { ...props, expanded: true }, content))
+  const collapsed = renderToStaticMarkup(createElement(CaseWorkspace, { ...props, expanded: false }, content))
+  const quality = renderToStaticMarkup(createElement(CaseWorkspace, { ...props, readingLayout: false, expanded: true }, content))
+
+  assert.match(expanded, /data-case-reading-layout="true"/)
+  assert.match(expanded, /data-case-layout[^>]*max-w-\\[1500px\\]/)
+  assert.match(expanded, /data-case-layout[^>]*@min-\\[1100px\\]:grid-cols-\\[240px_minmax\\(0,1fr\\)_270px\\]/)
+  assert.match(expanded, /data-case-layout[^>]*@min-\\[1360px\\]:grid-cols-\\[280px_minmax\\(0,1fr\\)_300px\\]/)
+  assert.match(expanded, /data-case-layout[^>]*gap-6/)
+  assert.match(expanded, /data-case-request-region/)
+  assert.match(expanded, /data-case-document/)
+  assert.match(expanded, /data-case-action/)
+  assert.doesNotMatch(collapsed, /data-case-reading-layout|max-w-\\[1500px\\]/)
+  assert.doesNotMatch(quality, /data-case-reading-layout|max-w-\\[1500px\\]/)
+  assert.match(quality, /@min-\\[1100px\\]:grid-cols-\\[220px_minmax\\(0,1fr\\)_260px\\]/)
+
+  const styles = fs.readFileSync('app/styles/components.css', 'utf8')
+  assert.match(styles, /\\[data-case-reading-layout="true"\\] \\.mis-quejas-resolution-editor \\[data-rich-text-viewport\\] \\.tiptap/)
+  assert.match(styles, /max-width: 832px/)
+  assert.match(styles, /\\[data-case-reading-layout="true"\\] \\[data-reading-copy\\]/)
+  assert.match(styles, /max-width: 768px/)
+})
+
 test('el ciclo expandido de Mis Quejas conserva conectores en barra superior y encabezado compacto', () => {
   const { CaseWorkspace, CaseRequestHeader, CaseCycle } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
   const queja = { id: 'q-3', estado: 'En Investigación', cliente_nombre: 'Persona', email_cliente: 'persona@example.invalid', fecha: '2026-11-05', tipo: 'Afectación' }
