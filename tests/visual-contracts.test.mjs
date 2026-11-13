@@ -405,6 +405,20 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
 })
 
+test('Ver análisis permite recorrer las pestañas con teclado y conserva la separación de evidencias', () => {
+  const panel = fs.readFileSync('app/mis-quejas/components/QuejaAnalisisPanel.tsx', 'utf8')
+  const files = fs.readFileSync('app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx', 'utf8')
+  assert.ok(panel.includes("['ArrowLeft', 'ArrowRight', 'Home', 'End']"))
+  assert.ok(panel.includes("tabIndex={activeTab === id ? 0 : -1}"))
+  assert.ok(panel.includes("onKeyDown={event => handleTabKeyDown(event, id)}"))
+  assert.ok(panel.includes("changeTab(tabs[nextIndex].id)"))
+  assert.ok(panel.includes("querySelectorAll<HTMLButtonElement>('[role=\"tab\"]')[nextIndex]?.focus()"))
+  assert.ok(panel.includes("props.adjuntos.filter(adjunto => !adjunto.usuario_id)"))
+  assert.ok(panel.includes('layout="rows" hideGroupTitle'))
+  assert.ok(files.includes('aria-label="Seleccionar mis adjuntos"'))
+  assert.ok(files.includes('aria-label="Lista de mis adjuntos"'))
+})
+
 test('modales fijos mantienen el encabezado de referencia sin alterar los diálogos normales', () => {
   const { dialog } = modalFixture({
     title: 'Notas de investigación', titleSuffix: '2026-091',
