@@ -36,7 +36,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, X, Info } from 'lucide-react'
+import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
