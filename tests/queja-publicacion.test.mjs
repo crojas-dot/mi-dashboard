@@ -43,6 +43,26 @@ test('publicación exige respuesta explícita/oficio/archivo institucional propi
   assert.deepEqual(JSON.parse(JSON.stringify(calls[1].args.p_detalles)), { office_number: 'ECA-GC-2026-001' })
 })
 
+test('publicar respuesta nueva solo admite PDF institucional sin llamar al RPC con Word', async () => {
+  const { service, calls } = serviceFixture()
+  const file = archivo({ nombre: 'Expediente-2026-091-v3.pdf', tipo_mime: 'application/pdf' })
+  const queja = { id: quejaId, revision: 7 }
+  const draft = { respuesta: 'Se comunica el informe oficial adjunto.', numeroOficio: 'ECA-GC-2026-001',
+    adjuntoId: file.id, correo: { asunto: 'Respuesta al cliente', cuerpo: 'Adjunto se remite el documento oficial.' } }
+  for (const invalid of [
+    { ...file, nombre: 'Expediente-2026-091-v3.docx', tipo_mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+    { ...file, nombre: 'Expediente-2026-091-v3.pdf', tipo_mime: 'application/octet-stream' },
+    { ...file, nombre: 'Expediente-2026-091-v3.docx', tipo_mime: 'application/pdf' },
+  ]) {
+    assert.throws(() => service.publicarRespuestaAprobada(queja, 0, draft, invalid), /PDF válido/)
+  }
+  assert.equal(calls.length, 0, 'el archivo rechazado no debe llegar a la publicación')
+  await service.publicarRespuestaAprobada(queja, 0, draft, file)
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].name, 'qms_publish_approved_response_v2')
+  assert.equal(calls[0].args.p_file, file.id)
+})
+
 test('un conflicto de publicación no obtiene otra revisión ni fuerza reintentos', async () => {
   const conflict = { code: '40001', message: 'Conflicto sintético' }, { service, calls } = serviceFixture(conflict)
   const valid = { estado: 'Resuelto', respuestaPublica: 'Respuesta', numeroOficio: 'ECA-GC-2026-001', adjunto: archivo() }
