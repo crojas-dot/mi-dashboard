@@ -405,6 +405,45 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
 })
 
+test('modales fijos mantienen el encabezado de referencia sin alterar los diálogos normales', () => {
+  const { dialog } = modalFixture({
+    title: 'Notas de investigación', titleSuffix: '2026-091',
+    size: 'lg', variant: 'dialog', fixedHeight: true, footer: 'Nueva nota',
+  })
+  assert.ok(dialog.props.className.includes('h-[min(600px,90dvh)]'))
+  assert.ok(dialog.props.className.includes('max-w-[672px]'))
+  const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  const title = header.props.children[0].props.children[1]
+  assert.ok(header.props.className.includes('sm:px-6 sm:py-4'))
+  assert.ok(title.props.className.includes('text-[17px] font-semibold'))
+  const titleHtml = renderToStaticMarkup(title)
+  assert.ok(titleHtml.includes('Notas de investigación'))
+  assert.ok(titleHtml.includes('· 2026-091'))
+  assert.ok(titleHtml.includes('font-normal text-qms-muted'))
+
+  const regular = modalFixture({ variant: 'dialog', size: 'lg', title: 'Sin cambios' })
+  assert.ok(regular.dialog.props.className.includes('max-w-[700px]'))
+  const regularHeader = regular.dialog.props.children.find(child => child?.props?.['data-modal-header'])
+  assert.equal(regularHeader.props.children[0].props.children[1].props.children, 'Sin cambios')
+})
+
+test('tarjetas de adjuntos no repiten el encabezado de evidencias y dejan acciones disponibles', () => {
+  const source = fs.readFileSync('components/quejas/ListaAdjuntos.tsx', 'utf8')
+  const modal = fs.readFileSync('app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx', 'utf8')
+  const notes = fs.readFileSync('app/mis-quejas/components/QuejaNotasPanel.tsx', 'utf8')
+  const styles = fs.readFileSync('app/styles/components.css', 'utf8')
+  assert.ok(source.includes("layout !== 'modal' && <p"))
+  assert.ok(source.includes("layout === 'modal' ? ("))
+  assert.ok(source.includes('sm:group-focus-within:opacity-100'))
+  assert.ok(source.includes('onPreview(a)'))
+  assert.ok(source.includes('onDownload(a)'))
+  assert.ok(modal.includes('className="qms-compact-modal-scroll'))
+  assert.ok(notes.includes('className="qms-compact-modal-scroll'))
+  assert.ok(notes.includes('className="absolute right-3 bottom-3'))
+  assert.ok(!notes.includes('<Button size="icon" aria-label="Agregar nota"'))
+  assert.ok(styles.includes('.qms-compact-modal-scroll::-webkit-scrollbar'))
+})
+
 test('el progreso del encabezado descuenta el gutter real del editor', () => {
   const { dialog } = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
   const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])

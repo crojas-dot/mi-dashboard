@@ -49,8 +49,8 @@ export default function ListaAdjuntos({
   const renderGrupo = (lista: QuejaAdjunto[], esAnalisis: boolean, titulo: string) => {
     if (lista.length === 0) return null
     return (
-      <div className="mt-3">
-        <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>
+      <div className={layout === 'modal' ? '' : 'mt-3'}>
+        {layout !== 'modal' && <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>}
         <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : layout === 'modal' ? 'space-y-3' : 'space-y-1'}>
           {lista.map((a) => {
             const { Icon, label, color } = filePresentation(a)
@@ -96,8 +96,30 @@ export default function ListaAdjuntos({
                   )}
                 </div>
               </li>
-            ) : layout === 'rows' || layout === 'modal' ? (
-              <li key={a.id} data-attachment-row className={layout === 'modal' ? 'flex min-w-0 flex-wrap items-start gap-3 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm transition-colors hover:border-qms-primary/30' : 'flex min-w-0 items-start gap-3 px-3 py-3 transition-colors hover:bg-qms-hover-bg'}>
+            ) : layout === 'modal' ? (
+              <li key={a.id} data-attachment-row className="group flex min-w-0 items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm transition-colors hover:border-qms-primary/30 focus-within:border-qms-primary/30">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-button border border-qms-border/60 ${color}`} aria-hidden="true">
+                  <Icon className="size-5" strokeWidth={1.75} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <button {...previewIntent} type="button" onClick={() => onPreview(a)}
+                    title={a.nombre} aria-label={`Vista previa de ${a.nombre}`}
+                    className="block w-full min-w-0 cursor-pointer truncate text-left text-sm font-semibold text-qms-dark hover:text-qms-primary">
+                    {a.nombre}
+                  </button>
+                  <p className="mt-1 truncate text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-0.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+                  <Button {...previewIntent} size="icon" variant="ghost" className="size-8! min-h-8!" onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
+                  <Button size="icon" variant="ghost" className="size-8! min-h-8!" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}><Download className="size-4" aria-hidden="true" /></Button>
+                  {onEliminar && puedeEliminar?.(a) && <>
+                    <span aria-hidden="true" className="mx-1 h-4 w-px bg-qms-border" />
+                    <Button size="icon" variant="ghost" className="size-8! min-h-8! text-qms-danger" onClick={() => onEliminar(a)} title="Eliminar adjunto" aria-label={`Eliminar ${a.nombre}`}><Trash2 className="size-4" aria-hidden="true" /></Button>
+                  </>}
+                </div>
+              </li>
+            ) : layout === 'rows' ? (
+              <li key={a.id} data-attachment-row className="flex min-w-0 items-start gap-3 px-3 py-3 transition-colors hover:bg-qms-hover-bg">
                 <span className={`flex size-9 shrink-0 items-center justify-center rounded-button ${color}`} aria-hidden="true">
                   <Icon className="size-5" strokeWidth={1.5} />
                 </span>

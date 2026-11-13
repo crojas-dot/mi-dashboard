@@ -83,15 +83,18 @@ interface PanelProps {
 
 export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" fixedHeight headerLeading={<Paperclip aria-hidden="true" className="size-4 text-qms-muted" />}
+  return <Modal open={props.open} onClose={props.onClose} title="Adjuntos del análisis" titleSuffix={props.folio} size="lg" fixedHeight headerLeading={<Paperclip aria-hidden="true" className="size-4 text-qms-muted" />}
     footer={<div className="space-y-3">
-      {props.canUpload && <div data-investigation-files-drop {...dropHandlers(!props.uploadDisabled && !props.uploading, props.onFiles)}
-        className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-qms-border bg-qms-hover-bg p-3 data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
+      <div data-investigation-files-drop {...dropHandlers(props.canUpload && !props.uploadDisabled && !props.uploading, props.onFiles)}
+        className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border-2 border-dashed border-qms-border bg-qms-hover-bg p-3 transition-colors data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
         <div className="flex min-w-0 items-center gap-3">
-          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><Upload className="size-5" /></span>
-          <div className="min-w-0"><p className="text-sm font-semibold">Subir nuevo archivo</p><p className="text-xs text-qms-muted">También podés arrastrarlo aquí.</p></div>
+          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-qms-primary-soft text-qms-primary"><Upload className="size-4" /></span>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Subir nuevo archivo</p>
+            {!props.canUpload && <p className="text-xs text-qms-muted">Disponible durante la investigación.</p>}
+          </div>
         </div>
-        <Button size="sm" aria-label="Agregar archivos" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={props.uploadDisabled || props.uploading}>
+        <Button size="sm" aria-label="Agregar archivos" className="shrink-0" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={!props.canUpload || props.uploadDisabled || props.uploading}>
           Examinar
         </Button>
         <input ref={inputRef} aria-label="Seleccionar adjuntos del análisis" type="file" multiple hidden
@@ -99,14 +102,14 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
           onChange={event => {
             const files = Array.from(event.target.files ?? [])
             event.target.value = ''
-            if (props.canUpload && files.length) props.onFiles(files)
+            if (props.canUpload && !props.uploadDisabled && files.length) props.onFiles(files)
           }}
         />
-      </div>}
+      </div>
       <div className="flex justify-end"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button></div>
     </div>}>
     <div data-attachment-list-scroll role="region" aria-label="Lista de adjuntos del análisis" tabIndex={0}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+      className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-2">
         <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Evidencias</h3>
         {!props.loading && !props.error && <span className="rounded-button bg-qms-primary-soft px-2 py-0.5 text-xs font-medium text-qms-primary">{props.adjuntos.length}</span>}

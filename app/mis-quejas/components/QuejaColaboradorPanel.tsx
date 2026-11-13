@@ -416,7 +416,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         onFiles={files => { void agregarAdjuntosAnalisis(files) }}
         onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
         onDelete={adjunto => setConfirmarEliminacion(adjunto.id)} />
-      <QuejaNotasPanel open={panelNotas} folio={queja.folio} onClose={cerrarNotas} notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onRetry={() => { void refetchActividad() }} canEdit={canEdit} nota={nota} maxLength={DOCUMENT_LIMIT} saving={agregandoNota} onChange={value => { draftVersions.current.nota++; setNota(value) }} onAdd={handleAgregarNota}
+      <QuejaNotasPanel open={panelNotas} folio={queja.folio} currentUser={user ? { id: user.id, nombre: user.nombre } : undefined} onClose={cerrarNotas} notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onRetry={() => { void refetchActividad() }} canEdit={canEdit} nota={nota} maxLength={DOCUMENT_LIMIT} saving={agregandoNota} onChange={value => { draftVersions.current.nota++; setNota(value) }} onAdd={handleAgregarNota}
         puedeModificar={puedeModificarNota} menuId={notaMenu} editingId={notaEditando?.id ?? null} editValue={notaEdicion} deletingId={notaEliminar} operating={operandoNota}
         onToggleMenu={alternarMenuNota} onEdit={iniciarEdicionNota} onEditChange={setNotaEdicion} onCancelEdit={cancelarEdicionNota}
         onSaveEdit={() => notaEditando ? handleMutarNota(notaEditando) : undefined} onRequestDelete={setNotaEliminar} onCancelDelete={() => setNotaEliminar(null)} onConfirmDelete={confirmarEliminarNota} />
