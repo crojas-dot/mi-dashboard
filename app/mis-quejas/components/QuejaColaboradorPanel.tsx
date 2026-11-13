@@ -411,7 +411,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       </CaseWorkspace>
       <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
         adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
-        onRetry={() => { void refetchAdjuntos() }} canUpload={investigando && !resolutionPending}
+        onRetry={() => { void refetchAdjuntos() }} canUpload={investigando} uploadDisabled={resolutionPending}
         uploading={subiendoAdjuntoAnalisis} canDelete={adjunto => !resolutionPending && puedeEliminarAdjunto(adjunto)}
         onFiles={files => { void agregarAdjuntosAnalisis(files) }}
         onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
