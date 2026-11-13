@@ -10,7 +10,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
   const lanes = new Set()
   let cursor = 0, changed = false, tree, queja = null, closed = 0
   let uploading = false
-  const user = { id: 'owner', rol }
+  const user = { id: 'owner', rol, nombre: 'Colaborador de prueba' }
   const react = {
     useEffect() {}, useLayoutEffect() {}, useCallback: value => value,
     useRef(value) { const i = cursor++; slots[i] ??= { current: value }; return slots[i] },
@@ -445,7 +445,7 @@ test('notas y adjuntos comparten altura fija con lista de scroll y acciones ancl
   assert.equal(notes.props.size, 'lg')
   assert.equal(notes.props.fixedHeight, true)
   assert.ok(panel.nodes().find(node => node.props['data-investigation-notes-scroll']))
-  assert.ok(panel.button('Agregar nota'))
+  assert.ok(panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota'))
   notes.props.onClose(); panel.render()
   const openFiles = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis')
   openFiles.props.onClick(); panel.render()
@@ -455,6 +455,43 @@ test('notas y adjuntos comparten altura fija con lista de scroll y acciones ancl
   assert.ok(panel.nodes().find(node => node.props['data-attachment-list-scroll']))
   assert.ok(panel.nodes().find(node => node.props['data-investigation-files-drop']))
   assert.ok(panel.button('Agregar archivos'))
+})
+
+test('notas mantiene el botón de agregar dentro del campo y el autor en la cabecera', () => {
+  const panel = fixture({ actividad: [
+    { id: 'mine', queja_id: 'A', tipo: 'nota', usuario_id: 'owner', descripcion: 'Nota propia', created_at: '2026-11-11T18:00:00Z' },
+    { id: 'other', queja_id: 'A', tipo: 'nota', usuario_id: 'other', descripcion: 'Nota ajena', created_at: '2026-11-11T18:05:00Z' },
+  ] })
+  panel.select('A'); panel.openNotes()
+  const modal = panel.notesModal()
+  assert.equal(modal.props.title, 'Notas de investigación')
+  assert.equal(modal.props.titleSuffix, '2026-001')
+  assert.deepEqual(modal.props.currentUser, undefined)
+  const add = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota')
+  assert.ok(add)
+  assert.ok(add.props.className.includes('absolute right-3 bottom-3'))
+  assert.equal(add.props.disabled, true)
+  const authors = panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Colaborador de prueba')
+  assert.ok(authors.length > 0)
+  const names = panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Usuario del expediente')
+  assert.ok(names.length > 0)
+  const input = panel.nodes().find(node => node.type === 'textarea' && node.props['aria-label'] === 'Nueva nota de investigación')
+  input.props.onChange({ target: { value: 'Texto nuevo' } }); panel.render()
+  const enabled = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota')
+  assert.equal(enabled.props.disabled, false)
+})
+
+test('adjuntos conserva la zona inferior incluso sin permiso de carga, pero impide agregar', () => {
+  const panel = fixture({ rol: 'lector' })
+  panel.select('A'); panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis').props.onClick(); panel.render()
+  const modal = panel.nodes().find(node => node.type === 'Modal' && node.props.title === 'Adjuntos del análisis')
+  assert.equal(modal.props.titleSuffix, '2026-001')
+  const drop = panel.nodes().find(node => node.props['data-investigation-files-drop'])
+  assert.ok(drop)
+  assert.equal(panel.button('Agregar archivos').props.disabled, true)
+  const input = panel.nodes().find(node => node.type === 'input' && node.props['aria-label'] === 'Seleccionar adjuntos del análisis')
+  assert.equal(input.props.disabled, true)
+  assert.equal(modal.props.fixedHeight, true)
 })
 
 test('un refetch no sobrescribe el texto ni la versión capturada; conflicto conserva cambios', async () => {
@@ -543,12 +580,12 @@ test('la lectura de notas y archivos no concede escritura a un responsable ajeno
   const panel = fixture({ rol: 'lector' })
   panel.select('A', { resolucion: 'Documento registrado' })
   panel.openNotes()
-  assert.equal(panel.button('Agregar nota'), undefined)
+  assert.equal(panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota'), undefined)
   panel.notesModal().props.onClose(); panel.render()
   panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver adjuntos del análisis').props.onClick(); panel.render()
   const list = panel.nodes().find(node => node.type === 'Attachments')
   assert.ok(list.props.adjuntos.every(file => !list.props.puedeEliminar(file)))
-  assert.equal(panel.button('Agregar archivos'), undefined)
+  assert.equal(panel.button('Agregar archivos').props.disabled, true)
 })
 
 test('las notas propias se editan o eliminan desde el menú; las ajenas y la devolución no', async () => {
