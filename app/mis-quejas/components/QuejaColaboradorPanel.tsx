@@ -84,13 +84,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   } = useQuejaAssistant(queja?.id ?? null, scope)
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId)
-  const { data: devolucionesPersistidas = [] } = useQuejaDevoluciones(quejaId, investigando)
   const crearActividad = useCrearQuejaActividad()
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const estado = queja?.estado ?? ''
   const canEdit = !!queja && !!user && (user.rol === 'admin' || user.rol === 'calidad' || user.rol === 'colaborador' && queja.responsable_id === user.id)
   const investigando = estado === 'En Investigación' && canEdit
+  const { data: devolucionesPersistidas = [] } = useQuejaDevoluciones(quejaId, investigando)
   const { data: borradorRemoto, isFetching: cargandoBorrador, error: errorBorrador, refetch: recargarBorrador } = useQuejaResolucionDraft(quejaId, investigando)
   const resolutionDirty = borradorGuardado ? resolucion !== borradorGuardado.contenido || resolucionFormato !== borradorGuardado.formato : !!resolucion.trim()
   const resolutionSaved = !!borradorGuardado && !resolutionDirty
