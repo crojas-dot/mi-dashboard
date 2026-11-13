@@ -262,10 +262,18 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         </section>
       </div>}
     </Modal>
-    {editingReport && <QuejaInformeModal queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }} anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)} onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Pulsá «Generar expediente» para preparar el archivo oficial cuando lo necesités.'); } }} />}
-    {previewReport && report && <Modal open onClose={() => setPreviewReport(false)} title={'Vista previa del informe · ' + snapshot.folio} size="xl" variant="document"><div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg p-4"><div className="mx-auto max-w-4xl bg-qms-surface p-5 sm:p-10"><RichTextContent value={report.contenido} format="markdown" /></div></div></Modal>}
+    {editingReport && <QuejaInformeModal
+      queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }}
+      anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)}
+      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Prepará su PDF desde el editor cuando esté listo.'); } }}
+      onPreparePdf={props.onSubir}
+      onPdfPrepared={file => { if (reportIsCurrent.current() && esPdfOficial(file, snapshot.id)) {
+        setUploaded(current => [...current, file])
+        change({ adjuntoId: file.id })
+        setNotice('PDF preparado y seleccionado para la comunicación al cliente.')
+      } }} />}
     <AdjuntoPreviewModal adjunto={previewFile} onClose={() => setPreviewFile(null)} />
-    <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{usingInforme ? 'el Word del informe guardado' : selectedFile?.nombre}</strong>. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}
+    <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{selectedFile?.nombre}</strong> en formato PDF. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}
       confirmLabel="Publicar respuesta" loading={busy === 'publish'} onCancel={() => setConfirmPublish(false)} onConfirm={() => { void write('publish') }} />
     <ConfirmDialog open={confirmClose} title="Borrador sin guardar" message="Hay cambios pendientes. Volvé al formulario para guardarlos o cerrá descartando estas ediciones." confirmLabel="Descartar cambios" danger onCancel={() => setConfirmClose(false)} onConfirm={props.onClose} />
   </>
