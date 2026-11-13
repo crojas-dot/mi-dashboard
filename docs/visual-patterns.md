@@ -138,13 +138,18 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   al desplazar. Al ampliar no se añade ese marco ni margen. El expediente comienza con Descripción, sin el resumen
   superior de resultado ni la etiqueta Cliente encima;
   Mis Quejas prioriza Resolución en una tarjeta central amplia, sin bloques debajo.
-  Al ampliar Mis Quejas, `CaseWorkspace readingLayout` limita el conjunto de tres
-  columnas a 1500px, deja 24px entre columnas, adapta los laterales a 240/270px
-  desde 1100px útiles y 280/300px desde 1360px, y centra el texto de la resolución
-  en un ancho útil máximo de 768px sin alterar el editor ni su barra sticky.
-  En el lateral contraído y en Quejas se conserva la geometría anterior.
+  Al ampliar Quejas o Mis Quejas, `CaseWorkspace readingLayout` limita el conjunto
+  de tres columnas a 1500px, deja 24px entre columnas y adapta los laterales a
+  240/270px desde 1100px útiles y 280/300px desde 1360px. Los párrafos se centran
+  en un ancho máximo de `70ch` (aproximación tipográfica, no 70 caracteres exactos)
+  sin achicar el marco ni la barra de edición. En el lateral contraído se conserva
+  la geometría anterior.
   Notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver notas
-  abre un diálogo centrado (`variant="dialog"`) con lectura y alta. En contraído sigue
+  abre un diálogo centrado (`variant="dialog" size="lg" fixedHeight`) con lectura
+  y alta. Notas y Adjuntos usan hasta 600px de alto (90dvh en pantallas bajas);
+  solo la lista central se desplaza, el encabezado y la zona inferior permanecen fijos.
+  La nueva nota se escribe en el pie y el selector de archivos está en el pie
+  del diálogo de adjuntos; no se remonta ni se borra el borrador de resolución. En contraído sigue
   visible sin mostrar el contacto. Adjuntar está en el encabezado, a la izquierda de
   Guardar/Editar, y abre el selector directamente. Los adjuntos se listan bajo el
   lienzo con `ListaAdjuntos layout="cards"`, también al editar, sin sheet aparte.
@@ -160,7 +165,9 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
 - En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
   ampliar el documento. Resolución se edita en la página, con Guardar junto a Asistencia
   secundaria; Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
-  Guardar es azul solo con cambios. Tras confirmación muestra check y Guardado neutral
+  Guardar es azul solo con cambios. Cancelar abandona la edición, descarta únicamente
+  los cambios sin guardar y restaura el borrador persistido sin enviarlo.
+  Tras confirmación muestra check y Guardado neutral
   deshabilitado, con fecha real en su título; no hay autoguardado ficticio.
   El lienzo mide hasta 720px de alto (70dvh, mínimo 420px), sin reducir la columna central.
   El envío queda siempre en Acción actual; no se duplica al pie del editor.
