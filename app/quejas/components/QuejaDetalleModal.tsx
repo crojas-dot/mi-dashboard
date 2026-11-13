@@ -588,7 +588,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
     {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id + (respuestaNoProcede ? ':rejected' : ':approved')} queja={respuestaCase} noProcede={respuestaNoProcede} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
       onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); if (!completed) setDecisionOpen(true) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
-    {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'} onClose={() => setInformeOpen(false)} />}
+    {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'}
+      onPreparePdf={handleSubirAdjunto} onClose={() => setInformeOpen(false)} />}
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
   </>
 }
