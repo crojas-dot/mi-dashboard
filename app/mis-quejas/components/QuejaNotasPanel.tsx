@@ -63,7 +63,7 @@ export default function QuejaNotasPanel(props: Props) {
     document.addEventListener('pointerdown', outside, true)
     return () => document.removeEventListener('pointerdown', outside, true)
   }, [menuId, onToggleMenu])
-  return <Modal open={props.open} onClose={props.onClose} title={`Notas de investigación · ${props.folio}`} variant="dialog" size="lg" fixedHeight
+  return <Modal open={props.open} onClose={props.onClose} title={`Notas de investigación · ${props.folio}`} variant="dialog" size="lg" fixedHeight headerLeading={<NotebookPen aria-hidden="true" className="size-4 text-qms-muted" />}
     footer={props.canEdit && <div className="min-w-0">
       <label htmlFor="investigation-note" className="mb-2 block text-sm font-medium">Nueva nota</label>
       <div className="relative">
