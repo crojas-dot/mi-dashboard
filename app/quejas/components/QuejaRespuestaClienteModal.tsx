@@ -6,7 +6,6 @@ import { Eye, FileText, Paperclip, Reply, Send, Trash2, Upload, X, Pencil } from
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import Select from '@/components/ui/Select'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import QuejaCorreoEditor from '@/app/quejas/components/QuejaCorreoEditor'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
@@ -195,10 +194,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
               <Button data-response-publish size="sm" disabled={disabled || props.archivosLoading || props.archivosError} loading={busy === 'publish'} onClick={requestPublish}>
                 <Send aria-hidden="true" className="size-4" />Publicar respuesta
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Subir PDF" title="Subir PDF" disabled={disabled}
-                onClick={() => fileInputRef.current?.click()}>
-                <Paperclip aria-hidden="true" className="size-4" />
-              </Button>
+              
             </div>
             <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-2">
               <Button size="sm" variant="ghost" disabled={disabled} onClick={close}><Trash2 aria-hidden="true" className="size-4" />Descartar</Button>
@@ -214,43 +210,33 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         {initial.borrador?.correo_asunto && <p className="text-sm"><span className="font-medium">Asunto: </span>{initial.borrador.correo_asunto}</p>}
         <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{initial.borrador?.correo_cuerpo ?? initial.publicada.respuesta}</p>
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
-      </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-qms-surface">
+      </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
         {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
         <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
           destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
           onOficioChange={value => change({ numeroOficio: value })}
           correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
-        <section data-response-attachments aria-label="Adjuntos del correo" className="mt-3 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-6 sm:mt-5 sm:px-8 sm:py-7">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-qms-muted uppercase"><Paperclip aria-hidden="true" className="size-4" />Adjuntos seleccionados</h3>
-            <span className="text-xs text-qms-muted">Documento final en PDF</span>
-          </div>
+        </div>
+        <section data-response-attachments aria-label="Adjuntos del correo" className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8 sm:py-4">
           <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <label htmlFor={'respuesta-documento-' + snapshot.id} className="sr-only">Seleccionar PDF oficial del expediente</label>
-            <Select id={'respuesta-documento-' + snapshot.id} value={selectedFile?.id ?? ''}
-              disabled={disabled || props.archivosLoading || props.archivosError} wrapperClassName="min-w-0 flex-1 basis-56"
-              onChange={event => change({ adjuntoId: event.target.value || null })}>
-              <option value="">Seleccionar PDF oficial</option>
-              {[...files].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(file =>
-                <option key={file.id} value={file.id}>{file.nombre}</option>)}
-            </Select>
             <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
               <Upload aria-hidden="true" className="size-4" />Subir archivo
             </Button>
-            <Button size="sm" variant="secondary" disabled={!selectedFile || disabled} onClick={() => setPreviewFile(selectedFile)}>
-              <Eye aria-hidden="true" className="size-4" />Visualizar
-            </Button>
+            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
+              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}
+                className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
+              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onClick={() => setPreviewFile(selectedFile)}
+                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
+              <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
+                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
+                onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
+            </div>}
+            {!selectedFile && <p className="text-xs text-qms-muted">Adjuntá el PDF oficial para poder publicar.</p>}
             <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
               disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
           </div>
-          {selectedFile && <div data-response-selected-file className="mt-4 inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 shadow-sm">
-            <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
-            <button type="button" title={'Previsualizar ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}
-              className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[480px]">{selectedFile.nombre}</button>
-            <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
-              className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
-              onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
-          </div>}
           {noProcede && <div className="mt-4 border-t border-qms-border/60 pt-3">
             <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
               const visit = scope.capture(), context = scope.captureContext()
