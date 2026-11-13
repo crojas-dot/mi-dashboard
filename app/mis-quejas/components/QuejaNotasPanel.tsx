@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { ChevronRight, MoreVertical, NotebookPen, Pencil, Send, Trash2 } from 'lucide-react'
+import { ChevronRight, MoreVertical, NotebookPen, Pencil, Plus, Trash2 } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
@@ -63,16 +63,19 @@ export default function QuejaNotasPanel(props: Props) {
     document.addEventListener('pointerdown', outside, true)
     return () => document.removeEventListener('pointerdown', outside, true)
   }, [menuId, onToggleMenu])
-  return <Modal open={props.open} onClose={props.onClose} title={`Notas · ${props.folio}`} variant="dialog" size="md"
-    footer={props.canEdit && <div>
+  return <Modal open={props.open} onClose={props.onClose} title={`Notas de investigación · ${props.folio}`} variant="dialog" size="lg" fixedHeight
+    footer={props.canEdit && <div className="min-w-0">
       <label htmlFor="investigation-note" className="mb-2 block text-sm font-medium">Nueva nota</label>
-      <textarea id="investigation-note" aria-label="Nueva nota de investigación" rows={3} maxLength={props.maxLength} placeholder="Registrá un avance o comentario de tu investigación..." className="ui-textarea w-full px-3 py-2 text-sm" value={props.nota} disabled={props.saving} onChange={event => props.onChange(event.target.value)} />
-      <div className="mt-3 flex justify-end"><Button size="sm" onClick={props.onAdd} disabled={!props.nota.trim() || props.saving} loading={props.saving}><Send aria-hidden="true" className="size-4" />Agregar nota</Button></div>
+      <div className="relative">
+        <textarea id="investigation-note" aria-label="Nueva nota de investigación" rows={2} maxLength={props.maxLength} placeholder="Registrá un avance o comentario de tu investigación..." className="ui-textarea w-full resize-none px-3 py-2 pr-14 text-sm" value={props.nota} disabled={props.saving} onChange={event => props.onChange(event.target.value)} />
+        <Button size="icon" aria-label="Agregar nota" title="Agregar nota" className="absolute right-2 bottom-2 size-9!" onClick={props.onAdd} disabled={!props.nota.trim() || props.saving} loading={props.saving}><Plus aria-hidden="true" className="size-4" /></Button>
+      </div>
     </div>}>
-    {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol data-investigation-notes-scroll className="space-y-3">{props.notas.map(item => {
+    <div data-investigation-notes-scroll role="region" aria-label="Lista de notas de investigación" tabIndex={0} className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+    {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol className="space-y-3">{props.notas.map(item => {
       const editable = props.puedeModificar(item)
       const editing = props.editingId === item.id
-      return <li key={item.id} data-investigation-note className="rounded-card border border-qms-border bg-qms-surface p-3">
+      return <li key={item.id} data-investigation-note className="rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
         <div className="flex items-start justify-between gap-2">
           <time className="text-xs text-qms-muted" dateTime={item.created_at}>{caseDate(item.created_at)}</time>
           {editable && !editing && <div ref={props.menuId === item.id ? menuRef : undefined} className="relative -mt-1 -mr-1">
@@ -90,5 +93,6 @@ export default function QuejaNotasPanel(props: Props) {
         </div> : <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{item.descripcion}</p>}
       </li>
     })}</ol> : <p className="text-sm text-qms-muted">Sin notas todavía</p>}
+    </div>
   </Modal>
 }
