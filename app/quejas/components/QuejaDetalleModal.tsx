@@ -36,7 +36,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText } from 'lucide-react'
+import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, X, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
@@ -66,6 +66,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [decisionOpen, setDecisionOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [motivoDevolucion, setMotivoDevolucion] = useState('')
+  const [adjuntosDevolucion, setAdjuntosDevolucion] = useState<QuejaAdjunto[]>([])
+  const [errorAdjuntoDevolucion, setErrorAdjuntoDevolucion] = useState('')
+  const inputDevolucionRef = useRef<HTMLInputElement>(null)
   const [respuestaCase, setRespuestaCase] = useState<Queja | null>(null)
   const [respuestaNoProcede, setRespuestaNoProcede] = useState(false)
 
@@ -139,6 +142,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setDecisionOpen(false)
     setReviewOpen(false)
     setMotivoDevolucion('')
+    setAdjuntosDevolucion([])
+    setErrorAdjuntoDevolucion('')
     setRespuestaCase(null)
     setRespuestaNoProcede(false)
     setJustificacion('')
@@ -369,11 +374,21 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     return runCaseUpdate(() => actualizarRegistroQueja(captured), 'Área afectada guardada', 'No se pudo guardar el área afectada', () => setRegistroDraft(null), setGuardandoRegistro)
   }
 
+  const subirSoporteDevolucion = async (file: File) => {
+    setErrorAdjuntoDevolucion('')
+    const adjunto = await handleSubirAdjunto(file)
+    if (adjunto && adjunto.queja_id === queja.id) {
+      setAdjuntosDevolucion(current => [...current, adjunto])
+    } else {
+      setErrorAdjuntoDevolucion('No se pudo registrar el archivo. Revisá el expediente antes de continuar.')
+    }
+  }
+
   const handleDevolverInvestigacion = () => {
     if (!motivoDevolucion.trim()) { showError(null, 'Escribí el motivo de devolución.'); return }
     return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion),
       'Queja devuelta a investigación', 'No se pudo devolver la queja',
-      () => { setReviewOpen(false); setMotivoDevolucion(''); void refetchActividad() })
+      () => { setReviewOpen(false); setMotivoDevolucion(''); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); void refetchActividad() })
   }
 
   const handleDerivarSACP = async () => {
@@ -474,7 +489,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   // Mantener un alto mínimo común y dejar que los botones crezcan si el texto envuelve.
   const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
   const workflowActions = canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
-    <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
+    <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
@@ -521,7 +536,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       </CaseWorkspace>
     </Modal>
 
-    <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size="xl" variant="document" height={reviewOpen ? 'content' : 'fill'} dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
+    <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
       headerActions={decisionOpen && decisionProcedencia ? <>
         {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
         <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label={`Cambiar decisión: ${decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}`} title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>{decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}</Button>
@@ -530,7 +545,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       {!reviewOpen && <Button variant="ghost" onClick={decisionOpen ? volverAElegirDecision : closeEditor} disabled={workflowPending}>Cancelar</Button>}
       {decisionOpen && decisionProcedencia && <Button variant={decisionProcedencia === 'no_procede' ? 'danger' : 'primary'} disabled={workflowPending || (decisionProcedencia === 'procede' ? usuariosLoading || !!usuariosError : !publicacionVerificada)} onClick={decisionProcedencia === 'procede' ? handleGuardarProcede : handleGuardarNoProcede} loading={loading}>{decisionProcedencia === 'no_procede' && publicacionDisponible ? 'Publicar no procedencia' : 'Guardar'}</Button>}
       {resolucionAbierta && <Button onClick={handleConfirmarResolucion} loading={loading} disabled={workflowPending || !publicacionVerificada}>{publicacionDisponible ? 'Publicar y resolver' : 'Confirmar resolución'}</Button>}
-      {reviewOpen && <><Button variant="secondary" onClick={closeEditor} disabled={workflowPending}>Cancelar devolución</Button><Button onClick={handleDevolverInvestigacion} loading={loading} disabled={workflowPending}>Confirmar devolución</Button></>}
+      {reviewOpen && <><Button variant="secondary" onClick={closeEditor} disabled={workflowPending}>Cancelar devolución</Button><Button onClick={handleDevolverInvestigacion} loading={loading} disabled={workflowPending || !motivoDevolucion.trim() || !!errorAdjuntoDevolucion}>Confirmar devolución</Button></>}
       {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo}>Confirmar reapertura</Button>}
     </div>}>
       <div className="flex min-h-0 flex-1 flex-col bg-qms-surface select-text">
@@ -564,9 +579,37 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           {!publicacionDisponible && <div className="h-[108px] shrink-0 overflow-y-auto border-t border-qms-border px-4 py-3"><Field id={'queja-oficio-resolucion-' + queja.id} label="N.º de oficio de resolución"><Input id={'queja-oficio-resolucion-' + queja.id} required maxLength={REGISTRO_QUEJA_LIMITES.oficio} value={oficioWorkflow} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setOficioWorkflow(event.target.value) }} /></Field></div>}
 
         </>}
-        {reviewOpen && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
-          <Field id={'queja-devolucion-' + queja.id} label="Motivo de devolución"><textarea id={'queja-devolucion-' + queja.id} required maxLength={10000} rows={4} className="ui-textarea w-full px-3 py-2 text-base" value={motivoDevolucion} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoDevolucion(event.target.value) }} /><p className="mt-2 text-xs text-qms-muted">El motivo quedará registrado. Se conserva el plazo de investigación original.</p></Field>
-        </div>}
+        {reviewOpen && <div data-quality-return-compose className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-5 py-5 sm:px-8 sm:py-7">
+            <div className="mb-5 flex gap-3 rounded-card border border-qms-warning/30 bg-soft-amber-bg p-3 text-sm leading-relaxed text-soft-amber-text">
+              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+              <p>El motivo quedará registrado en el historial. Se conserva la propuesta y el plazo original de investigación.</p>
+            </div>
+            <label htmlFor={'queja-devolucion-' + queja.id} className="mb-3 text-sm font-semibold text-qms-dark">Motivo de devolución <span className="text-qms-danger">*</span></label>
+            <textarea id={'queja-devolucion-' + queja.id} required maxLength={10000} rows={8}
+              className="min-h-[16rem] w-full flex-1 resize-y rounded-card border border-qms-border bg-qms-surface p-4 text-base leading-relaxed text-qms-dark outline-none focus:border-qms-primary focus-visible:ring-1 focus-visible:ring-qms-primary disabled:opacity-60"
+              placeholder="Explicá qué debe corregir o ampliar el responsable…" value={motivoDevolucion} disabled={workflowPending}
+              onChange={event => { draftVersions.current.workflow++; setMotivoDevolucion(event.target.value) }} />
+            <p className="mt-2 text-right text-xs text-qms-muted">{motivoDevolucion.length} / 10.000</p>
+          </div>
+          <section aria-label="Documentos de soporte" className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-4 sm:px-8">
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" disabled={workflowPending} onClick={() => inputDevolucionRef.current?.click()}
+                className="inline-flex min-h-10 items-center gap-2 rounded-button border border-dashed border-qms-border bg-qms-surface px-4 text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary hover:text-qms-primary disabled:opacity-50">
+                <Paperclip aria-hidden="true" className="size-4" />{subiendoAdjunto ? 'Subiendo…' : 'Adjuntar soporte'}
+              </button>
+              <input ref={inputDevolucionRef} type="file" aria-label="Adjuntar archivo de soporte" className="sr-only" disabled={workflowPending}
+                onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void subirSoporteDevolucion(file) }} />
+              {adjuntosDevolucion.map(file => <div key={file.id} className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm">
+                <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />
+                <span className="max-w-[180px] truncate sm:max-w-[280px]" title={file.nombre}>{file.nombre}</span>
+                <button type="button" onClick={() => setPreviewAdjunto(file)} aria-label={'Previsualizar ' + file.nombre} title="Previsualizar"><Eye aria-hidden="true" className="size-4 text-qms-muted hover:text-qms-primary" /></button>
+              </div>)}
+            </div>
+            <p className="mt-2 text-xs text-qms-muted">Los archivos se guardan en el expediente al subirlos, incluso si cancelás la devolución.</p>
+            {errorAdjuntoDevolucion && <p role="alert" className="mt-2 text-sm text-qms-danger">{errorAdjuntoDevolucion}</p>}
+          </section>
+        </div>
         {reaperturaAbierta && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
           <p className="text-sm text-qms-muted">La queja vuelve a investigación con un nuevo plazo. El motivo quedará registrado.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} placeholder="Motivo de la reapertura..." rows={5} className="ui-textarea w-full px-3 py-2 text-base" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
         </div>}
