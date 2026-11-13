@@ -195,8 +195,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
               <Button data-response-publish size="sm" disabled={disabled || props.archivosLoading || props.archivosError} loading={busy === 'publish'} onClick={requestPublish}>
                 <Send aria-hidden="true" className="size-4" />Publicar respuesta
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Elegir adjunto" title="Elegir adjunto" disabled={disabled}
-                aria-expanded={showDocumentPicker} onClick={() => setShowDocumentPicker(value => !value)}>
+              <Button variant="ghost" size="icon" aria-label="Subir PDF" title="Subir PDF" disabled={disabled}
+                onClick={() => fileInputRef.current?.click()}>
                 <Paperclip aria-hidden="true" className="size-4" />
               </Button>
             </div>
@@ -206,8 +206,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
             </div>
           </>}
       </div>}>
-      {notice && <p role="status" className="shrink-0 border-b border-qms-border bg-qms-surface px-4 py-2 text-sm text-qms-success sm:px-6">{notice}</p>}
-      {initial.publicada ? <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-qms-surface p-5 sm:p-6">
+      {notice && <p role="status" className="shrink-0 border-b border-qms-border bg-qms-surface px-5 py-2.5 text-sm text-qms-success sm:px-8">{notice}</p>}
+      {initial.publicada ? <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-qms-surface p-6 sm:p-8">
         <p className="text-sm text-qms-muted">La respuesta ya fue publicada el {caseDate(initial.publicada.publicado_at)}. Se conserva en modo de lectura.</p>
         {error && <p role="alert" className="text-sm text-qms-danger">{error}</p>}
         <h3 className="text-base font-medium">{initial.borrador?.correo_cuerpo ? 'Correo de acompañamiento' : 'Respuesta publicada'}</h3>
@@ -215,65 +215,51 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{initial.borrador?.correo_cuerpo ?? initial.publicada.respuesta}</p>
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
       </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-qms-surface">
-        {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-4 py-3 text-sm text-qms-danger sm:px-6">{error}</div>}
-        <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id} destinatario={snapshot.email_cliente ?? ''} correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
-        <div data-response-attachments className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-4 py-4 sm:px-6">
-          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
-            <label htmlFor={'respuesta-oficio-' + snapshot.id} className="shrink-0 text-xs font-medium text-qms-muted">N.º de oficio</label>
-            <input id={'respuesta-oficio-' + snapshot.id} value={form.numeroOficio} required maxLength={120} disabled={disabled}
-              className="min-w-0 flex-1 border-b border-qms-border bg-transparent px-1 py-1 text-sm text-qms-dark outline-none focus-visible:border-qms-primary disabled:opacity-65"
-              placeholder="Oficio oficial de ECA" onChange={event => change({ numeroOficio: event.target.value })} />
+        {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
+        <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
+          destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
+          onOficioChange={value => change({ numeroOficio: value })}
+          correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
+        <section data-response-attachments aria-label="Adjuntos del correo" className="mt-3 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-6 sm:mt-5 sm:px-8 sm:py-7">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-qms-muted uppercase"><Paperclip aria-hidden="true" className="size-4" />Adjuntos seleccionados</h3>
+            <span className="text-xs text-qms-muted">Documento final en PDF</span>
           </div>
-          <div className="mb-2 flex items-center gap-2">
-            <Paperclip aria-hidden="true" className="size-3.5 text-qms-muted" />
-            <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Adjuntos seleccionados</h3>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {selectedFile && !usingInforme && <div data-response-selected-file className="inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm shadow-sm">
-              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
-              <button type="button" className="min-w-0 max-w-[240px] cursor-pointer truncate font-medium text-qms-dark hover:text-qms-primary sm:max-w-[420px]"
-                title={'Vista previa de ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}>{selectedFile.nombre}</button>
-              <button type="button" aria-label="Quitar adjunto seleccionado" title="Quitar adjunto" disabled={disabled}
-                className="ml-1 inline-flex size-5 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
-                onClick={() => { change({ adjuntoId: null }); setShowDocumentPicker(true) }}><X aria-hidden="true" className="size-3.5" /></button>
-            </div>}
-            {usingInforme && report && <span className="inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-xs text-qms-muted">
-              <FileText aria-hidden="true" className="size-4 shrink-0" />
-              Informe guardado · pendiente de generar archivo
-            </span>}
-            {!selectedFile && !usingInforme && <span className="text-sm text-qms-muted">Sin documento oficial seleccionado.</span>}
-            <button type="button" aria-expanded={showDocumentPicker} aria-controls={'respuesta-documentos-' + snapshot.id}
-              onClick={() => setShowDocumentPicker(value => !value)} disabled={disabled}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-button border border-dashed border-qms-border px-3 py-2 text-xs font-medium text-qms-muted transition-colors hover:border-qms-primary hover:bg-qms-primary-soft hover:text-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-              <Plus aria-hidden="true" className="size-3.5" />Cambiar o subir archivo
-            </button>
-            <Button data-response-generate size="sm" variant="secondary" disabled={disabled || props.archivosLoading || props.archivosError}
-              loading={busy === 'generate'} onClick={() => { void generarExpediente() }}><FileText aria-hidden="true" className="size-4" />Generar expediente</Button>
-          </div>
-          {showDocumentPicker && <div id={'respuesta-documentos-' + snapshot.id} className="mt-3 flex min-w-0 flex-wrap items-center gap-2 border-t border-qms-border pt-3">
-            <label htmlFor={'respuesta-documento-' + snapshot.id} className="text-xs text-qms-muted">Documento oficial</label>
-            <Select id={'respuesta-documento-' + snapshot.id} value={usingInforme ? 'informe' : form.adjuntoId ?? ''}
-              disabled={disabled || props.archivosLoading || props.archivosError} wrapperClassName="min-w-0 flex-1 basis-52"
-              onChange={event => { const value = event.target.value; if (value === 'informe') { setUsingInforme(true); change({ adjuntoId: null }) } else { setUsingInforme(false); change({ adjuntoId: value || null }) } }}>
-              <option value="">Seleccionar documento</option>
-              {report && <option value="informe">Informe guardado · generar Word</option>}
-              {[...files].sort((a, b) => Number(b.tipo_mime === 'application/pdf') - Number(a.tipo_mime === 'application/pdf')).map(file => <option key={file.id} value={file.id}>{file.nombre}</option>)}
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <label htmlFor={'respuesta-documento-' + snapshot.id} className="sr-only">Seleccionar PDF oficial del expediente</label>
+            <Select id={'respuesta-documento-' + snapshot.id} value={selectedFile?.id ?? ''}
+              disabled={disabled || props.archivosLoading || props.archivosError} wrapperClassName="min-w-0 flex-1 basis-56"
+              onChange={event => change({ adjuntoId: event.target.value || null })}>
+              <option value="">Seleccionar PDF oficial</option>
+              {[...files].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(file =>
+                <option key={file.id} value={file.id}>{file.nombre}</option>)}
             </Select>
-            <label className={'ui-button ui-button-secondary ui-button-sm ' + (disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
-              <Upload aria-hidden="true" className="size-4" />Subir
-              <input type="file" aria-label="Adjuntar documento oficial" className="sr-only" disabled={disabled}
-                onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
-            </label>
-            <Button variant="secondary" size="sm" disabled={disabled || (usingInforme ? !report?.contenido.trim() : !selectedFile)}
-              onClick={() => { if (usingInforme) setPreviewReport(true); else setPreviewFile(selectedFile) }}><Eye aria-hidden="true" className="size-4" />Visualizar</Button>
-            <Button variant="secondary" size="sm" disabled={disabled || !report} onClick={() => {
+            <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
+              <Upload aria-hidden="true" className="size-4" />Subir archivo
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!selectedFile || disabled} onClick={() => setPreviewFile(selectedFile)}>
+              <Eye aria-hidden="true" className="size-4" />Visualizar
+            </Button>
+            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
+              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+          </div>
+          {selectedFile && <div data-response-selected-file className="mt-4 inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 shadow-sm">
+            <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+            <button type="button" title={'Previsualizar ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}
+              className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[480px]">{selectedFile.nombre}</button>
+            <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
+              className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
+              onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
+          </div>}
+          {noProcede && <div className="mt-4 border-t border-qms-border/60 pt-3">
+            <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
               const visit = scope.capture(), context = scope.captureContext()
               reportIsCurrent.current = () => visit() && context()
               setEditingReport(true)
-            }}><Pencil aria-hidden="true" className="size-4" />Editar informe</Button>
+            }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
           </div>}
-          {props.archivosError && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
-        </div>
+          {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
+        </section>
       </div>}
     </Modal>
     {editingReport && <QuejaInformeModal queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }} anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)} onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Pulsá «Generar expediente» para preparar el archivo oficial cuando lo necesités.'); } }} />}
