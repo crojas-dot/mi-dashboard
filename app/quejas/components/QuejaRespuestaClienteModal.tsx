@@ -280,7 +280,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
             </label>
             <Button variant="secondary" size="sm" disabled={disabled || (usingInforme ? !report?.contenido.trim() : !selectedFile)}
               onClick={() => { if (usingInforme) setPreviewReport(true); else setPreviewFile(selectedFile) }}><Eye aria-hidden="true" className="size-4" />Visualizar</Button>
-            <Button variant="secondary" size="sm" disabled={disabled} onClick={() => {
+            <Button variant="secondary" size="sm" disabled={disabled || !report} onClick={() => {
               const visit = scope.capture(), context = scope.captureContext()
               reportIsCurrent.current = () => visit() && context()
               setEditingReport(true)
