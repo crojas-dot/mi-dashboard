@@ -326,9 +326,21 @@ el lienzo central. El ancho real se alinea descontando el gutter del scrollport
 con `--qms-case-scrollbar-width`. El encabezado de modal conserva las acciones
 específicas de navegación, no las acciones secundarias del expediente.
 
-En Mis Quejas, **Adjuntos del análisis** antecede a **Notas de investigación**
-en el lateral izquierdo. En Quejas, **Generar expediente** (solo personal autorizado)
-y **Historial y observaciones** aparecen como accesos laterales bajo los datos
-del cliente, conservando sus diálogos, permisos y operaciones. Las tarjetas de
-acceso utilizan el patrón visual compartido de `CaseSidebarShortcut`, sin añadir
-nuevos scrolls ni duplicar acciones.
+En Mis Quejas, **Mis adjuntos** antecede a **Mis notas** en el lateral
+izquierdo. En Quejas, **Generar expediente** solo se ofrece al personal autorizado
+durante **Resuelto** (preparación del cierre), como tarjeta Documento del expediente
+con acción azul suave. **Historial y observaciones** conserva el acceso compartido
+`CaseSidebarShortcut` en todas las etapas sin duplicar acciones.
+
+En **Respuesta al cliente**, el compositor es de lectura/escritura continua estilo
+Gmail: encabezado con folio, Para inalterable, Asunto en línea, mensaje blanco sin
+marcos internos, número de oficio, chips de adjuntos y pie fijo con Publicar respuesta,
+Descartar y Guardar borrador. El diálogo usa `Modal size="mail"` (896px máx. y
+90dvh) sin afectar otros modales; en móvil los controles se redistribuyen.
+**Generar expediente** es un clic explícito: si no existe informe guardado abre
+`QuejaInformeModal` para prepararlo; si existe, convierte esa versión a Word y sube
+el archivo. Guarda qué versión generó para reutilizarla y evitar duplicaciones.
+**Guardar borrador** solo persiste datos y **Publicar respuesta** exige el archivo
+ya generado o seleccionado; ninguno invoca conversión Word ni subidas implícitas.
+No Procede mantiene el mismo compositor y sus permisos/confirmaciones vigentes.
+La publicación se sigue realizando solo por acción explícita del usuario.

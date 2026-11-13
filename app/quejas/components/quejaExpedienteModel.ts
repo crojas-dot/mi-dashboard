@@ -11,7 +11,7 @@ export const CASE_ACTIONS: Record<string, { step: number; title: string; detail:
   Recibido: { step: 1, title: 'Evaluar procedencia', detail: 'Revisá la solicitud y asigná responsable si procede.', action: 'Tomar decisión' },
   'En Investigación': { step: 2, title: 'Investigar la queja', detail: 'Documentá los hallazgos, la resolución y su oficio.', action: 'Resolver' },
   'Pendiente de Revisión GC': { step: 3, title: 'Revisar la conclusión', detail: 'Aprobá la propuesta o devolvela para ajustes.', action: 'Aprobar y continuar' },
-  Resuelto: { step: 4, title: 'Preparar informe para el cliente', detail: 'Editá el informe y elegí el documento que recibirá el cliente.', action: 'Respuesta al cliente' },
+  Resuelto: { step: 4, title: 'Preparar respuesta al cliente', detail: 'Generá el expediente y redactá el correo final.', action: 'Redactar respuesta' },
   Finalizado: { step: 5, title: 'Expediente finalizado', detail: 'El expediente conserva sus evidencias y seguimiento.', action: '' },
   'No Procede': { step: 5, title: 'No procedencia registrada', detail: 'Se conserva la justificación y el oficio explicativo.', action: '' },
 }

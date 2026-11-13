@@ -551,7 +551,7 @@ function complaintPanelFixture() {
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
   return { render, nodes, closed: () => closed,
-    select(id) { entity = id ? { id, folio: '2026-001', revision: 1, estado: 'Recibido', cliente_nombre: 'Persona de prueba' } : null; render() },
+    select(id, estado = 'Recibido') { entity = id ? { id, folio: '2026-001', revision: 1, estado, cliente_nombre: 'Persona de prueba' } : null; render() },
     workspace: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace'),
     editor: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'document'),
     button: label => nodes().find(node => node.type === 'Button' && (node.props['aria-label'] === label || text(node) === label)),
@@ -571,17 +571,49 @@ test('cerrar el expediente ampliado y volver a abrirlo restablece el panel later
   assert.equal(panel.workspace().props.expanded, false)
 })
 
-test('Quejas reutiliza las tarjetas laterales para generar expediente e historial', () => {
+test('Quejas ofrece Generar expediente solo al preparar el cierre tras revisión de Calidad', () => {
   const panel = complaintPanelFixture()
   panel.select('test-A')
   const workspace = panel.nodes().find(node => node.type?.name === 'CaseWorkspace')
   assert.equal(workspace.props.cyclePlacement, 'header')
   assert.ok(panel.workspace().props.headerCenter)
+  assert.equal(panel.nodes().some(node => node.props['data-close-report-shortcut']), false)
+  assert.equal(panel.button('Generar expediente'), undefined)
   const cards = panel.nodes().filter(node => node.type?.name === 'CaseSidebarShortcut')
-  assert.deepEqual(cards.map(card => card.props.actionLabel), ['Generar expediente', 'Ver actividad'])
-  assert.ok(cards.every(card => card.props.icon && card.props.onClick))
+  assert.deepEqual(cards.map(card => card.props.actionLabel), ['Ver actividad'])
+  panel.select('test-A', 'Pendiente de Revisión GC')
+  assert.equal(panel.button('Generar expediente'), undefined)
+  panel.select('test-A', 'En Investigación')
+  assert.equal(panel.button('Generar expediente'), undefined)
+  panel.select('test-A', 'Resuelto')
+  assert.ok(panel.nodes().some(node => node.props['data-close-report-shortcut']))
+  assert.ok(panel.button('Generar expediente'))
+  assert.ok(panel.button('Redactar respuesta'))
+  panel.button('Generar expediente').props.onClick(); panel.render()
+  assert.ok(panel.nodes().some(node => node.type === 'Informe'))
   const headerButtons = panel.workspace().props.headerActions.props.children
   assert.doesNotMatch(JSON.stringify(headerButtons), /Generar expediente|Ver actividad/)
+})
+
+test('el compositor Gmail no genera un Word al guardar ni publicar la respuesta', () => {
+  const response = fs.readFileSync('app/quejas/components/QuejaRespuestaClienteModal.tsx', 'utf8')
+  const editor = fs.readFileSync('app/quejas/components/QuejaCorreoEditor.tsx', 'utf8')
+  const saveStart = response.indexOf("async function write(kind: 'save' | 'publish' | 'finish')")
+  const generateStart = response.indexOf('async function generarExpediente()')
+  const writeCode = response.slice(saveStart, generateStart)
+  assert.ok(saveStart >= 0 && generateStart > saveStart)
+  assert.ok(!writeCode.includes("import('@/lib/utils/quejaInformeWord')"))
+  assert.ok(!writeCode.includes("props.onSubir("))
+  assert.ok(response.includes("const { crearInformeWord } = await import('@/lib/utils/quejaInformeWord')"))
+  assert.ok(response.includes("if (generatedFile?.version === report.version)"))
+  assert.ok(response.includes("kind === 'publish' && !officialFile"))
+  assert.ok(response.includes('data-response-compose'))
+  assert.ok(response.includes('data-response-selected-file'))
+  assert.ok(response.includes('data-response-generate'))
+  assert.ok(response.includes('size="mail"'))
+  assert.ok(editor.includes('aria-label="Redactar correo al cliente"'))
+  assert.ok(editor.includes('placeholder="Escriba su mensaje aquí..."'))
+  assert.ok(editor.includes("maxLength={CORREO_QUEJA_LIMITES.cuerpo}"))
 })
 
 test('el scrollport del expediente se promueve a capa compuesta al ampliar', () => {
