@@ -187,6 +187,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       operation.finish()
     }
   }
+  const handleCancelarEdicionResolucion = () => {
+    if (resolutionPending) return
+    draftVersions.current.resolucion++
+    resolutionCaret.current = null
+    setResolucion(borradorGuardado?.contenido ?? '')
+    setResolucionFormato(borradorGuardado?.formato ?? 'plain')
+    setEditandoResolucion(false)
+    setAssistanceOpen(false)
+    setErrorResolucion(null)
+  }
   const puedeModificarNota = (item: QuejaActividad) => investigando && item.usuario_id === user?.id && esNotaInvestigacion(item)
   const handleMutarNota = async (item: QuejaActividad, eliminar = false) => {
     if (!puedeModificarNota(item) || operandoNota) return
@@ -389,8 +399,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devolucion} devoluciones={devoluciones} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
         {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-card border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : 'Propuesta guardada. Editá para continuar.'}</p></div></div><div className="flex items-center gap-2">{editandoResolucion
-            ? <Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button>
+          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-card border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : borradorGuardado ? 'Propuesta guardada. Editá para continuar.' : 'Sin propuesta guardada. Editá para comenzar.'}</p></div></div><div className="flex flex-wrap items-center justify-end gap-2">{editandoResolucion
+            ? <><Button data-resolution-cancel size="sm" variant="secondary" className="px-2! sm:px-3!" onClick={handleCancelarEdicionResolucion} disabled={resolutionPending}>Cancelar</Button><Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button></>
             : <Button data-resolution-edit size="sm" className="px-2! sm:px-3!" variant="secondary" title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'} disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}><Pencil aria-hidden="true" className="size-4 shrink-0" />Editar</Button>}{editandoResolucion && <Button size="sm" className="px-2! sm:px-3!" variant="secondary" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} disabled={resolutionPending} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" />Asistencia</Button>}</div><span role="status" className="sr-only">{guardandoResolucion ? 'Guardando borrador…' : borradorVersion === null ? 'Cargando borrador…' : resolutionSaved ? 'Borrador guardado' : resolutionDirty ? 'Cambios sin guardar' : 'Sin contenido todavía'}</span></div>
           {assistance}
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
