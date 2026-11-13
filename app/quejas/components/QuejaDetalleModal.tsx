@@ -609,7 +609,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <p className="mt-2 text-xs text-qms-muted">Los archivos se guardan en el expediente al subirlos, incluso si cancelás la devolución.</p>
             {errorAdjuntoDevolucion && <p role="alert" className="mt-2 text-sm text-qms-danger">{errorAdjuntoDevolucion}</p>}
           </section>
-        </div>
+        </div>}
         {reaperturaAbierta && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
           <p className="text-sm text-qms-muted">La queja vuelve a investigación con un nuevo plazo. El motivo quedará registrado.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} placeholder="Motivo de la reapertura..." rows={5} className="ui-textarea w-full px-3 py-2 text-base" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
         </div>}
