@@ -108,8 +108,8 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
       </div>
       <div className="flex justify-end"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button></div>
     </div>}>
-    <div data-attachment-list-scroll role="region" aria-label="Lista de mis adjuntos" tabIndex={0}
-      className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+    <div data-attachment-list-scroll data-case-scroll role="region" aria-label="Lista de mis adjuntos" tabIndex={0}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] bg-qms-hover-bg p-4 sm:p-6">
       <div className="mb-4 flex items-center gap-2">
         <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Evidencias</h3>
         {!props.loading && !props.error && <span className="rounded-button bg-qms-primary-soft px-2 py-0.5 text-xs font-medium text-qms-primary">{props.adjuntos.length}</span>}

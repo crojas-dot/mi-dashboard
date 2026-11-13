@@ -71,7 +71,7 @@ export default function QuejaNotasPanel(props: Props) {
         {props.saving ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <Plus aria-hidden="true" className="size-4" />}
       </button>
     </div>}>
-    <div data-investigation-notes-scroll role="region" aria-label="Lista de notas de investigación" tabIndex={0} className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+    <div data-investigation-notes-scroll data-case-scroll role="region" aria-label="Lista de notas de investigación" tabIndex={0} className="min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] bg-qms-hover-bg p-4 sm:p-6">
     {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol className="space-y-3">{props.notas.map((item, index) => {
       const editable = props.puedeModificar(item)
       const editing = props.editingId === item.id

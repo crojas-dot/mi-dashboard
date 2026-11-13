@@ -82,7 +82,7 @@ export default function QuejaAnalisisPanel(props: Props) {
     headerActions={<div className="hidden min-w-0 items-center gap-3 md:flex">{tabButtons(false)}<span aria-hidden="true" className="h-5 w-px shrink-0 bg-qms-border" /></div>}
     footer={<div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button>{props.onPrepararResolucion && <Button className="min-w-0 whitespace-normal" onClick={props.onPrepararResolucion}>Preparar resolución</Button>}</div>}>
     <div className="shrink-0 border-b border-qms-border bg-qms-surface px-3 py-2 md:hidden">{tabButtons(true)}</div>
-    <div ref={scrollRef} data-analysis-scroll className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg">
+    <div ref={scrollRef} data-analysis-scroll data-case-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] bg-qms-hover-bg">
       <section id={tabId('analisis')} role="tabpanel" aria-label="Análisis" hidden={activeTab !== 'analisis'} className={activeTab === 'analisis' ? 'mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6 p-4 sm:p-6' : 'hidden'}>
         <div data-quality-review className="relative mb-1">
           <div className="relative z-10 rounded-card border border-qms-warning/50 bg-soft-amber-bg p-4 shadow-sm sm:p-5">

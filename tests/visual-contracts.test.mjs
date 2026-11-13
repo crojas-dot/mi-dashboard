@@ -451,11 +451,11 @@ test('tarjetas de adjuntos no repiten el encabezado de evidencias y dejan accion
   assert.ok(source.includes('sm:group-focus-within:opacity-100'))
   assert.ok(source.includes('onPreview(a)'))
   assert.ok(source.includes('onDownload(a)'))
-  assert.ok(modal.includes('className="qms-compact-modal-scroll'))
-  assert.ok(notes.includes('className="qms-compact-modal-scroll'))
+  assert.match(modal, /data-attachment-list-scroll data-case-scroll[^>]*\[will-change:transform\]/)
+  assert.match(notes, /data-investigation-notes-scroll data-case-scroll[^>]*\[will-change:transform\]/)
   assert.ok(notes.includes('className="absolute right-3 bottom-3'))
   assert.ok(!notes.includes('<Button size="icon" aria-label="Agregar nota"'))
-  assert.ok(styles.includes('.qms-compact-modal-scroll::-webkit-scrollbar'))
+  assert.ok(!styles.includes('.qms-compact-modal-scroll'))
 })
 
 test('el progreso del encabezado descuenta el gutter real del editor', () => {
