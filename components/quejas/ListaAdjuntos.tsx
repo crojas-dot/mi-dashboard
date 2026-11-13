@@ -14,6 +14,7 @@ interface ListaAdjuntosProps {
   puedeEliminar?: (a: QuejaAdjunto) => boolean
   onEliminar?: (a: QuejaAdjunto) => void
   layout?: 'list' | 'cards' | 'rows' | 'modal'
+  hideGroupTitle?: boolean
 }
 
 function filePresentation(adjunto: QuejaAdjunto) {
@@ -42,6 +43,7 @@ export default function ListaAdjuntos({
   puedeEliminar,
   onEliminar,
   layout = 'list',
+  hideGroupTitle = false,
 }: ListaAdjuntosProps) {
   const cliente = adjuntos.filter((a) => !a.usuario_id)
   const analisis = adjuntos.filter((a) => a.usuario_id)
@@ -49,9 +51,9 @@ export default function ListaAdjuntos({
   const renderGrupo = (lista: QuejaAdjunto[], esAnalisis: boolean, titulo: string) => {
     if (lista.length === 0) return null
     return (
-      <div className={layout === 'modal' ? '' : 'mt-3'}>
-        {layout !== 'modal' && <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>}
-        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : layout === 'modal' ? 'space-y-3' : 'space-y-1'}>
+      <div className={layout === 'modal' || hideGroupTitle ? '' : 'mt-3'}>
+        {layout !== 'modal' && !hideGroupTitle && <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>}
+        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? hideGroupTitle ? 'divide-y divide-qms-border' : 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : layout === 'modal' ? 'space-y-3' : 'space-y-1'}>
           {lista.map((a) => {
             const { Icon, label, color } = filePresentation(a)
             const preparePreviewConnection = () => {

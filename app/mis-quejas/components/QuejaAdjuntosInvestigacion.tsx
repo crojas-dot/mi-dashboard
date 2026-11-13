@@ -47,17 +47,17 @@ interface CardProps {
 export function QuejaAdjuntosCard({ adjuntos, loading, error, onOpen }: CardProps) {
   const ultimo = adjuntos.at(-1)
   return <section data-investigation-files-card className="min-w-0 rounded-card border border-qms-border bg-qms-surface shadow-sm">
-    <button type="button" onClick={onOpen} aria-label="Ver adjuntos del análisis" className="w-full min-w-0 cursor-pointer p-4 text-left">
+    <button type="button" onClick={onOpen} aria-label="Ver mis adjuntos" className="w-full min-w-0 cursor-pointer p-4 text-left">
       <span className="flex items-start gap-2">
         <Paperclip aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-primary" />
-        <span className="min-w-0 flex-1 text-sm font-semibold">Adjuntos del análisis</span>
+        <span className="min-w-0 flex-1 text-sm font-semibold">Mis adjuntos</span>
         {!loading && !error && <span className="rounded-button bg-qms-primary-soft px-1.5 py-0.5 text-xs font-medium text-qms-primary">{adjuntos.length}</span>}
       </span>
       <span className="mt-3 block min-w-0 truncate text-xs text-qms-muted">
         {loading ? 'Cargando archivos…' : error ? 'No se pudieron cargar los archivos.' : ultimo ? ultimo.nombre : 'Sin archivos todavía'}
       </span>
       <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-qms-primary">
-        Ver adjuntos <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+        Ver mis adjuntos <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
       </span>
     </button>
   </section>
@@ -83,7 +83,7 @@ interface PanelProps {
 
 export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  return <Modal open={props.open} onClose={props.onClose} title="Adjuntos del análisis" titleSuffix={props.folio} size="lg" fixedHeight headerLeading={<Paperclip aria-hidden="true" className="size-4 text-qms-muted" />}
+  return <Modal open={props.open} onClose={props.onClose} title="Mis adjuntos" titleSuffix={props.folio} size="lg" fixedHeight headerLeading={<Paperclip aria-hidden="true" className="size-4 text-qms-muted" />}
     footer={<div className="space-y-3">
       <div data-investigation-files-drop {...dropHandlers(props.canUpload && !props.uploadDisabled && !props.uploading, props.onFiles)}
         className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border-2 border-dashed border-qms-border bg-qms-hover-bg p-3 transition-colors data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">

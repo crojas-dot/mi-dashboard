@@ -144,13 +144,19 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   en un ancho máximo de `70ch` (aproximación tipográfica, no 70 caracteres exactos)
   sin achicar el marco ni la barra de edición. En el lateral contraído se conserva
   la geometría anterior.
-  Notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver notas
+  En Mis Quejas, las tarjetas de trabajo del responsable se llaman **Mis adjuntos**
+  y **Mis notas**; no se confunden con la pestaña Adjuntos del modal **Ver análisis**,
+  donde solo aparecen evidencias aportadas por el cliente.
+  Mis notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver mis notas
   abre un diálogo centrado (`variant="dialog" size="lg" fixedHeight`) con lectura
   y alta. Notas y Adjuntos tienen 672px de ancho máximo y 600px de alto (90dvh
   en pantallas bajas); solo la lista central se desplaza con scrollbar fina.
-  Encabezado y pie siguen fijos. Notas muestra avatar, autor verificable (el usuario
-  conectado para notas propias; genérico si no se conoce el autor) y fecha al extremo
-  derecho. El botón + es nativo, absoluto dentro del textarea: no usar `Button`
+  Encabezado y pie siguen fijos. Mis notas muestra en cada tarjeta solo la fecha,
+  el texto y un menú de tres puntos en las notas propias.
+  Editar y Eliminar se habilitan exclusivamente mientras el expediente continúe
+  En Investigación; durante revisión se muestran inactivos con la explicación,
+  en concordancia con los guardas de la base de datos. El botón + es nativo,
+  absoluto dentro del textarea: no usar `Button`
   porque agrega `relative`, lo que lo desplaza fuera del campo. No hay etiqueta
   duplicada encima de la redacción. Adjuntos muestra un único título "Evidencias"
   con cantidad; `ListaAdjuntos layout="modal"` omite encabezados internos, usa filas
@@ -163,12 +169,19 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
   A la derecha quedan Acción actual y la devolución real de Calidad,
   en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
-  Ver caso completo
+  Ver análisis
   usa fondo rojo institucional `qms-brand-red`, hover blanco con texto/icono/borde
   rojos, y queda en Acción actual, encima del
   envío a GC; investigación omite la descripción
-  redundante de esa tarjeta. Ese único acceso abre Análisis. Ver
+  redundante de esa tarjeta. Ese único acceso abre el modal Análisis del caso. Ver
   [investigación con consulta lateral](quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
+  **Ver análisis** conserva el tamaño del documento de consulta y tiene pestañas
+  Análisis, Adjuntos e Historial, en la cabecera de escritorio y en una segunda
+  fila accesible en móvil. Análisis prioriza la evaluación real de Calidad en
+  tarjeta amarilla tipo comentario, luego la descripción y área afectada reales;
+  Adjuntos es consulta de archivos del cliente sin operaciones de edición; Historial
+  refleja exclusivamente la actividad registrada y jamás crea eventos ni fechas
+  ficticias. Preparar resolución se mantiene en el pie si la etapa permite editar.
 - En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
   ampliar el documento. Resolución se edita en la página, con Guardar junto a Asistencia
   secundaria; Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
