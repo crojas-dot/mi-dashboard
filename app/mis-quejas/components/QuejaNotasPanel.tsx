@@ -72,7 +72,7 @@ export default function QuejaNotasPanel(props: Props) {
       </button>
     </div>}>
     <div data-investigation-notes-scroll role="region" aria-label="Lista de notas de investigación" tabIndex={0} className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
-    {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol className="space-y-3">{props.notas.map(item => {
+    {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol className="space-y-3">{props.notas.map((item, index) => {
       const editable = props.puedeModificar(item)
       const editing = props.editingId === item.id
       const propia = !!item.usuario_id && item.usuario_id === props.currentUser?.id
@@ -84,7 +84,7 @@ export default function QuejaNotasPanel(props: Props) {
               className="inline-flex size-9 cursor-pointer items-center justify-center rounded-button text-qms-muted transition-colors hover:bg-qms-hover-bg hover:text-qms-dark focus-visible:outline-2 focus-visible:outline-qms-primary">
               <MoreVertical aria-hidden="true" className="size-5" />
             </button>
-            {props.menuId === item.id && <div role="menu" aria-label="Opciones de la nota" className="absolute right-0 bottom-full z-30 mb-1 w-52 rounded-card border border-qms-border bg-qms-surface p-2 shadow-lg" onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); props.onToggleMenu(item.id) } }}>
+            {props.menuId === item.id && <div role="menu" aria-label="Opciones de la nota" className={`absolute right-0 z-30 w-52 rounded-card border border-qms-border bg-qms-surface p-2 shadow-lg ${index === 0 ? 'top-full mt-1' : 'bottom-full mb-1'}`} onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); props.onToggleMenu(item.id) } }}>
               {!editable && <p className="mb-2 border-b border-qms-border px-2 pb-2 text-xs leading-relaxed text-qms-muted">Podés editar o eliminar tus notas mientras el caso esté En Investigación.</p>}
               {editable && props.deletingId === item.id
                 ? <><p className="px-2 py-1 text-xs text-qms-muted">¿Eliminar esta nota?</p><Button role="menuitem" size="sm" variant="danger" className="w-full justify-start" loading={props.operating} onClick={props.onConfirmDelete}><Trash2 aria-hidden="true" className="size-4" />Eliminar</Button><Button role="menuitem" size="sm" variant="ghost" className="mt-1 w-full justify-start" disabled={props.operating} onClick={props.onCancelDelete}>Cancelar</Button></>
