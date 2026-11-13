@@ -1,12 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, Paperclip, Plus, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, Paperclip, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import RichTextContent from '@/components/ui/RichTextContent'
 import Select from '@/components/ui/Select'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import QuejaCorreoEditor from '@/app/quejas/components/QuejaCorreoEditor'
@@ -48,6 +47,18 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   </Modal>
 }
 
+/** Solo un PDF institucional válido puede ser seleccionado para la comunicación final. */
+function esPdfOficial(file: QuejaAdjunto, quejaId: string): boolean {
+  return esOficioPublicableQueja(file, quejaId) && file.tipo_mime.toLowerCase() === 'application/pdf' && /\.pdf$/i.test(file.nombre)
+}
+
+function ultimoPdfGenerado(files: readonly QuejaAdjunto[], folio: string, report: QuejaInforme | null, quejaId: string): QuejaAdjunto | null {
+  if (!report) return null
+  const name = informeFilename(folio).replace(/\.docx$/, `-v${report.version}.pdf`)
+  return files.filter(file => esPdfOficial(file, quejaId) && file.nombre === name)
+    .sort((a,b) => b.created_at.localeCompare(a.created_at))[0] ?? null
+}
+
 function RespuestaEditor({ queja, initial, ...props }: Props & { initial: RespuestaClienteContext & { informe: QuejaInforme | null } }) {
   const [snapshot] = useState(queja)
   const noProcede = props.noProcede === true
@@ -59,22 +70,20 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     const motivoGuardado = compatibleDraft?.motivo_no_procede?.trim() ? compatibleDraft.motivo_no_procede : null
     // Los fundamentos se redactan en el oficio; el registro conserva el motivo
     // previo o la comunicación que remite al adjunto, sin pedir un segundo texto.
+    const savedPdf = props.adjuntos.find(file => file.id === compatibleDraft?.adjunto_id && esPdfOficial(file, queja.id))
+    const defaultPdf = ultimoPdfGenerado(props.adjuntos, queja.folio, initial.informe, queja.id)
     return { respuesta,
-      numeroOficio: compatibleDraft?.numero_oficio ?? (queja.numero_oficio_resolucion || queja.folio), adjuntoId: compatibleDraft?.adjunto_id ?? null,
+      numeroOficio: compatibleDraft?.numero_oficio ?? (queja.numero_oficio_resolucion || queja.folio), adjuntoId: savedPdf?.id ?? defaultPdf?.id ?? null,
       ...(noProcede ? { noProcede: { justificacion: motivoGuardado ?? respuesta, formato: motivoGuardado ? compatibleDraft?.motivo_no_procede_formato ?? 'plain' : 'plain' } } : {}),
       correo: { asunto: compatibleDraft?.correo_asunto ?? plantilla.asunto, cuerpo: compatibleDraft?.correo_cuerpo ?? plantilla.cuerpo } }
   })
   const [saved, setSaved] = useState(initial.borrador)
   const [report, setReport] = useState(initial.informe)
-  const [usingInforme, setUsingInforme] = useState(!compatibleDraft?.adjunto_id && !!initial.informe)
   const [editingReport, setEditingReport] = useState(false)
-  const [showDocumentPicker, setShowDocumentPicker] = useState(false)
-  const [baseline, setBaseline] = useState(() => ({ form, usingInforme, reportVersion: report?.version }))
-  const [previewReport, setPreviewReport] = useState(false)
+  const [baseline, setBaseline] = useState(form)
   const [previewFile, setPreviewFile] = useState<QuejaAdjunto | null>(null)
   const [uploaded, setUploaded] = useState<QuejaAdjunto[]>([])
-  const [generatedFile, setGeneratedFile] = useState<{ file: QuejaAdjunto; version: number } | null>(null)
-  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | 'generate' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [confirmPublish, setConfirmPublish] = useState(false)
@@ -82,15 +91,26 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   const scope = useEntityRequestGuard(snapshot.id)
   const queryClient = useQueryClient()
   const draftGeneration = useRef(0)
+  const autoSelected = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const reportIsCurrent = useRef<() => boolean>(() => false)
   const files = [...props.adjuntos, ...uploaded.filter(file => !props.adjuntos.some(existing => existing.id === file.id))]
-    .filter(file => esOficioPublicableQueja(file, snapshot.id))
+    .filter(file => esPdfOficial(file, snapshot.id))
   const selectedFile = files.find(file => file.id === form.adjuntoId) ?? null
-  const dirty = !initial.publicada && (usingInforme !== baseline.usingInforme || form.respuesta !== baseline.form.respuesta
-    || form.numeroOficio !== baseline.form.numeroOficio || form.adjuntoId !== baseline.form.adjuntoId
-    || form.correo.asunto !== baseline.form.correo.asunto || form.correo.cuerpo !== baseline.form.correo.cuerpo)
-    || !initial.publicada && (form.noProcede?.justificacion !== baseline.form.noProcede?.justificacion || form.noProcede?.formato !== baseline.form.noProcede?.formato)
-    || !initial.publicada && usingInforme && report?.version !== baseline.reportVersion
+  // La lista puede llegar después de abrir el correo; seleccionar solo una vez y
+  // nunca sustituir la selección manual del usuario al refrescar adjuntos.
+  useEffect(() => {
+    if (autoSelected.current || props.archivosLoading || props.archivosError || initial.publicada) return
+    autoSelected.current = true
+    if (form.adjuntoId || !report || uploaded.length) return
+    const generated = ultimoPdfGenerado(props.adjuntos, snapshot.folio, report, snapshot.id)
+    if (generated) setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: generated.id })
+  }, [props.archivosLoading, props.archivosError, props.adjuntos, form.adjuntoId, uploaded.length, report, snapshot.folio, snapshot.id, initial.publicada])
+  const dirty = !initial.publicada && (form.respuesta !== baseline.respuesta
+    || form.numeroOficio !== baseline.numeroOficio || form.adjuntoId !== baseline.adjuntoId
+    || form.correo.asunto !== baseline.correo.asunto || form.correo.cuerpo !== baseline.correo.cuerpo
+    || form.noProcede?.justificacion !== baseline.noProcede?.justificacion
+    || form.noProcede?.formato !== baseline.noProcede?.formato)
   const disabled = !!busy || props.subiendo || editingReport
   const change = (patch: Partial<RespuestaClienteDraftInput>) => { draftGeneration.current++; setForm(current => ({ ...current, ...patch })); setError(''); setNotice('') }
 
@@ -104,8 +124,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       if (kind !== 'finish') validarCorreoQueja(form.correo, kind === 'publish')
       if (form.noProcede && (form.noProcede.justificacion.length > 10000 || kind === 'publish' && !form.noProcede.justificacion.trim())) throw new Error('Revisá la justificación de no procedencia.')
       const nextForm = form
-      const officialFile = usingInforme ? null : selectedFile
-      if (kind === 'publish' && !officialFile) throw new Error('Primero generá el expediente o seleccioná un documento oficial antes de publicar.')
+      const officialFile = selectedFile
+      if (kind === 'publish' && !officialFile) throw new Error('Seleccioná o subí el PDF oficial antes de publicar.')
       if (kind === 'save') {
         const result = await guardarRespuestaClienteBorrador(snapshot, saved?.version ?? 0, nextForm)
         committed = true
@@ -114,7 +134,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
           const savedForm = { respuesta: result.respuesta, numeroOficio: result.numero_oficio, adjuntoId: result.adjunto_id,
             ...(noProcede ? { noProcede: { justificacion: result.motivo_no_procede ?? nextForm.noProcede!.justificacion, formato: result.motivo_no_procede_formato ?? nextForm.noProcede!.formato } } : {}),
             correo: { asunto: result.correo_asunto ?? nextForm.correo.asunto, cuerpo: result.correo_cuerpo ?? nextForm.correo.cuerpo } }
-          setSaved(result); setForm(savedForm); setBaseline({ form: savedForm, usingInforme, reportVersion: report?.version }); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
+          setSaved(result); setForm(savedForm); setBaseline(savedForm); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
         }
       } else {
         const updated = kind === 'finish' ? await transicionarQueja(snapshot, 'Finalizado')
