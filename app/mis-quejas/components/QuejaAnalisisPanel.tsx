@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Clock3, FileText, LockKeyhole, Paperclip } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -58,10 +58,20 @@ export default function QuejaAnalisisPanel(props: Props) {
     setActiveTab(id)
     scrollRef.current?.scrollTo({ top: 0 })
   }
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: AnalysisTab) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    event.preventDefault()
+    const index = tabs.findIndex(tab => tab.id === current)
+    const nextIndex = event.key === 'Home' ? 0
+      : event.key === 'End' ? tabs.length - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+    changeTab(tabs[nextIndex].id)
+    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus()
+  }
 
   const tabButtons = (mobile: boolean) => <div role="tablist" aria-label="Secciones del análisis" className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-button bg-qms-hover-bg p-1">
     {tabs.map(({ id, label, Icon }) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} aria-controls={tabId(id)}
-      onClick={() => changeTab(id)}
+      tabIndex={activeTab === id ? 0 : -1} onClick={() => changeTab(id)} onKeyDown={event => handleTabKeyDown(event, id)}
       className={`inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-button px-3 py-2 text-xs font-medium transition-colors ${activeTab === id ? 'bg-qms-surface font-semibold text-qms-primary shadow-sm' : 'text-qms-muted hover:bg-qms-surface hover:text-qms-dark'} ${mobile ? 'min-h-10' : ''}`}>
       <Icon aria-hidden="true" className="size-3.5" />{label}
       {id === 'adjuntos' && !props.adjuntosLoading && !props.adjuntosError && <span className="rounded-button bg-qms-neutral-soft px-1.5 py-0.5 text-[11px] font-semibold text-qms-muted">{adjuntosCliente.length}</span>}
