@@ -82,17 +82,17 @@ interface PanelProps {
 
 export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" tall
-    footer={<div className="flex justify-end"><Button variant="ghost" onClick={props.onClose}>Cerrar</Button></div>}>
-    <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <div data-investigation-files-drop {...dropHandlers(props.canUpload && !props.uploading, props.onFiles)}
-        className="shrink-0 rounded-card border border-dashed border-qms-border bg-qms-surface p-4 text-center data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
-        <Upload aria-hidden="true" className="mx-auto size-6 text-qms-primary" />
-        <p className="mt-2 text-sm font-medium">Archivos de investigación</p>
-        <p className="mt-1 text-xs text-qms-muted">{props.canUpload ? 'Arrastrá archivos aquí o seleccioná los que querés adjuntar.' : 'Consultá las evidencias registradas en este expediente.'}</p>
-        {props.canUpload && <Button size="sm" className="mt-3" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={props.uploading}>
-          <Paperclip aria-hidden="true" className="size-4" />Agregar archivos
-        </Button>}
+  return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" fixedHeight
+    footer={<div className="space-y-3">
+      {props.canUpload && <div data-investigation-files-drop {...dropHandlers(!props.uploading, props.onFiles)}
+        className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-qms-border bg-qms-hover-bg p-3 data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
+        <div className="flex min-w-0 items-center gap-3">
+          <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><Upload className="size-5" /></span>
+          <div className="min-w-0"><p className="text-sm font-semibold">Subir nuevo archivo</p><p className="text-xs text-qms-muted">También podés arrastrarlo aquí.</p></div>
+        </div>
+        <Button size="sm" aria-label="Agregar archivos" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={props.uploading}>
+          Examinar
+        </Button>
         <input ref={inputRef} aria-label="Seleccionar adjuntos del análisis" type="file" multiple hidden
           disabled={!props.canUpload || props.uploading}
           onChange={event => {
@@ -101,14 +101,19 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
             if (props.canUpload && files.length) props.onFiles(files)
           }}
         />
+      </div>}
+      <div className="flex justify-end"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button></div>
+    </div>}>
+    <div data-attachment-list-scroll role="region" aria-label="Lista de adjuntos del análisis" tabIndex={0}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-6">
+      <div className="mb-4 flex items-center gap-2">
+        <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Evidencias</h3>
+        {!props.loading && !props.error && <span className="rounded-button bg-qms-primary-soft px-2 py-0.5 text-xs font-medium text-qms-primary">{props.adjuntos.length}</span>}
       </div>
-      <div data-attachment-list-scroll role="region" aria-label="Lista de adjuntos del análisis" tabIndex={0}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
-        {props.loading ? <LoadingSkeleton variant="list" label="Cargando adjuntos del análisis…" framed={false} />
-          : props.error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudieron cargar los archivos.<Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar</Button></div>
-          : props.adjuntos.length ? <ListaAdjuntos adjuntos={props.adjuntos} layout="rows" onPreview={props.onPreview} onDownload={props.onDownload} puedeEliminar={props.canDelete} onEliminar={props.onDelete} />
-          : <div className="flex flex-col items-center gap-2 py-5 text-center text-qms-muted"><FileText aria-hidden="true" className="size-6" /><p className="text-sm">Sin adjuntos de investigación todavía.</p></div>}
-      </div>
+      {props.loading ? <LoadingSkeleton variant="list" label="Cargando adjuntos del análisis…" framed={false} />
+        : props.error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudieron cargar los archivos.<Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar</Button></div>
+        : props.adjuntos.length ? <ListaAdjuntos adjuntos={props.adjuntos} layout="modal" onPreview={props.onPreview} onDownload={props.onDownload} puedeEliminar={props.canDelete} onEliminar={props.onDelete} />
+        : <div className="flex flex-col items-center gap-2 py-5 text-center text-qms-muted"><FileText aria-hidden="true" className="size-6" /><p className="text-sm">Sin adjuntos de investigación todavía.</p></div>}
     </div>
   </Modal>
 }
