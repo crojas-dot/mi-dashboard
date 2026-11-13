@@ -75,7 +75,7 @@ export function CaseRequestHeader({ queja, children, showReceivedAt = false, var
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet' }: { children: ReactNode; compact: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards' }) {
+export function CaseWorkspace({ children, compact, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false }: { children: ReactNode; compact: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0 }, [documentKey])
@@ -97,18 +97,21 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
       modal.style.removeProperty('--qms-case-scrollbar-width')
     }
   }, [presentation, expanded])
-  const referenceColumns = '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
-  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" className={`@container flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
+  const comfortableReading = readingLayout && expanded && presentation === 'reference'
+  const referenceColumns = comfortableReading
+    ? '@min-[1100px]:grid-cols-[240px_minmax(0,1fr)_270px] @min-[1360px]:grid-cols-[280px_minmax(0,1fr)_300px] @min-[1100px]:gap-6 @min-[1100px]:px-6'
+    : '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
+  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" data-case-reading-layout={comfortableReading || undefined} className={`@container flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
     {/* En escritorio el círculo ocupa el margen de página y su etiqueta se alinea con Descripción. */}
-    {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
+    {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${comfortableReading ? 'mx-auto max-w-[1500px]' : ''} ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
     <div data-case-frame className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
-        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `p-3 sm:p-4 ${referenceColumns} @min-[1100px]:items-start @min-[1100px]:py-4` : ''}`}>
+        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:items-start ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
           <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
           </aside>
-          <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? 'space-y-4 bg-qms-hover-bg' : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
+          <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
           <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:bg-transparent @min-[1100px]:p-0' : 'border-b border-qms-border'}`}>{action}</aside>
         </div>
       </div>
