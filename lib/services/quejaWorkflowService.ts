@@ -234,8 +234,12 @@ export function guardarAreaQueja(area: string): Promise<{ valor: string }> {
   return callRpc('qms_save_complaint_area', { p_value: value })
 }
 
-export function derivarQuejaASACP(quejaId: string) {
-  return callRpc<SACP>('derivar_queja_a_sacp', { p_queja_id: quejaId })
+export async function derivarQuejaASACP(quejaId: string): Promise<{ accion: SACP; queja: Queja | null }> {
+  const accion = await callRpc<SACP>('derivar_queja_a_sacp', { p_queja_id: quejaId })
+  // La RPC incrementa la revisión del expediente al vincular la SACP: entregar
+  // la revisión efectiva permite aprobar después sin reutilizar el snapshot anterior.
+  const { data, error } = await supabase.from('qms_quejas').select('*').eq('id', quejaId).maybeSingle()
+  return { accion, queja: error ? null : (data as Queja | null) }
 }
 
 export function agregarComentarioQueja(input: {

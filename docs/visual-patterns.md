@@ -376,3 +376,21 @@ La tarjeta de devolución del responsable permite ver el motivo completo en un
 modal del mismo ancho, consultar el historial y los documentos institucionales
 del expediente, y regresar al editor original con «Ir al editor», sin duplicar
 la edición de la propuesta ni modificar el plazo.
+
+
+## Derivación SACP y presentación de cierre (13 noviembre 2026)
+
+El acceso **Derivar a SACP** se ubica en la etapa **Pendiente de Revisión GC**,
+junto a devolver o aprobar, solo si existe propuesta y no hay acción vinculada.
+Su confirmación llama el RPC existente, conserva la vinculación e idempotencia
+y no modifica el estado de la queja; la acción SACP sigue un ciclo independiente.
+El RPC requiere la migración `20261113221000_quejas_sacp_revision_gc.sql`
+para permitir la etapa de revisión, conservando sus permisos efectivos.
+Después de derivar, se consulta el expediente para refrescar la revisión
+esperada y evitar confirmar con una versión anterior.
+
+Durante **Resuelto**, antes de publicar al cliente, el centro prioriza el
+Documento del expediente y la preparación del PDF. La solicitud, evaluación y
+archivos anteriores siguen accesibles en «Solicitud y antecedentes», plegados.
+El botón «Redactar respuesta» permanece en Acción actual y Calidad también
+puede subir archivos al expediente desde ese estado.

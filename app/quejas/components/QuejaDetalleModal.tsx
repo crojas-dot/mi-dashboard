@@ -49,6 +49,7 @@ import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
+import { puedeDerivarEnRevisionGC } from '@/lib/utils/quejaSacp'
 
 interface Props {
   queja: Queja | null
@@ -66,6 +67,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [decisionOpen, setDecisionOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
   const [motivoDevolucion, setMotivoDevolucion] = useState('')
+  const [confirmarSACP, setConfirmarSACP] = useState(false)
+  const [sacpCreadaEnVisita, setSacpCreadaEnVisita] = useState(false)
   const [adjuntosDevolucion, setAdjuntosDevolucion] = useState<QuejaAdjunto[]>([])
   const [errorAdjuntoDevolucion, setErrorAdjuntoDevolucion] = useState('')
   const inputDevolucionRef = useRef<HTMLInputElement>(null)
@@ -142,6 +145,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setDecisionOpen(false)
     setReviewOpen(false)
     setMotivoDevolucion('')
+    setConfirmarSACP(false)
+    setSacpCreadaEnVisita(false)
     setAdjuntosDevolucion([])
     setErrorAdjuntoDevolucion('')
     setRespuestaCase(null)
@@ -392,16 +397,26 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const handleDerivarSACP = async () => {
+    if (!puedeDerivarEnRevisionGC(queja.estado, queja.derivado_sacp_id, queja.resolucion) || !esStaff || workflowPending || editing) return
     const operation = scope.start('workflow')
     if (!operation) return
     const isContextCurrent = scope.captureContext()
     setDerivando(true)
     let confirmed = false
     try {
-      const accion = await derivarQuejaASACP(queja.id)
+      const { accion, queja: actualizada } = await derivarQuejaASACP(queja.id)
       confirmed = true
-      if (isContextCurrent()) onUpdated(undefined, operation.isCurrent)
-      if (operation.isCurrent()) showSuccess('Derivada a SACP como ' + (accion.folio || 'nueva acción'))
+      if (isContextCurrent()) onUpdated(actualizada ?? undefined, operation.isCurrent)
+      if (operation.isCurrent()) {
+        setConfirmarSACP(false)
+        setSacpCreadaEnVisita(true)
+        setWorkflowRevision(null)
+        showSuccess('Acción SACP ' + (accion.folio || 'registrada') + ' vinculada al expediente.')
+        if (!actualizada) {
+          showError(null, 'La acción se creó, pero no se pudo actualizar la revisión del expediente. Reabrí la queja antes de continuar.')
+          onClose()
+        }
+      }
     } catch (error) {
       if (operation.isCurrent()) showError(error, confirmed
         ? 'La derivación se guardó, pero no se pudo actualizar la vista'
@@ -463,10 +478,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
   const files = <div className="space-y-3">
     {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las evidencias. <Button size="sm" variant="link" onClick={() => refetchAdjuntos()}>Reintentar</Button></p> : !adjuntos.length ? <p className="text-sm text-qms-muted">Sin archivos adjuntos.</p> : <ListaAdjuntos layout="cards" adjuntos={adjuntos} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={puedeEliminarAdjunto} onEliminar={a => setConfirmarEliminacion(a.id)} />}
-    {(estadoActual === 'En Investigación' || esStaff && publicacionDisponible && ['Recibido', 'Pendiente de Revisión GC'].includes(estadoActual)) && <div className="flex flex-wrap items-center gap-2"><label className="ui-button ui-button-secondary ui-button-sm cursor-pointer"><Upload className="size-4" /> Subir archivo<input type="file" className="sr-only" disabled={workflowPending || editing} aria-label="Subir evidencia" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleSubirAdjunto(file) }} /></label>{subiendoAdjunto && <span role="status" className="text-sm text-qms-muted">Subiendo…</span>}</div>}
+    {(estadoActual === 'En Investigación' || esStaff && publicacionDisponible && ['Recibido', 'Pendiente de Revisión GC', 'Resuelto'].includes(estadoActual)) && <div className="flex flex-wrap items-center gap-2"><label className="ui-button ui-button-secondary ui-button-sm cursor-pointer"><Upload className="size-4" /> Subir archivo<input type="file" className="sr-only" disabled={workflowPending || editing} aria-label="Subir evidencia" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleSubirAdjunto(file) }} /></label>{subiendoAdjunto && <span role="status" className="text-sm text-qms-muted">Subiendo…</span>}</div>}
   </div>
   const editorOpen = decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
+  const puedeDerivarSACP = esStaff && !sacpCreadaEnVisita && puedeDerivarEnRevisionGC(estadoActual, queja.derivado_sacp_id, queja.resolucion)
   const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
   const requestDocument = <>
     <CaseSection variant="document" title="Descripción" headerActions={areaControl}><div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
@@ -490,6 +506,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
   const workflowActions = canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
+    {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
@@ -503,15 +520,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm">
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
-            <p className="mb-4 text-xs leading-relaxed text-qms-muted">Prepará el informe oficial con el análisis y la resolución del caso.</p>
-            <Button size="sm" variant="secondary" className="w-full justify-between border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40 hover:bg-qms-primary-soft"
-              disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
-              <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
-              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
-            </Button>
-          </section>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
@@ -521,7 +529,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           actionTitle={estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
           actionDetail={estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
           {workflowActions}
-          {esStaff && estadoActual === 'En Investigación' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || editing}>Derivar a SACP</Button>}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
         </CaseAction>}>
             {qualityReview ? <>
@@ -530,6 +537,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               </CaseSection>
               <details key={queja.id} data-case-review-context>
                 <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
+                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
+              </details>
+            </> : esStaff && estadoActual === 'Resuelto' ? <>
+              <CaseSection variant="document" source="Gestión de Calidad" title="Documento del expediente">
+                <p className="mb-5 text-sm leading-relaxed text-qms-muted">La resolución ya fue aprobada. Revisá el documento oficial y prepará su PDF antes de redactar el correo al cliente.</p>
+                {queja.resolucion && <div className="mb-5" data-case-reading-copy><h4 className="mb-3 text-sm font-semibold text-qms-dark">Resolución aprobada</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}
+                <Button data-close-report-shortcut size="sm" variant="secondary" className="border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40"
+                  disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
+                  <FileText aria-hidden="true" className="size-4" />Generar expediente
+                </Button>
+              </CaseSection>
+              <details data-case-close-context>
+                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Ver descripción, análisis y archivos · {adjuntos.length}</span></summary>
                 <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
               </details>
             </> : <>{requestDocument}{investigationDocument}</>}
@@ -633,6 +653,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); if (!completed) setDecisionOpen(true) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
     {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'}
       onPreparePdf={handleSubirAdjunto} onClose={() => setInformeOpen(false)} />}
+    <ConfirmDialog open={confirmarSACP} title="Derivar a SACP" message="Se creará una acción correctiva vinculada a esta queja. La revisión de Calidad y la respuesta al cliente continuarán su flujo independiente." confirmLabel="Crear acción SACP" loading={derivando} onCancel={() => setConfirmarSACP(false)} onConfirm={() => { void handleDerivarSACP() }} />
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
   </>
 }
