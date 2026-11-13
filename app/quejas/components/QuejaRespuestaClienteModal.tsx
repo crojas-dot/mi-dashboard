@@ -7,9 +7,7 @@ import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import RichTextContent from '@/components/ui/RichTextContent'
-import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
-import Field from '@/components/ui/Field'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import QuejaCorreoEditor from '@/app/quejas/components/QuejaCorreoEditor'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
@@ -45,8 +43,8 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const [initial, setInitial] = useState<(RespuestaClienteContext & { informe: QuejaInforme | null }) | null>(null)
   if (!initial && !query.isFetching && !query.error && query.data && !informe.isFetching && !informe.error && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
   if (initial) return <RespuestaEditor {...props} initial={initial} />
-  return <Modal open onClose={props.onClose} title={'Respuesta al cliente · ' + props.queja.folio} size="xl" variant="document">
-    {query.isLoading || query.isFetching || informe.isLoading || informe.isFetching ? <LoadingSkeleton variant="list" label="Cargando informe y respuesta…" /> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
+  return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle>
+    {query.isLoading || query.isFetching || informe.isLoading || informe.isFetching ? <LoadingSkeleton variant="list" label="Consultando respuesta e informe guardado…" /> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
   </Modal>
 }
 
@@ -75,6 +73,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   const [previewReport, setPreviewReport] = useState(false)
   const [previewFile, setPreviewFile] = useState<QuejaAdjunto | null>(null)
   const [uploaded, setUploaded] = useState<QuejaAdjunto[]>([])
+  const [generatedFile, setGeneratedFile] = useState<{ file: QuejaAdjunto; version: number } | null>(null)
   const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | 'generate' | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
@@ -126,7 +125,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         if (operation.isCurrent()) props.onClose(true)
       }
     } catch (caught) {
-      if (operation.isCurrent()) { setConfirmPublish(false); if (committed) setNotice('El archivo quedó adjunto. Comprobá el borrador y la publicación antes de repetir la operación.'); setError(errorMsg(caught, 'No se pudo completar la operación. El borrador se conserva.')) }
+      if (operation.isCurrent()) { setConfirmPublish(false); if (committed) setNotice('La operación pudo quedar registrada. Comprobá el estado antes de repetirla.'); setError(errorMsg(caught, 'No se pudo completar la operación. El borrador se conserva.')) }
     } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
   }
 
@@ -153,6 +152,14 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       setEditingReport(true)
       return
     }
+    if (generatedFile?.version === report.version) {
+      draftGeneration.current++
+      setForm(current => ({ ...current, adjuntoId: generatedFile.file.id }))
+      setUsingInforme(false)
+      setShowDocumentPicker(false)
+      setNotice('Se seleccionó el expediente ya generado. No fue necesario volver a crearlo.')
+      return
+    }
     const operation = scope.start('response-generate')
     if (!operation) return
     const isContextCurrent = scope.captureContext()
@@ -166,6 +173,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       if (!operation.isCurrent() || !isContextCurrent()) return
       if (!file) throw new Error('No se pudo confirmar el archivo generado.')
       setUploaded(current => [...current, file])
+      setGeneratedFile({ file, version: report.version })
       draftGeneration.current++
       setForm(current => ({ ...current, adjuntoId: file.id }))
       setUsingInforme(false)
@@ -236,7 +244,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
           </div>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {selectedFile && !usingInforme && <div data-response-selected-file className="inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm shadow-sm">
-              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
               <button type="button" className="min-w-0 max-w-[240px] cursor-pointer truncate font-medium text-qms-dark hover:text-qms-primary sm:max-w-[420px]"
                 title={'Vista previa de ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}>{selectedFile.nombre}</button>
               <button type="button" aria-label="Quitar adjunto seleccionado" title="Quitar adjunto" disabled={disabled}
