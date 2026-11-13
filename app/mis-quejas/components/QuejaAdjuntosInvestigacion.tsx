@@ -72,6 +72,7 @@ interface PanelProps {
   error: boolean
   onRetry: () => void
   canUpload: boolean
+  uploadDisabled?: boolean
   uploading: boolean
   canDelete: (adjunto: QuejaAdjunto) => boolean
   onFiles: OnFiles
@@ -84,17 +85,17 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" fixedHeight
     footer={<div className="space-y-3">
-      {props.canUpload && <div data-investigation-files-drop {...dropHandlers(!props.uploading, props.onFiles)}
+      {props.canUpload && <div data-investigation-files-drop {...dropHandlers(!props.uploadDisabled && !props.uploading, props.onFiles)}
         className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-qms-border bg-qms-hover-bg p-3 data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
         <div className="flex min-w-0 items-center gap-3">
           <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><Upload className="size-5" /></span>
           <div className="min-w-0"><p className="text-sm font-semibold">Subir nuevo archivo</p><p className="text-xs text-qms-muted">También podés arrastrarlo aquí.</p></div>
         </div>
-        <Button size="sm" aria-label="Agregar archivos" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={props.uploading}>
+        <Button size="sm" aria-label="Agregar archivos" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={props.uploadDisabled || props.uploading}>
           Examinar
         </Button>
         <input ref={inputRef} aria-label="Seleccionar adjuntos del análisis" type="file" multiple hidden
-          disabled={!props.canUpload || props.uploading}
+          disabled={!props.canUpload || props.uploadDisabled || props.uploading}
           onChange={event => {
             const files = Array.from(event.target.files ?? [])
             event.target.value = ''
