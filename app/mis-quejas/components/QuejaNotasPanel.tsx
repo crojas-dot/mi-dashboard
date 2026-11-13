@@ -75,7 +75,7 @@ export default function QuejaNotasPanel(props: Props) {
     {props.loading ? <LoadingSkeleton variant="list" label="Cargando notas…" framed={false} /> : props.error ? <div role="alert"><p className="text-sm text-qms-muted">No se pudieron cargar las notas.</p><Button size="sm" variant="ghost" onClick={props.onRetry}>Reintentar notas</Button></div> : props.notas.length ? <ol className="space-y-3">{props.notas.map(item => {
       const editable = props.puedeModificar(item)
       const editing = props.editingId === item.id
-      const autor = item.usuario_id && item.usuario_id === props.currentUser?.id && props.currentUser.nombre ? props.currentUser.nombre : item.usuario_id ? 'Usuario del expediente' : 'Autor no registrado'
+      const autor = item.usuario_id && item.usuario_id === props.currentUser?.id && props.currentUser?.nombre ? props.currentUser.nombre : item.usuario_id ? 'Usuario del expediente' : 'Autor no registrado'
       return <li key={item.id} data-investigation-note className="rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
         <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2">
           <span aria-hidden="true" className="flex size-6 shrink-0 items-center justify-center rounded-full bg-qms-primary-soft text-qms-primary"><UserRound className="size-3.5" /></span>
