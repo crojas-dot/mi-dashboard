@@ -488,7 +488,7 @@ test('adjuntos conserva la zona inferior incluso sin permiso de carga, pero impi
   const drop = panel.nodes().find(node => node.props['data-investigation-files-drop'])
   assert.ok(drop)
   assert.equal(panel.button('Agregar archivos').props.disabled, true)
-  const input = panel.nodes().find(node => node.type === 'input' && node.props['aria-label'] === 'Seleccionar adjuntos del análisis')
+  const input = panel.nodes().find(node => node.type === 'input' && node.props['aria-label'] === 'Seleccionar mis adjuntos')
   assert.equal(input.props.disabled, true)
   assert.equal(modal.props.fixedHeight, true)
 })
