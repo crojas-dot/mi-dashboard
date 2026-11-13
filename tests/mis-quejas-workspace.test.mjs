@@ -457,7 +457,7 @@ test('notas y adjuntos comparten altura fija con lista de scroll y acciones ancl
   assert.ok(panel.button('Agregar archivos'))
 })
 
-test('notas mantiene el botón de agregar dentro del campo y el autor en la cabecera', () => {
+test('Mis notas conserva el botón + y elimina el nombre repetido de cada tarjeta', () => {
   const panel = fixture({ actividad: [
     { id: 'mine', queja_id: 'A', tipo: 'nota', usuario_id: 'owner', descripcion: 'Nota propia', created_at: '2026-11-11T18:00:00Z' },
     { id: 'other', queja_id: 'A', tipo: 'nota', usuario_id: 'other', descripcion: 'Nota ajena', created_at: '2026-11-11T18:05:00Z' },
@@ -471,10 +471,9 @@ test('notas mantiene el botón de agregar dentro del campo y el autor en la cabe
   assert.ok(add)
   assert.ok(add.props.className.includes('absolute right-3 bottom-3'))
   assert.equal(add.props.disabled, true)
-  const authors = panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Colaborador de prueba')
-  assert.ok(authors.length > 0)
-  const names = panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Usuario del expediente')
-  assert.ok(names.length > 0)
+  assert.equal(panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Colaborador de prueba').length, 0)
+  assert.equal(panel.nodes().filter(node => node.type === 'span' && node.props.title === 'Usuario del expediente').length, 0)
+  assert.equal(panel.nodes().filter(node => node.props['aria-label'] === 'Opciones de la nota').length, 1)
   const input = panel.nodes().find(node => node.type === 'textarea' && node.props['aria-label'] === 'Nueva nota de investigación')
   input.props.onChange({ target: { value: 'Texto nuevo' } }); panel.render()
   const enabled = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota')
@@ -615,6 +614,50 @@ test('las notas propias se editan o eliminan desde el menú; las ajenas y la dev
   await panel.button('Eliminar').props.onClick(); panel.render()
   assert.equal(panel.noteDeletes.length, 1)
   assert.equal(panel.noteDeletes[0].id, 'mine')
+})
+
+test('Mis notas muestra menú en revisión pero no permite modificar fuera de Investigación', () => {
+  const panel = fixture({ actividad: [
+    { id: 'mine', queja_id: 'A', usuario_id: 'owner', tipo: 'nota', descripcion: 'Nota propia', created_at: '2026-11-11T18:00:00Z' },
+    { id: 'other', queja_id: 'A', usuario_id: 'other', tipo: 'nota', descripcion: 'Nota ajena', created_at: '2026-11-11T18:30:00Z' },
+  ] })
+  panel.select('A', { estado: 'Pendiente de Revisión GC' })
+  panel.openNotes()
+  const menuButton = panel.nodes().find(node => node.props['aria-label'] === 'Opciones de la nota')
+  assert.ok(menuButton)
+  assert.equal(menuButton.type, 'button')
+  menuButton.props.onClick(); panel.render()
+  const edit = panel.button('Editar')
+  const remove = panel.button('Eliminar')
+  assert.equal(edit.props.disabled, true)
+  assert.equal(remove.props.disabled, true)
+  const hint = panel.nodes().find(node => node.type === 'p' && typeof node.props.children === 'string' && node.props.children.includes('mientras el caso esté En Investigación'))
+  assert.ok(hint)
+  assert.equal(panel.noteUpdates.length, 0)
+  assert.equal(panel.noteDeletes.length, 0)
+})
+
+test('Ver análisis presenta las tres pestañas con adjuntos del cliente e historial real', () => {
+  const panel = fixture({ actividad: [{ id:'n1', queja_id:'A', usuario_id:'owner', tipo:'nota', descripcion:'Hallazgo real', created_at:'2026-11-11T18:00:00Z' }] })
+  panel.select('A', { justificacion_procede: 'Calidad autorizó investigar.' })
+  panel.openAnalysis()
+  const modal = panel.analysisModal()
+  assert.equal(modal.props.title, 'Análisis del caso')
+  assert.equal(modal.props.titleSuffix, '2026-001')
+  assert.equal(modal.props.size, 'xl')
+  assert.equal(modal.props.variant, 'document')
+  const tabs = panel.nodes().filter(node => node.props.role === 'tab')
+  assert.equal(tabs.length, 6)
+  assert.ok(tabs.some(node => node.props.children?.some?.(child => child === 'Adjuntos')))
+  const sections = panel.nodes().filter(node => node.props.role === 'tabpanel')
+  assert.equal(sections.length, 3)
+  assert.equal(sections.find(node => node.props['aria-label'] === 'Adjuntos del cliente').props.hidden, true)
+  assert.equal(sections.find(node => node.props['aria-label'] === 'Historial del expediente').props.hidden, true)
+  assert.ok(panel.nodes().some(node => node.props['data-quality-review']))
+  assert.ok(panel.nodes().some(node => node.props['data-client-description']))
+  const list = panel.nodes().find(node => node.type === 'Attachments')
+  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['client-file'])
+  assert.equal(list.props.hideGroupTitle, true)
 })
 
 test('guardar el borrador conserva adjuntos a la izquierda sin duplicarlos en el editor', async () => {
