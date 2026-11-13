@@ -1,12 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, Paperclip, Plus, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, Paperclip, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import RichTextContent from '@/components/ui/RichTextContent'
 import Select from '@/components/ui/Select'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import QuejaCorreoEditor from '@/app/quejas/components/QuejaCorreoEditor'
@@ -48,6 +47,18 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   </Modal>
 }
 
+/** Solo un PDF institucional válido puede ser seleccionado para la comunicación final. */
+function esPdfOficial(file: QuejaAdjunto, quejaId: string): boolean {
+  return esOficioPublicableQueja(file, quejaId) && file.tipo_mime.toLowerCase() === 'application/pdf' && /\.pdf$/i.test(file.nombre)
+}
+
+function ultimoPdfGenerado(files: readonly QuejaAdjunto[], folio: string, report: QuejaInforme | null, quejaId: string): QuejaAdjunto | null {
+  if (!report) return null
+  const name = informeFilename(folio).replace(/\.docx$/, `-v${report.version}.pdf`)
+  return files.filter(file => esPdfOficial(file, quejaId) && file.nombre === name)
+    .sort((a,b) => b.created_at.localeCompare(a.created_at))[0] ?? null
+}
+
 function RespuestaEditor({ queja, initial, ...props }: Props & { initial: RespuestaClienteContext & { informe: QuejaInforme | null } }) {
   const [snapshot] = useState(queja)
   const noProcede = props.noProcede === true
@@ -59,22 +70,20 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     const motivoGuardado = compatibleDraft?.motivo_no_procede?.trim() ? compatibleDraft.motivo_no_procede : null
     // Los fundamentos se redactan en el oficio; el registro conserva el motivo
     // previo o la comunicación que remite al adjunto, sin pedir un segundo texto.
+    const savedPdf = props.adjuntos.find(file => file.id === compatibleDraft?.adjunto_id && esPdfOficial(file, queja.id))
+    const defaultPdf = ultimoPdfGenerado(props.adjuntos, queja.folio, initial.informe, queja.id)
     return { respuesta,
-      numeroOficio: compatibleDraft?.numero_oficio ?? (queja.numero_oficio_resolucion || queja.folio), adjuntoId: compatibleDraft?.adjunto_id ?? null,
+      numeroOficio: compatibleDraft?.numero_oficio ?? (queja.numero_oficio_resolucion || queja.folio), adjuntoId: savedPdf?.id ?? defaultPdf?.id ?? null,
       ...(noProcede ? { noProcede: { justificacion: motivoGuardado ?? respuesta, formato: motivoGuardado ? compatibleDraft?.motivo_no_procede_formato ?? 'plain' : 'plain' } } : {}),
       correo: { asunto: compatibleDraft?.correo_asunto ?? plantilla.asunto, cuerpo: compatibleDraft?.correo_cuerpo ?? plantilla.cuerpo } }
   })
   const [saved, setSaved] = useState(initial.borrador)
   const [report, setReport] = useState(initial.informe)
-  const [usingInforme, setUsingInforme] = useState(!compatibleDraft?.adjunto_id && !!initial.informe)
   const [editingReport, setEditingReport] = useState(false)
-  const [showDocumentPicker, setShowDocumentPicker] = useState(false)
-  const [baseline, setBaseline] = useState(() => ({ form, usingInforme, reportVersion: report?.version }))
-  const [previewReport, setPreviewReport] = useState(false)
+  const [baseline, setBaseline] = useState(form)
   const [previewFile, setPreviewFile] = useState<QuejaAdjunto | null>(null)
   const [uploaded, setUploaded] = useState<QuejaAdjunto[]>([])
-  const [generatedFile, setGeneratedFile] = useState<{ file: QuejaAdjunto; version: number } | null>(null)
-  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | 'generate' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [confirmPublish, setConfirmPublish] = useState(false)
@@ -82,15 +91,26 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   const scope = useEntityRequestGuard(snapshot.id)
   const queryClient = useQueryClient()
   const draftGeneration = useRef(0)
+  const autoSelected = useRef(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const reportIsCurrent = useRef<() => boolean>(() => false)
   const files = [...props.adjuntos, ...uploaded.filter(file => !props.adjuntos.some(existing => existing.id === file.id))]
-    .filter(file => esOficioPublicableQueja(file, snapshot.id))
+    .filter(file => esPdfOficial(file, snapshot.id))
   const selectedFile = files.find(file => file.id === form.adjuntoId) ?? null
-  const dirty = !initial.publicada && (usingInforme !== baseline.usingInforme || form.respuesta !== baseline.form.respuesta
-    || form.numeroOficio !== baseline.form.numeroOficio || form.adjuntoId !== baseline.form.adjuntoId
-    || form.correo.asunto !== baseline.form.correo.asunto || form.correo.cuerpo !== baseline.form.correo.cuerpo)
-    || !initial.publicada && (form.noProcede?.justificacion !== baseline.form.noProcede?.justificacion || form.noProcede?.formato !== baseline.form.noProcede?.formato)
-    || !initial.publicada && usingInforme && report?.version !== baseline.reportVersion
+  // La lista puede llegar después de abrir el correo; seleccionar solo una vez y
+  // nunca sustituir la selección manual del usuario al refrescar adjuntos.
+  useEffect(() => {
+    if (autoSelected.current || props.archivosLoading || props.archivosError || initial.publicada) return
+    autoSelected.current = true
+    if (form.adjuntoId || !report || uploaded.length) return
+    const generated = ultimoPdfGenerado(props.adjuntos, snapshot.folio, report, snapshot.id)
+    if (generated) setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: generated.id })
+  }, [props.archivosLoading, props.archivosError, props.adjuntos, form.adjuntoId, uploaded.length, report, snapshot.folio, snapshot.id, initial.publicada])
+  const dirty = !initial.publicada && (form.respuesta !== baseline.respuesta
+    || form.numeroOficio !== baseline.numeroOficio || form.adjuntoId !== baseline.adjuntoId
+    || form.correo.asunto !== baseline.correo.asunto || form.correo.cuerpo !== baseline.correo.cuerpo
+    || form.noProcede?.justificacion !== baseline.noProcede?.justificacion
+    || form.noProcede?.formato !== baseline.noProcede?.formato)
   const disabled = !!busy || props.subiendo || editingReport
   const change = (patch: Partial<RespuestaClienteDraftInput>) => { draftGeneration.current++; setForm(current => ({ ...current, ...patch })); setError(''); setNotice('') }
 
@@ -104,8 +124,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       if (kind !== 'finish') validarCorreoQueja(form.correo, kind === 'publish')
       if (form.noProcede && (form.noProcede.justificacion.length > 10000 || kind === 'publish' && !form.noProcede.justificacion.trim())) throw new Error('Revisá la justificación de no procedencia.')
       const nextForm = form
-      const officialFile = usingInforme ? null : selectedFile
-      if (kind === 'publish' && !officialFile) throw new Error('Primero generá el expediente o seleccioná un documento oficial antes de publicar.')
+      const officialFile = selectedFile
+      if (kind === 'publish' && !officialFile) throw new Error('Seleccioná o subí el PDF oficial antes de publicar.')
       if (kind === 'save') {
         const result = await guardarRespuestaClienteBorrador(snapshot, saved?.version ?? 0, nextForm)
         committed = true
@@ -114,7 +134,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
           const savedForm = { respuesta: result.respuesta, numeroOficio: result.numero_oficio, adjuntoId: result.adjunto_id,
             ...(noProcede ? { noProcede: { justificacion: result.motivo_no_procede ?? nextForm.noProcede!.justificacion, formato: result.motivo_no_procede_formato ?? nextForm.noProcede!.formato } } : {}),
             correo: { asunto: result.correo_asunto ?? nextForm.correo.asunto, cuerpo: result.correo_cuerpo ?? nextForm.correo.cuerpo } }
-          setSaved(result); setForm(savedForm); setBaseline({ form: savedForm, usingInforme, reportVersion: report?.version }); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
+          setSaved(result); setForm(savedForm); setBaseline(savedForm); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
         }
       } else {
         const updated = kind === 'finish' ? await transicionarQueja(snapshot, 'Finalizado')
@@ -130,65 +150,31 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   }
 
   async function upload(file: File) {
+    if (file.type !== 'application/pdf' || !/\.pdf$/i.test(file.name)) {
+      setError('Para comunicar al cliente se requiere un archivo PDF (.pdf).')
+      return
+    }
     const operation = scope.start('response-upload')
     if (!operation) return
-    setBusy('upload')
+    setBusy('upload'); setError(''); setNotice('')
     try {
       const result = await props.onSubir(file)
-      if (operation.isCurrent() && result) { setUploaded(current => [...current, result]); setUsingInforme(false); change({ adjuntoId: result.id }) }
+      if (operation.isCurrent() && result) {
+        if (!esPdfOficial(result, snapshot.id)) throw new Error('El archivo subido no es un PDF oficial válido.')
+        setUploaded(current => [...current, result])
+        change({ adjuntoId: result.id })
+        setNotice('PDF adjuntado. Podés visualizarlo antes de publicarlo.')
+      } else if (operation.isCurrent()) throw new Error('No se pudo guardar el PDF en el expediente.')
     } catch (caught) {
-      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo adjuntar el oficio. La respuesta se conserva.'))
-    } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
-  }
-
-
-  // La conversión a Word y su subida solo ocurren al pulsar Generar expediente.
-  // Guardar borrador y Publicar respuesta nunca generan ni suben un informe.
-  async function generarExpediente() {
-    if (disabled) return
-    if (!report?.contenido.trim()) {
-      const visit = scope.capture(), context = scope.captureContext()
-      reportIsCurrent.current = () => visit() && context()
-      setEditingReport(true)
-      return
-    }
-    if (generatedFile?.version === report.version) {
-      draftGeneration.current++
-      setForm(current => ({ ...current, adjuntoId: generatedFile.file.id }))
-      setUsingInforme(false)
-      setShowDocumentPicker(false)
-      setNotice('Se seleccionó el expediente ya generado. No fue necesario volver a crearlo.')
-      return
-    }
-    const operation = scope.start('response-generate')
-    if (!operation) return
-    const isContextCurrent = scope.captureContext()
-    setBusy('generate'); setError(''); setNotice('')
-    try {
-      const { crearInformeWord } = await import('@/lib/utils/quejaInformeWord')
-      const blob = await crearInformeWord(report.contenido)
-      if (!operation.isCurrent() || !isContextCurrent()) return
-      const name = informeFilename(snapshot.folio).replace(/\.docx$/, `-v${report.version}.docx`)
-      const file = await props.onSubir(new File([blob], name, { type: blob.type }))
-      if (!operation.isCurrent() || !isContextCurrent()) return
-      if (!file) throw new Error('No se pudo confirmar el archivo generado.')
-      setUploaded(current => [...current, file])
-      setGeneratedFile({ file, version: report.version })
-      draftGeneration.current++
-      setForm(current => ({ ...current, adjuntoId: file.id }))
-      setUsingInforme(false)
-      setShowDocumentPicker(false)
-      setNotice('Expediente generado y adjuntado. Revisá el mensaje antes de publicarlo.')
-    } catch (caught) {
-      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo generar el expediente. No se publicó ningún correo.'))
+      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo adjuntar el PDF. La respuesta se conserva.'))
     } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
   }
 
   function requestPublish() {
     if (disabled) return
     try { validarCorreoQueja(form.correo, true) } catch (caught) { setError(errorMsg(caught, 'Revisá el asunto y el mensaje del correo.')); return }
-    if (!form.numeroOficio.trim() || usingInforme || !selectedFile) {
-      setError('Completá el número de oficio y generá el expediente o seleccioná el archivo oficial.'); return
+    if (!form.numeroOficio.trim() || !selectedFile) {
+      setError('Completá el número de oficio y seleccioná o subí el PDF oficial.'); return
     }
     if (noProcede) { void write('publish'); return }
     setConfirmPublish(true)
@@ -209,8 +195,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
               <Button data-response-publish size="sm" disabled={disabled || props.archivosLoading || props.archivosError} loading={busy === 'publish'} onClick={requestPublish}>
                 <Send aria-hidden="true" className="size-4" />Publicar respuesta
               </Button>
-              <Button variant="ghost" size="icon" aria-label="Elegir adjunto" title="Elegir adjunto" disabled={disabled}
-                aria-expanded={showDocumentPicker} onClick={() => setShowDocumentPicker(value => !value)}>
+              <Button variant="ghost" size="icon" aria-label="Subir PDF" title="Subir PDF" disabled={disabled}
+                onClick={() => fileInputRef.current?.click()}>
                 <Paperclip aria-hidden="true" className="size-4" />
               </Button>
             </div>
@@ -220,8 +206,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
             </div>
           </>}
       </div>}>
-      {notice && <p role="status" className="shrink-0 border-b border-qms-border bg-qms-surface px-4 py-2 text-sm text-qms-success sm:px-6">{notice}</p>}
-      {initial.publicada ? <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain bg-qms-surface p-5 sm:p-6">
+      {notice && <p role="status" className="shrink-0 border-b border-qms-border bg-qms-surface px-5 py-2.5 text-sm text-qms-success sm:px-8">{notice}</p>}
+      {initial.publicada ? <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-qms-surface p-6 sm:p-8">
         <p className="text-sm text-qms-muted">La respuesta ya fue publicada el {caseDate(initial.publicada.publicado_at)}. Se conserva en modo de lectura.</p>
         {error && <p role="alert" className="text-sm text-qms-danger">{error}</p>}
         <h3 className="text-base font-medium">{initial.borrador?.correo_cuerpo ? 'Correo de acompañamiento' : 'Respuesta publicada'}</h3>
@@ -229,71 +215,65 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{initial.borrador?.correo_cuerpo ?? initial.publicada.respuesta}</p>
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
       </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-qms-surface">
-        {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-4 py-3 text-sm text-qms-danger sm:px-6">{error}</div>}
-        <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id} destinatario={snapshot.email_cliente ?? ''} correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
-        <div data-response-attachments className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-4 py-4 sm:px-6">
-          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-3">
-            <label htmlFor={'respuesta-oficio-' + snapshot.id} className="shrink-0 text-xs font-medium text-qms-muted">N.º de oficio</label>
-            <input id={'respuesta-oficio-' + snapshot.id} value={form.numeroOficio} required maxLength={120} disabled={disabled}
-              className="min-w-0 flex-1 border-b border-qms-border bg-transparent px-1 py-1 text-sm text-qms-dark outline-none focus-visible:border-qms-primary disabled:opacity-65"
-              placeholder="Oficio oficial de ECA" onChange={event => change({ numeroOficio: event.target.value })} />
+        {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
+        <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
+          destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
+          onOficioChange={value => change({ numeroOficio: value })}
+          correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
+        <section data-response-attachments aria-label="Adjuntos del correo" className="mt-3 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-6 sm:mt-5 sm:px-8 sm:py-7">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-qms-muted uppercase"><Paperclip aria-hidden="true" className="size-4" />Adjuntos seleccionados</h3>
+            <span className="text-xs text-qms-muted">Documento final en PDF</span>
           </div>
-          <div className="mb-2 flex items-center gap-2">
-            <Paperclip aria-hidden="true" className="size-3.5 text-qms-muted" />
-            <h3 className="text-xs font-semibold tracking-wide text-qms-muted uppercase">Adjuntos seleccionados</h3>
-          </div>
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {selectedFile && !usingInforme && <div data-response-selected-file className="inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-sm shadow-sm">
-              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
-              <button type="button" className="min-w-0 max-w-[240px] cursor-pointer truncate font-medium text-qms-dark hover:text-qms-primary sm:max-w-[420px]"
-                title={'Vista previa de ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}>{selectedFile.nombre}</button>
-              <button type="button" aria-label="Quitar adjunto seleccionado" title="Quitar adjunto" disabled={disabled}
-                className="ml-1 inline-flex size-5 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
-                onClick={() => { change({ adjuntoId: null }); setShowDocumentPicker(true) }}><X aria-hidden="true" className="size-3.5" /></button>
-            </div>}
-            {usingInforme && report && <span className="inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 text-xs text-qms-muted">
-              <FileText aria-hidden="true" className="size-4 shrink-0" />
-              Informe guardado · pendiente de generar archivo
-            </span>}
-            {!selectedFile && !usingInforme && <span className="text-sm text-qms-muted">Sin documento oficial seleccionado.</span>}
-            <button type="button" aria-expanded={showDocumentPicker} aria-controls={'respuesta-documentos-' + snapshot.id}
-              onClick={() => setShowDocumentPicker(value => !value)} disabled={disabled}
-              className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-button border border-dashed border-qms-border px-3 py-2 text-xs font-medium text-qms-muted transition-colors hover:border-qms-primary hover:bg-qms-primary-soft hover:text-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-              <Plus aria-hidden="true" className="size-3.5" />Cambiar o subir archivo
-            </button>
-            <Button data-response-generate size="sm" variant="secondary" disabled={disabled || props.archivosLoading || props.archivosError}
-              loading={busy === 'generate'} onClick={() => { void generarExpediente() }}><FileText aria-hidden="true" className="size-4" />Generar expediente</Button>
-          </div>
-          {showDocumentPicker && <div id={'respuesta-documentos-' + snapshot.id} className="mt-3 flex min-w-0 flex-wrap items-center gap-2 border-t border-qms-border pt-3">
-            <label htmlFor={'respuesta-documento-' + snapshot.id} className="text-xs text-qms-muted">Documento oficial</label>
-            <Select id={'respuesta-documento-' + snapshot.id} value={usingInforme ? 'informe' : form.adjuntoId ?? ''}
-              disabled={disabled || props.archivosLoading || props.archivosError} wrapperClassName="min-w-0 flex-1 basis-52"
-              onChange={event => { const value = event.target.value; if (value === 'informe') { setUsingInforme(true); change({ adjuntoId: null }) } else { setUsingInforme(false); change({ adjuntoId: value || null }) } }}>
-              <option value="">Seleccionar documento</option>
-              {report && <option value="informe">Informe guardado · generar Word</option>}
-              {[...files].sort((a, b) => Number(b.tipo_mime === 'application/pdf') - Number(a.tipo_mime === 'application/pdf')).map(file => <option key={file.id} value={file.id}>{file.nombre}</option>)}
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <label htmlFor={'respuesta-documento-' + snapshot.id} className="sr-only">Seleccionar PDF oficial del expediente</label>
+            <Select id={'respuesta-documento-' + snapshot.id} value={selectedFile?.id ?? ''}
+              disabled={disabled || props.archivosLoading || props.archivosError} wrapperClassName="min-w-0 flex-1 basis-56"
+              onChange={event => change({ adjuntoId: event.target.value || null })}>
+              <option value="">Seleccionar PDF oficial</option>
+              {[...files].sort((a,b) => b.created_at.localeCompare(a.created_at)).map(file =>
+                <option key={file.id} value={file.id}>{file.nombre}</option>)}
             </Select>
-            <label className={'ui-button ui-button-secondary ui-button-sm ' + (disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer')}>
-              <Upload aria-hidden="true" className="size-4" />Subir
-              <input type="file" aria-label="Adjuntar documento oficial" className="sr-only" disabled={disabled}
-                onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
-            </label>
-            <Button variant="secondary" size="sm" disabled={disabled || (usingInforme ? !report?.contenido.trim() : !selectedFile)}
-              onClick={() => { if (usingInforme) setPreviewReport(true); else setPreviewFile(selectedFile) }}><Eye aria-hidden="true" className="size-4" />Visualizar</Button>
-            <Button variant="secondary" size="sm" disabled={disabled || !report} onClick={() => {
+            <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
+              <Upload aria-hidden="true" className="size-4" />Subir archivo
+            </Button>
+            <Button size="sm" variant="secondary" disabled={!selectedFile || disabled} onClick={() => setPreviewFile(selectedFile)}>
+              <Eye aria-hidden="true" className="size-4" />Visualizar
+            </Button>
+            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
+              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+          </div>
+          {selectedFile && <div data-response-selected-file className="mt-4 inline-flex max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2 shadow-sm">
+            <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+            <button type="button" title={'Previsualizar ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}
+              className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[480px]">{selectedFile.nombre}</button>
+            <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
+              className="inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
+              onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
+          </div>}
+          {noProcede && <div className="mt-4 border-t border-qms-border/60 pt-3">
+            <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
               const visit = scope.capture(), context = scope.captureContext()
               reportIsCurrent.current = () => visit() && context()
               setEditingReport(true)
-            }}><Pencil aria-hidden="true" className="size-4" />Editar informe</Button>
+            }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
           </div>}
-          {props.archivosError && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
-        </div>
+          {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
+        </section>
       </div>}
     </Modal>
-    {editingReport && <QuejaInformeModal queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }} anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)} onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Pulsá «Generar expediente» para preparar el archivo oficial cuando lo necesités.'); } }} />}
-    {previewReport && report && <Modal open onClose={() => setPreviewReport(false)} title={'Vista previa del informe · ' + snapshot.folio} size="xl" variant="document"><div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg p-4"><div className="mx-auto max-w-4xl bg-qms-surface p-5 sm:p-10"><RichTextContent value={report.contenido} format="markdown" /></div></div></Modal>}
+    {editingReport && <QuejaInformeModal
+      queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }}
+      anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)}
+      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Prepará su PDF desde el editor cuando esté listo.'); } }}
+      onPreparePdf={props.onSubir}
+      onPdfPrepared={file => { if (reportIsCurrent.current() && esPdfOficial(file, snapshot.id)) {
+        setUploaded(current => [...current, file])
+        change({ adjuntoId: file.id })
+        setNotice('PDF preparado y seleccionado para la comunicación al cliente.')
+      } }} />}
     <AdjuntoPreviewModal adjunto={previewFile} onClose={() => setPreviewFile(null)} />
-    <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{usingInforme ? 'el Word del informe guardado' : selectedFile?.nombre}</strong>. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}
+    <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{selectedFile?.nombre}</strong> en formato PDF. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}
       confirmLabel="Publicar respuesta" loading={busy === 'publish'} onCancel={() => setConfirmPublish(false)} onConfirm={() => { void write('publish') }} />
     <ConfirmDialog open={confirmClose} title="Borrador sin guardar" message="Hay cambios pendientes. Volvé al formulario para guardarlos o cerrá descartando estas ediciones." confirmLabel="Descartar cambios" danger onCancel={() => setConfirmClose(false)} onConfirm={props.onClose} />
   </>

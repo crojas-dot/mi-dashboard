@@ -20,6 +20,7 @@ import {
 } from '@/lib/utils/quejaInforme'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import type { Queja } from '@/lib/types'
+import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 
 interface Props {
   queja: Queja
@@ -27,6 +28,8 @@ interface Props {
   autor: string
   onClose: () => void
   onSaved?: (informe: QuejaInforme) => void
+  onPreparePdf?: (file: File) => Promise<QuejaAdjunto | undefined>
+  onPdfPrepared?: (file: QuejaAdjunto) => void
 }
 
 function InformeIcono() {
@@ -181,6 +184,8 @@ function InformeEditor({
   autor,
   onClose,
   onSaved,
+  onPreparePdf,
+  onPdfPrepared,
   inicial,
 }: Props & {
   inicial: QuejaInforme | null
@@ -202,6 +207,7 @@ function InformeEditor({
   const [guardando, setGuardando] = useState(false)
   const [exportando, setExportando] = useState(false)
   const [exportandoPdf, setExportandoPdf] = useState(false)
+  const [preparandoPdf, setPreparandoPdf] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
@@ -214,7 +220,7 @@ function InformeEditor({
   const queryClient = useQueryClient()
 
   const dirty = contenidoBase !== contenido
-  const pending = guardando || exportando || exportandoPdf
+  const pending = guardando || exportando || exportandoPdf || preparandoPdf
 
   useEffect(() => {
     if (!exportMenuOpen) return
@@ -355,6 +361,32 @@ function InformeEditor({
     }
   }
 
+  async function prepararPdfParaCliente() {
+    if (!onPreparePdf || !guardado || dirty || pending) return
+    const operation = scope.start('informe')
+    if (!operation) return
+    const contextIsCurrent = scope.captureContext()
+    setPreparandoPdf(true)
+    setError('')
+    setAviso('')
+    try {
+      const { crearInformePdf } = await import('@/lib/utils/quejaInformePdf')
+      const blob = await crearInformePdf(guardado.contenido)
+      if (!operation.isCurrent() || !contextIsCurrent()) return
+      const name = informeFilename(queja.folio).replace(/\.docx$/, `-v${guardado.version}.pdf`)
+      const file = await onPreparePdf(new File([blob], name, { type: 'application/pdf' }))
+      if (!operation.isCurrent() || !contextIsCurrent()) return
+      if (!file) throw new Error('No se pudo guardar el PDF en los adjuntos del expediente.')
+      onPdfPrepared?.(file)
+      setAviso('PDF del expediente preparado y adjuntado. Ya podés seleccionarlo en Respuesta al cliente.')
+    } catch (caught) {
+      if (operation.isCurrent()) setError(caught instanceof Error ? caught.message : 'No se pudo preparar el PDF del expediente.')
+    } finally {
+      if (operation.isCurrent()) setPreparandoPdf(false)
+      operation.finish()
+    }
+  }
+
   async function exportarPdf() {
     const operation = scope.start('informe')
 
@@ -464,6 +496,14 @@ function InformeEditor({
               Guardar
             </Button>
 
+            {onPreparePdf && (
+              <Button size="sm" variant="secondary" onClick={() => { void prepararPdfParaCliente() }}
+                disabled={pending || dirty || !guardado?.contenido.trim()} loading={preparandoPdf}
+                title={dirty ? 'Guardá los cambios del informe antes de preparar su PDF.' : 'Crear y adjuntar el PDF oficial al expediente'}>
+                <FileDown aria-hidden="true" className="size-4" />
+                Preparar PDF para cliente
+              </Button>
+            )}
             <div
               ref={exportMenuRef}
               className="relative"

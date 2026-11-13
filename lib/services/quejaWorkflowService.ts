@@ -200,6 +200,9 @@ export function publicarRespuestaAprobada(queja: ExpedienteVersionado, version: 
   if (!args.p_response || !args.p_office || !esOficioPublicableQueja(adjunto, queja.id) || adjunto.id !== args.p_file) {
     throw new Error('Completá la respuesta, el número de oficio y el documento oficial de este expediente.')
   }
+  if (adjunto.tipo_mime.toLowerCase() !== 'application/pdf' || !/\.pdf$/i.test(adjunto.nombre)) {
+    throw new Error('El documento final enviado al cliente debe ser un PDF válido.')
+  }
   if (input.noProcede) return callRpc<Queja>('qms_publish_rejected_response', { ...args, ...rechazoArgs(input, true) })
   if (input.correo) {
     validarCorreoQueja(input.correo, true)

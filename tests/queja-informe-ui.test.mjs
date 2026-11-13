@@ -8,8 +8,8 @@ class FixtureNode {
   contains() { return false }
 }
 
-function reportHarness({ initial = null, saveError = null } = {}) {
-  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = []
+function reportHarness({ initial = null, saveError = null, preparePdf = false } = {}) {
+  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = []
   let cursor = 0, tree, closed = 0
   const document = {
     addEventListener(name, callback) { listeners.set(name, callback) },
@@ -72,6 +72,8 @@ function reportHarness({ initial = null, saveError = null } = {}) {
     anexos: [],
     autor: 'Calidad',
     onClose() { closed++ },
+    ...(preparePdf ? { onPreparePdf: async file => { prepared.push(file); return { id: 'pdf-prepared', nombre: file.name, tipo_mime: file.type } },
+      onPdfPrepared: file => selected.push(file) } : {}),
   }
 
   function visit(value, nodes = []) {
@@ -117,6 +119,8 @@ function reportHarness({ initial = null, saveError = null } = {}) {
     listeners,
     saves,
     downloads,
+    prepared,
+    selected,
     closed: () => closed,
     content: nodes => nodes.find(node => node.type === 'QuejaInformeHoja')?.props.contenido,
     change(value) {
@@ -139,6 +143,28 @@ function reportHarness({ initial = null, saveError = null } = {}) {
     text,
   }
 }
+
+test('preparar PDF para cliente solo ocurre por clic y requiere versión guardada', async () => {
+  const stored = { queja_id: 'case-1', version: 3, fuente_revision: 1, contenido: '## Informe guardado\n\nResolución aprobada' }
+  const report = reportHarness({ initial: stored, preparePdf: true })
+  assert.equal(report.prepared.length, 0)
+  const generate = report.findButton(report.render(), 'Preparar PDF para cliente')
+  assert.ok(generate)
+  assert.equal(generate.props.disabled, false)
+  generate.props.onClick()
+  await new Promise(resolve => setImmediate(resolve))
+  assert.equal(report.prepared.length, 1)
+  assert.equal(report.prepared[0].name, 'Informe-v3.pdf')
+  assert.equal(report.prepared[0].type, 'application/pdf')
+  assert.equal(report.selected.length, 1)
+  assert.equal(report.selected[0].id, 'pdf-prepared')
+  report.change('## Informe editado sin guardar')
+  assert.equal(report.findButton(report.render(), 'Preparar PDF para cliente').props.disabled, true)
+  assert.equal(report.prepared.length, 1)
+  const unsaved = reportHarness({ preparePdf: true })
+  assert.equal(unsaved.findButton(unsaved.render(), 'Preparar PDF para cliente').props.disabled, true)
+  assert.equal(unsaved.prepared.length, 0)
+})
 
 test('abrir y cerrar de inmediato o dejar el informe abierto no muestra confirmación', () => {
   const immediate = reportHarness()
