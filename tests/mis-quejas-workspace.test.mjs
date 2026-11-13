@@ -102,6 +102,7 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   const workspace = panel.nodes().find(node => node.type.name === 'CaseWorkspace')
   assert.equal(workspace.props.cyclePlacement, 'header')
   assert.equal(workspace.props.presentation, 'reference')
+  assert.equal(workspace.props.readingLayout, true)
   assert.equal(workspace.props.request.type.name, 'CaseRequestHeader')
   assert.equal(workspace.props.requestFooter.type, 'div')
   assert.equal(workspace.props.requestFooter.props.children[0].type.name, 'QuejaAdjuntosCard')
