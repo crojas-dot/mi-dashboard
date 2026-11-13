@@ -145,7 +145,7 @@ export default function Modal({ open, onClose, title, titleSuffix, size = 'md', 
         >
           <div className={`flex min-w-0 items-center gap-3 ${headerCenter ? 'shrink-0' : 'flex-1'} ${report ? 'gap-2' : confirmation ? 'gap-3' : ''}`}>
             {headerLeading}
-            <h2 id={titleId} title={workspace ? title : report ? title : undefined} className={`m-0 min-w-0 leading-6 ${fixedHeight ? 'flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[17px] font-semibold' : `truncate ${workspace ? 'text-sm font-semibold sm:text-base' : report ? 'text-base font-semibold' : confirmation ? 'text-lg font-semibold' : 'text-base'}`}`}>{title}{titleSuffix && <span className="font-normal text-qms-muted">· {titleSuffix}</span>}</h2>
+            <h2 id={titleId} title={workspace ? title : report ? title : undefined} className={`m-0 min-w-0 leading-6 ${fixedHeight ? 'flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[17px] font-semibold' : `truncate ${workspace ? 'text-sm font-semibold sm:text-base' : report ? 'text-base font-semibold' : confirmation ? 'text-lg font-semibold' : 'text-base'}`}`}>{titleSuffix ? <>{title}<span className="font-normal text-qms-muted">· {titleSuffix}</span></> : title}</h2>
           </div>
           {headerCenter && <div data-modal-header-center className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2 @min-[1100px]/workspace:px-0">{headerCenter}</div>}
           <div className={`flex shrink-0 items-center gap-1 ${centeredWorkspaceHeader ? '@min-[1100px]/workspace:justify-self-end' : ''}`}>
