@@ -123,25 +123,26 @@
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;
-  max-width: 832px;
+  max-width: calc(70ch + 4rem);
   margin-inline: auto;
 }
 
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
   left: 50%;
   right: auto;
-  width: min(calc(100% - 2.5rem), 768px);
+  width: min(calc(100% - 2.5rem), 70ch);
   transform: translateX(-50%);
 }
 
-[data-case-reading-layout="true"] [data-reading-copy] {
-  max-width: 768px;
+[data-case-reading-layout="true"] [data-reading-copy],
+[data-case-reading-layout="true"] [data-case-reading-copy] {
+  max-width: 70ch;
   margin-inline: auto;
 }
 
 @media (min-width: 640px) {
   [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
-    width: min(calc(100% - 4rem), 768px);
+    width: min(calc(100% - 4rem), 70ch);
   }
 }
 
