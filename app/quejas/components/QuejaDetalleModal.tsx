@@ -488,8 +488,15 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {esStaff && <CaseSidebarShortcut title="Generar expediente" description="Preparar o continuar el informe editable del caso." actionLabel="Generar expediente" icon={<FileText className="size-4" />}
-            disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)} />}
+          {esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
+            <p className="mb-4 text-xs leading-relaxed text-qms-muted">Prepará el informe oficial con el análisis y la resolución del caso.</p>
+            <Button size="sm" variant="secondary" className="w-full justify-between border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40 hover:bg-qms-primary-soft"
+              disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
+              <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
+              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+            </Button>
+          </section>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
