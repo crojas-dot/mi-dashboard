@@ -146,10 +146,17 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   la geometría anterior.
   Notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver notas
   abre un diálogo centrado (`variant="dialog" size="lg" fixedHeight`) con lectura
-  y alta. Notas y Adjuntos usan hasta 600px de alto (90dvh en pantallas bajas);
-  solo la lista central se desplaza, el encabezado y la zona inferior permanecen fijos.
-  La nueva nota se escribe en el pie y el selector de archivos está en el pie
-  del diálogo de adjuntos; no se remonta ni se borra el borrador de resolución. En contraído sigue
+  y alta. Notas y Adjuntos tienen 672px de ancho máximo y 600px de alto (90dvh
+  en pantallas bajas); solo la lista central se desplaza con scrollbar fina.
+  Encabezado y pie siguen fijos. Notas muestra avatar, autor verificable (el usuario
+  conectado para notas propias; genérico si no se conoce el autor) y fecha al extremo
+  derecho. El botón + es nativo, absoluto dentro del textarea: no usar `Button`
+  porque agrega `relative`, lo que lo desplaza fuera del campo. No hay etiqueta
+  duplicada encima de la redacción. Adjuntos muestra un único título "Evidencias"
+  con cantidad; `ListaAdjuntos layout="modal"` omite encabezados internos, usa filas
+  compactas con nombres truncados y acciones visibles al foco/hover (siempre en móvil).
+  La zona de subida permanece anclada en el pie incluso sin permiso para subir, pero
+  el botón queda deshabilitado. Se conservan permisos, carga y borradores. En contraído sigue
   visible sin mostrar el contacto. Adjuntar está en el encabezado, a la izquierda de
   Guardar/Editar, y abre el selector directamente. Los adjuntos se listan bajo el
   lienzo con `ListaAdjuntos layout="cards"`, también al editar, sin sheet aparte.
