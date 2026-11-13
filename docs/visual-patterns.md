@@ -151,8 +151,8 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   abre un diálogo centrado (`variant="dialog" size="lg" fixedHeight`) con lectura
   y alta. Notas y Adjuntos tienen 672px de ancho máximo y 600px de alto (90dvh
   en pantallas bajas); solo la lista central se desplaza con scrollbar fina.
-  Encabezado y pie siguen fijos. Notas muestra avatar, autor verificable (el usuario
-  de cada nota solo la fecha y un menú visible de tres puntos para sus notas propias.
+  Encabezado y pie siguen fijos. Mis notas muestra en cada tarjeta solo la fecha,
+  el texto y un menú de tres puntos en las notas propias.
   Editar y Eliminar se habilitan exclusivamente mientras el expediente continúe
   En Investigación; durante revisión se muestran inactivos con la explicación,
   en concordancia con los guardas de la base de datos. El botón + es nativo,
@@ -169,11 +169,11 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
   A la derecha quedan Acción actual y la devolución real de Calidad,
   en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
-  Ver caso completo
+  Ver análisis
   usa fondo rojo institucional `qms-brand-red`, hover blanco con texto/icono/borde
   rojos, y queda en Acción actual, encima del
   envío a GC; investigación omite la descripción
-  redundante de esa tarjeta. Ese único acceso abre Análisis. Ver
+  redundante de esa tarjeta. Ese único acceso abre el modal Análisis del caso. Ver
   [investigación con consulta lateral](quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
   **Ver análisis** conserva el tamaño del documento de consulta y tiene pestañas
   Análisis, Adjuntos e Historial, en la cabecera de escritorio y en una segunda
