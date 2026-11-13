@@ -75,10 +75,10 @@ export default function QuejaAnalisisPanel(props: Props) {
     <div ref={scrollRef} data-analysis-scroll className="qms-compact-modal-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg">
       <section id={tabId('analisis')} role="tabpanel" aria-label="Análisis" hidden={activeTab !== 'analisis'} className={activeTab === 'analisis' ? 'mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6 p-4 sm:p-6' : 'hidden'}>
         <div data-quality-review className="relative mb-1">
-          <div className="relative z-10 rounded-card border border-soft-amber-border bg-soft-amber-bg p-4 shadow-sm sm:p-5">
+          <div className="relative z-10 rounded-card border border-qms-warning/50 bg-soft-amber-bg p-4 shadow-sm sm:p-5">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
-                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button border border-soft-amber-border bg-soft-amber-bg font-semibold text-sm text-soft-amber-text">GC</span>
+                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button border border-qms-warning/50 bg-soft-amber-bg font-semibold text-sm text-soft-amber-text">GC</span>
                 <div className="min-w-0">
                   <h3 className="text-sm font-semibold text-qms-dark">Evaluación de Calidad</h3>
                   <p className="mt-1 text-xs text-qms-muted">Observación registrada en el expediente</p>
@@ -90,7 +90,7 @@ export default function QuejaAnalisisPanel(props: Props) {
               ? <div className="break-words text-base leading-relaxed text-qms-dark"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div>
               : <p className="text-sm text-qms-muted">Sin observación de Calidad registrada.</p>}
           </div>
-          <span aria-hidden="true" className="absolute bottom-[-6px] left-10 z-20 size-3 rotate-45 border-r border-b border-soft-amber-border bg-soft-amber-bg" />
+          <span aria-hidden="true" className="absolute bottom-[-6px] left-10 z-20 size-3 rotate-45 border-r border-b border-qms-warning/50 bg-soft-amber-bg" />
         </div>
         <section data-client-description className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
           <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -99,7 +99,7 @@ export default function QuejaAnalisisPanel(props: Props) {
           </div>
           <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
         </section>
-        {props.devolucion && <section className="rounded-card border border-soft-amber-border bg-qms-surface p-5 shadow-sm sm:p-6">
+        {props.devolucion && <section className="rounded-card border border-qms-warning/50 bg-qms-surface p-5 shadow-sm sm:p-6">
           <h3 className="mb-2 text-sm font-semibold">Devolución de Calidad</h3>
           <time className="text-xs text-qms-muted" dateTime={props.devolucion.fecha}>{caseDate(props.devolucion.fecha)}</time>
           <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{props.devolucion.motivo}</p>
