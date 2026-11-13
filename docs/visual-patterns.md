@@ -340,10 +340,12 @@ que crece con el texto, de modo que la región de composición hace **un solo sc
 desde los destinatarios hasta los adjuntos. Hay más aire entre renglones y márgenes.
 El pie con Publicar respuesta, Descartar y Guardar borrador se mantiene fijo.
 
-La sección inferior contiene **Adjuntos seleccionados**, selector con opción vacía
-«Seleccionar PDF oficial», botón **Subir archivo** y **Visualizar** para el PDF
-seleccionado. No repite «Sin documento oficial seleccionado». El chip del archivo
-real también abre el visor y puede quitarse sin borrar el archivo almacenado. Si
+La sección inferior permanece visible al redactar: ofrece **Subir archivo**
+y un chip del PDF seleccionado con acciones de previsualizar o quitar la selección.
+El selector desplegable se elimina. Si no existe PDF seleccionado se muestra
+un aviso discreto; no se inventa un informe. La selección del chip se puede
+quitar sin borrar el archivo almacenado. El cuerpo del mensaje tiene scroll
+propio dentro del compositor y el pie de publicación permanece fijo. Si
 existe un PDF institucional previamente generado para el folio y versión guardada
 (`Expediente-<folio>-v<version>.pdf`), se selecciona por defecto sin generar ni
 subir nada. Una selección explícita o el PDF guardado en borrador tiene prioridad.
@@ -358,3 +360,19 @@ Publicar respuesta. En la composición no hay botón de generación; si la respu
 es de **No Procede**, puede abrirse el editor específico para preparar su PDF.
 El exportador Word existente sigue disponible para uso interno pero no se acepta
 como adjunto del correo final. No se modifican permisos ni transiciones.
+
+
+## Devolución a investigación y consulta del responsable (13 noviembre 2026)
+
+El formulario «Devolver a investigación» utiliza el mismo ancho que el correo
+(`Modal size="mail"`) y un área extensa para el motivo obligatorio. El pie
+mantiene las acciones de cancelar/confirmar; el bloque de soporte integra la
+subida al expediente existente y la previsualización. Los documentos subidos
+persisten en el expediente aunque se cancele la devolución. Esta versión
+**no vincula aún cada adjunto a una revisión GC concreta** en la base de datos;
+no atribuir archivos de otras etapas a una devolución.
+
+La tarjeta de devolución del responsable permite ver el motivo completo en un
+modal del mismo ancho, consultar el historial y los documentos institucionales
+del expediente, y regresar al editor original con «Ir al editor», sin duplicar
+la edición de la propuesta ni modificar el plazo.
