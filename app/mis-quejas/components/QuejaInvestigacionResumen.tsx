@@ -67,7 +67,7 @@ export default function QuejaInvestigacionResumen({ devolucion, devoluciones, op
               <p className="whitespace-pre-wrap break-words leading-relaxed">{item.motivo}</p>
             </li>
           ))}
-          {soportes.length > 0 && <li className="list-none rounded-card border border-qms-border bg-qms-surface p-4 text-qms-dark">
+          {soportes.length > 0 && onPreview && <li className="list-none rounded-card border border-qms-border bg-qms-surface p-4 text-qms-dark">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold"><Paperclip aria-hidden="true" className="size-4 text-qms-muted" />Documentos institucionales del expediente</h3>
             <p className="mb-3 text-xs text-qms-muted">Estos archivos pertenecen al expediente; no todos necesariamente corresponden a esta devolución.</p>
             <ul className="space-y-2">{soportes.map(file => <li key={file.id} className="flex min-w-0 items-center justify-between gap-2 rounded-button border border-qms-border px-3 py-2">
