@@ -17,8 +17,9 @@ import AreaQuejaControl from '@/app/quejas/components/AreaQuejaControl'
 import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
+import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import type { Queja } from '@/lib/types'
-import { showError, showSuccess } from '@/lib/services/errorToast'
+import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
 import { useQuejaComentarios, useCrearQuejaComentario } from '@/lib/queries/useQuejaComentarios'
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
@@ -27,6 +28,7 @@ import {
   actualizarRegistroQueja,
 
   derivarQuejaASACP,
+  subirAdjuntoQueja,
   transicionarQueja,
   esOficioPublicableQueja,
   resolverQuejaConDocumento,
@@ -36,7 +38,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { Send, GitBranch, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, Info } from 'lucide-react'
+import { Send, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
@@ -66,6 +68,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [informeOpen, setInformeOpen] = useState(false)
   const [decisionOpen, setDecisionOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
+  const [analisisCalidadOpen, setAnalisisCalidadOpen] = useState(false)
+  const [subiendoSoporte, setSubiendoSoporte] = useState(false)
   const [motivoDevolucion, setMotivoDevolucion] = useState('')
   const [confirmarSACP, setConfirmarSACP] = useState(false)
   const [sacpCreadaEnVisita, setSacpCreadaEnVisita] = useState(false)
@@ -104,7 +108,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const draftVersions = useRef({ workflow: 0, comentario: 0 })
   const quejaId = queja?.id ?? ''
   const { data: comentarios = [], isLoading: comentariosLoading, error: comentariosError, refetch: refetchComentarios } = useQuejaComentarios(quejaId, activityOpen)
-  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen)
+  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen || analisisCalidadOpen)
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
@@ -144,6 +148,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setInformeOpen(false)
     setDecisionOpen(false)
     setReviewOpen(false)
+    setAnalisisCalidadOpen(false)
+    setSubiendoSoporte(false)
     setMotivoDevolucion('')
     setConfirmarSACP(false)
     setSacpCreadaEnVisita(false)
@@ -178,7 +184,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setVisibleCliente(false)
   }
 
-  const navigationDisabled = informeOpen || !!respuestaCase || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
+  const navigationDisabled = informeOpen || !!respuestaCase || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || analisisCalidadOpen || subiendoSoporte || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
   useEffect(() => {
     // La tabla permanece operativa, pero no puede descartar una edición/subida en curso.
     onNavigationLockChange?.(!!queja && navigationDisabled)
@@ -189,7 +195,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
   const responsableValue = responsableSeleccionado ? responsables.find(u => u.id === responsableSeleccionado.id) ?? null : responsableActual ?? null
   const workflowQueja = { ...queja, revision: workflowRevision ?? queja.revision }
-  const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || eliminandoAdjunto != null
+  const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || subiendoSoporte || eliminandoAdjunto != null
   const publicacionDisponible = publicacion.data === true
   const publicacionVerificada = !publicacion.isLoading && !publicacion.error && typeof publicacion.data === 'boolean'
   const oficiosPublicables = adjuntos.filter(adjunto => esOficioPublicableQueja(adjunto, queja.id))
@@ -380,18 +386,31 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const subirSoporteDevolucion = async (file: File) => {
+    const operation = scope.start('quality-return-upload')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    setSubiendoSoporte(true)
     setErrorAdjuntoDevolucion('')
-    const adjunto = await handleSubirAdjunto(file)
-    if (adjunto && adjunto.queja_id === queja.id) {
-      setAdjuntosDevolucion(current => [...current, adjunto])
-    } else {
-      setErrorAdjuntoDevolucion('No se pudo registrar el archivo. Revisá el expediente antes de continuar.')
+    try {
+      const adjunto = await subirAdjuntoQueja(queja.id, file)
+      if (isContextCurrent()) void refetchAdjuntos()
+      if (operation.isCurrent()) {
+        setAdjuntosDevolucion(current => current.some(item => item.id === adjunto.id) ? current : [...current, adjunto])
+      }
+    } catch (error) {
+      if (operation.isCurrent()) {
+        setErrorAdjuntoDevolucion(errorMsg(error, 'No se pudo subir el soporte.'))
+        showError(error, 'No se pudo subir el soporte.')
+      }
+    } finally {
+      if (operation.isCurrent()) setSubiendoSoporte(false)
+      operation.finish()
     }
   }
 
   const handleDevolverInvestigacion = () => {
     if (!motivoDevolucion.trim()) { showError(null, 'Escribí el motivo de devolución.'); return }
-    return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion),
+    return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion, adjuntosDevolucion.map(file => file.id)),
       'Queja devuelta a investigación', 'No se pudo devolver la queja',
       () => { setReviewOpen(false); setMotivoDevolucion(''); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); void refetchActividad() })
   }
@@ -505,9 +524,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   // Mantener un alto mínimo común y dejar que los botones crezcan si el texto envuelve.
   const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
   const workflowActions = canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
-    <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
-    {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
+    <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
+    {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
   return <>
@@ -537,6 +556,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
           actionDetail={estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
+          {(estadoActual === 'En Investigación' || qualityReview) && <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAnalisisCalidadOpen(true)}><Eye aria-hidden="true" className="size-4" />Ver análisis</Button>}
           {workflowActions}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
         </CaseAction>}>
@@ -545,13 +565,28 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
                 <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
               </CaseSection>
               <details key={queja.id} data-case-review-context>
-                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
+                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Ver antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
                 <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
+              </details>
+            </> : estadoActual === 'Resuelto' ? <>
+              <CaseSection variant="document" source="Gestión de Calidad" title="Resumen del caso">
+                <h4 className="mb-2 text-sm font-semibold text-qms-dark">Solicitud del cliente</h4>
+                <p className="mb-6 line-clamp-3 whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion}</p>
+                <h4 className="mb-2 text-sm font-semibold text-qms-dark">Propuesta aprobada</h4>
+                <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Sin resolución registrada.</p>}</div>
+              </CaseSection>
+              <details data-case-close-context>
+                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Ver antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
+                <div className="divide-y divide-qms-border">{requestDocument}{investigationDocument}</div>
               </details>
             </> : <>{requestDocument}{investigationDocument}</>}
       </CaseWorkspace>
     </Modal>
 
+    <QuejaAnalisisPanel queja={queja} open={analisisCalidadOpen} onClose={() => setAnalisisCalidadOpen(false)}
+      adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }}
+      onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
+      actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }} />
     <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
       headerActions={decisionOpen && decisionProcedencia ? <>
         {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
@@ -603,7 +638,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             </div>
             <label htmlFor={'queja-devolucion-' + queja.id} className="mb-3 text-sm font-semibold text-qms-dark">Motivo de devolución <span className="text-qms-danger">*</span></label>
             <textarea id={'queja-devolucion-' + queja.id} required maxLength={10000} rows={8}
-              className="min-h-[16rem] w-full flex-1 resize-y rounded-card border border-qms-border bg-qms-surface p-4 text-base leading-relaxed text-qms-dark outline-none focus:border-qms-primary focus-visible:ring-1 focus-visible:ring-qms-primary disabled:opacity-60"
+              className="min-h-[16rem] w-full flex-1 resize-y border-0 bg-transparent px-2 py-4 text-[16px] leading-relaxed text-[#1f2937] outline-none focus-visible:ring-0 disabled:opacity-60"
               placeholder="Explicá qué debe corregir o ampliar el responsable…" value={motivoDevolucion} disabled={workflowPending}
               onChange={event => { draftVersions.current.workflow++; setMotivoDevolucion(event.target.value) }} />
             <p className="mt-2 text-right text-xs text-qms-muted">{motivoDevolucion.length} / 10.000</p>
@@ -612,7 +647,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" disabled={workflowPending} onClick={() => inputDevolucionRef.current?.click()}
                 className="inline-flex min-h-10 items-center gap-2 rounded-button border border-dashed border-qms-border bg-qms-surface px-4 text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary hover:text-qms-primary disabled:opacity-50">
-                <Paperclip aria-hidden="true" className="size-4" />{subiendoAdjunto ? 'Subiendo…' : 'Adjuntar soporte'}
+                <Paperclip aria-hidden="true" className="size-4" />{subiendoSoporte ? 'Subiendo…' : 'Adjuntar soporte'}
               </button>
               <input ref={inputDevolucionRef} type="file" aria-label="Adjuntar archivo de soporte" className="sr-only" disabled={workflowPending}
                 onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void subirSoporteDevolucion(file) }} />
@@ -641,14 +676,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </CaseSection>
         <CaseSection title="Historial de cambios">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} /> : actividadError ? <p role="alert" className="text-sm text-qms-danger">No se pudo cargar la actividad. <Button size="sm" variant="link" onClick={() => refetchActividad()}>Reintentar</Button></p> : !actividad.length ? <p className="text-sm text-qms-muted">No hay cambios registrados.</p> : <ol className="space-y-4">{actividad.map(event => <li key={event.id} className="border-l-2 border-qms-border pl-3"><p className="whitespace-pre-wrap break-words text-sm">{event.descripcion}</p><p className="mt-1 text-xs text-qms-muted">{caseDate(event.created_at)}{event.usuario_id && ' · ' + (usuarios.find(u => u.id === event.usuario_id)?.nombre || 'Usuario registrado')}</p></li>)}</ol>}</CaseSection>
         {esStaff && (correosLoading ? <LoadingSkeleton variant="list" label="Cargando comunicaciones…" /> : correosError ? <CaseSection title="Comunicaciones"><p role="alert" className="text-sm text-qms-danger">No se pudieron cargar los estados. <Button size="sm" variant="link" onClick={() => refetchCorreos()}>Reintentar</Button></p></CaseSection> : <CaseMailStatus messages={correos} />)}
-        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{estadoActual !== 'Finalizado' && !queja.derivado_sacp_id && <Button variant="secondary" onClick={handleDerivarSACP} loading={derivando} disabled={workflowPending || !!registroDraft}><GitBranch className="size-4" />Derivar a SACP</Button>}{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
+        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
       </div>
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
     {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id + (respuestaNoProcede ? ':rejected' : ':approved')} queja={respuestaCase} noProcede={respuestaNoProcede} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
       onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); if (!completed) setDecisionOpen(true) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
     {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'}
-      onPreparePdf={handleSubirAdjunto} onClose={() => setInformeOpen(false)} />}
+      onClose={() => setInformeOpen(false)} />}
     <ConfirmDialog open={confirmarSACP} title="Derivar a SACP" message="Se creará una acción correctiva vinculada a esta queja. La revisión de Calidad y la respuesta al cliente continuarán su flujo independiente." confirmLabel="Crear acción SACP" loading={derivando} onCancel={() => setConfirmarSACP(false)} onConfirm={() => { void handleDerivarSACP() }} />
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
   </>

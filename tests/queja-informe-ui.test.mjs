@@ -144,26 +144,10 @@ function reportHarness({ initial = null, saveError = null, preparePdf = false } 
   }
 }
 
-test('preparar PDF para cliente solo ocurre por clic y requiere versión guardada', async () => {
-  const stored = { queja_id: 'case-1', version: 3, fuente_revision: 1, contenido: '## Informe guardado\n\nResolución aprobada' }
-  const report = reportHarness({ initial: stored, preparePdf: true })
-  assert.equal(report.prepared.length, 0)
-  const generate = report.findButton(report.render(), 'Preparar PDF para cliente')
-  assert.ok(generate)
-  assert.equal(generate.props.disabled, false)
-  generate.props.onClick()
-  await new Promise(resolve => setImmediate(resolve))
-  assert.equal(report.prepared.length, 1)
-  assert.equal(report.prepared[0].name, 'Informe-v3.pdf')
-  assert.equal(report.prepared[0].type, 'application/pdf')
-  assert.equal(report.selected.length, 1)
-  assert.equal(report.selected[0].id, 'pdf-prepared')
-  report.change('## Informe editado sin guardar')
-  assert.equal(report.findButton(report.render(), 'Preparar PDF para cliente').props.disabled, true)
-  assert.equal(report.prepared.length, 1)
-  const unsaved = reportHarness({ preparePdf: true })
-  assert.equal(unsaved.findButton(unsaved.render(), 'Preparar PDF para cliente').props.disabled, true)
-  assert.equal(unsaved.prepared.length, 0)
+test('el informe no incorpora acciones adicionales de preparación para cliente', () => {
+  const report = reportHarness({ initial: { queja_id: 'case-1', version: 3, fuente_revision: 1, contenido: 'Informe guardado' } })
+  assert.equal(report.findButton(report.render(), 'Preparar PDF para cliente'), undefined)
+  assert.ok(report.findButton(report.render(), 'Exportar'))
 })
 
 test('abrir y cerrar de inmediato o dejar el informe abierto no muestra confirmación', () => {

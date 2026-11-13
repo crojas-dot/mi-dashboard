@@ -159,12 +159,14 @@ export interface RegistroQuejaInput {
   observaciones: string
 }
 
-export function revisarResolucionQueja(queja: ExpedienteVersionado, decision: 'approved' | 'returned', motivo?: string) {
+export function revisarResolucionQueja(queja: ExpedienteVersionado, decision: 'approved' | 'returned', motivo?: string, adjuntoIds: string[] = []) {
   const revision = revisionEsperada(queja)
   if (decision !== 'approved' && decision !== 'returned') throw new Error('Seleccioná una decisión válida.')
   if (decision === 'returned' && (!motivo?.trim() || motivo.trim().length > 10000)) throw new Error('Escribí el motivo de devolución, de hasta 10.000 caracteres.')
-  return callRpc<Queja>('qms_review_resolution', { p_id: queja.id, p_expected: revision, p_decision: decision,
-    p_motivo: decision === 'returned' ? motivo!.trim() : null })
+  if (decision === 'returned') return callRpc<Queja>('qms_review_resolution_with_attachments', {
+    p_id: queja.id, p_expected: revision, p_motivo: motivo!.trim(), p_adjuntos: adjuntoIds,
+  })
+  return callRpc<Queja>('qms_review_resolution', { p_id: queja.id, p_expected: revision, p_decision: decision, p_motivo: null })
 }
 
 export interface RespuestaClienteDraftInput { respuesta: string; numeroOficio: string; adjuntoId: string | null; correo?: CorreoQueja; noProcede?: { justificacion: string; formato: 'plain' | 'markdown' } }

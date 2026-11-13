@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, Paperclip, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
@@ -17,7 +17,7 @@ import { useQuejaInforme } from '@/lib/queries/useQuejaInforme'
 import { informeFilename, type QuejaInforme } from '@/lib/utils/quejaInforme'
 import { crearCorreoAcompanamiento, validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
 import { esOficioPublicableQueja, guardarRespuestaClienteBorrador, publicarRespuestaAprobada, transicionarQueja, type RespuestaClienteDraftInput } from '@/lib/services/quejaWorkflowService'
-import { errorMsg, showSuccess } from '@/lib/services/errorToast'
+import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import type { Queja } from '@/lib/types'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 
@@ -124,7 +124,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       if (form.noProcede && (form.noProcede.justificacion.length > 10000 || kind === 'publish' && !form.noProcede.justificacion.trim())) throw new Error('Revisá la justificación de no procedencia.')
       const nextForm = form
       const officialFile = selectedFile
-      if (kind === 'publish' && !officialFile) throw new Error('Seleccioná o subí el PDF oficial antes de publicar.')
+      if (kind === 'publish' && !officialFile) throw new Error('Es necesario adjuntar un informe antes de publicar')
       if (kind === 'save') {
         const result = await guardarRespuestaClienteBorrador(snapshot, saved?.version ?? 0, nextForm)
         committed = true
@@ -172,9 +172,11 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   function requestPublish() {
     if (disabled) return
     try { validarCorreoQueja(form.correo, true) } catch (caught) { setError(errorMsg(caught, 'Revisá el asunto y el mensaje del correo.')); return }
-    if (!form.numeroOficio.trim() || !selectedFile) {
-      setError('Completá el número de oficio y seleccioná o subí el PDF oficial.'); return
+    if (!selectedFile) {
+      const message = 'Es necesario adjuntar un informe antes de publicar'
+      setError(message); showError(null, message); return
     }
+    if (!form.numeroOficio.trim()) { setError('Completá el número de oficio.'); return }
     if (noProcede) { void write('publish'); return }
     setConfirmPublish(true)
   }
@@ -251,13 +253,8 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     {editingReport && <QuejaInformeModal
       queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }}
       anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)}
-      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Prepará su PDF desde el editor cuando esté listo.'); } }}
-      onPreparePdf={props.onSubir}
-      onPdfPrepared={file => { if (reportIsCurrent.current() && esPdfOficial(file, snapshot.id)) {
-        setUploaded(current => [...current, file])
-        change({ adjuntoId: file.id })
-        setNotice('PDF preparado y seleccionado para la comunicación al cliente.')
-      } }} />}
+      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Exportá el PDF y adjuntalo al correo cuando esté listo.'); } }}
+ />}
     <AdjuntoPreviewModal adjunto={previewFile} onClose={() => setPreviewFile(null)} />
     <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{selectedFile?.nombre}</strong> en formato PDF. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}
       confirmLabel="Publicar respuesta" loading={busy === 'publish'} onCancel={() => setConfirmPublish(false)} onConfirm={() => { void write('publish') }} />
