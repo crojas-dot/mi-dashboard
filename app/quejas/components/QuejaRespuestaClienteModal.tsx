@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, Pencil } from 'lucide-react'
+import { Eye, FileText, Paperclip, Plus, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
@@ -70,11 +70,12 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   const [report, setReport] = useState(initial.informe)
   const [usingInforme, setUsingInforme] = useState(!compatibleDraft?.adjunto_id && !!initial.informe)
   const [editingReport, setEditingReport] = useState(false)
+  const [showDocumentPicker, setShowDocumentPicker] = useState(false)
   const [baseline, setBaseline] = useState(() => ({ form, usingInforme, reportVersion: report?.version }))
   const [previewReport, setPreviewReport] = useState(false)
   const [previewFile, setPreviewFile] = useState<QuejaAdjunto | null>(null)
   const [uploaded, setUploaded] = useState<QuejaAdjunto[]>([])
-  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | null>(null)
+  const [busy, setBusy] = useState<'save' | 'publish' | 'finish' | 'upload' | 'generate' | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [confirmPublish, setConfirmPublish] = useState(false)
@@ -103,22 +104,9 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     try {
       if (kind !== 'finish') validarCorreoQueja(form.correo, kind === 'publish')
       if (form.noProcede && (form.noProcede.justificacion.length > 10000 || kind === 'publish' && !form.noProcede.justificacion.trim())) throw new Error('Revisá la justificación de no procedencia.')
-      let nextForm = form
-      let officialFile = selectedFile
-      if (kind !== 'finish' && usingInforme) {
-        if (!report?.contenido.trim()) throw new Error('Seleccioná un informe guardado o adjuntá el documento oficial.')
-        const { crearInformeWord } = await import('@/lib/utils/quejaInformeWord')
-        const blob = await crearInformeWord(report.contenido)
-        if (!operation.isCurrent() || !isContextCurrent()) return
-        const name = informeFilename(snapshot.folio).replace(/\.docx$/, `-v${report.version}.docx`)
-        const file = await props.onSubir(new File([blob], name, { type: blob.type }))
-        if (!operation.isCurrent() || !isContextCurrent()) return
-        if (!file) throw new Error('No se pudo confirmar el archivo del informe. La selección se conserva.')
-        committed = true
-        setUploaded(current => [...current, file]); setUsingInforme(false)
-        officialFile = file
-        nextForm = { ...form, adjuntoId: file.id }; setForm(nextForm)
-      }
+      const nextForm = form
+      const officialFile = usingInforme ? null : selectedFile
+      if (kind === 'publish' && !officialFile) throw new Error('Primero generá el expediente o seleccioná un documento oficial antes de publicar.')
       if (kind === 'save') {
         const result = await guardarRespuestaClienteBorrador(snapshot, saved?.version ?? 0, nextForm)
         committed = true
@@ -127,7 +115,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
           const savedForm = { respuesta: result.respuesta, numeroOficio: result.numero_oficio, adjuntoId: result.adjunto_id,
             ...(noProcede ? { noProcede: { justificacion: result.motivo_no_procede ?? nextForm.noProcede!.justificacion, formato: result.motivo_no_procede_formato ?? nextForm.noProcede!.formato } } : {}),
             correo: { asunto: result.correo_asunto ?? nextForm.correo.asunto, cuerpo: result.correo_cuerpo ?? nextForm.correo.cuerpo } }
-          setSaved(result); setForm(savedForm); setBaseline({ form: savedForm, usingInforme: false, reportVersion: report?.version }); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
+          setSaved(result); setForm(savedForm); setBaseline({ form: savedForm, usingInforme, reportVersion: report?.version }); setNotice('Borrador guardado. Podés continuar después desde el expediente.')
         }
       } else {
         const updated = kind === 'finish' ? await transicionarQueja(snapshot, 'Finalizado')
@@ -154,11 +142,45 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
   }
 
+
+  // La conversión a Word y su subida solo ocurren al pulsar Generar expediente.
+  // Guardar borrador y Publicar respuesta nunca generan ni suben un informe.
+  async function generarExpediente() {
+    if (disabled) return
+    if (!report?.contenido.trim()) {
+      const visit = scope.capture(), context = scope.captureContext()
+      reportIsCurrent.current = () => visit() && context()
+      setEditingReport(true)
+      return
+    }
+    const operation = scope.start('response-generate')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    setBusy('generate'); setError(''); setNotice('')
+    try {
+      const { crearInformeWord } = await import('@/lib/utils/quejaInformeWord')
+      const blob = await crearInformeWord(report.contenido)
+      if (!operation.isCurrent() || !isContextCurrent()) return
+      const name = informeFilename(snapshot.folio).replace(/\.docx$/, `-v${report.version}.docx`)
+      const file = await props.onSubir(new File([blob], name, { type: blob.type }))
+      if (!operation.isCurrent() || !isContextCurrent()) return
+      if (!file) throw new Error('No se pudo confirmar el archivo generado.')
+      setUploaded(current => [...current, file])
+      draftGeneration.current++
+      setForm(current => ({ ...current, adjuntoId: file.id }))
+      setUsingInforme(false)
+      setShowDocumentPicker(false)
+      setNotice('Expediente generado y adjuntado. Revisá el mensaje antes de publicarlo.')
+    } catch (caught) {
+      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo generar el expediente. No se publicó ningún correo.'))
+    } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
+  }
+
   function requestPublish() {
     if (disabled) return
     try { validarCorreoQueja(form.correo, true) } catch (caught) { setError(errorMsg(caught, 'Revisá el asunto y el mensaje del correo.')); return }
-    if (!form.numeroOficio.trim() || (usingInforme ? !report?.contenido.trim() : !selectedFile)) {
-      setError('Completá el número de oficio y el informe o documento oficial.'); return
+    if (!form.numeroOficio.trim() || usingInforme || !selectedFile) {
+      setError('Completá el número de oficio y generá el expediente o seleccioná el archivo oficial.'); return
     }
     if (noProcede) { void write('publish'); return }
     setConfirmPublish(true)
