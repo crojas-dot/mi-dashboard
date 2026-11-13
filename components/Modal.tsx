@@ -8,7 +8,7 @@ interface ModalProps {
   title: string
   titleSuffix?: string
   emphasizeTitle?: boolean
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'mail'
   variant?: 'dialog' | 'drawer' | 'sheet' | 'workspace' | 'document' | 'report' | 'confirmation'
   height?: 'fill' | 'content'
   tall?: boolean
@@ -29,6 +29,7 @@ const sizes: Record<string, string> = {
   md: 'max-w-[600px]',
   lg: 'max-w-[700px]',
   xl: 'max-w-[1040px]',
+  mail: 'max-w-[896px]',
 }
 let scrollLocks = 0
 let previousOverflow = ''
