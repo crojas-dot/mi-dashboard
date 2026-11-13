@@ -10,6 +10,7 @@ interface ModalProps {
   variant?: 'dialog' | 'drawer' | 'sheet' | 'workspace' | 'document' | 'report' | 'confirmation'
   height?: 'fill' | 'content'
   tall?: boolean
+  fixedHeight?: boolean
   expanded?: boolean
   dismissOnEscape?: boolean
   dismissOnBackdrop?: boolean
@@ -30,7 +31,7 @@ const sizes: Record<string, string> = {
 let scrollLocks = 0
 let previousOverflow = ''
 
-export default function Modal({ open, onClose, title, size = 'md', variant = 'dialog', height = 'fill', tall = false, expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerCenter, headerActions, footer, children }: ModalProps) {
+export default function Modal({ open, onClose, title, size = 'md', variant = 'dialog', height = 'fill', tall = false, fixedHeight = false, expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerCenter, headerActions, footer, children }: ModalProps) {
   const drawer = variant === 'drawer'
   const workspace = variant === 'workspace'
   const report = variant === 'report'
@@ -102,7 +103,7 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
       aria-describedby={descriptionId}
       aria-modal={workspace ? undefined : true}
       data-qms-modal
-      className={`${workspace ? '@container/workspace ' : ''}fixed flex-col overflow-hidden border-0 p-0 open:flex ${tall && !sheet && !documentView && !confirmation && !drawer ? 'h-[min(76dvh,720px)]' : ''} ${report ? 'z-[100] inset-0 m-0 h-dvh max-h-[100dvh] w-screen max-w-none rounded-none bg-white text-qms-dark shadow-none' : 'shadow-lg'} ${report || workspace && expanded ? 'backdrop:bg-transparent' : 'backdrop:bg-black/50'} ${confirmation ? 'inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-[480px] rounded-[12px] border border-qms-border bg-white text-qms-dark shadow-md' : sheet && !report ? `inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full ${workspace ? expanded ? 'max-w-none' : `z-50 max-w-none ${size === 'sm' ? 'lg:w-[560px]' : 'lg:w-[40vw]'}` : expanded ? 'max-w-none' : size === 'sm' ? 'max-w-[420px]' : 'max-w-[790px]'} border-l border-qms-border bg-qms-surface text-qms-dark` : drawer ? 'inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(20rem,calc(100%-2rem))] max-w-none bg-qms-dark text-white' : !report && !confirmation ? `inset-0 m-auto max-h-[90dvh] ${documentView && height === 'fill' ? 'h-[90dvh]' : ''} w-[calc(100%-2rem)] rounded-modal bg-qms-surface text-qms-dark ${sizes[size]}` : ''}`}
+      className={`${workspace ? '@container/workspace ' : ''}fixed flex-col overflow-hidden border-0 p-0 open:flex ${fixedHeight && !sheet && !documentView && !confirmation && !drawer ? 'h-[min(600px,90dvh)]' : tall && !sheet && !documentView && !confirmation && !drawer ? 'h-[min(76dvh,720px)]' : ''} ${report ? 'z-[100] inset-0 m-0 h-dvh max-h-[100dvh] w-screen max-w-none rounded-none bg-white text-qms-dark shadow-none' : 'shadow-lg'} ${report || workspace && expanded ? 'backdrop:bg-transparent' : 'backdrop:bg-black/50'} ${confirmation ? 'inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-[480px] rounded-[12px] border border-qms-border bg-white text-qms-dark shadow-md' : sheet && !report ? `inset-y-0 right-0 left-auto m-0 h-dvh max-h-none w-full ${workspace ? expanded ? 'max-w-none' : `z-50 max-w-none ${size === 'sm' ? 'lg:w-[560px]' : 'lg:w-[40vw]'}` : expanded ? 'max-w-none' : size === 'sm' ? 'max-w-[420px]' : 'max-w-[790px]'} border-l border-qms-border bg-qms-surface text-qms-dark` : drawer ? 'inset-y-0 left-0 m-0 h-dvh max-h-none w-[min(20rem,calc(100%-2rem))] max-w-none bg-qms-dark text-white' : !report && !confirmation ? `inset-0 m-auto max-h-[90dvh] ${documentView && height === 'fill' ? 'h-[90dvh]' : ''} w-[calc(100%-2rem)] rounded-modal bg-qms-surface text-qms-dark ${sizes[size]}` : ''}`}
       onCancel={(event) => {
         // El selector de archivos también emite cancel y burbujea hasta dialog.
         if (event.target !== event.currentTarget) return
@@ -153,7 +154,7 @@ export default function Modal({ open, onClose, title, size = 'md', variant = 'di
             </button>
           </div>
         </div>}
-        <div className={sheet || documentView ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : tall ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg px-4 py-4' : confirmation ? 'min-h-0 flex-1 overflow-y-auto bg-white' : drawer ? 'flex min-h-0 flex-1 overflow-hidden' : 'min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg px-4 py-4'}>{children}</div>
+        <div className={sheet || documentView ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : fixedHeight ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg' : tall ? 'flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg px-4 py-4' : confirmation ? 'min-h-0 flex-1 overflow-y-auto bg-white' : drawer ? 'flex min-h-0 flex-1 overflow-hidden' : 'min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg px-4 py-4'}>{children}</div>
         {footer && <div className="shrink-0 border-t border-qms-border bg-qms-surface px-4 py-3">{footer}</div>}
     </dialog>
   )

@@ -619,9 +619,31 @@ test('Mis Quejas limita la lectura solo al ampliar y no altera las columnas de Q
 
   const styles = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.ok(styles.includes('[data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap'))
-  assert.ok(styles.includes('max-width: 832px'))
+  assert.ok(styles.includes('max-width: calc(70ch + 4rem)'))
   assert.ok(styles.includes('[data-case-reading-layout="true"] [data-reading-copy]'))
-  assert.ok(styles.includes('max-width: 768px'))
+  assert.ok(styles.includes('max-width: 70ch'))
+})
+
+test('modal de notas y adjuntos mantiene 600px de alto con scroll interno y pie fijo', () => {
+  const { dialog } = modalFixture({ variant: 'dialog', size: 'lg', fixedHeight: true, footer: 'Acciones' })
+  assert.ok(dialog.props.className.includes('h-[min(600px,90dvh)]'))
+  const body = dialog.props.children.find(node => node?.props?.className?.includes('flex min-h-0 flex-1'))
+  assert.ok(body.props.className.includes('overflow-hidden'))
+  const footer = dialog.props.children.find(node => node?.props?.className?.includes('shrink-0 border-t'))
+  assert.ok(footer)
+
+  const standard = modalFixture({ variant: 'dialog', size: 'lg' })
+  assert.ok(!standard.dialog.props.className.includes('h-[min(600px,90dvh)]'))
+})
+
+test('la distribución de Quejas usa lectura concentrada sin comprimir los controles documentales', () => {
+  const styles = fs.readFileSync('app/styles/components.css', 'utf8')
+  const source = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  assert.ok(source.includes('presentation="reference" cyclePlacement="header" readingLayout'))
+  assert.ok(source.includes('data-case-reading-copy'))
+  assert.ok(styles.includes('[data-case-reading-layout="true"] [data-case-reading-copy]'))
+  assert.ok(styles.includes('max-width: 70ch'))
+  assert.ok(!source.includes('data-case-reading-copy><div className="mt-5 border-t'))
 })
 
 test('el ciclo expandido de Mis Quejas conserva conectores en barra superior y encabezado compacto', () => {

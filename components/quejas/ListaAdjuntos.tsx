@@ -13,7 +13,7 @@ interface ListaAdjuntosProps {
   onDownload: (a: QuejaAdjunto) => void
   puedeEliminar?: (a: QuejaAdjunto) => boolean
   onEliminar?: (a: QuejaAdjunto) => void
-  layout?: 'list' | 'cards' | 'rows'
+  layout?: 'list' | 'cards' | 'rows' | 'modal'
 }
 
 function filePresentation(adjunto: QuejaAdjunto) {
@@ -51,7 +51,7 @@ export default function ListaAdjuntos({
     return (
       <div className="mt-3">
         <p className="mb-2 text-xs font-medium tracking-wide text-qms-muted uppercase">{titulo}</p>
-        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : 'space-y-1'}>
+        <ul className={layout === 'cards' ? 'flex flex-wrap gap-2' : layout === 'rows' ? 'divide-y divide-qms-border overflow-hidden rounded-card border border-qms-border bg-qms-surface' : layout === 'modal' ? 'space-y-3' : 'space-y-1'}>
           {lista.map((a) => {
             const { Icon, label, color } = filePresentation(a)
             const preparePreviewConnection = () => {
@@ -96,8 +96,8 @@ export default function ListaAdjuntos({
                   )}
                 </div>
               </li>
-            ) : layout === 'rows' ? (
-              <li key={a.id} data-attachment-row className="flex min-w-0 items-start gap-3 px-3 py-3 transition-colors hover:bg-qms-hover-bg">
+            ) : layout === 'rows' || layout === 'modal' ? (
+              <li key={a.id} data-attachment-row className={layout === 'modal' ? 'flex min-w-0 flex-wrap items-start gap-3 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm transition-colors hover:border-qms-primary/30' : 'flex min-w-0 items-start gap-3 px-3 py-3 transition-colors hover:bg-qms-hover-bg'}>
                 <span className={`flex size-9 shrink-0 items-center justify-center rounded-button ${color}`} aria-hidden="true">
                   <Icon className="size-5" strokeWidth={1.5} />
                 </span>

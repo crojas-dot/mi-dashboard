@@ -454,10 +454,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
   const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
   const requestDocument = <>
-    <CaseSection variant="document" title="Descripción" headerActions={areaControl}><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
-{queja.justificacion_procede && <CaseSection variant="document" source="Gestión de Calidad" title="Evaluación de procedencia"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></CaseSection>}
+    <CaseSection variant="document" title="Descripción" headerActions={areaControl}><div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
+{queja.justificacion_procede && <CaseSection variant="document" source="Gestión de Calidad" title="Evaluación de procedencia"><div data-case-reading-copy><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div></CaseSection>}
   </>
-  const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</CaseSection>
+  const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
   const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
   const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
   const clienteTab = terminalDocument && publicacionDisponible && documentTab === 'cliente'
@@ -480,12 +480,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
-      headerCenter={<CaseProcessHeader queja={queja} />}
+      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
       headerActions={<>
         {(onPrevious || onNext) && <div className="hidden items-center gap-1 @min-[600px]/workspace:flex"><Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationDisabled} onClick={onPrevious}><ChevronLeft className="size-5" /></Button><Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationDisabled} onClick={onNext}><ChevronRight className="size-5" /></Button></div>}
         <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} aria-pressed={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}</Button>
       </>}>
-      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header"
+      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
           {esStaff && <CaseSidebarShortcut title="Generar expediente" description="Preparar o continuar el informe editable del caso." actionLabel="Generar expediente" icon={<FileText className="size-4" />}
@@ -504,11 +504,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </CaseAction>}>
             {qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
-                {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}
+                <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
               </CaseSection>
               <details key={queja.id} data-case-review-context>
                 <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
-                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><RichTextContent value={analysis.value} format={analysis.format} /></CaseSection>}</div>
+                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
               </details>
             </> : <>{requestDocument}{investigationDocument}</>}
       </CaseWorkspace>
