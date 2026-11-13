@@ -520,6 +520,15 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
+          {esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
+            <p className="mb-4 text-xs leading-relaxed text-qms-muted">Prepará el informe oficial con el análisis y la resolución del caso.</p>
+            <Button size="sm" variant="secondary" className="w-full justify-between border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40 hover:bg-qms-primary-soft"
+              disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
+              <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
+              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+            </Button>
+          </section>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
@@ -537,19 +546,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               </CaseSection>
               <details key={queja.id} data-case-review-context>
                 <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
-                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
-              </details>
-            </> : esStaff && estadoActual === 'Resuelto' ? <>
-              <CaseSection variant="document" source="Gestión de Calidad" title="Documento del expediente">
-                <p className="mb-5 text-sm leading-relaxed text-qms-muted">La resolución ya fue aprobada. Revisá el documento oficial y prepará su PDF antes de redactar el correo al cliente.</p>
-                {queja.resolucion && <div className="mb-5" data-case-reading-copy><h4 className="mb-3 text-sm font-semibold text-qms-dark">Resolución aprobada</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}
-                <Button data-close-report-shortcut size="sm" variant="secondary" className="border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40"
-                  disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
-                  <FileText aria-hidden="true" className="size-4" />Generar expediente
-                </Button>
-              </CaseSection>
-              <details data-case-close-context>
-                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Solicitud y antecedentes <span className="ml-2 font-normal text-qms-muted">Ver descripción, análisis y archivos · {adjuntos.length}</span></summary>
                 <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
               </details>
             </> : <>{requestDocument}{investigationDocument}</>}
