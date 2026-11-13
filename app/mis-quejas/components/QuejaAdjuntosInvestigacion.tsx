@@ -83,7 +83,7 @@ interface PanelProps {
 
 export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
   const inputRef = useRef<HTMLInputElement>(null)
-  return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" fixedHeight
+  return <Modal open={props.open} onClose={props.onClose} title={`Adjuntos del análisis · ${props.folio}`} size="lg" fixedHeight headerLeading={<Paperclip aria-hidden="true" className="size-4 text-qms-muted" />}
     footer={<div className="space-y-3">
       {props.canUpload && <div data-investigation-files-drop {...dropHandlers(!props.uploadDisabled && !props.uploading, props.onFiles)}
         className="flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-card border border-dashed border-qms-border bg-qms-hover-bg p-3 data-[dragging=true]:border-qms-primary data-[dragging=true]:bg-qms-primary-soft">
