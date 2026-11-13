@@ -150,65 +150,31 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   }
 
   async function upload(file: File) {
+    if (file.type !== 'application/pdf' || !/\.pdf$/i.test(file.name)) {
+      setError('Para comunicar al cliente se requiere un archivo PDF (.pdf).')
+      return
+    }
     const operation = scope.start('response-upload')
     if (!operation) return
-    setBusy('upload')
+    setBusy('upload'); setError(''); setNotice('')
     try {
       const result = await props.onSubir(file)
-      if (operation.isCurrent() && result) { setUploaded(current => [...current, result]); setUsingInforme(false); change({ adjuntoId: result.id }) }
+      if (operation.isCurrent() && result) {
+        if (!esPdfOficial(result, snapshot.id)) throw new Error('El archivo subido no es un PDF oficial válido.')
+        setUploaded(current => [...current, result])
+        change({ adjuntoId: result.id })
+        setNotice('PDF adjuntado. Podés visualizarlo antes de publicarlo.')
+      } else if (operation.isCurrent()) throw new Error('No se pudo guardar el PDF en el expediente.')
     } catch (caught) {
-      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo adjuntar el oficio. La respuesta se conserva.'))
-    } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
-  }
-
-
-  // La conversión a Word y su subida solo ocurren al pulsar Generar expediente.
-  // Guardar borrador y Publicar respuesta nunca generan ni suben un informe.
-  async function generarExpediente() {
-    if (disabled) return
-    if (!report?.contenido.trim()) {
-      const visit = scope.capture(), context = scope.captureContext()
-      reportIsCurrent.current = () => visit() && context()
-      setEditingReport(true)
-      return
-    }
-    if (generatedFile?.version === report.version) {
-      draftGeneration.current++
-      setForm(current => ({ ...current, adjuntoId: generatedFile.file.id }))
-      setUsingInforme(false)
-      setShowDocumentPicker(false)
-      setNotice('Se seleccionó el expediente ya generado. No fue necesario volver a crearlo.')
-      return
-    }
-    const operation = scope.start('response-generate')
-    if (!operation) return
-    const isContextCurrent = scope.captureContext()
-    setBusy('generate'); setError(''); setNotice('')
-    try {
-      const { crearInformeWord } = await import('@/lib/utils/quejaInformeWord')
-      const blob = await crearInformeWord(report.contenido)
-      if (!operation.isCurrent() || !isContextCurrent()) return
-      const name = informeFilename(snapshot.folio).replace(/\.docx$/, `-v${report.version}.docx`)
-      const file = await props.onSubir(new File([blob], name, { type: blob.type }))
-      if (!operation.isCurrent() || !isContextCurrent()) return
-      if (!file) throw new Error('No se pudo confirmar el archivo generado.')
-      setUploaded(current => [...current, file])
-      setGeneratedFile({ file, version: report.version })
-      draftGeneration.current++
-      setForm(current => ({ ...current, adjuntoId: file.id }))
-      setUsingInforme(false)
-      setShowDocumentPicker(false)
-      setNotice('Expediente generado y adjuntado. Revisá el mensaje antes de publicarlo.')
-    } catch (caught) {
-      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo generar el expediente. No se publicó ningún correo.'))
+      if (operation.isCurrent()) setError(errorMsg(caught, 'No se pudo adjuntar el PDF. La respuesta se conserva.'))
     } finally { if (operation.isCurrent()) setBusy(null); operation.finish() }
   }
 
   function requestPublish() {
     if (disabled) return
     try { validarCorreoQueja(form.correo, true) } catch (caught) { setError(errorMsg(caught, 'Revisá el asunto y el mensaje del correo.')); return }
-    if (!form.numeroOficio.trim() || usingInforme || !selectedFile) {
-      setError('Completá el número de oficio y generá el expediente o seleccioná el archivo oficial.'); return
+    if (!form.numeroOficio.trim() || !selectedFile) {
+      setError('Completá el número de oficio y seleccioná o subí el PDF oficial.'); return
     }
     if (noProcede) { void write('publish'); return }
     setConfirmPublish(true)
