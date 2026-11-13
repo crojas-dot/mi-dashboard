@@ -24,7 +24,7 @@ export function QuejaNotasCard({ notas, loading, error, onOpen }: NotasProps & {
 interface Props extends NotasProps {
   open: boolean
   folio: string
-  currentUser?: { id: string; nombre: string }
+  currentUser?: { id: string }
   onClose: () => void
   onRetry: () => void
   canEdit: boolean
