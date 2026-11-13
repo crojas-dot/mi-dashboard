@@ -113,6 +113,38 @@
   scrollbar-gutter: auto;
 }
 
+/* Solo Mis Quejas ampliado: tarjetas laterales holgadas y lectura central
+   con ancho máximo, sin reducir el lienzo ni crear un segundo scroll. */
+[data-case-reading-layout="true"] [data-case-request],
+[data-case-reading-layout="true"] [data-case-action] > div > section:first-child {
+  padding: 1.25rem;
+}
+
+[data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 832px;
+  margin-inline: auto;
+}
+
+[data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+  left: 50%;
+  right: auto;
+  width: min(calc(100% - 2.5rem), 768px);
+  transform: translateX(-50%);
+}
+
+[data-case-reading-layout="true"] [data-reading-copy] {
+  max-width: 768px;
+  margin-inline: auto;
+}
+
+@media (min-width: 640px) {
+  [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+    width: min(calc(100% - 4rem), 768px);
+  }
+}
+
 @utility ui-table {
   @apply w-full select-text text-left text-sm;
   & th { @apply whitespace-nowrap border-b border-qms-border bg-qms-table-head px-4 py-3 text-left font-semibold text-qms-dark; }
