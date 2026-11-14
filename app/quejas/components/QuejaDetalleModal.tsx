@@ -3,6 +3,9 @@
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { prefetchDriveBlob } from '@/lib/services/driveClient'
+import { fetchRespuestaCliente, respuestaClienteKey } from '@/lib/queries/useQuejaRespuestaCliente'
 import Modal from '@/components/Modal'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
@@ -64,6 +67,7 @@ interface Props {
 }
 
 export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPrevious, onNext, onNavigationLockChange }: Props) {
+  const queryClient = useQueryClient()
   const [expanded, setExpanded] = useState(false)
   const [readOnlyStage, setReadOnlyStage] = useState<string | null>(null)
   const [activityOpen, setActivityOpen] = useState(false)
@@ -113,6 +117,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen || analisisCalidadOpen || queja?.estado === 'Resuelto')
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
+  useEffect(() => {
+    if (!quejaId || adjuntosLoading || adjuntosError) return
+    for (const file of adjuntos.slice(0, 2)) prefetchDriveBlob(file.storage_path)
+  }, [quejaId, adjuntos, adjuntosLoading, adjuntosError])
   const crearComentario = useCrearQuejaComentario()
   const { data: usuarios = [], isLoading: usuariosLoading, error: usuariosError } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)
@@ -137,6 +145,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     if (!puedeEditarArea) setRegistroDraft(null)
   }
   const publicacion = usePublicacionQuejasDisponible(esStaff && !!queja)
+  useEffect(() => {
+    if (estadoActual !== 'Resuelto' || !esStaff || !quejaId) return
+    void queryClient.prefetchQuery({
+      queryKey: respuestaClienteKey(quejaId),
+      queryFn: ({ signal }) => fetchRespuestaCliente(quejaId, signal),
+      staleTime: 30_000,
+    }).catch(() => { /* El modal conserva Reintentar. */ })
+  }, [quejaId, estadoActual, esStaff, queryClient])
   const finalizada = ['Finalizado', 'No Procede'].includes(estadoActual)
   const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && (activityOpen || finalizada))
 
