@@ -49,7 +49,7 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
       return fetchQuejaInforme(queja.id, signal)
     },
     enabled: !!queja.id,
-    staleTime: 0,
+    staleTime: 30_000,
     retry: false,
   })
   const analysis = getQuejaAnalysis(queja)

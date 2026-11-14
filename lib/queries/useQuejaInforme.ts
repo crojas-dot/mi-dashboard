@@ -15,5 +15,5 @@ export async function fetchQuejaInforme(id: string, signal?: AbortSignal): Promi
 }
 
 export function useQuejaInforme(id: string) {
-  return useQuery({ queryKey: quejaInformeKey(id), queryFn: ({ signal }) => fetchQuejaInforme(id, signal), enabled: !!id, staleTime: 0, retry: false })
+  return useQuery({ queryKey: quejaInformeKey(id), queryFn: ({ signal }) => fetchQuejaInforme(id, signal), enabled: !!id, staleTime: 30_000, retry: false })
 }

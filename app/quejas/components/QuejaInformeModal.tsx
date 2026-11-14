@@ -116,8 +116,6 @@ export default function QuejaInformeModal(props: Props) {
 
   if (
     !loaded &&
-    !query.isFetching &&
-    !query.error &&
     query.data !== undefined
   ) {
     setLoaded({ informe: query.data })
@@ -135,7 +133,7 @@ export default function QuejaInformeModal(props: Props) {
 
   const title = `Informe del expediente · ${props.queja.folio}`
 
-  if (query.isLoading || query.isFetching) {
+  if (query.isLoading) {
     return (
       <Modal
         open

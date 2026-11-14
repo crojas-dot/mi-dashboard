@@ -39,10 +39,10 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const query = useRespuestaCliente(props.queja.id)
   const informe = useQuejaInforme(props.queja.id)
   const [initial, setInitial] = useState<(RespuestaClienteContext & { informe: QuejaInforme | null }) | null>(null)
-  if (!initial && !query.isFetching && !query.error && query.data && !informe.isFetching && !informe.error && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
+  if (!initial && query.data && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
   if (initial) return <RespuestaEditor {...props} initial={initial} />
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle>
-    {query.isLoading || query.isFetching || informe.isLoading || informe.isFetching ? <LoadingSkeleton variant="list" label="Consultando respuesta e informe guardado…" /> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
+    {query.isLoading || informe.isLoading ? <LoadingSkeleton variant="list" label="Consultando respuesta e informe guardado…" /> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
   </Modal>
 }
 

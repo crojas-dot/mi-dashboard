@@ -38,5 +38,5 @@ export async function fetchRespuestaCliente(id: string, signal?: AbortSignal): P
 
 export function useRespuestaCliente(id: string) {
   return useQuery({ queryKey: respuestaClienteKey(id), queryFn: ({ signal }) => fetchRespuestaCliente(id, signal),
-    enabled: !!id, staleTime: 0, retry: false })
+    enabled: !!id, staleTime: 30_000, retry: false })
 }
