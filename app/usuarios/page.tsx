@@ -40,6 +40,8 @@ export default function UsuariosPage() {
   const [filtroRol, setFiltroRol] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [tab, setTab] = useState<'usuarios' | 'roles'>('usuarios')
+  const [pagina, setPagina] = useState(1)
+  const [porPagina, setPorPagina] = useState(10)
 
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'crear' | 'editar'>('crear')
@@ -65,6 +67,11 @@ export default function UsuariosPage() {
     return <LoadingSkeleton label="Verificando acceso…" />
   }
 
+  const total = usuarios.length
+  const totalPaginas = Math.max(1, Math.ceil(total / porPagina))
+  const paginaVisible = Math.min(pagina, totalPaginas)
+  const inicio = (paginaVisible - 1) * porPagina
+  const usuariosVisibles = usuarios.slice(inicio, inicio + porPagina)
   const esAuto = (u: Usuario) => u.id === user?.id
 
   function abrirCrear() {
@@ -133,7 +140,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-5 pb-6">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1500px] flex-col gap-4 overflow-hidden pb-2">
       <PageHeader compact={false} title="Gestión de accesos" description="Administrá las cuentas y los permisos por módulo del sistema.">
         <Button onClick={abrirCrear}><Plus className="h-4 w-4" /> Nuevo usuario</Button>
       </PageHeader>
@@ -147,8 +154,8 @@ export default function UsuariosPage() {
           className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'roles' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Roles y permisos</button>
       </div>
 
-      <section id="usuarios-panel-usuarios" role="tabpanel" aria-labelledby="usuarios-tab-usuarios" hidden={tab !== 'usuarios'} className="space-y-3">
-      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid grid-cols-2 items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-4 lg:grid-cols-[minmax(180px,1fr)_180px_160px]">
+      <section id="usuarios-panel-usuarios" role="tabpanel" aria-labelledby="usuarios-tab-usuarios" hidden={tab !== 'usuarios'} className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid shrink-0 grid-cols-2 items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-3 sm:p-4 lg:grid-cols-[minmax(220px,400px)_minmax(190px,1fr)_minmax(210px,1fr)]">
         <div className="relative col-span-2 min-w-0 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -156,14 +163,14 @@ export default function UsuariosPage() {
             aria-label="Buscar por nombre o email"
             className="ui-field h-11 pl-9 pr-3 lg:h-10"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPagina(1) }}
           />
         </div>
-        <Select aria-label="Rol" className="h-11 lg:h-10" value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setSearch('') }}>
+        <Select aria-label="Rol" className="h-11 lg:h-10" value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setPagina(1) }}>
           <option value="">Todos los roles</option>
           {ROLES_GESTIONABLES.map((r) => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
         </Select>
-        <Select aria-label="Estado del usuario" className="h-11 lg:h-10" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setSearch('') }}>
+        <Select aria-label="Estado del usuario" className="h-11 lg:h-10" value={filtroEstado} onChange={(e) => { setFiltroEstado(e.target.value); setPagina(1) }}>
           <option value="">Todos los estados</option>
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
@@ -175,7 +182,7 @@ export default function UsuariosPage() {
       ) : isError ? (
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
-        <Table>
+        <Table containerClassName="max-h-[min(58dvh,650px)] min-h-0 overflow-auto overscroll-contain">
           <TableHead>
             <tr>
               <TableHeaderCell>Usuario</TableHeaderCell>
@@ -189,7 +196,7 @@ export default function UsuariosPage() {
             {usuarios.length === 0 ? (
               <EmptyState message="No hay usuarios registrados" />
             ) : (
-              usuarios.map((u) => (
+              usuariosVisibles.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -237,8 +244,23 @@ export default function UsuariosPage() {
           </tbody>
         </Table>
       )}
+      {!isLoading && !isError && <div data-users-pagination className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-surface px-4 py-3 text-sm">
+        <span className="text-qms-muted" aria-live="polite">
+          {total ? `Mostrando ${inicio + 1}–${Math.min(inicio + porPagina, total)} de ${total} usuarios` : '0 usuarios'}
+        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <label htmlFor="usuarios-por-pagina" className="text-xs text-qms-muted">Por página</label>
+          <Select id="usuarios-por-pagina" aria-label="Usuarios por página" wrapperClassName="w-[86px]" className="h-9 text-xs"
+            value={porPagina} onChange={e => { setPorPagina(Number(e.target.value)); setPagina(1) }}>
+            <option value={10}>10</option><option value={20}>20</option><option value={50}>50</option>
+          </Select>
+          <span className="mx-2 whitespace-nowrap text-xs text-qms-muted">Página {paginaVisible} de {totalPaginas}</span>
+          <Button size="sm" variant="secondary" disabled={paginaVisible <= 1} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</Button>
+          <Button size="sm" variant="secondary" disabled={paginaVisible >= totalPaginas} onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}>Siguiente</Button>
+        </div>
+      </div>}
       </section>
-      {tab === 'roles' && <section id="usuarios-panel-roles" role="tabpanel" aria-labelledby="usuarios-tab-roles">
+      {tab === 'roles' && <section id="usuarios-panel-roles" role="tabpanel" aria-labelledby="usuarios-tab-roles" className="min-h-0 flex-1 overflow-hidden">
         <RolesAccesos active />
       </section>}
 
