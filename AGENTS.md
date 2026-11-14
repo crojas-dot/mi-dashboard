@@ -519,6 +519,11 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   se guarda desde el editor del propio modal, si sigue vigente esa visita.
   El compositor no tiene scroll exterior duplicado: el área Para/Asunto y los
   adjuntos permanecen fijos; solo el textarea del mensaje desplaza su texto.
+  Para Respuesta normal y No Procede, conservar la cuadrícula acotada con
+  filas `minmax(0,1fr)` para el correo y `auto` para los adjuntos. La barra
+  interior pertenece solo a `[data-response-message-scroll]`; el botón extra
+  «Preparar documento de no procedencia», errores o precarga no habilitan
+  desplazamiento del contenedor externo. No ocultar mensajes ni controles.
   El PDF recién generado/subido se conserva en memoria privada durante
   45 segundos ÚNICAMENTE tras recibir confirmación del servidor de Drive/DB;
   así el chip puede mostrarlo sin redescargar. Los PDF existentes se anticipan
