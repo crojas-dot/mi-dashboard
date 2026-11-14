@@ -107,9 +107,15 @@ function BordesDePagina({ editor }: { editor: Editor }) {
         Math.min(20, remainingHeight - PAGE_HEIGHT)
       )
 
-      // Un separador terminal no significa que exista otra hoja con contenido.
-      // Evitar dibujar un marco fantasma después de la última página real.
-      if (!next.length || remainingHeight > PAGE_HEIGHT * 0.25) {
+      // No deducir otra hoja únicamente por el separador del plugin.
+      // Una última página corta también es válida si contiene texto editable.
+      const lastGapBottom = gaps.at(-1)?.bottom
+      const hasTrailingContent = lastGapBottom === undefined ||
+        Array.from(root.children).some(child =>
+          child.matches('p, h1, h2, h3, h4, h5, h6, ul, ol, blockquote, pre, table, hr') &&
+          child.getBoundingClientRect().bottom > lastGapBottom + 1
+        )
+      if (!next.length || hasTrailingContent) {
         next.push({
           top: start,
           height: PAGE_HEIGHT + correction,
