@@ -508,14 +508,23 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   No reescribir informes guardados.
 - Respuesta al cliente usa compositor tipo Gmail: Para y N.º de oficio en misma
   fila, Asunto en línea y texto libre. No hay selector desplegable de documentos.
-  La respuesta se precarga en segundo plano durante Resuelto y se reutiliza desde
-  TanStack Query con staleTime de 30 s; jamás esperar a isFetching cuando ya hay
-  snapshot válido. Mientras llega la primera consulta NO montar un editor
-  deshabilitado con texto temporal: mostrar un estado de carga centrado,
-  accesible, de altura acotada y sin scroll ni barra de adjuntos provisionales.
-  Aplica igual para No Procede y para el cierre normal. Ante error, presentar
-  Reintentar; cuando el borrador y el informe estén listos, montar el editor
-  auténtico sin reemplazar ediciones posteriores del usuario.
+  Para abrir rápido, precargar por intención desde la fila (hover/foco)
+  y desde el expediente al entrar en Recibido, Revisión GC, Resuelto o No Procede
+  exclusivamente para personal de Calidad/admin. Compartir claves y TTL de
+  TanStack Query de 30 s y no duplicar consultas; un click sin hover debe
+  iniciar el mismo prefetch desde el expediente. La consulta de redacción
+  necesita solo borrador y publicación (dos SELECT paralelos): no esperar el
+  historial de revisiones GC, que se maneja en otro panel con sus propios permisos.
+  Montar el editor real tan pronto llegue el contexto de respuesta, sin esperar
+  el informe versionado: ese informe
+  puede llegar después y el chip PDF se selecciona automáticamente solo si
+  existe el de la versión válida y el usuario no eligió otro. Un informe guardado
+  dentro de esta visita tiene prioridad sobre respuestas de red tardías.
+  Nunca sobreescribir campos ya editados ni publicar con un archivo provisional.
+  Solo ante falta de caché de borrador aparece un estado breve, centrado,
+  sin spinner ni editor ficticio. Si falla el borrador, Reintentar; si falla
+  solo el informe, el compositor sigue utilizable con error/reintento propios.
+  Aplica por igual a No Procede y al cierre normal de Quejas.
   El PDF oficial de la versión guardada se selecciona como chip automáticamente
   si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
   previsualizar y quitar selección; onPdfReady actualiza selección también cuando

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { prefetchDriveBlob } from '@/lib/services/driveClient'
 import { fetchRespuestaCliente, respuestaClienteKey } from '@/lib/queries/useQuejaRespuestaCliente'
+import { fetchQuejaInforme, quejaInformeKey } from '@/lib/queries/useQuejaInforme'
 import Modal from '@/components/Modal'
 import Badge from '@/components/ui/Badge'
 import Select from '@/components/ui/Select'
@@ -153,12 +154,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
   const publicacion = usePublicacionQuejasDisponible(esStaff && !!queja)
   useEffect(() => {
-    if (estadoActual !== 'Resuelto' || !esStaff || !quejaId) return
+    if (!esStaff || !quejaId || !['Recibido', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede'].includes(estadoActual)) return
+    // Calentar ambos recursos al entrar al expediente, no al pulsar Responder.
+    // El informe puede tardar; el editor no necesita esperar ese resultado.
     void queryClient.prefetchQuery({
       queryKey: respuestaClienteKey(quejaId),
       queryFn: ({ signal }) => fetchRespuestaCliente(quejaId, signal),
       staleTime: 30_000,
-    }).catch(() => { /* El modal conserva Reintentar. */ })
+    })
+    void queryClient.prefetchQuery({
+      queryKey: quejaInformeKey(quejaId),
+      queryFn: ({ signal }) => fetchQuejaInforme(quejaId, signal),
+      staleTime: 30_000,
+    })
   }, [quejaId, estadoActual, esStaff, queryClient])
   const finalizada = ['Finalizado', 'No Procede'].includes(estadoActual)
   const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && (activityOpen || finalizada))
