@@ -41,8 +41,15 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const [initial, setInitial] = useState<(RespuestaClienteContext & { informe: QuejaInforme | null }) | null>(null)
   if (!initial && query.data && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
   if (initial) return <RespuestaEditor {...props} initial={initial} />
-  return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle>
-    {query.isLoading || informe.isLoading ? <LoadingSkeleton variant="list" label="Consultando respuesta e informe guardado…" /> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
+  const plantilla = crearCorreoAcompanamiento(props.queja, props.noProcede === true)
+  return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle
+    footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={props.onClose}>Cerrar</Button></div>}>
+    {query.isLoading || informe.isLoading ? <div data-response-prefill className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-qms-surface">
+      <p role="status" className="flex shrink-0 items-center gap-2 border-b border-qms-border px-5 py-2 text-xs text-qms-muted sm:px-8"><Pencil aria-hidden="true" className="size-3.5" />Preparando edición y comprobando el borrador guardado…</p>
+      <QuejaCorreoEditor id={'respuesta-precarga-' + props.queja.id} destinatario={props.queja.email_cliente ?? ''}
+        oficio={props.queja.numero_oficio_resolucion || props.queja.folio} onOficioChange={() => {}}
+        correo={plantilla} onChange={() => {}} disabled />
+    </div> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
   </Modal>
 }
 
