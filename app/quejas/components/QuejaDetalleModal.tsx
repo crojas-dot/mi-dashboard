@@ -513,10 +513,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
   const puedeDerivarSACP = esStaff && !sacpCreadaEnVisita && puedeDerivarEnRevisionGC(estadoActual, queja.derivado_sacp_id, queja.resolucion)
   const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
-  const requestDocument = <>
-    <CaseSection variant="document" title="Descripción" headerActions={areaControl}><div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div><div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos del expediente · {adjuntos.length}</h4>{files}</div></CaseSection>
-{queja.justificacion_procede && <CaseSection variant="document" source="Gestión de Calidad" title="Evaluación de procedencia"><div data-case-reading-copy><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div></CaseSection>}
-  </>
+  const requestDocument = <CaseSection variant="document" title="Descripción del cliente" headerActions={areaControl}>
+    <div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
+    <div className="mt-4 border-t border-qms-border pt-3"><h4 className="mb-2 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>
+      {soloLecturaFiles(adjuntosCliente)}
+    </div>
+  </CaseSection>
   const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
   const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
   const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
@@ -555,19 +557,21 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     {readOnlyStage === 'evaluation' && <CaseSection variant="document" title="Solicitud del cliente">
       <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
       <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>{soloLecturaFiles(adjuntosCliente)}</div>
-      {queja.justificacion_procede && <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Decisión registrada</h4><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div>}
+
     </CaseSection>}
     {readOnlyStage === 'investigation' && <CaseSection variant="document" title="Investigación">
       {analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium">Análisis registrado</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}
       {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Aún no hay propuesta registrada.</p>}
       <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos internos</h4>{soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}</div>
-      <details className="mt-5 border-t border-qms-border pt-4"><summary className="cursor-pointer text-sm font-medium">Ver descripción original</summary><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></details>
+
     </CaseSection>}
     {readOnlyStage === 'quality_review' && <>
       <CaseSection variant="document" title="Propuesta del responsable">
         {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Todavía no hay una propuesta enviada para revisar.</p>}
       </CaseSection>
-      <details className="group border-t border-qms-border"><summary className="cursor-pointer px-5 py-4 text-sm font-medium sm:px-8">Ver antecedentes</summary><CaseSection variant="document" title="Descripción del cliente"><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>{soloLecturaFiles(adjuntosCliente)}</CaseSection></details>
+      <CaseSection variant="document" title="Adjuntos de la investigación">
+        {soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}
+      </CaseSection>
     </>}
     {readOnlyStage === 'finished' && (['Resuelto', 'Finalizado'].includes(estadoActual)
       ? <QuejaCierreResumen key={queja.id + ':consulta'} queja={queja} adjuntos={adjuntos}
@@ -580,26 +584,23 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
-      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} /></div>}
-      headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => setExpanded(current => !current)}
+      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
+      headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
       <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="space-y-3 rounded-card border border-qms-border bg-qms-surface p-4">
-            <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
-            <p className="text-xs leading-relaxed text-qms-muted">Generá el PDF oficial con las evidencias del caso para adjuntarlo al correo final.</p>
-            <Button size="sm" variant="secondary" className="min-h-10 w-full min-w-0 border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
+          {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-2">
+            <Button size="sm" variant="secondary" className="min-h-11 w-full min-w-0 justify-center border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
               <FileText aria-hidden="true" className="size-4" />Generar expediente
             </Button>
-            <p className="text-[11px] text-qms-muted">El PDF se adjunta al guardar.</p>
-          </section>}
+          </div>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
-        compact={<CaseCycle queja={queja} process selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} />}
-        cycle={<CaseCycle queja={queja} process selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} />}
+        compact={<CaseCycle queja={queja} process currentOnly />}
+        cycle={<CaseCycle queja={queja} process selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
@@ -611,16 +612,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
                 <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
               </CaseSection>
-              <details key={queja.id} data-case-review-context>
-                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Ver antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
-                <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
-              </details>
-            </> : estadoActual === 'Resuelto' ? <QuejaCierreResumen key={queja.id} queja={queja}
+              <CaseSection variant="document" title="Adjuntos de la investigación">
+                {soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}
+              </CaseSection>
+            </> : ['Resuelto', 'Finalizado'].includes(estadoActual) ? <QuejaCierreResumen key={queja.id} queja={queja}
               adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
               onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
               responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} />
-            : <>{requestDocument}{investigationDocument}</>}
+            : estadoActual === 'En Investigación' ? <CaseSection variant="document" title="Investigación">
+                {analysis && <div className="mb-4"><RichTextContent value={analysis.value} format={analysis.format} /></div>}
+                {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">La investigación está a cargo de la persona asignada.</p>}
+                <div className="mt-4 border-t border-qms-border pt-3"><h4 className="mb-2 text-sm font-medium">Adjuntos de investigación</h4>{soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}</div>
+              </CaseSection> : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>}
       </CaseWorkspace>
     </Modal>
 
