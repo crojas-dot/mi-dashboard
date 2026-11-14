@@ -90,14 +90,22 @@ test('se rechazan cabeceras inyectadas, límites y sobres ambiguos sin copiar HT
   assert.match(markup, /&lt;iframe&gt;/)
 })
 
-test('el cuerpo del correo tiene el único scroll, sin desplazamiento exterior duplicado', () => {
-  const correo = crearCorreoAcompanamiento({ cliente_nombre: 'Ana', folio: '2026-001' })
-  const markup = renderToStaticMarkup(createElement(Editor, { id: 'correo-scroll', destinatario: 'ana@example.test',
-    oficio: '2026-001', correo, onOficioChange() {}, onChange() {} }))
-  assert.match(markup, /flex h-full min-h-0 flex-col overflow-hidden/)
-  assert.match(markup, /min-h-0 w-full flex-1 resize-none overflow-y-auto/)
+test('correo normal y No procede mantienen un único scroll en el mensaje, también durante la precarga', () => {
+  for (const noProcede of [false, true]) {
+    const correo = crearCorreoAcompanamiento({ cliente_nombre: 'Ana', folio: '2026-001' }, noProcede)
+    const markup = renderToStaticMarkup(createElement(Editor, { id: 'correo-scroll', destinatario: 'ana@example.test',
+      oficio: '2026-001', correo, onOficioChange() {}, onChange() {} }))
+    assert.match(markup, /grid h-full min-h-0 grid-rows-\\[auto_minmax\\(0,1fr\\)\\] overflow-hidden/)
+    assert.match(markup, /grid min-h-0 grid-rows-\\[minmax\\(0,1fr\\)_auto\\]/)
+    assert.match(markup, /data-response-message-scroll/)
+    assert.match(markup, /h-full min-h-0 w-full resize-none overflow-y-auto overscroll-contain/)
+  }
   const modal = fs.readFileSync('app/quejas/components/QuejaRespuestaClienteModal.tsx', 'utf8')
-  assert.match(modal, /data-response-compose className="flex min-h-0 flex-1 flex-col overflow-hidden/)
-  assert.match(modal, /<div className="min-h-0 flex-1 overflow-hidden">/)
-  assert.doesNotMatch(modal, /min-h-0 flex-1 overflow-y-auto overscroll-contain \[scrollbar-gutter:stable\]/)
+  assert.match(modal, /data-response-prefill className="grid h-full min-h-0 flex-1 grid-rows-\\[auto_minmax\\(0,1fr\\)\\] overflow-hidden/)
+  assert.match(modal, /data-response-compose className="flex h-full min-h-0 max-h-full flex-1 flex-col overflow-hidden/)
+  assert.match(modal, /data-response-scroll-shell className="grid min-h-0 flex-1 grid-rows-\\[minmax\\(0,1fr\\)_auto\\] overflow-hidden/)
+  const composer = modal.slice(modal.indexOf('data-response-compose className='), modal.indexOf('}</Modal>', modal.indexOf('data-response-compose className=')))
+  assert.match(composer, /<div className="min-h-0 overflow-hidden">[\\s\\S]*<QuejaCorreoEditor/)
+  assert.match(composer, /<section data-response-attachments[\\s\\S]*noProcede && <div/)
+  assert.doesNotMatch(composer, /overflow-y-auto|scrollbar-gutter/)
 })
