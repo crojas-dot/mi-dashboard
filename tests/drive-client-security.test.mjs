@@ -17,7 +17,9 @@ test('Drive blob usa API autenticada, no-store, ID codificado y signal de la vis
   assert.equal(await blob.text(), 'synthetic-file')
   assert.equal(f.calls[0].url, '/api/drive/download?id=file%2Fid%3Ffake')
   assert.equal(f.calls[0].options.headers.Authorization, 'Bearer synthetic-access-token')
-  assert.equal(f.calls[0].options.cache, 'no-store'); assert.equal(f.calls[0].options.signal, controller.signal)
+  assert.equal(f.calls[0].options.cache, 'no-store')
+  assert.ok(f.calls[0].options.signal instanceof AbortSignal)
+  assert.notEqual(f.calls[0].options.signal, controller.signal, 'cerrar una visita no aborta la precarga compartida')
 })
 
 test('Drive blob descarta resultados si cambió la identidad o comenzó logout', async () => {
@@ -63,4 +65,22 @@ test('la precarga no ejecuta llamadas sin usuario interno o al cerrar sesión', 
   f.prefetch('drive-file-001')
   await new Promise(setImmediate)
   assert.equal(f.calls.length, 0)
+})
+
+test('cerrar un visor no cancela la descarga compartida de otra visita', async () => {
+  let resolveFetch
+  const pendingFetch = new Promise(resolve => { resolveFetch = resolve })
+  const f = fixture(() => pendingFetch)
+  const visit = new AbortController()
+  const first = f.read('drive-file-inflight-001', visit.signal)
+  await new Promise(setImmediate)
+  assert.equal(f.calls.length, 1)
+  const network = f.calls[0].options.signal
+  visit.abort()
+  await assert.rejects(first, error => error.name === 'AbortError')
+  assert.equal(network.aborted, false, 'la precarga continúa para las demás visitas')
+  const second = f.read('drive-file-inflight-001')
+  resolveFetch(new Response('completed-private-document'))
+  assert.equal(await (await second).text(), 'completed-private-document')
+  assert.equal(f.calls.length, 1)
 })
