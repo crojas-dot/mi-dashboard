@@ -29,6 +29,7 @@ interface Props {
   actividadError: boolean
   responsable?: string
   resolveAuthor: (id: string) => string | undefined
+  expanded?: boolean
 }
 
 const PASOS = [
@@ -39,7 +40,7 @@ const PASOS = [
 
 /** Resumen de Resuelto: cada etapa muestra únicamente hechos vinculados al expediente real. */
 export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, adjuntosError,
-  onRetryAdjuntos, onPreview, onDownload, actividad, actividadLoading, actividadError, responsable, resolveAuthor }: Props) {
+  onRetryAdjuntos, onPreview, onDownload, actividad, actividadLoading, actividadError, responsable, resolveAuthor, expanded = false }: Props) {
   const [selected, setSelected] = useState<number | null>(null)
   const { data: informe, isLoading: informeLoading, isError: informeError } = useQuery({
     queryKey: [...queryKeys.quejas, 'informe', queja.id],
@@ -85,18 +86,18 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
             </span>
             <button type="button" data-case-close-step={item.id} aria-label={'Ver detalle de ' + item.title}
               onClick={() => setSelected(index)}
-              className="group flex min-h-[118px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left transition-colors hover:border-qms-primary/40 hover:bg-qms-hover-bg/20 focus-visible:outline-2 focus-visible:outline-qms-primary @min-[580px]:h-[124px]">
+              className={`group flex min-h-[118px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left transition-colors hover:border-qms-primary/40 hover:bg-qms-hover-bg/20 focus-visible:outline-2 focus-visible:outline-qms-primary ${expanded ? '@min-[580px]:h-[clamp(124px,21dvh,212px)]' : '@min-[580px]:h-[124px]'}`}>
               <div className={'flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-qms-border/70 px-3 py-2 sm:px-4 ' + tinta}>
                 <h4 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-qms-dark group-hover:text-qms-primary">{item.title}</h4>
                 {fechas[index] && <span className="text-xs text-qms-muted">{caseDate(fechas[index])}</span>}
               </div>
               <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-1 px-3 py-2 sm:px-4">
-                <div className="min-w-0">
-                  <p className="line-clamp-2 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-qms-dark">{textos[index]}</p>
+                <div className="min-h-0 min-w-0 overflow-hidden">
+                  <p className={`line-clamp-2 whitespace-pre-wrap break-words text-[14px] leading-normal text-qms-dark ${expanded ? '@min-[700px]:line-clamp-3' : ''}`}>{textos[index]}</p>
                   {index === 1 && responsable && <p className="mt-0.5 truncate text-xs text-qms-muted" title={responsable}>Por: {responsable}</p>}
                   {index === 2 && nombreAprobador && <p className="mt-0.5 truncate text-xs text-qms-muted" title={nombreAprobador}>Aprobado por: {nombreAprobador}</p>}
                 </div>
-                <div className="mt-auto flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-qms-border/60 pt-1">
+                <div className="mt-auto flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-2 border-t border-qms-border/60 pt-1">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <span className="rounded-button bg-qms-hover-bg px-1.5 py-0.5 text-xs font-medium text-qms-muted">{estadoVisible}</span>
                     {index === 1 && !actividadLoading && !actividadError && devoluciones.length > 0 && <span className="text-xs font-medium text-soft-amber-text">{devoluciones.length} {devoluciones.length === 1 ? 'devolución' : 'devoluciones'}</span>}

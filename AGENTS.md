@@ -375,9 +375,11 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   «Generar expediente» es una acción secundaria compacta con su lógica intacta.
 - En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
   lectura (Solicitud, Análisis, Calidad) con línea discreta, nodos de 32 px,
-  cabeceras suaves y resumen a dos líneas de 14 px. Las tarjetas tienen
-  altura uniforme de 124 px al alcanzar 580 px útiles del lienzo; en estrecho
-  crecen según contenido para no recortarse. Cada tarjeta abre Modal
+  cabeceras suaves y texto de 14 px. Contraído, las tarjetas mantienen
+  124 px desde 580 px útiles del lienzo y resumen de dos líneas. Expandido,
+  usan altura fluida basada en la ventana (124–212 px, 21dvh) para aprovechar
+  el espacio sin crear scroll innecesario; desde 700 px de ancho útil el
+  resumen puede mostrar tres líneas. En estrecho crecen según contenido. Cada tarjeta abre Modal
   variant=document size=mail con navegación Anterior/Siguiente y acceso a
   adjuntos reales. No atribuir documentos internos sin asociación de etapa,
   ni inventar autores/fechas. No modificar el timeline lateral ni las notas

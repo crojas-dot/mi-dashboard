@@ -578,7 +578,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }}
           onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} actividad={actividad}
           actividadLoading={actividadLoading} actividadError={!!actividadError} responsable={responsableActual?.nombre}
-          resolveAuthor={id => usuarios.find(u => u.id === id)?.nombre} />
+          resolveAuthor={id => usuarios.find(u => u.id === id)?.nombre} expanded={expanded} />
       : <CaseSection variant="document" title="Cierre"><p className="text-sm text-qms-muted">Esta etapa todavía no tiene una resolución aprobada para consultar.</p></CaseSection>)}
   </div>
 
@@ -619,7 +619,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
               onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
-              responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} />
+              responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} expanded={expanded} />
             : estadoActual === 'En Investigación' ? <CaseSection variant="document" title="Investigación">
                 {analysis && <div className="mb-4"><RichTextContent value={analysis.value} format={analysis.format} /></div>}
                 {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">La investigación está a cargo de la persona asignada.</p>}
