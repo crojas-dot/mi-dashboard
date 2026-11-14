@@ -23,3 +23,19 @@ test('No se duplica generar PDF y se exige adjunto oficial en el correo',() => {
   assert.doesNotMatch(report,/Preparar PDF para cliente/)
   assert.match(response,/Es necesario adjuntar un informe antes de publicar/)
 })
+
+
+test('El workspace mantiene navegación idéntica y lateral fijo en ambos módulos', () => {
+  const shared = fs.readFileSync('app/quejas/components/QuejaExpedientePanels.tsx', 'utf8')
+  const quality = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const responsible = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  assert.match(shared, /export function CaseWorkspaceNavigation/)
+  assert.match(shared, /@min-\[480px\]\/workspace:flex/)
+  assert.match(shared, /aria-pressed=\{expanded\}/)
+  assert.match(shared, /@min-\[1100px\]:sticky @min-\[1100px\]:top-4/)
+  assert.match(shared, /@min-\[1100px\]:max-h-\[calc\(100dvh-8rem\)\]/)
+  assert.match(quality, /headerActions=\{<CaseWorkspaceNavigation/)
+  assert.match(responsible, /headerActions=\{<CaseWorkspaceNavigation/)
+  assert.match(quality, /data-close-report-shortcut/)
+  assert.match(quality, /variant="primary" className="max-w-full min-w-0 px-3 py-2 text-xs sm:text-sm"/)
+})

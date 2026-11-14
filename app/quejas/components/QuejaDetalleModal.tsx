@@ -38,12 +38,12 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { Send, Upload, RotateCcw, Maximize2, Minimize2, History, ChevronLeft, ChevronRight, FileText, Paperclip, Eye, Info } from 'lucide-react'
+import { Send, Upload, RotateCcw, History, ChevronRight, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
 import { CASE_ACTIONS, caseDate } from '@/app/quejas/components/quejaExpedienteModel'
-import { CaseSection, CaseCycle, CaseProcessHeader, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseSection, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
@@ -532,20 +532,17 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
-      headerActions={<>
-        {(onPrevious || onNext) && <div className="hidden items-center gap-1 @min-[600px]/workspace:flex"><Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationDisabled} onClick={onPrevious}><ChevronLeft className="size-5" /></Button><Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationDisabled} onClick={onNext}><ChevronRight className="size-5" /></Button></div>}
-        <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} aria-pressed={expanded} onClick={() => setExpanded(!expanded)}>{expanded ? <Minimize2 className="size-5" /> : <Maximize2 className="size-5" />}</Button>
-      </>}>
+      headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => setExpanded(current => !current)}
+        onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
           {esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm">
             <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
             <p className="mb-4 text-xs leading-relaxed text-qms-muted">Prepará el informe oficial con el análisis y la resolución del caso.</p>
-            <Button size="sm" variant="secondary" className="w-full justify-between border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:border-qms-primary/40 hover:bg-qms-primary-soft"
+            <Button size="sm" variant="primary" className="max-w-full min-w-0 px-3 py-2 text-xs sm:text-sm"
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
               <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
-              <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
             </Button>
           </section>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Maximize, Minimize, Pencil, Save, Send } from 'lucide-react'
+import { Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Pencil, Save, Send } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -23,7 +23,7 @@ import { quejaResolucionDraftKey, useQuejaResolucionDraft, type QuejaResolucionD
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
-import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
@@ -375,11 +375,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
 
   return <>
     <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>} headerActions={<>
-      <Button size="icon" variant="ghost" aria-label="Queja anterior" disabled={!onPrevious || navigationLocked} onClick={onPrevious}><ArrowLeft className="size-5" /></Button>
-      <Button size="icon" variant="ghost" aria-label="Queja siguiente" disabled={!onNext || navigationLocked} onClick={onNext}><ArrowRight className="size-5" /></Button>
-      <Button size="icon" variant="ghost" aria-label={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} title={isExpanded ? 'Reducir expediente' : 'Ampliar expediente'} onClick={() => setIsExpanded(value => !value)}>{isExpanded ? <Minimize className="size-5" /> : <Maximize className="size-5" />}</Button>
-    </>}>
+      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
+      headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => setIsExpanded(value => !value)}
+        onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
         requestFooter={<div className="space-y-4">
