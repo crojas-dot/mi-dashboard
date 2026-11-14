@@ -570,7 +570,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
               responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} />
-
+            : <>{requestDocument}{investigationDocument}</>}
       </CaseWorkspace>
     </Modal>
 
