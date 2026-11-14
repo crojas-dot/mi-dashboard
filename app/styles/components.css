@@ -276,7 +276,7 @@
 }
 
 .queja-informe-editor .tiptap > h2:first-of-type {
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: #1a1718;
   font-family: "Century Gothic", Arial, sans-serif;
   font-size: 15pt;
@@ -285,7 +285,7 @@
 }
 
 .queja-informe-editor .tiptap > h2:not(:first-of-type) {
-  margin: 20px 0 9px;
+  margin: 12px 0 6px;
   color: #2a61b0;
   font-family: "Century Gothic", Arial, sans-serif;
   font-size: 12pt;
@@ -294,7 +294,7 @@
 }
 
 .queja-informe-editor .tiptap > h3 {
-  margin: 18px 0 8px;
+  margin: 11px 0 5px;
   color: #1a1718;
   font-family: "Century Gothic", Arial, sans-serif;
   font-size: 11pt;
@@ -303,7 +303,7 @@
 }
 
 .queja-informe-editor .tiptap > p {
-  margin: 0 0 10px;
+  margin: 0 0 6px;
 }
 
 .queja-informe-editor .tiptap > p:has(> strong:first-child) {
