@@ -238,3 +238,20 @@ test('fallo de almacenamiento no se confunde con un informe nuevo ni pierde el t
   assert.equal((await api.PUT(api.request())).status, 503)
   assert.equal(api.rows.length, 0)
 })
+
+test('PDF de una solicitud breve ocupa una hoja, sin crear hojas vacías; texto extenso sí pagina', async () => {
+  const { jsPDF: RealPdf } = await import('jspdf')
+  let instance
+  function SpyPdf(...args) { instance = new RealPdf(...args); return instance }
+  const { crearInformePdf } = loadModule('lib/utils/quejaInformePdf.ts', { jspdf: { jsPDF: SpyPdf } })
+  const short = crearPlantillaInforme({ ...sample, descripcion: 'Descripción breve.', notas: '',
+    justificacion_procede: 'Procede.', resolucion: 'Resolución breve.' }, [], 'Calidad',
+    new Date('2026-11-03T18:00:00Z'))
+  assert.equal((short.match(/&nbsp;/g) ?? []).length, 1, 'un espacio editable en conclusión, no dos')
+  await crearInformePdf(short)
+  assert.equal(instance.getNumberOfPages(), 1)
+  const long = crearPlantillaInforme({ ...sample, descripcion: 'Párrafo extenso. '.repeat(300) }, [],
+    'Calidad', new Date('2026-11-03T18:00:00Z'))
+  await crearInformePdf(long)
+  assert.ok(instance.getNumberOfPages() > 1, 'el texto real no se pierde para evitar páginas')
+})
