@@ -537,12 +537,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut>
-            <Button size="sm" variant="primary" className="max-w-full min-w-0 px-3 py-2 text-xs sm:text-sm"
+          {esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="space-y-1.5">
+            <Button size="sm" variant="primary" className="w-full min-w-0 justify-center px-3 py-2 text-xs sm:text-sm"
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
               <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
             </Button>
-          </div>}
+            <p className="text-center text-[11px] leading-tight text-qms-muted">El PDF se adjunta al guardar.</p>
+          </div>
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
