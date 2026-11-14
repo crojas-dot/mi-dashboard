@@ -73,8 +73,6 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
     const actorId = useAuthStore.getState().user?.id
     let alive = true
     let objectUrl: string | null = null
-    setPreview(null)
-
     async function load() {
       try {
         if (!actorId) throw new Error('Sesión no disponible')
