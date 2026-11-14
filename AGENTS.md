@@ -726,8 +726,9 @@ benchmark autenticado con miles de filas ni garantía universal de servicios ext
   cualquier entrega posterior; el valor aquí es un corte histórico. Publicar
   solo con autorización expresa y sin cambios destructivos de DB.
 - **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
-  fechada del 10 noviembre; no confundirlos con la web pendiente ni con una auditoría
-  remota recién ejecutada. No reabrir accesos legacy o restaurar clientes incompatibles.
+  fechada del 10 noviembre; su activación es independiente del deploy web verificado
+  el 14 noviembre y no equivale a una auditoría remota recién ejecutada.
+  No reabrir accesos legacy o restaurar clientes incompatibles.
 - **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
   feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
   o subidas inciertos; contraste de las barras internas de Google Drive.
