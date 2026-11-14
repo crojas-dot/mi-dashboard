@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **11 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **13 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
@@ -48,6 +48,9 @@ No cargar todos los documentos para una modificación aislada.
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
 | Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
+| PDF oficial automático por versión | QuejaInformeModal.tsx; subirAdjuntoQueja; informePdfFilename en lib/utils/quejaInforme.ts; quejaAdjuntosKey |
+| Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
+| Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
@@ -215,6 +218,21 @@ permisos ni datos persistidos.
   motivo. Las etapas nuevas usan 3/15 días hábiles; revisión, devolución o reasignación
   no reinician la investigación. Leer el snapshot QMS, nunca prioridad/SLA legacy
   para inventar vencimientos. Los históricos conservan su calendario y revisión.
+- En Pendiente de Revisión GC, la propuesta del responsable se lee en el centro
+  y «Ver antecedentes» queda plegado. GC puede Aprobar y continuar (Resuelto),
+  Devolver con motivo/soportes, o Derivar a SACP si hay propuesta y aún no está
+  vinculada una SACP. El responsable NUNCA deriva en investigación.
+- Derivar a SACP crea una acción interna vinculada e independiente, sin cambiar
+  el estado de Quejas ni bloquear su publicación final. La función efectiva de DB
+  acepta Revisión GC (migración 20261113221000), sin habilitar la derivación a
+  cualquier rol o estado.
+- Soportes de devolución: se suben realmente con subirAdjuntoQueja y, al
+  Confirmar devolución, RPC qms_review_resolution_with_attachments vincula
+  los IDs a queja_gc_revision_adjuntos en la misma transacción de devolución.
+  La tabla tiene RLS; authenticated puede consultar según policy pero no
+  insertar directamente. El encargado ve solo adjuntos de ESA revisión en su
+  tarjeta amarilla y entra a corregir con «Ir al editor» (mismo Tiptap).
+  Subir sin confirmar deja el archivo en expediente, aún sin vínculo a devolución.
 - No Procede usa directamente la misma ventana de correo y documento. No restaurar
   pestañas de Justificación/Correo ni el segundo modal «Confirmar no procedencia».
   Los fundamentos se documentan en el informe; el servicio conserva el motivo previo
@@ -254,7 +272,8 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 ## Quejas y Mis Quejas: presentación vigente
 
 - Compartir `CaseWorkspace`, `CaseCycle`, `CaseRequestHeader`, `CaseSection`,
-  `AreaAfectada`, `ListaAdjuntos` y `QuejaPlazoIndicator` cuando el contrato coincida.
+  `CaseWorkspaceNavigation`, `QuejaTimeline`, `AreaAfectada`, `ListaAdjuntos`
+  y `QuejaPlazoIndicator` cuando el contrato coincida.
   Conservar las acciones/permisos particulares de Calidad y del responsable.
 - Workspace lateral derecho de 40vw/100dvh; la tabla conserva columnas, filtros y
   scroll en ambos ejes. Móvil y ampliado usan diálogo nativo. Cerrar restablece el
@@ -266,6 +285,11 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
   izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
   se alinean con Descripción. Por debajo se apila sin desbordar el diálogo.
+  Los laterales comparten sticky, alto máximo y scroll propio a partir del
+  ancho útil previsto; centro desplazable y responsive. Anterior, siguiente,
+  ampliar/reducir usan CaseWorkspaceNavigation; la X la proporciona Modal.
+  Quejas mantiene su hoja de lectura; Mis Quejas mantiene cards: NO convertir
+  ambos a la misma variante visual ni reubicar acciones para estandarizarlos.
 - Ciclo compartido de evaluación/investigación/revisión/cierre; el contraído no usa
   checks verticales. No Procede muestra únicamente evaluación y cierre. Es una
   proyección del estado, nunca otro historial ni aprobaciones/fechas inventadas.
@@ -298,7 +322,7 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   Enviar a Revisión GC, con fondo rojo institucional `qms-brand-red`, hover blanco
   con texto/icono/borde rojos; investigación
   omite la descripción redundante de esa tarjeta.
-  Ese único acceso abre `QuejaAnalisisPanel` en `Modal variant="document" size="xl"`,
+  Ese único acceso abre `QuejaAnalisisPanel` en `Modal variant="document" size="mail"`,
   como procedencia: primero Observación de Calidad con Procede azul, después
   Descripción del cliente. Su pie Preparar resolución vuelve al editor.
   Enviar a Revisión GC permanece en Acción actual, también en espacios estrechos:
@@ -312,7 +336,7 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   «Reenviar revisión a GC»; el mensaje de devolución deja de mostrarse en ese contexto
   y el envío actual entrega la propuesta corregida. Un mensaje de devolución muy
   largo se resume en línea y abre modal «Ver más» para revisarlo completo.
-- Análisis es un modal nativo centrado de hasta 1040px y 90dvh; no amplía el workspace
+- Análisis es un modal nativo centrado tamaño mail (máximo 896px y 90dvh); no amplía el workspace
   al abrir. Conservar nodo/editor/borrador, cursor y revisión al consultar/cerrar.
   El scroll de Resolución depende del foco: texto o barra de formato enfocados
   contienen el desplazamiento, incluso al llegar al límite o estar vacío. Sin foco,
@@ -336,9 +360,15 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   ni archivos al listar. Conservar permisos de eliminar/descargar/visualizar.
 - Marco redondeado y margen inferior del lienzo solo contraído; ampliado sin esa
   franja. El documento conserva padding final para que el contenido no toque el borde.
+- Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
+  y puntos grises para los anteriores, con anillo blanco sin círculo doble.
+  El modal «Historial y observaciones» de Calidad está centrado y usa size mail;
+  autores conocidos se resuelven desde cada contexto, sin inventar usuarios.
 - Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
   estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
-  `::-webkit-scrollbar`. Laterales sticky con capa propia y fondo opaco; ampliado sin
+  `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
+  [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
+  o scroll-smooth en scrollports internos. Laterales sticky con capa propia y fondo opaco; ampliado sin
   velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
 - Visor Drive: iframe inmediato, sin blob previo ni skeleton; preconnect solo por
   intención. Los archivos Storage históricos conservan su ruta de vista/descarga.
@@ -351,19 +381,31 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
 
 ## Informe y correo de respuesta al cliente
 
-- Generar expediente abre un informe Tiptap prellenado, editable y guardado en el
-  expediente para retomarlo desde otra computadora. Incluye encabezado institucional,
-  secciones del caso, Conclusión y Resolución y anexos como nombres de archivo.
-  El informe admite 100.000 caracteres (`INFORME_MAX_LENGTH`, validado en editor/API).
-  Exporta Word/PDF; guardar/exportar están en las acciones del encabezado.
+- En Resuelto, «Generar expediente» aparece SOLO debajo de los datos del
+  cliente, sin tarjeta extensa ni duplicado central. Botón azul de ancho completo
+  y ayuda breve de una línea. Abre un informe Tiptap prellenado y editable con
+  encabezado, secciones, Conclusión/Resolución y anexos; 100.000 caracteres
+  (`INFORME_MAX_LENGTH` validado en editor/API). Se guarda remotamente.
+- Guardar persiste primero la versión del informe; después genera y registra
+  automáticamente su PDF oficial con nombre estable de folio y versión
+  (informePdfFilename). Si ya existe un PDF válido para esa versión, lo reutiliza.
+  Si falla Drive/subida, conserva el texto guardado, muestra error y permite
+  reintentar Guardar sin crear una versión nueva. No es una transacción distribuida.
+  Word/PDF siguen disponibles como opciones de exportación separadas; no añadir
+  «Preparar PDF para cliente» ni segundo generador de PDF.
 - Diseño del informe: `lib/constants/informeDesign.ts` centraliza azul documental
   #2A61B0, negro #1A1718 y divisores #E6E5E5 de la guía de identidad. Word/editor usan
   Century Gothic en títulos y Arial en cuerpo; PDF conserva Helvetica integrada.
   Sin franjas de fondo en títulos; Word conserva un párrafo editable después de un
   título vacío para separar Conclusión de Anexos. No reescribir informes guardados.
-- Respuesta al cliente no vuelve a montar el informe como cuerpo del correo. Arriba:
-  oficio editable, selector del informe guardado o documento subido, Adjuntar,
-  Visualizar y Editar informe. Volver del editor conserva asunto, mensaje y selección.
+- Respuesta al cliente usa compositor tipo Gmail: Para y N.º de oficio en misma
+  fila, Asunto en línea y texto libre. No hay selector desplegable de documentos.
+  El PDF oficial de la versión guardada se selecciona como chip automáticamente
+  si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
+  previsualizar y quitar selección; onPdfReady actualiza selección también cuando
+  se guarda desde el editor del propio modal, si sigue vigente esa visita.
+  Publicar sin PDF genera toast rojo «Es necesario adjuntar un informe antes de
+  publicar» y NO finaliza la queja. Volver conserva el borrador del correo.
 - Debajo: correo de acompañamiento independiente y editable, dirigido al interesado,
   asunto con guion y folio; resultados/fundamentos en el informe adjunto y consultas
   a `gc@eca.or.cr`. Límites compartidos: asunto 180, mensaje 3.500 caracteres.
@@ -376,8 +418,10 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
 
 Fuentes: `QuejaInformeModal`, `QuejaRespuestaClienteModal`, `QuejaCorreoEditor`,
 `useQuejaInforme`, `useQuejaRespuestaCliente`, `quejaInformeService`,
-`quejaWorkflowService`, `quejaInforme*` y `quejaCorreo`. Contrato vigente en
-[revisión/respuesta](docs/quejas-revision-y-respuesta-2026-11-04.md).
+`quejaWorkflowService`, `quejaInforme*` y `quejaCorreo`. Contrato de referencia en
+[revisión/respuesta](docs/quejas-revision-y-respuesta-2026-11-04.md);
+estado y evidencias actuales en
+[checklist 13/11](docs/quejas-checklist-aceptacion-2026-11-13.md).
 
 ## Formulario público, evidencias y seguimiento
 
@@ -501,10 +545,12 @@ fallos previos de informe/paginación y auditorías conservan su fecha y alcance
 [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-- **Web:** última publicación documentada del 19 octubre; los refinamientos web de
-  noviembre siguen locales. Compilar o actualizar documentación no publica Vercel.
-  No desplegar sin autorización explícita; verificar el despliegue antes de afirmar
-  que una función local está en producción.
+- **Web:** despliegue de producción READY del 13 noviembre para el commit de
+  implementación `2a67d36`, verificado contra el alias
+  `mi-dashboard-iota.vercel.app`. Un build exitoso NO equivale a pruebas E2E de
+  permisos, subida Drive, PDF, correo, estados y UX en un navegador autenticado.
+  El cambio posterior del botón y esta documentación requieren su propio deploy
+  verificado. No desplegar sin autorización explícita.
 - **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
   fechada del 10 noviembre; no confundirlos con la web pendiente ni con una auditoría
   remota recién ejecutada. No reabrir accesos legacy o restaurar clientes incompatibles.
@@ -515,6 +561,11 @@ benchmark autenticado con miles de filas ni garantía universal de servicios ext
   telemetría persistida/retención anual ni Seguridad y Estado terminados. La auditoría
   npm documentada tras fijar Next 16.4.6 registró cero críticas/altas y seis moderadas
   indirectas pendientes; no presentarla como una auditoría nueva ni seguridad total.
+
+Para Quejas/Mis Quejas consultar también el
+[checklist con alcance real y pruebas pendientes](docs/quejas-checklist-aceptacion-2026-11-13.md).
+No atribuir pruebas E2E a inspección estática, SQL de metadatos ni compilación
+Vercel. La existencia de archivos Node no demuestra que fueron ejecutados.
 
 Actualizar la referencia temática y el mapa cuando cambien puntos de edición.
 Conservar esta entrada como contrato actual: la cronología vive en `docs/` y no debe
