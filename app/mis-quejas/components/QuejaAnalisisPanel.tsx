@@ -33,6 +33,7 @@ interface Props {
   actividadLoading: boolean
   actividadError: boolean
   onRetryActividad: () => void
+  resolveAuthor?: (item: QuejaActividad) => string | undefined
 }
 
 type AnalysisTab = 'analisis' | 'adjuntos' | 'historial'
@@ -185,7 +186,7 @@ export default function QuejaAnalisisPanel(props: Props) {
         </div>
       </section>
       <section id={tabId('historial')} role="tabpanel" aria-label="Historial del expediente" hidden={activeTab !== 'historial'} className={activeTab === 'historial' ? 'mx-auto w-full min-w-0 max-w-5xl p-4 sm:p-6' : 'hidden'}>
-        <QuejaTimeline actividad={props.actividad} loading={props.actividadLoading} error={props.actividadError} onRetry={props.onRetryActividad} />
+        <QuejaTimeline actividad={props.actividad} loading={props.actividadLoading} error={props.actividadError} onRetry={props.onRetryActividad} resolveAuthor={props.resolveAuthor} />
       </section>
     </div>
   </Modal>

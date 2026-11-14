@@ -425,7 +425,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       <QuejaAnalisisPanel queja={queja} open={analisisAbierto} onClose={cerrarAnalisis}
         onPrepararResolucion={investigando ? prepararResolucion : undefined} devolucion={devolucion}
         adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
-        actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }} />
+        actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
+        resolveAuthor={event => event.usuario_id === user?.id ? user?.nombre : undefined} />
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />

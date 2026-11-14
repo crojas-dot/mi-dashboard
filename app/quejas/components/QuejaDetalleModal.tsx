@@ -583,7 +583,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <QuejaAnalisisPanel queja={queja} open={analisisCalidadOpen} onClose={() => setAnalisisCalidadOpen(false)}
       adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }}
       onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
-      actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }} />
+      actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
+      resolveAuthor={event => event.usuario_id ? usuarios.find(u => u.id === event.usuario_id)?.nombre : undefined} />
     <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
       headerActions={decisionOpen && decisionProcedencia ? <>
         {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
