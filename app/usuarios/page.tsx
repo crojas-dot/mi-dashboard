@@ -11,7 +11,6 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { mutateUsuario } from '@/lib/services/usuariosService'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
-import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
@@ -140,12 +139,13 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1500px] flex-col gap-4 overflow-hidden pb-2">
-      <PageHeader compact={false} title="Gestión de accesos" description="Administrá las cuentas y los permisos por módulo del sistema.">
-        <Button onClick={abrirCrear}><Plus className="h-4 w-4" /> Nuevo usuario</Button>
-      </PageHeader>
-
-      <div role="tablist" aria-label="Gestión de accesos" className="flex gap-1 border-b border-qms-border">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 overflow-hidden pb-2">
+      <div className="flex shrink-0 items-center gap-3">
+        <h1 className="text-lg font-semibold text-qms-dark sm:text-xl">Gestión de accesos</h1>
+      </div>
+      <div data-users-directory className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-qms-border px-3 sm:px-4">
+      <div role="tablist" aria-label="Gestión de accesos" className="flex min-w-0 items-center gap-1">
         <button type="button" role="tab" id="usuarios-tab-usuarios" aria-controls="usuarios-panel-usuarios"
           aria-selected={tab === 'usuarios'} onClick={() => setTab('usuarios')}
           className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'usuarios' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Usuarios</button>
@@ -153,9 +153,11 @@ export default function UsuariosPage() {
           aria-selected={tab === 'roles'} onClick={() => setTab('roles')}
           className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'roles' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Roles y permisos</button>
       </div>
+      {tab === 'usuarios' && <Button size="sm" onClick={abrirCrear}><Plus className="size-4" /> Nuevo usuario</Button>}
+      </div>
 
-      <section id="usuarios-panel-usuarios" role="tabpanel" aria-labelledby="usuarios-tab-usuarios" hidden={tab !== 'usuarios'} className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid shrink-0 grid-cols-2 items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-3 sm:p-4 lg:grid-cols-[minmax(220px,400px)_minmax(190px,1fr)_minmax(210px,1fr)]">
+      <section id="usuarios-panel-usuarios" role="tabpanel" aria-labelledby="usuarios-tab-usuarios" hidden={tab !== 'usuarios'} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid shrink-0 grid-cols-2 items-center gap-3 border-b border-qms-border bg-qms-surface p-3 sm:p-4 lg:grid-cols-[minmax(260px,1fr)_minmax(190px,230px)_minmax(200px,230px)]">
         <div className="relative col-span-2 min-w-0 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -184,7 +186,7 @@ export default function UsuariosPage() {
       ) : (
         <div className="min-h-0 flex-1">
         <div className="hidden h-full min-h-0 lg:block">
-        <Table containerClassName="h-full min-h-0 overflow-auto overscroll-contain">
+        <Table containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
           <TableHead>
             <tr>
               <TableHeaderCell>Usuario</TableHeaderCell>
@@ -266,7 +268,7 @@ export default function UsuariosPage() {
         </div>
         </div>
       )}
-      {!isLoading && !isError && <div data-users-pagination className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-surface px-4 py-3 text-sm">
+      {!isLoading && !isError && <div data-users-pagination className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-4 py-3 text-sm">
         <span className="text-qms-muted" aria-live="polite">
           {total ? `Mostrando ${inicio + 1}–${Math.min(inicio + porPagina, total)} de ${total} usuarios` : '0 usuarios'}
         </span>
@@ -285,6 +287,7 @@ export default function UsuariosPage() {
       {tab === 'roles' && <section id="usuarios-panel-roles" role="tabpanel" aria-labelledby="usuarios-tab-roles" className="min-h-0 flex-1 overflow-hidden">
         <RolesAccesos active />
       </section>}
+      </div>
 
       <UsuarioFormModal
         onResetPassword={restablecerDesdePerfil}
