@@ -183,7 +183,7 @@ export default function UsuariosPage() {
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
         <div className="min-h-0 flex-1">
-        <div className="hidden h-full min-h-0 lg:block">
+        <div className="hidden h-full min-h-0 xl:block">
         <Table className="table-fixed min-w-[940px]" containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
           <colgroup><col className="w-[32%]" /><col className="w-[13%]" /><col className="w-[12%]" /><col className="w-[17%]" /><col className="w-[19%]" /><col className="w-[7%]" /></colgroup>
           <TableHead className="sticky top-0 z-10">
@@ -240,7 +240,7 @@ export default function UsuariosPage() {
           </tbody>
         </Table>
         </div>
-        <div data-users-mobile-list className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain p-3 lg:hidden">
+        <div data-users-mobile-list className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain p-3 xl:hidden">
           {usuariosVisibles.length === 0 ? <div className="ui-panel p-5 text-sm text-qms-muted">No hay usuarios registrados.</div> : usuariosVisibles.map(u => (
             <article key={u.id} className="ui-panel space-y-3 p-4">
               <div className="flex min-w-0 items-center gap-3">
