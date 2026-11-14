@@ -182,6 +182,8 @@ export default function UsuariosPage() {
       ) : isError ? (
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
+        <div className="min-h-0 flex-1">
+        <div className="hidden lg:block">
         <Table containerClassName="max-h-[min(58dvh,650px)] min-h-0 overflow-auto overscroll-contain">
           <TableHead>
             <tr>
@@ -243,6 +245,26 @@ export default function UsuariosPage() {
             )}
           </tbody>
         </Table>
+        </div>
+        <div data-users-mobile-list className="max-h-[min(58dvh,650px)] space-y-3 overflow-y-auto overscroll-contain lg:hidden">
+          {usuariosVisibles.length === 0 ? <div className="ui-panel p-5 text-sm text-qms-muted">No hay usuarios registrados.</div> : usuariosVisibles.map(u => (
+            <article key={u.id} className="ui-panel space-y-3 p-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <span aria-hidden="true" className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${getDirectoryRoleAvatarClass(u.rol)}`}>{u.nombre.charAt(0).toUpperCase()}</span>
+                <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-qms-dark">{u.nombre}{esAuto(u) && ' (tú)'}</p><p className="truncate text-xs text-qms-muted">{u.email}</p></div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2"><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge><Badge variant="neutral">{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></div>
+              <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}</p>
+              <div className="grid grid-cols-3 gap-2 border-t border-qms-border pt-3">
+                <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => abrirEditar(u)}>Gestionar</Button>
+                <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => setResetSel(u)}>Resetear</Button>
+                {u.estado === 'activo' ? <Button size="sm" variant="secondary" className="min-w-0 justify-center" disabled={esAuto(u)} onClick={() => pedirDesactivar(u)}>Desactivar</Button>
+                  : <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => setConfirmar({ usuario: u, accion: 'activar' })}>Restaurar</Button>}
+              </div>
+            </article>
+          ))}
+        </div>
+        </div>
       )}
       {!isLoading && !isError && <div data-users-pagination className="flex shrink-0 flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-surface px-4 py-3 text-sm">
         <span className="text-qms-muted" aria-live="polite">
