@@ -66,9 +66,11 @@ No cargar todos los documentos para una modificación aislada.
 | DB aplicada y evidencia | supabase/migrations/ y supabase/backups/ |
 
 Stack local: Next 16.4.6, React 19.2.4, Supabase JS 2.111.0, TanStack Query 5 y Zustand 5.
-Estado documentado al 10 noviembre: refinamientos web locales sin publicar; correo
-por evento activo en DB/Edge v17/Apps Script v5, con autorización Google/Drive y
-recibo HMAC/adjunto final verificados. No es una nueva auditoría remota. Contrato:
+Historial documentado al 10 noviembre: correo por evento activo en DB/Edge
+v17/Apps Script v5, con autorización Google/Drive y recibo HMAC/adjunto final
+verificados en aquella fecha; no representa auditoría remota nueva. La web
+continuó evolucionando y los cambios de Quejas del 14 noviembre ya están
+desplegados, según SHA verificado abajo. Contrato histórico:
 [formulario y correo](docs/quejas-formulario-correo-inmediato-2026-11-10.md).
 El layout servidor solo monta metadata/font y AuthShell/ToastProvider. Las páginas
 operativas son Client Components; negocio se lee por hooks/servicios. API, proxy.ts
@@ -525,6 +527,18 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   sin spinner ni editor ficticio. Si falla el borrador, Reintentar; si falla
   solo el informe, el compositor sigue utilizable con error/reintento propios.
   Aplica por igual a No Procede y al cierre normal de Quejas.
+  **Regresión obligatoria al tocar este flujo:** abrir No Procede desde Recibido
+  y Respuesta al cliente desde Resuelto, con caché caliente y fría, teclado y
+  ratón. No reinstalar editor ficticio, spinner ni doble scroll durante precarga;
+  confirmar encabezados, asunto, cuerpo y adjuntos estables. Simular informe
+  retrasado/ausente/error y comprobar que el correo sigue editable y que el
+  aviso Reintentar corresponde solo al recurso fallido. Si llega después
+  el PDF de la versión correcta, seleccionar automáticamente solo cuando no
+  haya elección manual; un informe guardado en la visita prevalece. Verificar
+  borrador versionado/conflicto, aviso de cambios sin guardar, bloqueo de
+  publicación sin PDF y prohibición de acceso fuera de Calidad/admin.
+  Medir el tiempo real en navegador autenticado antes de afirmar apertura
+  instantánea universal; caché fría o servicios externos pueden causar espera.
   El PDF oficial de la versión guardada se selecciona como chip automáticamente
   si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
   previsualizar y quitar selección; onPdfReady actualiza selección también cuando
@@ -701,13 +715,16 @@ fallos previos de informe/paginación y auditorías conservan su fecha y alcance
 [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-- **Web:** el proyecto `mi-dashboard` de Vercel usa `main` como rama de producción
-  y `mi-dashboard-iota.vercel.app` como alias público. El corte del 14 noviembre
-  incorpora las correcciones de paginación, scroll y vista previa mediante PR a
-  `main`. Una compilación de preview no actualiza por sí sola el alias;
-  verificar despliegue final, SHA, estado READY y dominio. No interpretar
-  build/CI como pruebas E2E de permisos, Drive, PDF, correo y UX autenticada.
-  Publicar solo con autorización expresa y sin cambios destructivos de DB.
+- **Web (verificada el 14 noviembre de 2026):** `mi-dashboard` en Vercel,
+  rama productiva `main`, dominio `mi-dashboard-iota.vercel.app`, despliegue
+  `dpl_ADVuq52xdGjNfMhAfYqLiuexgQU5`, estado `READY`, commit
+  `21e84eda3d717926c17a3d22f697753ce4b3e48c` (PR #27).
+  Incluye scroll único de Respuesta al cliente/No procede, precarga visual estable,
+  lectura anticipada de borrador/informe y apertura sin esperar PDF. La compilación
+  confirma que el código se construye, no una prueba E2E de permisos, tiempos,
+  Drive o envío real. Volver a consultar alias, SHA y estado de Vercel ante
+  cualquier entrega posterior; el valor aquí es un corte histórico. Publicar
+  solo con autorización expresa y sin cambios destructivos de DB.
 - **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
   fechada del 10 noviembre; no confundirlos con la web pendiente ni con una auditoría
   remota recién ejecutada. No reabrir accesos legacy o restaurar clientes incompatibles.
