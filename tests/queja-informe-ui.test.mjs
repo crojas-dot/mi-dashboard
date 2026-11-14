@@ -9,7 +9,7 @@ class FixtureNode {
 }
 
 function reportHarness({ initial = null, saveError = null, uploadError = null, preparePdf = false } = {}) {
-  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = [], pdfUploads = [], attached = []
+  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = [], pdfUploads = [], attached = [], remembered = []
   let cursor = 0, tree, closed = 0
   const document = {
     addEventListener(name, callback) { listeners.set(name, callback) },
@@ -47,6 +47,7 @@ function reportHarness({ initial = null, saveError = null, uploadError = null, p
   const { default: Informe } = loadModule('app/quejas/components/QuejaInformeModal.tsx', {
     react,
     '@tanstack/react-query': { useQueryClient: () => queryClient },
+    '@/lib/services/driveClient': { recordarDriveBlob: (id, blob) => remembered.push({ id, blob }) },
     '@/components/Modal': { default: 'Modal' },
     '@/components/ui/Button': { default: 'Button' },
     '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
@@ -148,6 +149,7 @@ function reportHarness({ initial = null, saveError = null, uploadError = null, p
     selected,
     pdfUploads,
     attached,
+    remembered,
     closed: () => closed,
     content: nodes => nodes.find(node => node.type === 'QuejaInformeHoja')?.props.contenido,
     change(value) {
@@ -318,6 +320,8 @@ test('guardar crea y registra un PDF versionado que el correo puede seleccionar'
   assert.equal(report.pdfUploads[0].name, 'Informe-v1.pdf')
   assert.equal(report.pdfUploads[0].type, 'application/pdf')
   assert.equal(report.attached.length, 1)
+  assert.equal(report.remembered.length, 1)
+  assert.equal(report.remembered[0].id, report.attached[0].storage_path)
 })
 
 test('un fallo al adjuntar no pierde el informe y Guardar reintenta sin nueva versión', async () => {

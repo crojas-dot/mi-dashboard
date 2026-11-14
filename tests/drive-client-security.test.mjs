@@ -4,11 +4,11 @@ import { loadModule } from './load-module.mjs'
 
 function fixture(fetcher) {
   const state = { user: { id: 'fixture-user' }, signingOut: false }, calls = []
-  const { fetchDriveBlob, prefetchDriveBlob } = loadModule('lib/services/driveClient.ts', {
+  const { fetchDriveBlob, prefetchDriveBlob, recordarDriveBlob } = loadModule('lib/services/driveClient.ts', {
     '@/lib/store/auth-store': { useAuthStore: { getState: () => state } },
     '@/lib/supabase': { supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 'synthetic-access-token' } } }) } } },
   }, { fetch: async (url, options) => { calls.push({ url, options }); return fetcher(state) } })
-  return { read: fetchDriveBlob, prefetch: prefetchDriveBlob, state, calls }
+  return { read: fetchDriveBlob, prefetch: prefetchDriveBlob, remember: recordarDriveBlob, state, calls }
 }
 
 test('Drive blob usa API autenticada, no-store, ID codificado y signal de la visita', async () => {
@@ -82,5 +82,15 @@ test('cerrar un visor no cancela la descarga compartida de otra visita', async (
   const second = f.read('drive-file-inflight-001')
   resolveFetch(new Response('completed-private-document'))
   assert.equal(await (await second).text(), 'completed-private-document')
+  assert.equal(f.calls.length, 1)
+})
+
+test('el PDF recién confirmado se abre sin descargar de nuevo y no cruza identidades', async () => {
+  const f = fixture(() => { throw Error('No se esperaba otra descarga') })
+  f.remember('confirmed-drive-pdf-123', new Blob(['PDF local'], { type: 'application/pdf' }))
+  assert.equal(await (await f.read('confirmed-drive-pdf-123')).text(), 'PDF local')
+  assert.equal(f.calls.length, 0)
+  f.state.user = { id: 'otro-actor', rol: 'calidad' }
+  await assert.rejects(f.read('confirmed-drive-pdf-123'))
   assert.equal(f.calls.length, 1)
 })

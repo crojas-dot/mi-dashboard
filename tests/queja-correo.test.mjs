@@ -89,3 +89,15 @@ test('se rechazan cabeceras inyectadas, límites y sobres ambiguos sin copiar HT
   assert.doesNotMatch(markup, /<script|<img|<iframe/)
   assert.match(markup, /&lt;iframe&gt;/)
 })
+
+test('el cuerpo del correo tiene el único scroll, sin desplazamiento exterior duplicado', () => {
+  const correo = crearCorreoAcompanamiento({ cliente_nombre: 'Ana', folio: '2026-001' })
+  const markup = renderToStaticMarkup(createElement(Editor, { id: 'correo-scroll', destinatario: 'ana@example.test',
+    oficio: '2026-001', correo, onOficioChange() {}, onChange() {} }))
+  assert.match(markup, /flex h-full min-h-0 flex-col overflow-hidden/)
+  assert.match(markup, /min-h-0 w-full flex-1 resize-none overflow-y-auto/)
+  const modal = fs.readFileSync('app/quejas/components/QuejaRespuestaClienteModal.tsx', 'utf8')
+  assert.match(modal, /data-response-compose className="flex min-h-0 flex-1 flex-col overflow-hidden/)
+  assert.match(modal, /<div className="min-h-0 flex-1 overflow-hidden">/)
+  assert.doesNotMatch(modal, /min-h-0 flex-1 overflow-y-auto overscroll-contain \[scrollbar-gutter:stable\]/)
+})
