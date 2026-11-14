@@ -60,7 +60,7 @@ test('Historial usa los mismos puntos simples y modal centrado en ambos módulos
 test('Cierre muestra tres pasos y abre un modal de solo lectura del sistema', () => {
   const detail = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx','utf8')
   const summary = fs.readFileSync('app/quejas/components/QuejaCierreResumen.tsx','utf8')
-  assert.match(detail, /\['Resuelto', 'Finalizado'\]\.includes\(estadoActual\) \? <QuejaCierreResumen/)
+  assert.match(detail, /\['Resuelto', 'Finalizado', 'No Procede'\]\.includes\(estadoActual\) \? <QuejaCierreResumen/)
   for (const name of ['cliente', 'investigacion', 'cierre']) assert.ok(summary.includes("id: '" + name + "'"))
   assert.match(summary, /data-case-close-timeline/)
   assert.match(summary, /data-case-close-step=\{item.id\}/)

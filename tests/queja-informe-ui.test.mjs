@@ -36,7 +36,7 @@ function reportHarness({ initial = null, saveError = null, uploadError = null, p
     },
   }
   const operation = { isCurrent: () => true, finish() {} }
-  const queryClient = { setQueryData() {} }
+  const queryClient = { setQueryData() {}, getQueryData: () => attached }
   class MockFile {
     constructor(parts, name, options) {
       this.name = name

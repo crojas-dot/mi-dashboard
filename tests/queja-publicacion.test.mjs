@@ -110,7 +110,10 @@ function panelFixture(options = {}) {
   const { default: Panel } = loadModule('app/quejas/components/QuejaDetalleModal.tsx', {
     '@/app/quejas/components/QuejaInformeModal': { default: 'Informe' },
     '@/app/quejas/components/QuejaRespuestaClienteModal': { default: 'Response' },
-    react, '@/components/Modal': { default: 'Modal' }, '@/components/ui/Button': { default: 'Button' },
+    react, '@tanstack/react-query': { useQueryClient: () => ({ prefetchQuery: async () => {} }) },
+    '@/lib/services/driveClient': { prefetchDriveBlob() {} },
+    '@/lib/queries/useQuejaRespuestaCliente': { respuestaClienteKey: id => ['respuesta', id], fetchRespuestaCliente: async () => ({ borrador: null, aprobacion: null, publicada: null }) },
+    '@/components/Modal': { default: 'Modal' }, '@/components/ui/Button': { default: 'Button' },
     '@/app/quejas/components/AreaQuejaCatalogo': { default: 'AreaCatalog' },
     '@/components/ui/Input': { default: 'Input' }, '@/components/ui/Select': { default: 'Select' }, '@/components/ui/Textarea': { default: 'Textarea' },
     '@/components/ui/RichTextEditor': { default: 'Editor' }, '@/components/ui/RichTextContent': { default: 'Content' },

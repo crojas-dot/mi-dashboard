@@ -44,7 +44,8 @@ test('cambiar nivel usa el upsert existente y respeta módulos reservados sin es
   const writes = [], notices = []
   const permisos = [{ rol: 'calidad', modulo: 'quejas', leer: true, escribir: false }]
   const { default: RolesAccesos } = loadModule('app/usuarios/components/RolesAccesos.tsx', {
-    react: { useRef: initial => ({ current: initial }) },
+    react: { useRef: initial => ({ current: initial }), useState: initial => [initial, () => {}], useEffect() {} },
+    'react-dom': { createPortal: node => node },
     '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
     '@/components/ui/ErrorState': { default: 'ErrorState' },
     '@/components/ui/Select': { default: 'Select' },
@@ -79,7 +80,9 @@ test('cambiar nivel usa el upsert existente y respeta módulos reservados sin es
 
 test('la ayuda no ocupa espacio permanente y la matriz tiene desplazamiento propio', () => {
   assert.match(matrix, /aria-label="Ayuda sobre niveles de acceso"/)
-  assert.match(matrix, /<details className="group relative z-20">/)
+  assert.match(matrix, /createPortal\(/)
+  assert.match(matrix, /role="dialog" aria-label="Niveles de acceso"/)
+  assert.match(matrix, /z-\[1000\]/)
   assert.match(matrix, /data-users-permissions-scroll/)
   assert.match(matrix, /sticky top-0 z-20/)
   assert.match(users, /data-users-pagination/)
