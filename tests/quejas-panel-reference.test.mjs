@@ -72,8 +72,8 @@ test('Mis Quejas deja los dos laterales sticky en el scroll único del expedient
   const left = result.match(/<aside data-case-request-region[^>]+>/)?.[0] ?? ''
   const right = result.match(/<aside data-case-action[^>]+>/)?.[0] ?? ''
   for (const panel of [left, right]) {
-    assert.match(panel, /@min-\\[1100px\\]:sticky/)
-    assert.match(panel, /@min-\\[1100px\\]:top-4/)
+    assert.match(panel, /@min-\[1100px\]:sticky/)
+    assert.match(panel, /@min-\[1100px\]:top-4/)
     assert.doesNotMatch(panel, /overflow-y-auto|max-h-/)
   }
   assert.match(result, /data-case-scroll[^>]*overflow-y-auto/)

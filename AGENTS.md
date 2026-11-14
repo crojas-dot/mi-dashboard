@@ -390,7 +390,8 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
   `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
   [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
-  o scroll-smooth en scrollports internos. Laterales sticky con capa propia y fondo opaco; ampliado sin
+  o scroll-smooth en scrollports internos. Laterales sticky sin max-height ni
+  overflow propios: el lienzo principal controla el único scroll; ampliado sin
   velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
 - Visor privado: NO usar iframe, preconnect, enlace externo ni autenticación
   directa contra drive.google.com. Los archivos Drive se consultan por

@@ -33,7 +33,7 @@ test('El workspace mantiene navegación idéntica y lateral fijo en ambos módul
   assert.match(shared, /@min-\[480px\]\/workspace:flex/)
   assert.match(shared, /aria-pressed=\{expanded\}/)
   assert.match(shared, /@min-\[1100px\]:sticky @min-\[1100px\]:top-4/)
-  assert.match(shared, /@min-\[1100px\]:max-h-\[calc\(100dvh-8rem\)\]/)
+  assert.doesNotMatch(shared, /@min-\[1100px\]:max-h-\[calc\(100dvh-8rem\)\]/)
   assert.match(quality, /headerActions=\{<CaseWorkspaceNavigation/)
   assert.match(responsible, /headerActions=\{<CaseWorkspaceNavigation/)
   assert.match(quality, /data-close-report-shortcut/)
