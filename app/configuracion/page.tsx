@@ -3,7 +3,7 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, ShieldCheck, Tag, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, Tag, type LucideIcon } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { queryKeys } from '@/lib/queries/queryKeys'
@@ -17,11 +17,10 @@ import PlazosSettings from './components/PlazosSettings'
 import CalendarioSettings from './components/CalendarioSettings'
 import GeneralSettings from './components/GeneralSettings'
 import FormulariosSettings from './components/FormulariosSettings'
-import RolesAccesos from './components/RolesAccesos'
 import ModoVistaActiva from './components/ModoVistaActiva'
 import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
 
-type Section = 'general' | 'catalogos' | 'sla' | 'calendario' | 'formularios' | 'roles' | 'vistas' | 'ia'
+type Section = 'general' | 'catalogos' | 'sla' | 'calendario' | 'formularios' | 'vistas' | 'ia'
 interface SectionDefinition {
   id: Section; label: string; description: string; group: string; icon?: LucideIcon
   component: ComponentType<{ active: boolean }>
@@ -31,7 +30,6 @@ const sections: SectionDefinition[] = [
   { id: 'catalogos', label: 'Catálogos', description: 'Valores de los selectores de cada módulo.', group: 'Organización', icon: Tag, component: CatalogosSettings },
   { id: 'sla', label: 'Plazos de atención', description: 'Días de alerta y vencimiento por prioridad.', group: 'Organización', icon: Clock, component: PlazosSettings },
   { id: 'calendario', label: 'Calendario laboral', description: 'Días laborables y feriados confirmados para las nuevas etapas del sistema.', group: 'Organización', icon: CalendarDays, component: CalendarioSettings },
-  { id: 'roles', label: 'Roles y accesos', description: 'Qué puede ver y editar cada rol.', group: 'Acceso', icon: ShieldCheck, component: RolesAccesos },
   { id: 'vistas', label: 'Vista por rol', description: 'Revisá cómo se presenta el panel a otro rol.', group: 'Acceso', icon: Eye, component: ModoVistaActiva },
   { id: 'formularios', label: 'Formularios públicos', description: 'Enlaces para recibir quejas sin iniciar sesión.', group: 'Servicios', icon: LinkIcon, component: FormulariosSettings },
   { id: 'ia', label: 'Asistente de IA', description: 'Proveedores, modelos y respaldo por módulo.', group: 'Servicios', component: AIProvidersManager },
@@ -63,7 +61,6 @@ export default function ConfiguracionPage() {
         client.invalidateQueries({ queryKey: queryKeys.slaConfig }),
         client.invalidateQueries({ queryKey: queryKeys.qmsCalendar }),
         client.invalidateQueries({ queryKey: queryKeys.configuraciones }),
-        client.invalidateQueries({ queryKey: queryKeys.permisos }),
       ])
     } finally { setRefreshing(false) }
   }
