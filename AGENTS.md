@@ -442,7 +442,12 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   #2A61B0, negro #1A1718 y divisores #E6E5E5 de la guía de identidad. Word/editor usan
   Century Gothic en títulos y Arial en cuerpo; PDF conserva Helvetica integrada.
   Sin franjas de fondo en títulos; Word conserva un párrafo editable después de un
-  título vacío para separar Conclusión de Anexos. No reescribir informes guardados.
+  título vacío para separar Conclusión de Anexos. La plantilla genera solo un
+  párrafo editable (no dos) y la paginación visual evita un borde de página
+  fantasma tras el último separador, sin ocultar páginas cortas con contenido.
+  El editor reduce espaciados verticales, pero nunca trunca contenido ni fuerza
+  un máximo de páginas. El PDF real sigue su paginación A4 independiente.
+  No reescribir informes guardados.
 - Respuesta al cliente usa compositor tipo Gmail: Para y N.º de oficio en misma
   fila, Asunto en línea y texto libre. No hay selector desplegable de documentos.
   La respuesta se precarga en segundo plano durante Resuelto y se reutiliza desde
@@ -454,6 +459,12 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
   previsualizar y quitar selección; onPdfReady actualiza selección también cuando
   se guarda desde el editor del propio modal, si sigue vigente esa visita.
+  El compositor no tiene scroll exterior duplicado: el área Para/Asunto y los
+  adjuntos permanecen fijos; solo el textarea del mensaje desplaza su texto.
+  El PDF recién generado/subido se conserva en memoria privada durante
+  45 segundos ÚNICAMENTE tras recibir confirmación del servidor de Drive/DB;
+  así el chip puede mostrarlo sin redescargar. Los PDF existentes se anticipan
+  al seleccionar el chip y se conservan los guards de QMS, sin cookies Google.
   Publicar sin PDF genera toast rojo «Es necesario adjuntar un informe antes de
   publicar» y NO finaliza la queja. Volver conserva el borrador del correo.
 - Debajo: correo de acompañamiento independiente y editable, dirigido al interesado,
