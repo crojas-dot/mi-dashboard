@@ -50,7 +50,10 @@ function pageHarness({ user = actor, initialized = true, refresh = async () => {
     return found
   }
   render()
-  return { render, component, button, requests, invalidations, successes, errors, redirects, queryCalls, runEffects: () => effects.forEach(effect => effect()) }
+  return { render, component, button, requests, invalidations, successes, errors, redirects, queryCalls,
+    rowIds: () => visit(tree).filter(node => node.type === 'TableRow').map(node => node.key),
+    select: label => visit(tree).find(node => node.type === 'Select' && node.props['aria-label'] === label),
+    runEffects: () => effects.forEach(effect => effect()) }
 }
 
 function assertRefreshCall(page) {
@@ -213,4 +216,19 @@ test('Gestión de accesos contiene Usuarios y Roles, sin perder los callbacks de
   page.render()
   assert.equal(page.component('UsuarioFormModal').props.open, false)
   assert.equal(page.component('ResetPasswordModal').props.usuario.id, other.id)
+})
+
+
+test('paginación respeta filtros, evita páginas inexistentes y muestra el contador', () => {
+  const rows = Array.from({length: 27}, (_, i) => ({ ...other, id: 'persona-' + i, nombre: 'Persona ' + i }))
+  const page = pageHarness({ rows })
+  assert.deepEqual(page.rowIds(), rows.slice(0,10).map(row => row.id))
+  page.button('Siguiente').props.onClick()
+  page.render()
+  assert.deepEqual(page.rowIds(), rows.slice(10,20).map(row => row.id))
+  page.select('Usuarios por página').props.onChange({ target: { value: '20' } })
+  page.render()
+  assert.deepEqual(page.rowIds(), rows.slice(0,20).map(row => row.id))
+  assert.equal(page.button('Anterior').props.disabled, true)
+  assert.equal(page.button('Siguiente').props.disabled, false)
 })

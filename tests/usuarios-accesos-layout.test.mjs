@@ -76,3 +76,16 @@ test('cambiar nivel usa el upsert existente y respeta módulos reservados sin es
   await new Promise(setImmediate)
   assert.equal(writes.length, 1, 'no se escriben roles reservados ni administración ajena')
 })
+
+test('la ayuda no ocupa espacio permanente y la matriz tiene desplazamiento propio', () => {
+  assert.match(matrix, /aria-label="Ayuda sobre niveles de acceso"/)
+  assert.match(matrix, /<details className="group relative z-20">/)
+  assert.match(matrix, /data-users-permissions-scroll/)
+  assert.match(matrix, /sticky top-0 z-20/)
+  assert.match(users, /data-users-pagination/)
+  assert.match(users, /max-h-\[min\(58dvh,650px\)\]/)
+  assert.match(form, /data-user-editor-scroll/)
+  assert.match(form, /size="mail" variant="document" height="fill"/)
+  assert.match(form, /hidden=\{tab !== 'detalles'\}/)
+  assert.match(form, /hidden=\{tab !== 'seguridad'\}/)
+})
