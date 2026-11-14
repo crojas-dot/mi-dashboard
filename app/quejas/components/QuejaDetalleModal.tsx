@@ -598,7 +598,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
-        compact={readOnlyStage ? <span className="text-sm font-medium text-qms-primary">Consulta · {historicalTitle}</span> : <CaseCycle queja={queja} process currentOnly />}
+        compact={<CaseCycle queja={queja} process selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} />}
         cycle={<CaseCycle queja={queja} process selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
