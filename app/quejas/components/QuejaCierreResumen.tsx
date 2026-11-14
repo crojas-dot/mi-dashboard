@@ -62,9 +62,9 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
   // No atribuir archivos institucionales históricos a una etapa que la DB no registra.
   const internos = adjuntos.filter(file => !!file.usuario_id && file.id !== pdf?.id)
   const archivos = selected === 0 ? cliente : selected === 1 ? internos : pdf ? [pdf] : []
-  const cierre = aprobacion?.descripcion || 'Propuesta aprobada por Gestión de Calidad. Pendiente de comunicar la respuesta final.'
+  const cierre = aprobacion?.descripcion || (queja.estado === 'Finalizado' ? 'El expediente ha sido finalizado y conserva su resolución y evidencias.' : 'Propuesta aprobada por Gestión de Calidad. Pendiente de comunicar la respuesta final.')
   const textos = [queja.descripcion || 'Sin descripción registrada.', queja.resolucion || 'Sin propuesta registrada.', cierre]
-  const estados = [queja.justificacion_procede ? 'Procedente' : 'Recibida', 'Propuesta registrada', 'Resuelto · pendiente de envío']
+  const estados = [queja.justificacion_procede ? 'Procedente' : 'Recibida', 'Propuesta registrada', queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto · pendiente de envío']
   const fechas = [queja.fecha, null, aprobacion?.created_at ?? null]
   const paso = PASOS[selected ?? 0]
 
@@ -78,7 +78,7 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
           const Icon = item.Icon
           const cantidad = index === 0 ? cliente.length : index === 1 ? internos.length : pdf ? 1 : 0
           const tinta = index === 0 ? 'bg-qms-primary-soft/70' : index === 1 ? 'bg-qms-purple/10' : 'bg-qms-success/10'
-          const estadoVisible = index === 2 ? 'Resuelto' : estados[index]
+          const estadoVisible = index === 2 ? (queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto') : estados[index]
           return <li key={item.id} className="relative min-w-0 pl-9 sm:pl-10">
             <span aria-hidden="true" className={'absolute -left-[25px] top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border-4 border-qms-surface shadow-sm ' + tinta}>
               <Icon className={'size-[19px] ' + item.accent} />
