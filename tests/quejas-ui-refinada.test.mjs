@@ -121,5 +121,6 @@ test('el timeline aprovecha la altura solo ampliado sin aumentar el tamaño cont
   assert.match(summary, /expanded \? '@min-\[580px\]:h-\[clamp\(124px,21dvh,212px\)\]' : '@min-\[580px\]:h-\[124px\]'/)
   assert.match(summary, /expanded \? '@min-\[700px\]:line-clamp-3' : ''/)
   assert.match(summary, /min-h-0 min-w-0 overflow-hidden/)
-  assert.equal((detail.match(/expanded=\{expanded\}/g) || []).length, 2)
+  assert.match(detail, /resolveAuthor=\{id => usuarios\.find\(u => u\.id === id\)\?\.nombre\} expanded=\{expanded\}/)
+  assert.match(detail, /resolveAuthor=\{id => usuarios\.find\(usuario => usuario\.id === id\)\?\.nombre\} expanded=\{expanded\}/)
 })
