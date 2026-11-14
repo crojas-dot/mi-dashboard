@@ -18,7 +18,9 @@ import NuevaQuejaModal from './components/NuevaQuejaModal'
 import QuejaDetalleModal from './components/QuejaDetalleModal'
 import QuejasToolbar from './components/QuejasToolbar'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
-import { useHoverPrefetch } from '@/hooks/useHoverPrefetch'
+import { useHoverPrefetch, type PrefetchConfig } from '@/hooks/useHoverPrefetch'
+import { fetchRespuestaCliente, respuestaClienteKey } from '@/lib/queries/useQuejaRespuestaCliente'
+import { fetchQuejaInforme, quejaInformeKey } from '@/lib/queries/useQuejaInforme'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { showError } from '@/lib/services/errorToast'
@@ -71,6 +73,26 @@ export default function QuejasPage() {
   const noVistasCount = contarNoVistas(quejaIds)
 
   const prefetch = useHoverPrefetch()
+  const precargarFila = (q: Queja) => {
+    const requests: PrefetchConfig[] = [{
+      queryKey: quejaAdjuntosKey(q.id),
+      queryFn: ({ signal }) => fetchQuejaAdjuntos(q.id, signal),
+      staleTime: 30_000,
+    }]
+    if ((user?.rol === 'admin' || user?.rol === 'calidad')
+      && ['Recibido', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede'].includes(q.estado)) {
+      requests.push({
+        queryKey: respuestaClienteKey(q.id),
+        queryFn: ({ signal }) => fetchRespuestaCliente(q.id, signal),
+        staleTime: 30_000,
+      }, {
+        queryKey: quejaInformeKey(q.id),
+        queryFn: ({ signal }) => fetchQuejaInforme(q.id, signal),
+        staleTime: 30_000,
+      })
+    }
+    prefetch(requests)
+  }
 
   const handleAbrirDetalle = useCallback((q: Queja) => {
     if (detalleNavigationLocked && detalleOpen?.id !== q.id) {
@@ -129,13 +151,8 @@ export default function QuejasPage() {
                         onClick={() => handleAbrirDetalle(q)}
                         onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handleAbrirDetalle(q) } }}
                         className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}
-                        onMouseEnter={() => {
-                          prefetch({
-                            queryKey: quejaAdjuntosKey(q.id),
-                            queryFn: ({ signal }) => fetchQuejaAdjuntos(q.id, signal),
-                            staleTime: 30_000,
-                          })
-                        }}
+                        onMouseEnter={() => precargarFila(q)}
+                        onFocus={() => precargarFila(q)}
                       >
                         <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                         <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
