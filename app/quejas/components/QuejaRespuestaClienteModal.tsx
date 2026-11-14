@@ -45,8 +45,8 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   if (initial) return <RespuestaEditor {...props} initial={initial} informeActual={informe.data}
     informePendiente={informe.isLoading} informeError={!!informe.error}
     onReintentarInforme={() => { void informe.refetch() }} />
-  // El editor auténtico se monta solo tras conocer el borrador y el informe.
-  // Una copia deshabilitada durante la carga genera scrolls y cortes visuales.
+  // El editor auténtico se monta al recuperar el borrador, sin esperar el informe.
+  // Si aún falta la consulta, no mostrar formularios provisionales editables.
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio}
     headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />}
     size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
@@ -61,8 +61,8 @@ export default function QuejaRespuestaClienteModal(props: Props) {
       </div>
     ) : (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden bg-qms-surface px-5 py-8 sm:px-8">
-        <p role="alert" className="text-center text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p>
-        <Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button>
+        <p role="alert" className="text-center text-sm text-qms-danger">No se pudo recuperar el borrador guardado.</p>
+        <Button variant="secondary" onClick={() => { void query.refetch() }}>Reintentar</Button>
       </div>
     )}
   </Modal>
