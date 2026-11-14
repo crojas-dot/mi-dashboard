@@ -32,7 +32,7 @@ function makeVisit({ drive = true, user = true } = {}) {
       useState: initial => {
         const index = slot++
         state[index] = initial
-        return [initial, next => { state[index] = typeof next === 'function' ? next(state[index]) : next; changes.push([index,state[index]]) }],
+        return [initial, next => { state[index] = typeof next === 'function' ? next(state[index]) : next; changes.push([index,state[index]]) }]
       },
       useEffect: fn => { effects.push(fn) },
     },

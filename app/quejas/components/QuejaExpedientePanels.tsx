@@ -127,11 +127,11 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
         <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:items-start ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
-          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-8rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
+          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:[will-change:transform]' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
           </aside>
           <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
-          <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:max-h-[calc(100dvh-8rem)] @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform] @min-[1100px]:bg-transparent @min-[1100px]:p-0' : 'border-b border-qms-border'}`}>{action}</aside>
+          <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:[will-change:transform] @min-[1100px]:bg-transparent @min-[1100px]:p-0' : 'border-b border-qms-border'}`}>{action}</aside>
         </div>
       </div>
     </div>
