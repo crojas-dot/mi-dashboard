@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Trash2, KeyRound, Mail, ShieldCheck } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -35,6 +35,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [error, setError] = useState<string | null>(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [tab, setTab] = useState<'detalles' | 'seguridad'>('detalles')
+  useEffect(() => { setTab('detalles') }, [open, mode, usuario?.id])
 
   function reportarError(cause: unknown, fallback: string) {
     setError(getUserError(cause, fallback).message)

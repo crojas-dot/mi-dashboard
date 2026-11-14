@@ -360,6 +360,15 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   ni archivos al listar. Conservar permisos de eliminar/descargar/visualizar.
 - Marco redondeado y margen inferior del lienzo solo contraído; ampliado sin esa
   franja. El documento conserva padding final para que el contenido no toque el borde.
+- En Quejas → Resuelto, QuejaCierreResumen muestra tres tarjetas de lectura
+  (Solicitud, Análisis, Calidad) con columna de metadatos, resumen de hasta tres
+  líneas y altura uniforme de 150 px al alcanzar 620 px útiles del lienzo;
+  en estrecho se apilan con altura mínima para no recortar información.
+  Los nodos tienen un solo punto centrado verticalmente en la línea. Cada tarjeta
+  abre Modal variant=document size=mail con navegación de solo lectura y
+  previsualización/descarga de archivos reales. No atribuir documentos internos
+  sin asociación de etapa, ni inventar autores/fechas. No modificar el historial
+  lateral ni otras etapas para replicar la maqueta.
 - Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
   y puntos grises para los anteriores, con anillo blanco sin círculo doble.
   El modal «Historial y observaciones» de Calidad está centrado y usa size mail;
@@ -507,8 +516,18 @@ Referencias: [correo por evento](docs/quejas-formulario-correo-inmediato-2026-11
 
 Dashboard monta consultas compartidas, próximos vencimientos y actividad real, con
 cargas independientes; no los tabs analíticos alternativos. Configuración agrupa
-Organización/Acceso/Servicios y exige admin real. Usuarios administra cuentas por API
-con guards; no asumir cierre transaccional distribuido del último admin.
+Organización/Acceso/Servicios y exige admin real. Los controles de «Roles y
+accesos» ya no están en Configuración: ahora viven en Usuarios → Roles y permisos,
+dentro de app/usuarios/components/RolesAccesos.tsx. Se conserva usePermisos y
+useActualizarPermiso, escrituras por nivel sobre leer/escribir, guardado inmediato,
+restricciones de configuración solo admin y usuarios solo admin; NO inventar
+permisos distintos de esos dos booleanos ni simular guardado al hacer clic.
+Usuarios administra cuentas por API con guards; no asumir cierre transaccional
+distribuido del último admin. El perfil incorpora «Detalles del perfil» y
+«Seguridad y acceso»: crear/editar/activar/desactivar/eliminar y restablecer
+contraseña generada son operativos. La invitación/recuperación por correo, 2FA
+y definición manual desde esta UI son acciones pendientes: solo mostrar toast
+informativo, nunca cambios falsos ni estado 2FA inventado.
 Procesos, Auditorías, Riesgos, Revisión por Dirección, Documentos y SACP tienen las
 capacidades parciales de [módulos y flujos](docs/arquitectura/modulos-y-flujos.md):
 no atribuirles gestión documental/versionado, mitigación, eficacia o acuerdos completos
