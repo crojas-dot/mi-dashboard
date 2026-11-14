@@ -23,3 +23,16 @@ test('No se duplica generar PDF y se exige adjunto oficial en el correo',() => {
   assert.doesNotMatch(report,/Preparar PDF para cliente/)
   assert.match(response,/Es necesario adjuntar un informe antes de publicar/)
 })
+
+test('Quejas ampliado conserva el mismo sistema de tarjetas y columnas que Mis Quejas', () => {
+  const quejas = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const misQuejas = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  assert.match(misQuejas, /presentation="reference" documentStyle="cards" readingLayout/)
+  assert.match(quejas, /readingLayout documentStyle=\{expanded \? 'cards' : 'sheet'\}/)
+  assert.match(quejas, /const documentVariant = expanded \? 'panel' : 'document'/)
+  assert.match(quejas, /action=\{<div className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}>/)
+  assert.match(quejas, /data-case-review-context className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}/)
+  assert.match(quejas, /data-case-close-context className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}/)
+  assert.match(quejas, /data-close-report-shortcut/)
+  assert.match(quejas, /Generar expediente/)
+})
