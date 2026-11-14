@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { prefetchDriveBlob, recordarDriveBlob } from '@/lib/services/driveClient'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, LoaderCircle, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -38,22 +38,25 @@ interface Props {
 export default function QuejaRespuestaClienteModal(props: Props) {
   const query = useRespuestaCliente(props.queja.id)
   const informe = useQuejaInforme(props.queja.id)
-  const [initial, setInitial] = useState<(RespuestaClienteContext & { informe: QuejaInforme | null }) | null>(null)
-  if (!initial && query.data && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
-  if (initial) return <RespuestaEditor {...props} initial={initial} />
+  // El borrador decide qué es editable. El informe solo sirve para elegir el
+  // PDF versionado: no debe bloquear la apertura del correo.
+  const [initial, setInitial] = useState<RespuestaClienteContext | null>(null)
+  if (!initial && query.data) setInitial(query.data)
+  if (initial) return <RespuestaEditor {...props} initial={initial} informeActual={informe.data}
+    informePendiente={informe.isLoading} informeError={!!informe.error}
+    onReintentarInforme={() => { void informe.refetch() }} />
   // El editor auténtico se monta solo tras conocer el borrador y el informe.
   // Una copia deshabilitada durante la carga genera scrolls y cortes visuales.
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio}
     headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />}
     size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
     footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
-    {query.isLoading || informe.isLoading ? (
+    {query.isLoading ? (
       <div data-response-prefill role="status" aria-live="polite"
         className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-qms-surface px-5 py-8 sm:px-8">
         <div className="flex max-w-sm flex-col items-center gap-3 text-center">
-          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-qms-primary" />
-          <p className="text-sm font-medium text-qms-dark">Cargando respuesta al cliente…</p>
-          <p className="text-xs leading-relaxed text-qms-muted">Comprobando el borrador y el informe guardados.</p>
+          <p className="text-sm font-medium text-qms-dark">Recuperando el borrador guardado…</p>
+          <p className="text-xs leading-relaxed text-qms-muted">Se abrirá el editor en cuanto se confirme su versión.</p>
         </div>
       </div>
     ) : (
@@ -77,7 +80,13 @@ function ultimoPdfGenerado(files: readonly QuejaAdjunto[], folio: string, report
     .sort((a,b) => b.created_at.localeCompare(a.created_at))[0] ?? null
 }
 
-function RespuestaEditor({ queja, initial, ...props }: Props & { initial: RespuestaClienteContext & { informe: QuejaInforme | null } }) {
+function RespuestaEditor({ queja, initial, informeActual, informePendiente, informeError, onReintentarInforme, ...props }: Props & {
+  initial: RespuestaClienteContext
+  informeActual: QuejaInforme | null | undefined
+  informePendiente: boolean
+  informeError: boolean
+  onReintentarInforme: () => void
+}) {
   const [snapshot] = useState(queja)
   const noProcede = props.noProcede === true
   const originalDraft = initial.borrador
@@ -89,14 +98,17 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     // Los fundamentos se redactan en el oficio; el registro conserva el motivo
     // previo o la comunicación que remite al adjunto, sin pedir un segundo texto.
     const savedPdf = props.adjuntos.find(file => file.id === compatibleDraft?.adjunto_id && esPdfOficial(file, queja.id))
-    const defaultPdf = ultimoPdfGenerado(props.adjuntos, queja.folio, initial.informe, queja.id)
+    const defaultPdf = ultimoPdfGenerado(props.adjuntos, queja.folio, informeActual ?? null, queja.id)
     return { respuesta,
       numeroOficio: compatibleDraft?.numero_oficio ?? (queja.numero_oficio_resolucion || queja.folio), adjuntoId: savedPdf?.id ?? defaultPdf?.id ?? null,
       ...(noProcede ? { noProcede: { justificacion: motivoGuardado ?? respuesta, formato: motivoGuardado ? compatibleDraft?.motivo_no_procede_formato ?? 'plain' : 'plain' } } : {}),
       correo: { asunto: compatibleDraft?.correo_asunto ?? plantilla.asunto, cuerpo: compatibleDraft?.correo_cuerpo ?? plantilla.cuerpo } }
   })
   const [saved, setSaved] = useState(initial.borrador)
-  const [report, setReport] = useState(initial.informe)
+  // El informe puede llegar después del borrador sin reiniciar los campos.
+  // Si se guardó otro dentro de esta visita, ese resultado tiene prioridad.
+  const [savedReport, setSavedReport] = useState<QuejaInforme | null>(null)
+  const report = savedReport ?? informeActual ?? null
   const [editingReport, setEditingReport] = useState(false)
   const [baseline, setBaseline] = useState(form)
   const [previewFile, setPreviewFile] = useState<QuejaAdjunto | null>(null)
@@ -264,7 +276,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
                 onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
             </div>}
-            {!selectedFile && <p className="text-xs text-qms-muted">Adjuntá el PDF oficial para poder publicar.</p>}
+            {!selectedFile && <p className="text-xs text-qms-muted">{informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}</p>}
             <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
               disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
           </div>
@@ -276,6 +288,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
             }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
           </div>}
           {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
+          {informeError && !report && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}
         </section>
         </div>
       </div>}
@@ -283,7 +296,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     {editingReport && <QuejaInformeModal
       queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }}
       anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)}
-      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Preparando el PDF oficial…'); } }}
+      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setSavedReport(result); setNotice('Informe guardado. Preparando el PDF oficial…'); } }}
       onPdfReady={file => { if (reportIsCurrent.current() && file.queja_id === snapshot.id) {
         setUploaded(current => current.some(item => item.id === file.id) ? current : [...current, file])
         setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: file.id })
