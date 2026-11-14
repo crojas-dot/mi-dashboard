@@ -34,6 +34,7 @@ function pageHarness({ user = actor, initialized = true, refresh = async () => {
     } },
     '@/lib/services/errorToast': { showSuccess: message => successes.push(message), showError: (error, fallback) => errors.push({ error, fallback }) },
     './components/RolesAccesos': { default: 'RolesAccesos' },
+    './components/UsuarioAccionesMenu': { default: 'UserActionsMenu' },
     '@/components/ui/Table': { Table: 'Table', TableHead: 'TableHead', TableHeaderCell: 'TableHeaderCell', TableRow: 'TableRow', TableCell: 'TableCell' },
   }
   for (const name of ['LoadingSkeleton', 'PageHeader', 'Badge', 'EmptyState', 'Button', 'Select']) mocks['@/components/ui/' + name] = { default: name }
@@ -46,8 +47,16 @@ function pageHarness({ user = actor, initialized = true, refresh = async () => {
   function button(label, rowId) {
     const subtree = rowId ? visit(tree).find(node => node.type === 'TableRow' && node.key === rowId) : tree
     const found = visit(subtree).find(node => node.type === 'Button' && text(node).trim() === label)
-    assert.ok(found, 'Botón ' + label)
-    return found
+    if (found) return found
+    const menu = visit(subtree).find(node => node.type === 'UserActionsMenu')
+    if (menu) {
+      const action = { Gestionar: 'onEditar', Resetear: 'onRestablecer', Desactivar: 'onEstado', Restaurar: 'onEstado' }[label]
+      const expected = menu.props.usuario.estado === 'activo' ? 'Desactivar' : 'Restaurar'
+      assert.ok(action && (label === 'Gestionar' || label === 'Resetear' || label === expected), 'Acción ' + label)
+      const disabled = label === 'Desactivar' && menu.props.esPropio
+      return { props: { disabled, onClick: disabled ? () => {} : menu.props[action] } }
+    }
+    assert.fail('Botón ' + label)
   }
   render()
   return { render, component, button, requests, invalidations, successes, errors, redirects, queryCalls,
