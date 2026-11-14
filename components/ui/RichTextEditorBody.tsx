@@ -107,10 +107,14 @@ function BordesDePagina({ editor }: { editor: Editor }) {
         Math.min(20, remainingHeight - PAGE_HEIGHT)
       )
 
-      next.push({
-        top: start,
-        height: PAGE_HEIGHT + correction,
-      })
+      // Un separador terminal no significa que exista otra hoja con contenido.
+      // Evitar dibujar un marco fantasma después de la última página real.
+      if (!next.length || remainingHeight > PAGE_HEIGHT * 0.25) {
+        next.push({
+          top: start,
+          height: PAGE_HEIGHT + correction,
+        })
+      }
 
       setFrames(old => {
         if (

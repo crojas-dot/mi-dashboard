@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { prefetchDriveBlob } from '@/lib/services/driveClient'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
@@ -43,7 +44,7 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const plantilla = crearCorreoAcompanamiento(props.queja, props.noProcede === true)
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle
     footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
-    {query.isLoading || informe.isLoading ? <div data-response-prefill className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-qms-surface">
+    {query.isLoading || informe.isLoading ? <div data-response-prefill className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
       <p role="status" className="flex shrink-0 items-center gap-2 border-b border-qms-border px-5 py-2 text-xs text-qms-muted sm:px-8"><Pencil aria-hidden="true" className="size-3.5" />Preparando edición y comprobando el borrador guardado…</p>
       <QuejaCorreoEditor id={'respuesta-precarga-' + props.queja.id} destinatario={props.queja.email_cliente ?? ''}
         oficio={props.queja.numero_oficio_resolucion || props.queja.folio} onOficioChange={() => {}}
@@ -102,6 +103,10 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   const files = [...props.adjuntos, ...uploaded.filter(file => !props.adjuntos.some(existing => existing.id === file.id))]
     .filter(file => esPdfOficial(file, snapshot.id))
   const selectedFile = files.find(file => file.id === form.adjuntoId) ?? null
+  const previewPath = selectedFile?.storage_path ?? null
+  useEffect(() => {
+    if (previewPath && !initial.publicada) prefetchDriveBlob(previewPath)
+  }, [previewPath, initial.publicada])
   // La lista puede llegar después de abrir el correo; seleccionar solo una vez y
   // nunca sustituir la selección manual del usuario al refrescar adjuntos.
   useEffect(() => {
@@ -224,7 +229,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
       </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
         {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-gutter:stable]">
+        <div className="min-h-0 flex-1 overflow-hidden">
         <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
           destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
           onOficioChange={value => change({ numeroOficio: value })}
@@ -237,9 +242,9 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
             </Button>
             {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
               <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
-              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onClick={() => setPreviewFile(selectedFile)}
+              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
                 className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
-              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onClick={() => setPreviewFile(selectedFile)}
+              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
               <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"

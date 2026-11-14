@@ -50,7 +50,7 @@ export function crearPlantillaInforme(queja: Queja, anexos: readonly { nombre: s
     ...(analysis ? ['### Hallazgos del análisis', documento(analysis.value, analysis.format)] : []),
     ...(queja.resolucion?.trim() ? ['### Propuesta o resolución registrada', documento(queja.resolucion, queja.resolucion_formato)] : []),
     '## 3. Conclusión y Resolución Final',
-    '&nbsp;\n\n&nbsp;',
+    '&nbsp;',
     '## Anexos',
     ...(anexos.length ? anexos.map((file, index) => `- Anexo ${index + 1}: ${informeLiteral(file.nombre.replace(/[\r\n]+/g, ' '))}`) : ['Sin archivos adjuntos registrados.']),
   ]

@@ -3,13 +3,22 @@ import { useAuthStore } from '@/lib/store/auth-store'
 
 const PREVIEW_CACHE_MS = 45_000
 const MAX_PREVIEWS = 5
-type CachedFile = { owner: string; expires: number; promise: Promise<Blob> }
+
+type CachedFile = {
+  owner: string
+  expires: number
+  promise: Promise<Blob>
+  controller: AbortController
+}
+
 const previews = new Map<string, CachedFile>()
 
-// Ningún archivo sigue disponible en la caché después de cambiar de identidad
-// o iniciar logout. La autorización real permanece en /api/drive/download.
+// Ninguna visita puede conservar una evidencia tras logout, cambio de identidad o rol.
 useAuthStore.subscribe?.((next, previous) => {
-  if (next.signingOut || next.user?.id !== previous.user?.id || next.user?.rol !== previous.user?.rol) previews.clear()
+  if (next.signingOut || next.user?.id !== previous.user?.id || next.user?.rol !== previous.user?.rol) {
+    for (const entry of previews.values()) entry.controller.abort()
+    previews.clear()
+  }
 })
 
 function currentActor(): string {
@@ -37,37 +46,44 @@ function awaitVisit<T>(pending: Promise<T>, signal?: AbortSignal): Promise<T> {
   })
 }
 
-/** Reutiliza brevemente bytes ya autorizados para evitar repetir la cadena de
- * comprobaciones de Drive al volver a abrir el visor del mismo expediente.
- * El caché es privado a la identidad QMS y no persiste fuera de memoria. */
+/** Reutiliza una única petición protegida entre vistas, sin que cerrar un modal
+ * cancele la precarga de los demás. La API valida token, rol y ruta Drive. */
 export async function fetchDriveBlob(fileId: string, signal?: AbortSignal): Promise<Blob> {
   const actor = currentActor()
   sameActor(actor, signal)
   const key = actor + ':' + fileId
-  const cached = previews.get(key)
-  if (cached && cached.expires > Date.now()) {
-    const blob = await awaitVisit(cached.promise, signal)
-    sameActor(actor, signal)
-    return blob
+  let entry = previews.get(key)
+
+  if (!entry || entry.expires <= Date.now() || entry.controller.signal.aborted) {
+    if (entry) entry.controller.abort()
+    const controller = new AbortController()
+    const promise = (async () => {
+      const response = await apiFetch(`/api/drive/download?id=${encodeURIComponent(fileId)}`, {
+        signal: controller.signal, cache: 'no-store',
+      })
+      sameActor(actor, controller.signal)
+      if (!response.ok) throw Object.assign(new Error('No se pudo acceder al archivo'), { status: response.status })
+      const blob = await response.blob()
+      sameActor(actor, controller.signal)
+      return blob
+    })()
+
+    entry = { owner: actor, expires: Date.now() + PREVIEW_CACHE_MS, promise, controller }
+    const created = entry
+    previews.set(key, entry)
+    void promise.catch(() => { if (previews.get(key) === created) previews.delete(key) })
+    while (previews.size > MAX_PREVIEWS) {
+      const oldest = previews.keys().next().value!
+      previews.get(oldest)?.controller.abort()
+      previews.delete(oldest)
+    }
   }
-  previews.delete(key)
-  const request = (async () => {
-    const response = await apiFetch(`/api/drive/download?id=${encodeURIComponent(fileId)}`, { signal, cache: 'no-store' })
-    sameActor(actor, signal)
-    if (!response.ok) throw Object.assign(new Error('No se pudo acceder al archivo'), { status: response.status })
-    const blob = await response.blob()
-    sameActor(actor, signal)
-    return blob
-  })()
-  const entry = { owner: actor, expires: Date.now() + PREVIEW_CACHE_MS, promise: request }
-  previews.set(key, entry)
-  while (previews.size > MAX_PREVIEWS) previews.delete(previews.keys().next().value!)
-  try { return await awaitVisit(request, signal) }
-  catch (error) { if (previews.get(key) === entry) previews.delete(key); throw error }
+  const blob = await awaitVisit(entry.promise, signal)
+  sameActor(actor, signal)
+  return blob
 }
 
-/** Inicio anticipado con la sesión interna, sin popups ni autenticación Google.
- * Se limita al número de evidencias más probable de consultar. */
+/** Precarga por intención o por documento elegido, únicamente con la sesión QMS. */
 export function prefetchDriveBlob(fileId: string): void {
   if (!fileId || fileId.includes('/')) return
   try { void fetchDriveBlob(fileId).catch(() => {}) } catch { /* sesión no disponible */ }
