@@ -44,7 +44,7 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const plantilla = crearCorreoAcompanamiento(props.queja, props.noProcede === true)
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle
     footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
-    {query.isLoading || informe.isLoading ? <div data-response-prefill className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
+    {query.isLoading || informe.isLoading ? <div data-response-prefill className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-qms-surface">
       <p role="status" className="flex shrink-0 items-center gap-2 border-b border-qms-border px-5 py-2 text-xs text-qms-muted sm:px-8"><Pencil aria-hidden="true" className="size-3.5" />Preparando edición y comprobando el borrador guardado…</p>
       <QuejaCorreoEditor id={'respuesta-precarga-' + props.queja.id} destinatario={props.queja.email_cliente ?? ''}
         oficio={props.queja.numero_oficio_resolucion || props.queja.folio} onOficioChange={() => {}}
@@ -228,9 +228,10 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
         {initial.borrador?.correo_asunto && <p className="text-sm"><span className="font-medium">Asunto: </span>{initial.borrador.correo_asunto}</p>}
         <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{initial.borrador?.correo_cuerpo ?? initial.publicada.respuesta}</p>
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
-      </div> : <div data-response-compose className="flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-surface">
+      </div> : <div data-response-compose className="flex h-full min-h-0 max-h-full flex-1 flex-col overflow-hidden bg-qms-surface">
         {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
-        <div className="min-h-0 flex-1 overflow-hidden">
+        <div data-response-scroll-shell className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+        <div className="min-h-0 overflow-hidden">
         <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
           destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
           onOficioChange={value => change({ numeroOficio: value })}
@@ -264,6 +265,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
           </div>}
           {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
         </section>
+        </div>
       </div>}
     </Modal>
     {editingReport && <QuejaInformeModal
