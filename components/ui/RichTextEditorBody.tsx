@@ -826,7 +826,7 @@ export default function RichTextEditorBody({
           }
 
           .qms-rich-text-paginated .tiptap p {
-            margin-bottom: 10px;
+            margin-bottom: 6px;
           }
 
           .qms-rich-text-paginated .tiptap :is(h2, h3) {
