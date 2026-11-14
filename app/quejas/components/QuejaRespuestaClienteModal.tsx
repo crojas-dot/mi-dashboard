@@ -14,7 +14,7 @@ import { caseDate } from '@/app/quejas/components/quejaExpedienteModel'
 import { useRespuestaCliente, respuestaClienteKey, type RespuestaClienteContext } from '@/lib/queries/useQuejaRespuestaCliente'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaInforme } from '@/lib/queries/useQuejaInforme'
-import { informeFilename, type QuejaInforme } from '@/lib/utils/quejaInforme'
+import { informePdfFilename, type QuejaInforme } from '@/lib/utils/quejaInforme'
 import { crearCorreoAcompanamiento, validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
 import { esOficioPublicableQueja, guardarRespuestaClienteBorrador, publicarRespuestaAprobada, transicionarQueja, type RespuestaClienteDraftInput } from '@/lib/services/quejaWorkflowService'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
@@ -53,7 +53,7 @@ function esPdfOficial(file: QuejaAdjunto, quejaId: string): boolean {
 
 function ultimoPdfGenerado(files: readonly QuejaAdjunto[], folio: string, report: QuejaInforme | null, quejaId: string): QuejaAdjunto | null {
   if (!report) return null
-  const name = informeFilename(folio).replace(/\.docx$/, `-v${report.version}.pdf`)
+  const name = informePdfFilename(folio, report.version)
   return files.filter(file => esPdfOficial(file, quejaId) && file.nombre === name)
     .sort((a,b) => b.created_at.localeCompare(a.created_at))[0] ?? null
 }
@@ -100,10 +100,13 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
   // nunca sustituir la selección manual del usuario al refrescar adjuntos.
   useEffect(() => {
     if (autoSelected.current || props.archivosLoading || props.archivosError || initial.publicada) return
-    autoSelected.current = true
-    if (form.adjuntoId || !report || uploaded.length) return
+    if (form.adjuntoId) { autoSelected.current = true; return }
+    if (!report || uploaded.length) return
     const generated = ultimoPdfGenerado(props.adjuntos, snapshot.folio, report, snapshot.id)
-    if (generated) setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: generated.id })
+    if (generated) {
+      autoSelected.current = true
+      setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: generated.id })
+    }
   }, [props.archivosLoading, props.archivosError, props.adjuntos, form.adjuntoId, uploaded.length, report, snapshot.folio, snapshot.id, initial.publicada])
   const dirty = !initial.publicada && (form.respuesta !== baseline.respuesta
     || form.numeroOficio !== baseline.numeroOficio || form.adjuntoId !== baseline.adjuntoId

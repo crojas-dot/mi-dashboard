@@ -8,8 +8,8 @@ class FixtureNode {
   contains() { return false }
 }
 
-function reportHarness({ initial = null, saveError = null, preparePdf = false } = {}) {
-  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = []
+function reportHarness({ initial = null, saveError = null, uploadError = null, preparePdf = false } = {}) {
+  const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = [], pdfUploads = [], attached = []
   let cursor = 0, tree, closed = 0
   const document = {
     addEventListener(name, callback) { listeners.set(name, callback) },
@@ -37,6 +37,13 @@ function reportHarness({ initial = null, saveError = null, preparePdf = false } 
   }
   const operation = { isCurrent: () => true, finish() {} }
   const queryClient = { setQueryData() {} }
+  class MockFile {
+    constructor(parts, name, options) {
+      this.name = name
+      this.type = options.type
+      this.size = parts.reduce((sum, part) => sum + (part.size ?? part.length ?? 0), 0)
+    }
+  }
   const { default: Informe } = loadModule('app/quejas/components/QuejaInformeModal.tsx', {
     react,
     '@tanstack/react-query': { useQueryClient: () => queryClient },
@@ -45,6 +52,22 @@ function reportHarness({ initial = null, saveError = null, preparePdf = false } 
     '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
     '@/app/quejas/components/QuejaInformeHoja': { default: 'QuejaInformeHoja' },
     '@/lib/queries/useQuejaInforme': { useQuejaInforme: () => ({ data: initial, isFetching: false, isLoading: false, error: null }), quejaInformeKey: id => ['informe', id] },
+    '@/lib/queries/useQuejas': {
+      useQuejaAdjuntos: () => ({ data: attached }),
+      quejaAdjuntosKey: id => ['quejas', 'adjuntos', id],
+      fetchQuejaAdjuntos: async () => [...attached],
+    },
+    '@/lib/services/quejaWorkflowService': {
+      esOficioPublicableQueja: (file, id) => file.queja_id === id && !!file.usuario_id,
+      async subirAdjuntoQueja(quejaId, file) {
+        pdfUploads.push(file)
+        if (uploadError && pdfUploads.length === 1) throw uploadError
+        const saved = { id: 'pdf-' + pdfUploads.length, queja_id: quejaId, nombre: file.name, tipo_mime: file.type, usuario_id: 'staff', storage_path: 'document_file_123', created_at: new Date().toISOString() }
+        attached.push(saved)
+        return saved
+      },
+    },
+    '@/lib/services/errorToast': { errorMsg: e => e instanceof Error ? e.message : 'Error' },
     '@/lib/services/quejaInformeService': {
       async guardarQuejaInforme(input) {
         saves.push(input)
@@ -65,6 +88,7 @@ function reportHarness({ initial = null, saveError = null, preparePdf = false } 
     Node: FixtureNode,
     URL: { createObjectURL: () => 'blob:report', revokeObjectURL() {} },
     window: { setTimeout() {} },
+    File: MockFile,
   })
 
   const props = {
@@ -121,6 +145,8 @@ function reportHarness({ initial = null, saveError = null, preparePdf = false } 
     downloads,
     prepared,
     selected,
+    pdfUploads,
+    attached,
     closed: () => closed,
     content: nodes => nodes.find(node => node.type === 'QuejaInformeHoja')?.props.contenido,
     change(value) {
@@ -281,4 +307,25 @@ test('reabrir un informe guardado no muestra confirmación sin una nueva edició
   const harness = reportHarness({ initial: saved })
   assert.equal(harness.confirm(harness.close()), undefined)
   assert.equal(harness.closed(), 1)
+})
+
+test('guardar crea y registra un PDF versionado que el correo puede seleccionar', async () => {
+  const report = reportHarness()
+  await report.findButton(report.render(), 'Guardar').props.onClick()
+  assert.equal(report.saves.length, 1)
+  assert.equal(report.pdfUploads.length, 1)
+  assert.equal(report.pdfUploads[0].name, 'Informe-v1.pdf')
+  assert.equal(report.pdfUploads[0].type, 'application/pdf')
+  assert.equal(report.attached.length, 1)
+})
+
+test('un fallo al adjuntar no pierde el informe y Guardar reintenta sin nueva versión', async () => {
+  const report = reportHarness({ uploadError: new Error('Servicio de archivos no disponible') })
+  await report.findButton(report.render(), 'Guardar').props.onClick()
+  assert.equal(report.saves.length, 1)
+  assert.equal(report.attached.length, 0)
+  await report.findButton(report.render(), 'Guardar').props.onClick()
+  assert.equal(report.saves.length, 1)
+  assert.equal(report.pdfUploads.length, 2)
+  assert.equal(report.attached.length, 1)
 })

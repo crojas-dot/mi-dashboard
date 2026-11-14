@@ -13,9 +13,13 @@ import {
   quejaInformeKey,
 } from '@/lib/queries/useQuejaInforme'
 import { guardarQuejaInforme } from '@/lib/services/quejaInformeService'
+import { subirAdjuntoQueja, esOficioPublicableQueja } from '@/lib/services/quejaWorkflowService'
+import { fetchQuejaAdjuntos, quejaAdjuntosKey, useQuejaAdjuntos } from '@/lib/queries/useQuejas'
+import { errorMsg } from '@/lib/services/errorToast'
 import {
   crearPlantillaInforme,
   informeFilename,
+  informePdfFilename,
   type QuejaInforme,
 } from '@/lib/utils/quejaInforme'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
@@ -212,6 +216,12 @@ function InformeEditor({
 
   const scope = useEntityRequestGuard(queja.id)
   const queryClient = useQueryClient()
+  const adjuntosQuery = useQuejaAdjuntos(queja.id)
+  const pdfNombreActual = guardado ? informePdfFilename(queja.folio, guardado.version) : null
+  const pdfExiste = !!pdfNombreActual && !!adjuntosQuery.data?.some(file =>
+    file.nombre === pdfNombreActual && file.tipo_mime.toLowerCase() === 'application/pdf'
+    && esOficioPublicableQueja(file, queja.id)
+  )
 
   const dirty = contenidoBase !== contenido
   const pending = guardando || exportando || exportandoPdf
@@ -252,7 +262,6 @@ function InformeEditor({
 
   async function guardar() {
     const operation = scope.start('informe')
-
     if (!operation) return
 
     const isContextCurrent = scope.captureContext()
@@ -262,8 +271,9 @@ function InformeEditor({
     setError('')
     setAviso('')
 
+    let result: QuejaInforme | null = null
     try {
-      const result = await guardarQuejaInforme({
+      result = guardado && !dirty ? guardado : await guardarQuejaInforme({
         quejaId: queja.id,
         version: guardado?.version ?? 0,
         fuenteRevision,
@@ -271,34 +281,46 @@ function InformeEditor({
       })
 
       if (isContextCurrent()) {
-        queryClient.setQueryData(
-          quejaInformeKey(queja.id),
-          result
-        )
+        queryClient.setQueryData(quejaInformeKey(queja.id), result)
       }
-
       if (operation.isCurrent()) {
         setContenidoBase(result.contenido)
         setGuardado(result)
         onSaved?.(result)
+      }
 
-        setAviso(
-          `Versión ${result.version} guardada en el expediente.`
-        )
+      const nombrePdf = informePdfFilename(queja.folio, result.version)
+      const existentes = await fetchQuejaAdjuntos(queja.id)
+      let pdf = existentes.find(file => file.nombre === nombrePdf
+        && file.tipo_mime.toLowerCase() === 'application/pdf'
+        && esOficioPublicableQueja(file, queja.id))
+
+      if (!pdf) {
+        const { crearInformePdf } = await import('@/lib/utils/quejaInformePdf')
+        const contenidoPdf = await crearInformePdf(result.contenido)
+        const archivo = new File([contenidoPdf], nombrePdf, { type: 'application/pdf' })
+        pdf = await subirAdjuntoQueja(queja.id, archivo)
+        if (!esOficioPublicableQueja(pdf, queja.id) || pdf.tipo_mime.toLowerCase() !== 'application/pdf') {
+          throw new Error('No se confirmó un PDF oficial válido en el expediente.')
+        }
+      }
+      if (isContextCurrent()) {
+        queryClient.setQueryData(quejaAdjuntosKey(queja.id), current => {
+          const actual = Array.isArray(current) ? current : existentes
+          return actual.some(file => file.id === pdf.id) ? actual : [pdf, ...actual]
+        })
+      }
+      if (operation.isCurrent()) {
+        setAviso(`Versión ${result.version} guardada con su PDF oficial. El archivo se adjuntará automáticamente en la respuesta al cliente.`)
       }
     } catch (caught) {
       if (operation.isCurrent()) {
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : 'No se pudo guardar el informe. Tu texto se conserva.'
-        )
+        setError(result
+          ? `La versión ${result.version} se guardó, pero no se pudo adjuntar su PDF: ${errorMsg(caught, 'Error al subir el archivo.')}. Volvé a pulsar Guardar para reintentar sin crear otra versión.`
+          : errorMsg(caught, 'No se pudo guardar el informe. Tu texto se conserva.'))
       }
     } finally {
-      if (operation.isCurrent()) {
-        setGuardando(false)
-      }
-
+      if (operation.isCurrent()) setGuardando(false)
       operation.finish()
     }
   }
@@ -456,7 +478,7 @@ function InformeEditor({
               loading={guardando}
               disabled={
                 pending ||
-                Boolean(guardado && !dirty) ||
+                Boolean(guardado && !dirty && pdfExiste) ||
                 !contenido.trim()
               }
             >

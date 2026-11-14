@@ -60,3 +60,7 @@ export function crearPlantillaInforme(queja: Queja, anexos: readonly { nombre: s
 export function informeFilename(folio: string): string {
   return `Expediente-${folio.replace(/[^\p{L}\p{N}_-]/gu, '_').slice(0, 100) || 'sin-folio'}.docx`
 }
+
+export function informePdfFilename(folio: string, version: number): string {
+  return informeFilename(folio).replace(/\.docx$/, `-v${version}.pdf`)
+}
