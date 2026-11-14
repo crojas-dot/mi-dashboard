@@ -1,8 +1,9 @@
 'use client'
 
 import { useDeferredValue, useEffect, useState } from 'react'
-import { Plus, Search, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
+import { Plus, Search, ShieldOff } from 'lucide-react'
 import RolesAccesos from './components/RolesAccesos'
+import UsuarioAccionesMenu from './components/UsuarioAccionesMenu'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
@@ -158,8 +159,8 @@ export default function UsuariosPage() {
         <div className="relative col-span-2 min-w-0 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
-            placeholder="Buscar por nombre o email..."
-            aria-label="Buscar por nombre o email"
+            placeholder="Buscar por nombre o correo..."
+            aria-label="Buscar por nombre o correo"
             className="ui-field h-11 pl-9 pr-3 lg:h-10"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPagina(1) }}
@@ -182,84 +183,90 @@ export default function UsuariosPage() {
         <EmptyState message="No tienes permisos para ver usuarios" />
       ) : (
         <div className="min-h-0 flex-1">
-        <div className="hidden h-full min-h-0 lg:block">
-        <Table className="table-fixed min-w-[1050px]" containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
-          <colgroup><col className="w-[23%]" /><col className="w-[13%]" /><col className="w-[12%]" /><col className="w-[14%]" /><col className="w-[38%]" /></colgroup>
-          <TableHead>
+        <div className="hidden h-full min-h-0 xl:block">
+        <Table className="table-fixed min-w-[940px]" containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
+          <colgroup><col className="w-[32%]" /><col className="w-[13%]" /><col className="w-[12%]" /><col className="w-[17%]" /><col className="w-[19%]" /><col className="w-[7%]" /></colgroup>
+          <TableHead className="sticky top-0 z-10">
             <tr>
-              <TableHeaderCell>Usuario</TableHeaderCell>
+              <TableHeaderCell className="pl-6">Usuario</TableHeaderCell>
               <TableHeaderCell>Rol</TableHeaderCell>
               <TableHeaderCell>Estado</TableHeaderCell>
+              <TableHeaderCell>Seguridad (2FA)</TableHeaderCell>
               <TableHeaderCell>Último acceso</TableHeaderCell>
-              <TableHeaderCell className="text-left">Acciones</TableHeaderCell>
+              <TableHeaderCell className="pr-6 text-right">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <tbody>
-            {usuarios.length === 0 ? (
-              <EmptyState message="No hay usuarios registrados" />
-            ) : (
-              usuariosVisibles.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${getDirectoryRoleAvatarClass(u.rol)}`}
-                      >
-                        {u.nombre.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="m-0 text-sm font-medium text-gray-900 dark:text-white">
-                          {u.nombre}
-                          {esAuto(u) && <span className="ml-2 text-xs font-normal text-qms-muted">(tú)</span>}
-                        </p>
-                        <p className="m-0 text-xs text-qms-muted">{u.email}</p>
-                      </div>
+            {usuariosVisibles.length === 0 ? (
+              <tr><td colSpan={6} className="px-6 py-14 text-center text-sm text-qms-muted">No hay usuarios registrados.</td></tr>
+            ) : usuariosVisibles.map((u) => (
+              <TableRow key={u.id}>
+                <TableCell className="pl-6">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span aria-hidden="true" className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${getDirectoryRoleAvatarClass(u.rol)}`}>
+                      {u.nombre.charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="m-0 truncate text-sm font-semibold text-qms-dark" title={u.nombre}>
+                        {u.nombre}
+                        {esAuto(u) && <span className="ml-2 rounded-button bg-qms-hover-bg px-1.5 py-0.5 text-[10px] font-medium text-qms-muted">Tú</span>}
+                      </p>
+                      <p className="m-0 truncate text-xs text-qms-muted" title={u.email}>{u.email}</p>
                     </div>
-                  </TableCell>
-                  <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
-                  <TableCell><Badge variant="neutral">{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
-                  <TableCell className="whitespace-nowrap text-sm text-qms-muted">
-                    {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-start gap-1.5">
-                      <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => abrirEditar(u)}>
-                        <Pencil className="h-3.5 w-3.5" /> Gestionar
-                      </Button>
-                      <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => setResetSel(u)}>
-                        <KeyRound className="h-3.5 w-3.5" /> Resetear
-                      </Button>
-                      {u.estado === 'activo' ? (
-                        <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => pedirDesactivar(u)} disabled={esAuto(u)}>
-                          <Trash2 className="h-3.5 w-3.5" /> Desactivar
-                        </Button>
-                      ) : (
-                        <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => setConfirmar({ usuario: u, accion: 'activar' })}>
-                          <RotateCcw className="h-3.5 w-3.5" /> Restaurar
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                  </div>
+                </TableCell>
+                <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
+                <TableCell><span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
+                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
+                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span></TableCell>
+                <TableCell>
+                  <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
+                    className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2.5 py-1 text-xs font-medium text-qms-muted">
+                    <ShieldOff aria-hidden="true" className="size-3.5" />No disponible
+                  </span>
+                </TableCell>
+                <TableCell className="whitespace-nowrap text-sm text-qms-muted">
+                  {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}
+                </TableCell>
+                <TableCell className="pr-6 text-right">
+                  <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
+                    onEditar={() => abrirEditar(u)}
+                    onRestablecer={() => setResetSel(u)}
+                    onEstado={() => u.estado === 'activo' ? pedirDesactivar(u) : setConfirmar({ usuario: u, accion: 'activar' })} />
+                </TableCell>
+              </TableRow>
+            ))}
           </tbody>
         </Table>
         </div>
-        <div data-users-mobile-list className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain lg:hidden">
+        <div data-users-mobile-list className="h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain p-3 xl:hidden">
           {usuariosVisibles.length === 0 ? <div className="ui-panel p-5 text-sm text-qms-muted">No hay usuarios registrados.</div> : usuariosVisibles.map(u => (
             <article key={u.id} className="ui-panel space-y-3 p-4">
               <div className="flex min-w-0 items-center gap-3">
                 <span aria-hidden="true" className={`flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white ${getDirectoryRoleAvatarClass(u.rol)}`}>{u.nombre.charAt(0).toUpperCase()}</span>
-                <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-qms-dark">{u.nombre}{esAuto(u) && ' (tú)'}</p><p className="truncate text-xs text-qms-muted">{u.email}</p></div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-qms-dark">{u.nombre}{esAuto(u) && <span className="ml-1 text-xs font-normal text-qms-muted">(tú)</span>}</p>
+                  <p className="truncate text-xs text-qms-muted">{u.email}</p>
+                </div>
               </div>
-              <div className="flex flex-wrap items-center gap-2"><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge><Badge variant="neutral">{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></div>
-              <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}</p>
-              <div className="grid grid-cols-3 gap-2 border-t border-qms-border pt-3">
-                <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => abrirEditar(u)}>Gestionar</Button>
-                <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => setResetSel(u)}>Resetear</Button>
-                {u.estado === 'activo' ? <Button size="sm" variant="secondary" className="min-w-0 justify-center" disabled={esAuto(u)} onClick={() => pedirDesactivar(u)}>Desactivar</Button>
-                  : <Button size="sm" variant="secondary" className="min-w-0 justify-center" onClick={() => setConfirmar({ usuario: u, accion: 'activar' })}>Restaurar</Button>}
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge>
+                <span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
+                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
+                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span>
+                <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
+                  className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2 py-0.5 text-xs text-qms-muted">
+                  <ShieldOff aria-hidden="true" className="size-3.5" />2FA no disponible
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t border-qms-border pt-2">
+                <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}</p>
+                <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
+                  onEditar={() => abrirEditar(u)}
+                  onRestablecer={() => setResetSel(u)}
+                  onEstado={() => u.estado === 'activo' ? pedirDesactivar(u) : setConfirmar({ usuario: u, accion: 'activar' })} />
               </div>
             </article>
           ))}

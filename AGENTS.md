@@ -675,10 +675,22 @@ filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
 mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
 scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal
 de usuario tiene tamaño mail/alto fill fijo y conserva el formulario montado al
-cambiar a Seguridad; la tabla usa anchos controlados y alinea Acciones a la
-izquierda junto al último acceso. Roles muestra ayuda en un portal flotante
-con z-index independiente (por encima de la tabla y encabezado), Escape y X
-para cerrar, sin contenedores details recortados; matriz con scroll propio.
+cambiar a Seguridad. La tabla sigue el orden Usuario, Rol, Estado,
+Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
+factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
+no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
+Estado usa punto y fondo discretos semánticos; Rol conserva el badge existente.
+Acciones es un único menú de tres puntos al final: Editar perfil,
+Restablecer contraseña (generada y guardada por modal existente, NO correo
+de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
+y prohibición de desactivar la cuenta propia. No duplicar mutaciones ni guards.
+El menú se muestra en portal fuera del scroll de tabla/tarjetas, para no
+recortarse al final; soporta clic externo, Escape, flechas y foco accesible.
+Reutilizar también en móvil. Fuente: app/usuarios/components/
+UsuarioAccionesMenu.tsx y tests/usuarios-acciones-menu.test.mjs.
+Roles muestra ayuda en un portal flotante con z-index independiente
+(por encima de la tabla y encabezado), Escape y X para cerrar, sin
+contenedores details recortados; matriz con scroll propio.
 Procesos, Auditorías, Riesgos, Revisión por Dirección, Documentos y SACP tienen las
 capacidades parciales de [módulos y flujos](docs/arquitectura/modulos-y-flujos.md):
 no atribuirles gestión documental/versionado, mitigación, eficacia o acuerdos completos
