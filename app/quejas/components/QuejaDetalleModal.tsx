@@ -18,6 +18,7 @@ import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
 import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
+import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
@@ -108,7 +109,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const draftVersions = useRef({ workflow: 0, comentario: 0 })
   const quejaId = queja?.id ?? ''
   const { data: comentarios = [], isLoading: comentariosLoading, error: comentariosError, refetch: refetchComentarios } = useQuejaComentarios(quejaId, activityOpen)
-  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen || analisisCalidadOpen)
+  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen || analisisCalidadOpen || queja?.estado === 'Resuelto')
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const crearComentario = useCrearQuejaComentario()
@@ -537,8 +538,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="space-y-1.5">
-            <Button size="sm" variant="primary" className="w-full min-w-0 justify-center px-3 py-2 text-xs sm:text-sm"
+          {esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="w-full space-y-1.5">
+            <Button size="sm" variant="primary" className="flex min-h-11 w-full min-w-0 justify-center px-3 py-2 text-sm" style={{ width: '100%' }}
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
               <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
             </Button>
@@ -564,18 +565,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
                 <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Ver antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
                 <div className="divide-y divide-qms-border">{requestDocument}{analysis && <CaseSection variant="document" source="Gestión interna" title="Análisis registrado"><div data-case-reading-copy><RichTextContent value={analysis.value} format={analysis.format} /></div></CaseSection>}</div>
               </details>
-            </> : estadoActual === 'Resuelto' ? <>
-              <CaseSection variant="document" source="Gestión de Calidad" title="Resumen del caso">
-                <h4 className="mb-2 text-sm font-semibold text-qms-dark">Solicitud del cliente</h4>
-                <p className="mb-6 line-clamp-3 whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion}</p>
-                <h4 className="mb-2 text-sm font-semibold text-qms-dark">Propuesta aprobada</h4>
-                <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Sin resolución registrada.</p>}</div>
-              </CaseSection>
-              <details data-case-close-context>
-                <summary className="cursor-pointer px-5 py-4 text-sm font-medium text-qms-dark sm:px-8">Ver antecedentes <span className="ml-2 font-normal text-qms-muted">Descripción, evaluación y archivos · {adjuntos.length}</span></summary>
-                <div className="divide-y divide-qms-border">{requestDocument}{investigationDocument}</div>
-              </details>
-            </> : <>{requestDocument}{investigationDocument}</>}
+            </> : estadoActual === 'Resuelto' ? <QuejaCierreResumen key={queja.id} queja={queja}
+              adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
+              onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
+              actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
+              responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} />
+
       </CaseWorkspace>
     </Modal>
 
