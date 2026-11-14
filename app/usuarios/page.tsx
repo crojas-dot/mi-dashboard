@@ -216,7 +216,10 @@ export default function UsuariosPage() {
                   </div>
                 </TableCell>
                 <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
-                <TableCell><Badge variant={u.estado === 'activo' ? 'green' : 'neutral'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+                <TableCell><span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
+                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
+                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span></TableCell>
                 <TableCell>
                   <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
                     className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2.5 py-1 text-xs font-medium text-qms-muted">
@@ -249,7 +252,10 @@ export default function UsuariosPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge>
-                <Badge variant={u.estado === 'activo' ? 'green' : 'neutral'}>{u.estado === 'activo' ? 'Activo' : 'Inactivo'}</Badge>
+                <span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
+                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
+                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                </span>
                 <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
                   className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2 py-0.5 text-xs text-qms-muted">
                   <ShieldOff aria-hidden="true" className="size-3.5" />2FA no disponible
