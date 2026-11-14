@@ -39,5 +39,5 @@ test('el stepper bloquea sus controles durante una edición pendiente', () => {
 
 test('No Procede conserva su recorrido abreviado sin fingir investigación o revisión', () => {
   const cycle = model.getCaseProcessCycle({ estado: 'No Procede' })
-  assert.deepEqual(cycle.steps.map(step => step.id), ['evaluation', 'finished'])
+  assert.deepEqual(Array.from(cycle.steps, step => step.id), ['evaluation', 'finished'])
 })
