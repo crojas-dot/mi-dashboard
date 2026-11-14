@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef } from 'react'
+import { CircleHelp } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ErrorState from '@/components/ui/ErrorState'
 import Select from '@/components/ui/Select'
@@ -90,16 +91,27 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
     </tr>
   ))
 
-  return <section data-users-permissions className="space-y-4">
-    <div className="rounded-card border border-qms-border bg-qms-primary-soft/40 p-4 text-sm leading-relaxed text-qms-dark">
-      <p><strong>Administración</strong> corresponde al rol administrador; <strong>Edición</strong> permite ver y modificar; <strong>Solo lectura</strong> permite consultar; <strong>Sin acceso</strong> impide abrir el módulo.</p>
-      <p className="mt-1 text-qms-muted">La matriz utiliza los permisos de lectura y escritura existentes. Los cambios se guardan al instante y aplican al recargar la sesión. Usuarios y Configuración tienen restricciones administrativas.</p>
+  return <section data-users-permissions className="flex min-h-0 h-full flex-col gap-3">
+    <div className="flex shrink-0 items-center justify-between gap-3">
+      <h2 className="text-sm font-semibold text-qms-dark">Permisos por módulo</h2>
+      <details className="group relative z-20">
+        <summary aria-label="Ayuda sobre niveles de acceso" title="¿Qué significa cada nivel?"
+          className="flex size-9 cursor-pointer list-none items-center justify-center rounded-button border border-qms-border bg-qms-surface text-qms-muted hover:border-qms-primary/30 hover:text-qms-primary [&::-webkit-details-marker]:hidden">
+          <CircleHelp aria-hidden="true" className="size-4" />
+        </summary>
+        <div role="note" className="absolute right-0 top-[calc(100%+8px)] w-[min(360px,85vw)] rounded-card border border-qms-border bg-qms-surface p-4 text-sm leading-relaxed text-qms-dark shadow-lg">
+          <p className="font-semibold">Niveles de acceso</p>
+          <p className="mt-2"><strong>Administración:</strong> representación de lectura y escritura para el administrador. No añade privilegios nuevos.</p>
+          <p className="mt-1"><strong>Edición:</strong> consultar y modificar. <strong>Solo lectura:</strong> consultar. <strong>Sin acceso:</strong> no abrir el módulo.</p>
+          <p className="mt-2 text-qms-muted">Los cambios se guardan al instante sobre los permisos vigentes y aplican al recargar la sesión. Usuarios y Configuración tienen restricciones administrativas.</p>
+        </div>
+      </details>
     </div>
-    <div className="ui-panel overflow-hidden p-0">
-      <div className="overflow-x-auto overscroll-x-contain">
+    <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+      <div data-users-permissions-scroll className="min-h-0 flex-1 overflow-auto overscroll-contain">
         <table className="w-full min-w-[710px] border-collapse text-sm">
           <caption className="sr-only">Matriz de roles y permisos por módulo</caption>
-          <thead className="bg-qms-table-head">
+          <thead className="sticky top-0 z-20 bg-qms-table-head">
             <tr className="border-b border-qms-border text-xs font-semibold text-qms-muted">
               <th scope="col" className="sticky left-0 z-20 min-w-[170px] border-r border-qms-border bg-qms-table-head px-4 py-4 text-left">Módulo</th>
               {roles.map(rol => <th scope="col" key={rol.key} className="min-w-[175px] px-3 py-4 text-center">{rol.label}</th>)}
@@ -113,7 +125,7 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
           </tbody>
         </table>
       </div>
-      <div className="border-t border-qms-border px-4 py-3 text-right text-xs text-qms-muted">Guardado automático al modificar un permiso</div>
+      <div className="shrink-0 border-t border-qms-border px-4 py-2 text-right text-xs text-qms-muted">Guardado automático al modificar un permiso</div>
     </div>
   </section>
 }
