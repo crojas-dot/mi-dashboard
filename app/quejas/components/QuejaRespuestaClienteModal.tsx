@@ -43,7 +43,7 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   if (initial) return <RespuestaEditor {...props} initial={initial} />
   const plantilla = crearCorreoAcompanamiento(props.queja, props.noProcede === true)
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle
-    footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={props.onClose}>Cerrar</Button></div>}>
+    footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
     {query.isLoading || informe.isLoading ? <div data-response-prefill className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-qms-surface">
       <p role="status" className="flex shrink-0 items-center gap-2 border-b border-qms-border px-5 py-2 text-xs text-qms-muted sm:px-8"><Pencil aria-hidden="true" className="size-3.5" />Preparando edición y comprobando el borrador guardado…</p>
       <QuejaCorreoEditor id={'respuesta-precarga-' + props.queja.id} destinatario={props.queja.email_cliente ?? ''}
@@ -112,6 +112,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     const generated = ultimoPdfGenerado(props.adjuntos, snapshot.folio, report, snapshot.id)
     if (generated) {
       autoSelected.current = true
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: generated.id })
     }
   }, [props.archivosLoading, props.archivosError, props.adjuntos, form.adjuntoId, uploaded.length, report, snapshot.folio, snapshot.id, initial.publicada])
