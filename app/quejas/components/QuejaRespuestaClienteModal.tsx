@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { prefetchDriveBlob, recordarDriveBlob } from '@/lib/services/driveClient'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, LoaderCircle, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -41,15 +41,27 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   const [initial, setInitial] = useState<(RespuestaClienteContext & { informe: QuejaInforme | null }) | null>(null)
   if (!initial && query.data && informe.data !== undefined) setInitial({ ...query.data, informe: informe.data })
   if (initial) return <RespuestaEditor {...props} initial={initial} />
-  const plantilla = crearCorreoAcompanamiento(props.queja, props.noProcede === true)
-  return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio} headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />} size="mail" variant="document" emphasizeTitle
+  // El editor auténtico se monta solo tras conocer el borrador y el informe.
+  // Una copia deshabilitada durante la carga genera scrolls y cortes visuales.
+  return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio}
+    headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />}
+    size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
     footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
-    {query.isLoading || informe.isLoading ? <div data-response-prefill className="grid h-full min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-qms-surface">
-      <p role="status" className="flex shrink-0 items-center gap-2 border-b border-qms-border px-5 py-2 text-xs text-qms-muted sm:px-8"><Pencil aria-hidden="true" className="size-3.5" />Preparando edición y comprobando el borrador guardado…</p>
-      <QuejaCorreoEditor id={'respuesta-precarga-' + props.queja.id} destinatario={props.queja.email_cliente ?? ''}
-        oficio={props.queja.numero_oficio_resolucion || props.queja.folio} onOficioChange={() => {}}
-        correo={plantilla} onChange={() => {}} disabled />
-    </div> : <div className="p-5"><p role="alert" className="mb-3 text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p><Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button></div>}
+    {query.isLoading || informe.isLoading ? (
+      <div data-response-prefill role="status" aria-live="polite"
+        className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-qms-surface px-5 py-8 sm:px-8">
+        <div className="flex max-w-sm flex-col items-center gap-3 text-center">
+          <LoaderCircle aria-hidden="true" className="size-6 animate-spin text-qms-primary" />
+          <p className="text-sm font-medium text-qms-dark">Cargando respuesta al cliente…</p>
+          <p className="text-xs leading-relaxed text-qms-muted">Comprobando el borrador y el informe guardados.</p>
+        </div>
+      </div>
+    ) : (
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden bg-qms-surface px-5 py-8 sm:px-8">
+        <p role="alert" className="text-center text-sm text-qms-danger">No se pudo cargar el informe o la respuesta guardada.</p>
+        <Button variant="secondary" onClick={() => { void query.refetch(); void informe.refetch() }}>Reintentar</Button>
+      </div>
+    )}
   </Modal>
 }
 
