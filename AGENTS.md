@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **13 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **14 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
@@ -182,7 +182,7 @@ Detalle: [datos y rendimiento](docs/arquitectura/datos-y-rendimiento.md),
 - No están integrados Seguridad y Estado, MFA/2FA, telemetría persistida/retención anual, fondo personalizado ni selector completo de tema. Formularios públicos: gateway/BotID Basic publicado, variables cifradas y cortes legacy aplicados; Storage histórico restringido por expediente/perfil activo. Ver estado y límites en [su guía](docs/seguridad-formularios-publicos.md).
 - Logout inmediato de UI no revoca universalmente todos los JWT emitidos. APIs privadas conservan rate limit por instancia; formulario público usa cuotas transaccionales PostgreSQL y tiene WAF Vercel publicado. No protegen el login Supabase externo.
 
-Último despliegue web documentado: 19 de octubre en dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF, dominio mi-dashboard-iota.vercel.app. Conserva 20261009230746 (Storage RLS) y 20261009231000 (corte público/Drive); añade seguimiento y cierre de qms_transition interno legacy. Metadata anónima y escritura directa de adjuntos permanecen cerradas. El visor Drive conserva iframe inmediato sin skeleton. No reabrir accesos legacy ni restaurar un cliente antiguo sin coordinar su contrato de DB.
+Último despliegue web documentado: 19 de octubre en dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF, dominio mi-dashboard-iota.vercel.app. Conserva 20261009230746 (Storage RLS) y 20261009231000 (corte público/Drive); añade seguimiento y cierre de qms_transition interno legacy. Metadata anónima y escritura directa de adjuntos permanecen cerradas. El visor Drive carga bytes por la API privada Bearer de QMS y presenta una URL de objeto local revocable. No reabrir accesos legacy ni restaurar un cliente antiguo sin coordinar su contrato de DB.
 
 Detalle público: [seguridad-formularios-publicos.md](docs/seguridad-formularios-publicos.md). Mantener cerrado el acceso público legacy; cualquier corte de workflow interno exige verificar primero su cliente compatible publicado.
 
@@ -219,7 +219,7 @@ permisos ni datos persistidos.
   no reinician la investigación. Leer el snapshot QMS, nunca prioridad/SLA legacy
   para inventar vencimientos. Los históricos conservan su calendario y revisión.
 - En Pendiente de Revisión GC, la propuesta del responsable se lee en el centro
-  y «Ver antecedentes» queda plegado. GC puede Aprobar y continuar (Resuelto),
+  con sus adjuntos internos debajo, sin «Ver antecedentes». GC puede Aprobar y continuar (Resuelto),
   Devolver con motivo/soportes, o Derivar a SACP si hay propuesta y aún no está
   vinculada una SACP. El responsable NUNCA deriva en investigación.
 - Derivar a SACP crea una acción interna vinculada e independiente, sin cambiar
@@ -360,24 +360,24 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   ni archivos al listar. Conservar permisos de eliminar/descargar/visualizar.
 - Marco redondeado y margen inferior del lienzo solo contraído; ampliado sin esa
   franja. El documento conserva padding final para que el contenido no toque el borde.
-- En Quejas, el stepper superior del expediente permite consultar por clic
-  Evaluación, Investigación, Revisión de Calidad y Cierre sin transición ni
-  escritura; "Volver a etapa actual" restaura las acciones. Se ocultan botones
-  del workflow mientras la consulta esté seleccionada, se limpian consultas al
-  cambiar de folio, y el stepper funciona también contraído/en móvil. No usar
-  pasos futuros para fingir que ya existen resoluciones o aprobaciones.
-- Divulgación progresiva: Recibido destaca descripción y adjuntos del cliente;
-  Investigación operativa en Mis Quejas conserva el editor Tiptap, notas y
-  adjuntos del responsable, con envío en su panel de acción; Revisión de GC
-  muestra la propuesta y oculta antecedentes bajo details; Resuelto se centra
-  en el resumen y en Redactar respuesta. El acceso al informe en Cierre vive
-  en una tarjeta secundaria "Documento del expediente" y mantiene su acción
-  original de generar PDF con evidencias, sin competir con el CTA final.
-- En Quejas → Resuelto, QuejaCierreResumen muestra tres tarjetas de lectura
-  (Solicitud, Análisis, Calidad) con línea gruesa, nodos icónicos de 40 px,
-  cabeceras tintadas y resumen a dos líneas de 14 px. Las tarjetas tienen
-  altura uniforme de 168 px al alcanzar 580 px útiles del lienzo; en estrecho
-  crecen según el contenido para no recortarse. Cada tarjeta abre Modal
+- En Quejas, el stepper permite consultar por clic Evaluación, Investigación,
+  Revisión de Calidad y Cierre **solo con el workspace expandido**, sin transición
+  ni escritura; "Volver a etapa actual" restaura las acciones. En el panel
+  contraído se conserva el indicador visual no interactivo de la etapa actual.
+  Al reducir o cambiar el folio se cierra la consulta. Nunca fingir registros
+  de etapas futuras ni permitir mutaciones desde una vista histórica.
+- Divulgación progresiva: Recibido muestra descripción y adjuntos del cliente;
+  Investigación operativa en Mis Quejas conserva Tiptap, notas y evidencias;
+  vistas de consulta y Revisión GC se centran en texto de la etapa y archivos
+  internos al final, sin acordeones «Ver antecedentes» ni solicitar contexto
+  repetido. Resuelto y Finalizado utilizan el mismo resumen de cierre;
+  «Redactar respuesta» solo está disponible cuando corresponda. En Resuelto,
+  «Generar expediente» es una acción secundaria compacta con su lógica intacta.
+- En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
+  lectura (Solicitud, Análisis, Calidad) con línea discreta, nodos de 32 px,
+  cabeceras suaves y resumen a dos líneas de 14 px. Las tarjetas tienen
+  altura uniforme de 124 px al alcanzar 580 px útiles del lienzo; en estrecho
+  crecen según contenido para no recortarse. Cada tarjeta abre Modal
   variant=document size=mail con navegación Anterior/Siguiente y acceso a
   adjuntos reales. No atribuir documentos internos sin asociación de etapa,
   ni inventar autores/fechas. No modificar el timeline lateral ni las notas
@@ -392,11 +392,16 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
   o scroll-smooth en scrollports internos. Laterales sticky con capa propia y fondo opaco; ampliado sin
   velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
-- Visor Drive: iframe inmediato, sin blob previo ni skeleton; preconnect solo por
-  intención. Los archivos Storage históricos conservan su ruta de vista/descarga.
-  Las barras internas de Google pertenecen a otro origen y no se recolorean con CSS
-  del padre. Su contraste persistente sigue pendiente; no afirmar que esté resuelto
-  ni alterar los colores del documento con filtros para simular una solución.
+- Visor privado: NO usar iframe, preconnect, enlace externo ni autenticación
+  directa contra drive.google.com. Los archivos Drive se consultan por
+  fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
+  activo, rol, expediente, pertenencia y privacidad física de Drive. El navegador
+  recibe un Blob local con URL.createObjectURL y la revoca al cerrar/cambiar
+  de sesión o de documento. Archivos legacy Storage usan download autenticado
+  con el mismo usuario Supabase; nunca se abre URL firmada externa. Sin sesión
+  válida o si cambia la identidad, mostrar error y no conservar la vista.
+  Sin soporte de vista previa para un MIME, ofrecer Descargar, sin dar permisos
+  nuevos ni exponer service role.
 
 Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
 [capa visual](docs/arquitectura/visual.md) y [panel](docs/quejas-panel-2026-10-13.md).
@@ -404,8 +409,8 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
 ## Informe y correo de respuesta al cliente
 
 - En Resuelto, «Generar expediente» aparece SOLO debajo de los datos del
-  cliente, sin tarjeta extensa ni duplicado central. Botón azul de ancho completo
-  y ayuda breve de una línea. Abre un informe Tiptap prellenado y editable con
+  cliente como botón secundario ancho en un contenedor mínimo, sin párrafos de
+  ayuda ni duplicado central. Abre un informe Tiptap prellenado y editable con
   encabezado, secciones, Conclusión/Resolución y anexos; 100.000 caracteres
   (`INFORME_MAX_LENGTH` validado en editor/API). Se guarda remotamente.
 - Guardar persiste primero la versión del informe; después genera y registra
@@ -540,9 +545,11 @@ distribuido del último admin. El perfil incorpora «Detalles del perfil» y
 «Seguridad y acceso»: crear/editar/activar/desactivar/eliminar y restablecer
 contraseña generada son operativos. La invitación/recuperación por correo, 2FA
 y definición manual desde esta UI son acciones pendientes: solo mostrar toast
-informativo, nunca cambios falsos ni estado 2FA inventado. Usuarios usa filtros
-responsivos, paginación en cliente sobre el resultado filtrado y scroll vertical
-interno (en móvil se muestran tarjetas sin desplazamiento horizontal). El modal
+informativo, nunca cambios falsos ni estado 2FA inventado. Usuarios organiza
+título discreto y un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
+filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
+mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
+scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal
 de usuario tiene tamaño mail/alto fill fijo y conserva el formulario montado al
 cambiar a Seguridad; roles usa ayuda en details y matriz con scroll propio.
 Procesos, Auditorías, Riesgos, Revisión por Dirección, Documentos y SACP tienen las

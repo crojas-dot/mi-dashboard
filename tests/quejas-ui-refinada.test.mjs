@@ -37,11 +37,9 @@ test('El workspace mantiene navegación idéntica y lateral fijo en ambos módul
   assert.match(quality, /headerActions=\{<CaseWorkspaceNavigation/)
   assert.match(responsible, /headerActions=\{<CaseWorkspaceNavigation/)
   assert.match(quality, /data-close-report-shortcut/)
-  assert.match(quality, /Documento del expediente/)
-  assert.match(quality, /Generá el PDF oficial con las evidencias del caso/)
-  assert.match(quality, /data-close-report-shortcut className="space-y-3 rounded-card/)
-  assert.match(quality, /variant="secondary" className="min-h-10 w-full min-w-0/)
-  assert.match(quality, /El PDF se adjunta al guardar\./)
+  assert.match(quality, /data-close-report-shortcut className="min-w-0 rounded-card/)
+  assert.match(quality, /variant="secondary" className="min-h-11 w-full min-w-0/)
+  assert.doesNotMatch(quality, /Generá el PDF oficial con las evidencias del caso/)
 })
 
 
@@ -62,7 +60,7 @@ test('Historial usa los mismos puntos simples y modal centrado en ambos módulos
 test('Cierre muestra tres pasos y abre un modal de solo lectura del sistema', () => {
   const detail = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx','utf8')
   const summary = fs.readFileSync('app/quejas/components/QuejaCierreResumen.tsx','utf8')
-  assert.match(detail, /estadoActual === 'Resuelto' \? <QuejaCierreResumen/)
+  assert.match(detail, /\['Resuelto', 'Finalizado'\]\.includes\(estadoActual\) \? <QuejaCierreResumen/)
   for (const name of ['cliente', 'investigacion', 'cierre']) assert.ok(summary.includes("id: '" + name + "'"))
   assert.match(summary, /data-case-close-timeline/)
   assert.match(summary, /data-case-close-step=\{item.id\}/)
@@ -75,10 +73,10 @@ test('Cierre muestra tres pasos y abre un modal de solo lectura del sistema', ()
 test('Tarjetas de Cierre usan línea gruesa, nodos icónicos y cabeceras suaves, con visor navegable', () => {
   const summary = fs.readFileSync('app/quejas/components/QuejaCierreResumen.tsx', 'utf8')
   assert.match(summary, /data-case-close-timeline className="@container/)
-  assert.match(summary, /border-l-\[6px\] border-qms-primary\/15/)
-  assert.match(summary, /top-1\/2 z-10 flex size-10 -translate-y-1\/2/)
-  assert.match(summary, /rounded-full border-4 border-qms-surface/)
-  assert.match(summary, /@min-\[580px\]:h-\[168px\]/)
+  assert.match(summary, /border-l-\[4px\] border-qms-primary\/15/)
+  assert.match(summary, /top-1\/2 z-10 flex size-8 -translate-y-1\/2/)
+  assert.match(summary, /rounded-full border-\[3px\] border-qms-surface/)
+  assert.match(summary, /@min-\[580px\]:h-\[124px\]/)
   assert.match(summary, /bg-qms-primary-soft\/70/)
   assert.match(summary, /bg-qms-purple\/10/)
   assert.match(summary, /bg-qms-success\/10/)
@@ -90,7 +88,7 @@ test('Tarjetas de Cierre usan línea gruesa, nodos icónicos y cabeceras suaves,
 })
 
 
-test('el stepper expone lectura por etapas en tamaño normal, compacto y expandido', () => {
+test('el stepper conserva panel contraído limpio y lectura solo en expandido', () => {
   const layout = fs.readFileSync('app/quejas/components/QuejaExpedientePanels.tsx', 'utf8')
   const detail = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
   assert.match(layout, /data-case-stage=\{step.id\}/)
@@ -102,4 +100,12 @@ test('el stepper expone lectura por etapas en tamaño normal, compacto y expandi
   assert.match(detail, /Volver a etapa actual/)
   assert.match(detail, /readOnlyStage \? readOnlyDocument/)
   assert.match(detail, /!readOnlyStage && canAct/)
+})
+
+test('las vistas por etapa muestran contenido propio y adjuntos sin acordeones de antecedentes', () => {
+  assert.doesNotMatch(detail, /Ver antecedentes|Ver descripción original/)
+  assert.match(detail, /soloLecturaFiles\(adjuntosCliente\)/)
+  assert.match(detail, /soloLecturaFiles\(adjuntos\.filter\(item => !!item\.usuario_id\)\)/)
+  assert.match(detail, /expanded \? toggleProcessStage : undefined/)
+  assert.match(detail, /process currentOnly/)
 })

@@ -23,7 +23,7 @@ se documenta en [su propia guía](seguridad-formularios-publicos.md).
 ## Fuentes
 
 - API: `app/api/drive/upload/route.ts`, `download/route.ts` y `delete/route.ts`.
-- Transporte cliente: `lib/services/quejaWorkflowService.ts` y `driveClient.ts`; la descarga usa API con Bearer. El visor vuelve al iframe privado de Google Drive, como antes, sin descargar bytes en el software ni skeleton. Google verifica la sesión y los permisos Google del usuario; no se concede acceso anónimo ni se transmite service role.
+- Transporte cliente: `lib/services/quejaWorkflowService.ts` y `driveClient.ts`; vista y descarga usan la API privada con Bearer QMS. El visor ya no embebe Google Drive ni depende de la cuenta Google del navegador: obtiene bytes autorizados y los presenta mediante Blob URL local revocable. El servidor usa su cuenta de servicio únicamente para consultar, tras autorizar al usuario QMS, la privacidad y la pertenencia física. No se concede acceso anónimo ni se transmite service role.
 - Privacidad y pertenencia física: `lib/server/drive.ts`.
 - Persistencia: las dos migraciones aditivas anteriores y el corte privado preparado.
 - Evidencia sin registros: `supabase/backups/drive_registry_preflight_20261008.json`
@@ -137,3 +137,7 @@ El cliente Google/JWT servidor se reutiliza únicamente mientras siga la misma c
 ## Storage histórico tras la activación
 
 Se retiraron las policies amplias de lectura/subida; SELECT exige expediente/archivo exacto y perfil activo staff o colaborador responsable con permiso mis_quejas. No hay policy INSERT/UPDATE/DELETE cliente. Signed URLs conservan ese control. Los extras ACL de la tabla administrada no fueron revocados por el rol postgres; ver límite de propietario en la guía pública. Bucket privado confirmado. No se modificaron permisos Google ni documentos de negocio.
+
+## Refinamiento del visor (14 de noviembre de 2026)
+
+La vista previa Drive cambia de iframe externo a `fetchDriveBlob` autenticado. Se mantienen los guards de `/api/drive/download` y `assertDriveCaseFile`; los archivos heredados de Supabase Storage se leen con la sesión Auth QMS. Cada apertura crea una URL local temporal que se revoca al cerrar, cambiar de archivo o cambiar de usuario. Los formatos no visualizables ofrecen Descargar. Esto evita el login Google externo, pero no elimina las restricciones de la cuenta de servicio ni hace públicos los archivos. Las pruebas sintéticas no sustituyen una comprobación con cuenta real y documentos reales tras el despliegue.

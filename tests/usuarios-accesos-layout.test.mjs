@@ -89,3 +89,12 @@ test('la ayuda no ocupa espacio permanente y la matriz tiene desplazamiento prop
   assert.match(form, /hidden=\{tab !== 'detalles'\}/)
   assert.match(form, /hidden=\{tab !== 'seguridad'\}/)
 })
+
+test('directorio y matriz comparten un único lienzo con herramientas arriba y scroll propio', () => {
+  assert.match(users, /data-users-directory/)
+  assert.match(users, /className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b/)
+  assert.match(users, /aria-label="Buscar y filtrar usuarios"/)
+  assert.match(users, /data-users-pagination/)
+  assert.match(matrix, /data-users-permissions-scroll/)
+  assert.doesNotMatch(matrix, /ui-panel flex min-h-0 flex-1/)
+})
