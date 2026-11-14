@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -171,9 +171,16 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
 }
 
 /** El progreso de lectura se reutiliza en los encabezados de Quejas y Mis Quejas. */
-export function CaseProcessHeader({ queja }: { queja: Queja }) {
+export function CaseProcessHeader({ queja, selectedStage, onStageChange, disabled = false }: {
+  queja: Queja
+  selectedStage?: string | null
+  onStageChange?: (stage: string) => void
+  disabled?: boolean
+}) {
   return <div data-case-process-header className="w-full min-w-0">
-    <div className="hidden @min-[1100px]/workspace:block"><CaseCycle queja={queja} process /></div>
+    <div className="hidden @min-[1100px]/workspace:block">
+      <CaseCycle queja={queja} process selectedStage={selectedStage} onStageChange={onStageChange} disabled={disabled} />
+    </div>
   </div>
 }
 
@@ -201,7 +208,10 @@ export function CaseSidebarShortcut({ title, description, actionLabel, icon, onC
   </button>
 }
 
-export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false }: { queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; currentOnly?: boolean }) {
+export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false, selectedStage, onStageChange, disabled = false }: {
+  queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; currentOnly?: boolean
+  selectedStage?: string | null; onStageChange?: (stage: string) => void; disabled?: boolean
+}) {
   if (process) {
     const flow = getCaseProcessCycle(queja)
     const current = flow.steps.findIndex(step => step.current)
@@ -210,11 +220,26 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
     if (currentOnly) return <div data-case-cycle-compact><p className="text-sm text-qms-muted sm:text-base">{index >= 0 ? `${flow.steps[index].label} · paso ${index + 1} de ${flow.steps.length}` : 'Etapa por verificar'}</p><div aria-hidden="true" className="mt-2 flex gap-1">{flow.steps.map(step => <span key={step.id} className={`h-1 flex-1 ${step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />)}</div></div>
     return <div data-case-process-lines className="w-full min-w-0">
       <ol aria-label={flow.label} className={`grid w-full min-w-0 gap-1.5 sm:gap-2 ${flow.steps.length === 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
-        {flow.steps.map((step, position) => <li key={step.id} title={step.label} aria-current={step.current ? 'step' : undefined} className="min-w-0 text-center">
-          <span className={`block truncate text-[11px] sm:text-sm ${step.current ? 'font-semibold text-qms-primary' : step.completed ? 'font-medium text-qms-muted' : 'text-qms-muted'}`}>{position + 1}. {step.label}</span>
-          <span data-case-cycle-line aria-hidden="true" className={`mt-1.5 block h-1 w-full rounded-full ${step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />
-          {step.completed && <span className="sr-only">: completada</span>}
-        </li>)}
+        {flow.steps.map((step, position) => {
+          const selected = selectedStage === step.id
+          const current = step.current && !selectedStage
+          const label = `${position + 1}. ${step.label}`
+          const content = <>
+            <span className={`inline-flex min-w-0 items-center justify-center gap-1 text-[11px] sm:text-sm ${selected || current ? 'font-semibold text-qms-primary' : step.completed ? 'font-medium text-qms-muted' : 'text-qms-muted'}`}>
+              <span className="truncate">{label}</span>
+              {onStageChange && !step.current && <ExternalLink aria-hidden="true" className="size-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70" />}
+            </span>
+            <span data-case-cycle-line aria-hidden="true" className={`mt-1.5 block h-1 w-full rounded-full ${selected ? 'bg-qms-primary' : step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />
+          </>
+          return <li key={step.id} aria-current={current ? 'step' : undefined} className="min-w-0 text-center">
+            {onStageChange ? <button type="button" data-case-stage={step.id} aria-label={`Consultar ${step.label} en modo solo lectura`}
+              aria-pressed={selected} disabled={disabled} title={`Consultar ${step.label} sin modificar el estado`}
+              onClick={() => onStageChange(step.id)} className="group block w-full min-w-0 cursor-pointer rounded-button px-1 py-1 text-center transition-colors hover:bg-qms-hover-bg focus-visible:outline-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-60">
+              {content}
+            </button> : <div title={step.label}>{content}</div>}
+            {step.completed && <span className="sr-only">: completada</span>}
+          </li>
+        })}
       </ol>
     </div>
   }
