@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, FolderOpen, UserRound } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -9,7 +10,7 @@ import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import type { Queja } from '@/lib/types'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import type { QuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { useQuejaInforme } from '@/lib/queries/useQuejaInforme'
+import { queryKeys } from '@/lib/queries/queryKeys'
 import { informePdfFilename } from '@/lib/utils/quejaInforme'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
 import { NOTA_APROBACION_GC, obtenerHistorialDevoluciones } from '@/lib/utils/quejaInvestigacionNotas'
@@ -40,7 +41,16 @@ const PASOS = [
 export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, adjuntosError,
   onRetryAdjuntos, onPreview, onDownload, actividad, actividadLoading, actividadError, responsable, resolveAuthor }: Props) {
   const [selected, setSelected] = useState<number | null>(null)
-  const { data: informe, isLoading: informeLoading, isError: informeError } = useQuejaInforme(queja.id)
+  const { data: informe, isLoading: informeLoading, isError: informeError } = useQuery({
+    queryKey: [...queryKeys.quejas, 'informe', queja.id],
+    queryFn: async ({ signal }) => {
+      const { fetchQuejaInforme } = await import('@/lib/queries/useQuejaInforme')
+      return fetchQuejaInforme(queja.id, signal)
+    },
+    enabled: !!queja.id,
+    staleTime: 0,
+    retry: false,
+  })
   const analysis = getQuejaAnalysis(queja)
   const devoluciones = obtenerHistorialDevoluciones(actividad)
   const aprobacion = [...actividad].reverse().find(item => item.descripcion === NOTA_APROBACION_GC)
