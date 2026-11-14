@@ -69,37 +69,37 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
   const paso = PASOS[selected ?? 0]
 
   return <>
-    <section data-case-close-timeline className="@container min-w-0 px-4 py-5 sm:px-8 sm:py-7">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b border-qms-border pb-4">
+    <section data-case-close-timeline className="@container min-w-0 px-4 py-4 sm:px-7 sm:py-5">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-qms-border pb-3">
         <h3 className="flex items-center gap-2 text-base font-semibold text-qms-dark"><FolderOpen aria-hidden="true" className="size-4 text-qms-muted" />Resumen del expediente</h3>
       </div>
-      <ol className="relative ml-6 space-y-5 border-l-[6px] border-qms-primary/15 pb-2">
+      <ol className="relative ml-4 space-y-3 border-l-[4px] border-qms-primary/15 pb-1">
         {PASOS.map((item, index) => {
           const Icon = item.Icon
           const cantidad = index === 0 ? cliente.length : index === 1 ? internos.length : pdf ? 1 : 0
           const tinta = index === 0 ? 'bg-qms-primary-soft/70' : index === 1 ? 'bg-qms-purple/10' : 'bg-qms-success/10'
           const estadoVisible = index === 2 ? (queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto') : estados[index]
-          return <li key={item.id} className="relative min-w-0 pl-9 sm:pl-10">
-            <span aria-hidden="true" className={'absolute -left-[25px] top-1/2 z-10 flex size-10 -translate-y-1/2 items-center justify-center rounded-full border-4 border-qms-surface shadow-sm ' + tinta}>
-              <Icon className={'size-[19px] ' + item.accent} />
+          return <li key={item.id} className="relative min-w-0 pl-7 sm:pl-8">
+            <span aria-hidden="true" className={'absolute -left-[19px] top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-qms-surface shadow-sm ' + tinta}>
+              <Icon className={'size-4 ' + item.accent} />
             </span>
             <button type="button" data-case-close-step={item.id} aria-label={'Ver detalle de ' + item.title}
               onClick={() => setSelected(index)}
-              className="group flex min-h-[168px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left shadow-sm transition-all hover:border-qms-primary/40 hover:shadow-md focus-visible:outline-2 focus-visible:outline-qms-primary @min-[580px]:h-[168px]">
-              <div className={'flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-qms-border/70 px-4 py-3 ' + tinta}>
+              className="group flex min-h-[118px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left transition-colors hover:border-qms-primary/40 hover:bg-qms-hover-bg/20 focus-visible:outline-2 focus-visible:outline-qms-primary @min-[580px]:h-[124px]">
+              <div className={'flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-qms-border/70 px-3 py-2 sm:px-4 ' + tinta}>
                 <h4 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-qms-dark group-hover:text-qms-primary">{item.title}</h4>
                 {fechas[index] && <span className="text-xs text-qms-muted">{caseDate(fechas[index])}</span>}
               </div>
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-2 px-4 py-3">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-1 px-3 py-2 sm:px-4">
                 <div className="min-w-0">
                   <p className="line-clamp-2 whitespace-pre-wrap break-words text-[14px] leading-relaxed text-qms-dark">{textos[index]}</p>
-                  {index === 1 && responsable && <p className="mt-1 truncate text-xs text-qms-muted" title={responsable}>Por: {responsable}</p>}
-                  {index === 2 && nombreAprobador && <p className="mt-1 truncate text-xs text-qms-muted" title={nombreAprobador}>Aprobado por: {nombreAprobador}</p>}
+                  {index === 1 && responsable && <p className="mt-0.5 truncate text-xs text-qms-muted" title={responsable}>Por: {responsable}</p>}
+                  {index === 2 && nombreAprobador && <p className="mt-0.5 truncate text-xs text-qms-muted" title={nombreAprobador}>Aprobado por: {nombreAprobador}</p>}
                 </div>
-                <div className="mt-auto flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-qms-border/60 pt-2">
+                <div className="mt-auto flex min-w-0 flex-wrap items-center justify-between gap-2 border-t border-qms-border/60 pt-1">
                   <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <span className="rounded-button bg-qms-hover-bg px-2 py-0.5 text-[11px] font-medium text-qms-muted">{estadoVisible}</span>
-                    {index === 1 && !actividadLoading && !actividadError && devoluciones.length > 0 && <span className="text-[11px] font-medium text-soft-amber-text">{devoluciones.length} {devoluciones.length === 1 ? 'devolución' : 'devoluciones'}</span>}
+                    <span className="rounded-button bg-qms-hover-bg px-1.5 py-0.5 text-xs font-medium text-qms-muted">{estadoVisible}</span>
+                    {index === 1 && !actividadLoading && !actividadError && devoluciones.length > 0 && <span className="text-xs font-medium text-soft-amber-text">{devoluciones.length} {devoluciones.length === 1 ? 'devolución' : 'devoluciones'}</span>}
                     <span className="text-xs text-qms-muted">{adjuntosLoading ? 'Consultando archivos…' : adjuntosError ? 'Archivos no disponibles' : cantidad ? cantidad + (cantidad === 1 ? ' archivo' : ' archivos') : 'Sin archivos'}</span>
                   </div>
                   <span className="inline-flex items-center gap-1 text-xs font-semibold text-qms-primary group-hover:underline">Ver detalle <ArrowRight aria-hidden="true" className="size-3.5" /></span>
