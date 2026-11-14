@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { Clock3, FileText, LockKeyhole, Paperclip } from 'lucide-react'
+import { Clock3, FileText, LockKeyhole, Paperclip, UserRound } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
@@ -11,6 +11,7 @@ import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import AreaAfectada from '@/components/quejas/AreaAfectada'
 import { caseDate } from '@/app/quejas/components/quejaExpedienteModel'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
+import { NOTA_DEVOLUCION_PREFIX, NOTA_APROBACION_GC } from '@/lib/utils/quejaInvestigacionNotas'
 import type { Queja } from '@/lib/types'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import type { QuejaActividad } from '@/lib/queries/useQuejaActividad'
@@ -41,6 +42,46 @@ const tabs = [
   { id: 'adjuntos', label: 'Adjuntos', Icon: Paperclip },
   { id: 'historial', label: 'Historial', Icon: Clock3 },
 ] as const
+
+interface TimelineProps {
+  actividad: QuejaActividad[]
+  loading?: boolean
+  error?: boolean
+  onRetry?: () => void
+  resolveAuthor?: (item: QuejaActividad) => string | undefined
+}
+
+/** Línea de tiempo compartida por Calidad y el responsable; solo varían los eventos autorizados. */
+export function QuejaTimeline({ actividad, loading, error, onRetry, resolveAuthor }: TimelineProps) {
+  const events = [...actividad].sort((a, b) => b.created_at.localeCompare(a.created_at))
+  return <section data-queja-timeline className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <h3 className="text-[17px] font-semibold text-qms-dark">Línea de tiempo</h3>
+      <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-1 text-[11px] font-semibold text-qms-muted">Registro de actividad</span>
+    </div>
+    {loading ? <LoadingSkeleton variant="list" label="Cargando historial…" framed={false} />
+      : error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudo cargar el historial.{onRetry && <Button size="sm" variant="ghost" onClick={onRetry}>Reintentar historial</Button>}</div>
+      : events.length === 0 ? <p className="text-sm text-qms-muted">Sin actividad registrada.</p>
+      : <ol className="relative ml-3 space-y-8 border-l-2 border-qms-border pb-4">
+        {events.map((item, index) => {
+          const returned = item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX)
+          const approved = item.descripcion === NOTA_APROBACION_GC
+          const title = returned ? 'Devolución a investigación' : approved ? 'Resolución aprobada' : item.tipo === 'nota' ? 'Nota agregada' : item.tipo.replace(/_/g, ' ')
+          const description = returned ? 'Motivo: ' + item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length) : item.descripcion
+          const author = resolveAuthor?.(item) || (returned || approved ? 'Gestión de Calidad' : item.usuario_id ? 'Usuario registrado' : 'Autor no registrado')
+          return <li key={item.id} className="relative min-w-0 pl-8">
+            <span aria-hidden="true" className={`absolute -left-[9px] top-1.5 z-10 size-4 rounded-full ring-4 ring-qms-surface ${index === 0 ? 'bg-qms-primary' : 'bg-gray-300'}`} />
+            <div className="mb-2 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline sm:gap-3">
+              <h4 className="text-[15px] font-semibold text-qms-dark">{title}</h4>
+              <time dateTime={item.created_at} className="shrink-0 text-[13px] font-medium text-qms-muted">{caseDate(item.created_at)}</time>
+            </div>
+            <p className="mb-3 flex items-center gap-1.5 text-[13px] text-qms-muted"><UserRound aria-hidden="true" className="size-3" />Por: {author}</p>
+            <p className="whitespace-pre-wrap break-words rounded-button border border-qms-border bg-qms-hover-bg p-4 text-[14px] leading-relaxed text-qms-dark shadow-sm">{description}</p>
+          </li>
+        })}
+      </ol>}
+  </section>
+}
 
 export default function QuejaAnalisisPanel(props: Props) {
   const { queja } = props
@@ -144,24 +185,7 @@ export default function QuejaAnalisisPanel(props: Props) {
         </div>
       </section>
       <section id={tabId('historial')} role="tabpanel" aria-label="Historial del expediente" hidden={activeTab !== 'historial'} className={activeTab === 'historial' ? 'mx-auto w-full min-w-0 max-w-5xl p-4 sm:p-6' : 'hidden'}>
-        <div className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="flex items-center gap-2 text-lg font-semibold"><Clock3 aria-hidden="true" className="size-5 text-qms-muted" />Línea de tiempo</h3>
-            <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-1 text-xs text-qms-muted">Actividad registrada</span>
-          </div>
-          {props.actividadLoading ? <LoadingSkeleton variant="list" label="Cargando historial…" framed={false} />
-            : props.actividadError ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudo cargar el historial.<Button size="sm" variant="ghost" onClick={props.onRetryActividad}>Reintentar historial</Button></div>
-            : props.actividad.length ? <ol className="ml-4 space-y-6 border-l-2 border-qms-border pb-2">
-                {[...props.actividad].reverse().map(item => <li key={item.id} className="relative pl-7">
-                  <span aria-hidden="true" className="absolute -left-3 top-0 flex size-6 items-center justify-center rounded-full border-2 border-qms-primary bg-qms-surface text-qms-primary"><Clock3 className="size-3" /></span>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <p className="text-sm font-semibold">{item.tipo === 'nota' ? 'Nota registrada' : item.tipo}</p>
-                    <time className="text-xs text-qms-muted" dateTime={item.created_at}>{caseDate(item.created_at)}</time>
-                  </div>
-                  <p className="mt-2 whitespace-pre-wrap break-words rounded-card border border-qms-border bg-qms-hover-bg p-3 text-sm leading-relaxed">{item.descripcion}</p>
-                </li>)}
-              </ol> : <p className="text-sm text-qms-muted">Sin actividad registrada.</p>}
-        </div>
+        <QuejaTimeline actividad={props.actividad} loading={props.actividadLoading} error={props.actividadError} onRetry={props.onRetryActividad} />
       </section>
     </div>
   </Modal>

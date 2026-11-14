@@ -39,3 +39,18 @@ test('El workspace mantiene navegación idéntica y lateral fijo en ambos módul
   assert.match(quality, /data-close-report-shortcut/)
   assert.match(quality, /variant="primary" className="max-w-full min-w-0 px-3 py-2 text-xs sm:text-sm"/)
 })
+
+
+test('Historial usa los mismos puntos simples y modal centrado en ambos módulos', () => {
+  const analysis = fs.readFileSync('app/mis-quejas/components/QuejaAnalisisPanel.tsx', 'utf8')
+  const quality = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  assert.match(analysis, /export function QuejaTimeline/)
+  assert.match(analysis, /data-queja-timeline/)
+  assert.match(analysis, /ring-4 ring-qms-surface/)
+  assert.match(analysis, /index === 0 \? 'bg-qms-primary' : 'bg-gray-300'/)
+  assert.match(analysis, /<QuejaTimeline actividad=\{props.actividad\}/)
+  assert.match(quality, /<QuejaTimeline actividad=\{actividad\}/)
+  assert.match(quality, /title="Historial y observaciones" titleSuffix=\{queja.folio\}/)
+  assert.match(quality, /variant="document" size="mail" height="fill"/)
+  assert.doesNotMatch(quality, /title=\{'Actividad · ' \+ queja.folio\} variant="sheet"/)
+})

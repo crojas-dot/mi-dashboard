@@ -17,7 +17,7 @@ import AreaQuejaControl from '@/app/quejas/components/AreaQuejaControl'
 import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
-import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
+import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
@@ -665,15 +665,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       </div>
     </Modal>
 
-    <Modal open={activityOpen} onClose={() => setActivityOpen(false)} title={'Actividad · ' + queja.folio} variant="sheet" size="sm">
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain bg-qms-hover-bg p-4">
+    <Modal open={activityOpen} onClose={() => setActivityOpen(false)} title="Historial y observaciones" titleSuffix={queja.folio}
+      variant="document" size="mail" height="fill" footer={<div className="flex justify-end"><Button variant="secondary" onClick={() => setActivityOpen(false)}>Cerrar</Button></div>}>
+      <div data-case-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] bg-qms-hover-bg">
+      <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6">
+        <QuejaTimeline actividad={actividad} loading={actividadLoading} error={!!actividadError} onRetry={() => { void refetchActividad() }}
+          resolveAuthor={event => event.usuario_id ? usuarios.find(u => u.id === event.usuario_id)?.nombre : undefined} />
         <CaseSection title="Observaciones">
           <div className="space-y-3 border-b border-qms-border pb-4"><textarea aria-label="Nueva observación" placeholder="Escribí una observación…" rows={5} className="ui-textarea w-full px-3 py-2 text-sm" value={nuevoComentario} onChange={event => { draftVersions.current.comentario++; setNuevoComentario(event.target.value) }} /><div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2"><Select aria-label="Tipo de observación" value={comentarioTipo} onChange={event => setComentarioTipo(event.target.value as 'interno' | 'cliente')}><option value="interno">Interna</option><option value="cliente">Del cliente</option></Select><Button onClick={handleAgregarComentario} loading={agregandoComentario} disabled={!nuevoComentario.trim()}><Send className="size-4" />Agregar</Button></div><label className="flex items-center gap-2 text-xs text-qms-muted"><input type="checkbox" checked={visibleCliente} onChange={event => setVisibleCliente(event.target.checked)} />Visible al quejoso</label></div>
           <div className="mt-4 space-y-3">{queja.observaciones && <article className="border-b border-qms-border pb-3"><p className="mb-2 text-xs text-qms-muted">Observación anterior</p><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.observaciones}</p></article>}{comentariosLoading ? <LoadingSkeleton variant="list" label="Cargando observaciones…" framed={false} /> : comentariosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las observaciones. <Button variant="link" size="sm" onClick={() => refetchComentarios()}>Reintentar</Button></p> : !comentarios.length && !queja.observaciones ? <p className="text-sm text-qms-muted">Sin observaciones todavía.</p> : comentarios.map(c => <article key={c.id} className="border-b border-qms-border pb-3"><div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant={c.tipo === 'cliente' ? 'blue' : 'gray'}>{c.tipo === 'cliente' ? 'Del cliente' : 'Interna'}</Badge>{c.visible_cliente && <Badge variant="green">Visible al quejoso</Badge>}<time className="text-xs text-qms-muted">{caseDate(c.fecha)}</time></div><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{c.comentario}</p></article>)}</div>
         </CaseSection>
-        <CaseSection title="Historial de cambios">{actividadLoading ? <LoadingSkeleton variant="list" label="Cargando actividad…" framed={false} /> : actividadError ? <p role="alert" className="text-sm text-qms-danger">No se pudo cargar la actividad. <Button size="sm" variant="link" onClick={() => refetchActividad()}>Reintentar</Button></p> : !actividad.length ? <p className="text-sm text-qms-muted">No hay cambios registrados.</p> : <ol className="space-y-4">{actividad.map(event => <li key={event.id} className="border-l-2 border-qms-border pl-3"><p className="whitespace-pre-wrap break-words text-sm">{event.descripcion}</p><p className="mt-1 text-xs text-qms-muted">{caseDate(event.created_at)}{event.usuario_id && ' · ' + (usuarios.find(u => u.id === event.usuario_id)?.nombre || 'Usuario registrado')}</p></li>)}</ol>}</CaseSection>
         {esStaff && (correosLoading ? <LoadingSkeleton variant="list" label="Cargando comunicaciones…" /> : correosError ? <CaseSection title="Comunicaciones"><p role="alert" className="text-sm text-qms-danger">No se pudieron cargar los estados. <Button size="sm" variant="link" onClick={() => refetchCorreos()}>Reintentar</Button></p></CaseSection> : <CaseMailStatus messages={correos} />)}
         {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
+      </div>
       </div>
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
