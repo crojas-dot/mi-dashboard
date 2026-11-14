@@ -20,7 +20,6 @@ export interface RespuestaClienteDraft {
 }
 export interface RespuestaClienteContext {
   borrador: RespuestaClienteDraft | null
-  aprobacion: { propuesta: string; propuesta_formato: RichTextFormat; created_at: string; usuario_id: string } | null
   publicada: { respuesta: string; adjunto_id: string; publicado_at: string; publicado_por: string } | null
 }
 export const respuestaClienteKey = (id: string) => [...queryKeys.quejas, 'respuesta-cliente', id] as const
@@ -28,12 +27,11 @@ export const respuestaClienteKey = (id: string) => [...queryKeys.quejas, 'respue
 export async function fetchRespuestaCliente(id: string, signal?: AbortSignal): Promise<RespuestaClienteContext> {
   const requests = [
     supabase.from('queja_response_drafts').select('queja_id,version,respuesta,correo_asunto,correo_cuerpo,motivo_no_procede,motivo_no_procede_formato,numero_oficio,adjunto_id,actualizado_por,updated_at').eq('queja_id', id),
-    supabase.from('queja_gc_revisiones').select('propuesta,propuesta_formato,created_at,usuario_id').eq('queja_id', id).eq('decision', 'approved').order('source_revision', { ascending: false }).limit(1),
     supabase.from('queja_public_resolutions').select('respuesta,adjunto_id,publicado_at,publicado_por').eq('queja_id', id),
   ]
   const results = await Promise.all(requests.map(query => (signal ? query.abortSignal(signal) : query).maybeSingle()))
   for (const result of results) if (result.error) throw result.error
-  return { borrador: results[0].data, aprobacion: results[1].data, publicada: results[2].data } as RespuestaClienteContext
+  return { borrador: results[0].data, publicada: results[1].data } as RespuestaClienteContext
 }
 
 export function useRespuestaCliente(id: string) {
