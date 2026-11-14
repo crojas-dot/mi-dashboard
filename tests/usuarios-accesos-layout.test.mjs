@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { loadModule } from './load-module.mjs'
 
 const users = fs.readFileSync('app/usuarios/page.tsx', 'utf8')
 const settings = fs.readFileSync('app/configuracion/page.tsx', 'utf8')
@@ -37,4 +38,41 @@ test('perfil conserva guardados reales y seguridad no simula funciones ausentes'
   assert.match(form, /Aún no se pueden enviar correos de recuperación/)
   assert.match(form, /La función 2FA aún no está disponible/)
   assert.doesNotMatch(form, /updateFactor|sendEmail|resendInvitation/)
+})
+
+test('cambiar nivel usa el upsert existente y respeta módulos reservados sin escribir', async () => {
+  const writes = [], notices = []
+  const permisos = [{ rol: 'calidad', modulo: 'quejas', leer: true, escribir: false }]
+  const { default: RolesAccesos } = loadModule('app/usuarios/components/RolesAccesos.tsx', {
+    react: { useRef: initial => ({ current: initial }) },
+    '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
+    '@/components/ui/ErrorState': { default: 'ErrorState' },
+    '@/components/ui/Select': { default: 'Select' },
+    '@/lib/queries/usePermisos': {
+      usePermisos: () => ({ data: permisos, isLoading: false, error: null }),
+      useActualizarPermiso: () => ({ isPending: false, mutateAsync: async data => { writes.push(data) } }),
+    },
+    '@/lib/constants/modulos': { MODULOS_PERMISOS: [
+      { key: 'quejas', label: 'Quejas' }, { key: 'usuarios', label: 'Usuarios' }, { key: 'configuracion', label: 'Configuración' },
+    ] },
+    '@/lib/constants/roles': {
+      ROLES_GESTIONABLES: ['admin', 'calidad', 'colaborador'],
+      getRoleLabel: rol => ({ admin: 'Administrador', calidad: 'Calidad', colaborador: 'Colaborador' })[rol],
+    },
+    '@/lib/services/errorToast': { showSuccess: msg => notices.push(msg), showError: () => { throw Error('No se esperaba error') } },
+  })
+  const tree = RolesAccesos({ active: true })
+  const visit = node => Array.isArray(node) ? node.flatMap(visit) : node?.props ? [node, ...visit(node.props.children)] : []
+  const cell = label => visit(tree).find(node => node.type === 'Select' && node.props['aria-label'] === label)
+  assert.equal(cell('Quejas para Calidad').props.value, 'lectura')
+  cell('Quejas para Calidad').props.onChange({ target: { value: 'edicion' } })
+  await Promise.resolve()
+  assert.deepEqual(JSON.parse(JSON.stringify(writes)), [{ rol: 'calidad', modulo: 'quejas', leer: true, escribir: true }])
+  assert.deepEqual(notices, ['Permiso actualizado'])
+  assert.equal(cell('Configuración para Calidad').props.disabled, true)
+  cell('Configuración para Calidad').props.onChange({ target: { value: 'edicion' } })
+  cell('Usuarios para Colaborador').props.onChange({ target: { value: 'edicion' } })
+  cell('Quejas para Calidad').props.onChange({ target: { value: 'administracion' } })
+  await Promise.resolve()
+  assert.equal(writes.length, 1, 'no se escriben roles reservados ni administración ajena')
 })
