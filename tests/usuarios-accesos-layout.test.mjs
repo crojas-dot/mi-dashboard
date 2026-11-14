@@ -8,6 +8,7 @@ const settings = fs.readFileSync('app/configuracion/page.tsx', 'utf8')
 const matrix = fs.readFileSync('app/usuarios/components/RolesAccesos.tsx', 'utf8')
 const form = fs.readFileSync('components/usuarios/UsuarioFormModal.tsx', 'utf8')
 const reset = fs.readFileSync('components/usuarios/ResetPasswordModal.tsx', 'utf8')
+const actions = fs.readFileSync('app/usuarios/components/UsuarioAccionesMenu.tsx', 'utf8')
 
 test('roles y permisos vive en Usuarios y no en Configuración', () => {
   assert.match(users, /Roles y permisos/)
@@ -100,4 +101,43 @@ test('directorio y matriz comparten un único lienzo con herramientas arriba y s
   assert.match(users, /data-users-pagination/)
   assert.match(matrix, /data-users-permissions-scroll/)
   assert.doesNotMatch(matrix, /ui-panel flex min-h-0 flex-1/)
+})
+
+test('directorio adopta columnas sin Alta, Seguridad junto a Estado y acciones al final', () => {
+  const begin = users.indexOf('<Table className=')
+  const end = users.indexOf('</Table>', begin)
+  assert.ok(begin > 0 && end > begin)
+  const table = users.slice(begin, end)
+  const headers = ['Usuario', 'Rol', 'Estado', 'Seguridad (2FA)', 'Último acceso', 'Acciones']
+  let previous = 0
+  for (const heading of headers) {
+    const current = table.indexOf('>' + heading + '</TableHeaderCell>', previous)
+    assert.ok(current > previous, 'Columna en el orden solicitado: ' + heading)
+    previous = current
+  }
+  assert.doesNotMatch(table, />Alta<\/TableHeaderCell>/)
+  assert.match(table, /TableHeaderCell className="pr-6 text-right">Acciones/)
+  assert.match(users, /data-users-mobile-list/)
+  assert.equal((users.match(/<UsuarioAccionesMenu usuario=\{u\}/g) || []).length, 2)
+  assert.equal((users.match(/data-users-security/g) || []).length, 2)
+  assert.match(users, /ShieldOff/)
+  assert.match(users, /2FA no disponible/)
+  assert.doesNotMatch(users, />Sí<|>Con 2FA<|>Sin 2FA</)
+})
+
+test('menú flotante conserva acciones reales sin activar 2FA ficticio ni exponer el último administrador', () => {
+  assert.match(actions, /createPortal\(/)
+  assert.match(actions, /document\.body/)
+  assert.match(actions, /aria-haspopup="menu"/)
+  assert.match(actions, /role="menu"/)
+  assert.match(actions, /Editar perfil/)
+  assert.match(actions, /Restablecer contraseña/)
+  assert.match(actions, /Desactivar cuenta/)
+  assert.match(actions, /Restaurar cuenta/)
+  assert.match(actions, /disabled=\{activo && esPropio\}/)
+  assert.match(actions, /window\.addEventListener\('scroll', closeOnMove, true\)/)
+  assert.match(actions, /event\.key === 'Escape'/)
+  assert.match(users, /onRestablecer=\{\(\) => setResetSel\(u\)\}/)
+  assert.match(users, /onEditar=\{\(\) => abrirEditar\(u\)\}/)
+  assert.match(users, /onEstado=\{\(\) => u\.estado === 'activo' \? pedirDesactivar\(u\)/)
 })
