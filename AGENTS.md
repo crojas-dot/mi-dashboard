@@ -510,9 +510,12 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   fila, Asunto en línea y texto libre. No hay selector desplegable de documentos.
   La respuesta se precarga en segundo plano durante Resuelto y se reutiliza desde
   TanStack Query con staleTime de 30 s; jamás esperar a isFetching cuando ya hay
-  snapshot válido. Mientras llega la consulta se ve un lienzo de correo
-  deshabilitado con texto base, no un esqueleto vacío. Al confirmar el borrador
-  real, se presenta el editor y nunca se reemplazan cambios del usuario.
+  snapshot válido. Mientras llega la primera consulta NO montar un editor
+  deshabilitado con texto temporal: mostrar un estado de carga centrado,
+  accesible, de altura acotada y sin scroll ni barra de adjuntos provisionales.
+  Aplica igual para No Procede y para el cierre normal. Ante error, presentar
+  Reintentar; cuando el borrador y el informe estén listos, montar el editor
+  auténtico sin reemplazar ediciones posteriores del usuario.
   El PDF oficial de la versión guardada se selecciona como chip automáticamente
   si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
   previsualizar y quitar selección; onPdfReady actualiza selección también cuando
