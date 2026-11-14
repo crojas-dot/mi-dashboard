@@ -139,10 +139,7 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-3 overflow-hidden pb-2">
-      <div className="flex shrink-0 items-center gap-3">
-        <h1 className="text-lg font-semibold text-qms-dark sm:text-xl">Gestión de accesos</h1>
-      </div>
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col gap-0 overflow-hidden pb-2">
       <div data-users-directory className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden p-0">
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-qms-border px-3 sm:px-4">
       <div role="tablist" aria-label="Gestión de accesos" className="flex min-w-0 items-center gap-1">
@@ -186,14 +183,15 @@ export default function UsuariosPage() {
       ) : (
         <div className="min-h-0 flex-1">
         <div className="hidden h-full min-h-0 lg:block">
-        <Table containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
+        <Table className="table-fixed min-w-[1050px]" containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
+          <colgroup><col className="w-[23%]" /><col className="w-[13%]" /><col className="w-[12%]" /><col className="w-[14%]" /><col className="w-[38%]" /></colgroup>
           <TableHead>
             <tr>
               <TableHeaderCell>Usuario</TableHeaderCell>
               <TableHeaderCell>Rol</TableHeaderCell>
               <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Último acceso</TableHeaderCell>
-              <TableHeaderCell className="text-right">Acciones</TableHeaderCell>
+              <TableHeaderCell className="text-left">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <tbody>
@@ -224,7 +222,7 @@ export default function UsuariosPage() {
                     {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos registrados'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center justify-end gap-1.5">
+                    <div className="flex items-center justify-start gap-1.5">
                       <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => abrirEditar(u)}>
                         <Pencil className="h-3.5 w-3.5" /> Gestionar
                       </Button>
