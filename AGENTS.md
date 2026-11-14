@@ -374,14 +374,19 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   «Redactar respuesta» solo está disponible cuando corresponda. En Resuelto,
   «Generar expediente» es una acción secundaria compacta con su lógica intacta.
 - En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
-  lectura (Solicitud, Análisis, Calidad) con línea discreta, nodos de 32 px,
+  lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
+  y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
+  tienen fondo y anillo opacos para que la línea vertical no atraviese iconos.
+  Las tarjetas conservan línea discreta, nodos de 32 px,
   cabeceras suaves y texto de 14 px. Contraído, las tarjetas mantienen
   124 px desde 580 px útiles del lienzo y resumen de dos líneas. Expandido,
   usan altura fluida basada en la ventana (124–212 px, 21dvh) para aprovechar
   el espacio sin crear scroll innecesario; desde 700 px de ancho útil el
   resumen puede mostrar tres líneas. En estrecho crecen según contenido. Cada tarjeta abre Modal
   variant=document size=mail con navegación Anterior/Siguiente y acceso a
-  adjuntos reales. No atribuir documentos internos sin asociación de etapa,
+  adjuntos reales. El artículo del visor usa todo el ancho interior útil y texto
+  de lectura de 16 px, como el patrón de Análisis, sin cambiar el modal.
+  No atribuir documentos internos sin asociación de etapa,
   ni inventar autores/fechas. No modificar el timeline lateral ni las notas
   del responsable solo para igualar una maqueta.
 - Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
@@ -395,8 +400,8 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   o scroll-smooth en scrollports internos. Laterales sticky sin max-height ni
   overflow propios: el lienzo principal controla el único scroll; ampliado sin
   velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
-- Visor privado: NO usar iframe, preconnect, enlace externo ni autenticación
-  directa contra drive.google.com. Los archivos Drive se consultan por
+- Visor privado: NO usar iframe externo, preconnect, enlace externo ni
+  autenticación directa contra drive.google.com. Los archivos Drive se consultan por
   fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
   activo, rol, expediente, pertenencia y privacidad física de Drive. El navegador
   recibe un Blob local con URL.createObjectURL y la revoca al cerrar/cambiar
@@ -404,7 +409,13 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   con el mismo usuario Supabase; nunca se abre URL firmada externa. Sin sesión
   válida o si cambia la identidad, mostrar error y no conservar la vista.
   Sin soporte de vista previa para un MIME, ofrecer Descargar, sin dar permisos
-  nuevos ni exponer service role.
+  nuevos ni exponer service role. Para acortar la espera se precargan hasta dos
+  adjuntos Drive del expediente y se anticipa el documento al hover/focus; los
+  bytes ya autorizados se reutilizan en memoria hasta 45 segundos y un máximo
+  de 5 entradas. La caché se separa por usuario/rol y se limpia ante cambio de
+  identidad, rol o logout, nunca usa cookies Google, almacenamiento persistente
+  ni URLs públicas. La primera consulta puede demorar por verificaciones de
+  permisos/privacidad en la API; no prometer latencia en milisegundos.
 
 Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
 [capa visual](docs/arquitectura/visual.md) y [panel](docs/quejas-panel-2026-10-13.md).
@@ -548,13 +559,17 @@ distribuido del último admin. El perfil incorpora «Detalles del perfil» y
 «Seguridad y acceso»: crear/editar/activar/desactivar/eliminar y restablecer
 contraseña generada son operativos. La invitación/recuperación por correo, 2FA
 y definición manual desde esta UI son acciones pendientes: solo mostrar toast
-informativo, nunca cambios falsos ni estado 2FA inventado. Usuarios organiza
-título discreto y un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
+informativo, nunca cambios falsos ni estado 2FA inventado. Usuarios evita
+repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» existente
+y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
 filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
 mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
 scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal
 de usuario tiene tamaño mail/alto fill fijo y conserva el formulario montado al
-cambiar a Seguridad; roles usa ayuda en details y matriz con scroll propio.
+cambiar a Seguridad; la tabla usa anchos controlados y alinea Acciones a la
+izquierda junto al último acceso. Roles muestra ayuda en un portal flotante
+con z-index independiente (por encima de la tabla y encabezado), Escape y X
+para cerrar, sin contenedores details recortados; matriz con scroll propio.
 Procesos, Auditorías, Riesgos, Revisión por Dirección, Documentos y SACP tienen las
 capacidades parciales de [módulos y flujos](docs/arquitectura/modulos-y-flujos.md):
 no atribuirles gestión documental/versionado, mitigación, eficacia o acuerdos completos
