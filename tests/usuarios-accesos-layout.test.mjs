@@ -83,7 +83,7 @@ test('la ayuda no ocupa espacio permanente y la matriz tiene desplazamiento prop
   assert.match(matrix, /data-users-permissions-scroll/)
   assert.match(matrix, /sticky top-0 z-20/)
   assert.match(users, /data-users-pagination/)
-  assert.match(users, /max-h-\[min\(58dvh,650px\)\]/)
+  assert.match(users, /containerClassName="h-full min-h-0 overflow-auto overscroll-contain"/)
   assert.match(form, /data-user-editor-scroll/)
   assert.match(form, /size="mail" variant="document" height="fill"/)
   assert.match(form, /hidden=\{tab !== 'detalles'\}/)

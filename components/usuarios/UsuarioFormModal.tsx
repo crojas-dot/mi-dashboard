@@ -108,15 +108,15 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     <Modal open={open} onClose={cerrar} title={esEditar ? 'Gestionar usuario' : 'Nuevo usuario'} size="mail" variant="document" height="fill">
       <div data-user-editor className="flex min-h-0 flex-1 flex-col bg-qms-surface">
         <div role="tablist" aria-label="Administrar usuario" className="flex shrink-0 gap-1 overflow-x-auto border-b border-qms-border px-4 sm:px-7">
-          <button type="button" role="tab" aria-selected={tab === 'detalles'} aria-controls="usuario-panel-detalles"
+          <button type="button" role="tab" id="usuario-tab-detalles" aria-selected={tab === 'detalles'} aria-controls={formId}
             onClick={() => setTab('detalles')}
             className={`shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'detalles' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Detalles del perfil</button>
-          <button type="button" role="tab" aria-selected={tab === 'seguridad'} aria-controls="usuario-panel-seguridad"
+          <button type="button" role="tab" id="usuario-tab-seguridad" aria-selected={tab === 'seguridad'} aria-controls="usuario-panel-seguridad"
             onClick={() => setTab('seguridad')}
             className={`shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'seguridad' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Seguridad y acceso</button>
         </div>
         <div data-user-editor-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-5 sm:px-8 sm:py-6">
-          <form key={usuario?.id ?? 'nuevo'} id={formId} role="tabpanel" aria-label="Detalles del perfil" aria-labelledby="usuario-panel-detalles"
+          <form key={usuario?.id ?? 'nuevo'} id={formId} role="tabpanel" aria-label="Detalles del perfil" aria-labelledby="usuario-tab-detalles"
             hidden={tab !== 'detalles'} onSubmit={handleSubmit} className="mx-auto max-w-2xl space-y-5">
             {error && <p role="alert" className="text-sm text-qms-danger">{error}</p>}
             <p className="text-sm text-qms-muted">Datos de identificación y permisos generales de la cuenta.</p>
@@ -155,7 +155,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
               </Button>}
             </div>}
           </form>
-          <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso" hidden={tab !== 'seguridad'} className="mx-auto max-w-2xl space-y-4">
+          <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso" aria-labelledby="usuario-tab-seguridad" hidden={tab !== 'seguridad'} className="mx-auto max-w-2xl space-y-4">
             <p className="text-sm text-qms-muted">{esEditar ? `Opciones de seguridad de ${usuario?.nombre}.` : 'Opciones de seguridad previstas para la nueva cuenta. Primero debés crearla desde Detalles del perfil.'}</p>
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-surface p-4">
               <div className="min-w-0 flex-1">
