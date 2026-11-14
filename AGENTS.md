@@ -427,9 +427,13 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   ayuda ni duplicado central. Abre un informe Tiptap prellenado y editable con
   encabezado, secciones, Conclusión/Resolución y anexos; 100.000 caracteres
   (`INFORME_MAX_LENGTH` validado en editor/API). Se guarda remotamente.
-- Guardar persiste primero la versión del informe; después genera y registra
-  automáticamente su PDF oficial con nombre estable de folio y versión
-  (informePdfFilename). Si ya existe un PDF válido para esa versión, lo reutiliza.
+- Guardar inicia el cálculo del PDF local en paralelo con la escritura versionada
+  en DB, pero NO sube a Drive hasta confirmar la versión; así no se atribuye un PDF
+  a una versión inexistente. Usa adjuntos ya consultados y evita listar de nuevo
+  cuando la versión es nueva. Después sube y registra el PDF oficial en la misma
+  arquitectura de Drive, con nombre estable folio/versión (informePdfFilename).
+  Si ya existe un PDF válido para esa versión, lo reutiliza. El indicador
+  distingue «Guardando versión» de «Registrando PDF en Drive».
   Si falla Drive/subida, conserva el texto guardado, muestra error y permite
   reintentar Guardar sin crear una versión nueva. No es una transacción distribuida.
   Word/PDF siguen disponibles como opciones de exportación separadas; no añadir
@@ -441,6 +445,11 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   título vacío para separar Conclusión de Anexos. No reescribir informes guardados.
 - Respuesta al cliente usa compositor tipo Gmail: Para y N.º de oficio en misma
   fila, Asunto en línea y texto libre. No hay selector desplegable de documentos.
+  La respuesta se precarga en segundo plano durante Resuelto y se reutiliza desde
+  TanStack Query con staleTime de 30 s; jamás esperar a isFetching cuando ya hay
+  snapshot válido. Mientras llega la consulta se ve un lienzo de correo
+  deshabilitado con texto base, no un esqueleto vacío. Al confirmar el borrador
+  real, se presenta el editor y nunca se reemplazan cambios del usuario.
   El PDF oficial de la versión guardada se selecciona como chip automáticamente
   si existe; de lo contrario, solo Subir archivo y aviso discreto. El chip permite
   previsualizar y quitar selección; onPdfReady actualiza selección también cuando
