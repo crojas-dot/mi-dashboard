@@ -512,8 +512,11 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   y desde el expediente al entrar en Recibido, Revisión GC, Resuelto o No Procede
   exclusivamente para personal de Calidad/admin. Compartir claves y TTL de
   TanStack Query de 30 s y no duplicar consultas; un click sin hover debe
-  iniciar el mismo prefetch desde el expediente. Montar el editor real tan pronto
-  llegue el borrador de respuesta, sin esperar el informe versionado: ese informe
+  iniciar el mismo prefetch desde el expediente. La consulta de redacción
+  necesita solo borrador y publicación (dos SELECT paralelos): no esperar el
+  historial de revisiones GC, que se maneja en otro panel con sus propios permisos.
+  Montar el editor real tan pronto llegue el contexto de respuesta, sin esperar
+  el informe versionado: ese informe
   puede llegar después y el chip PDF se selecciona automáticamente solo si
   existe el de la versión válida y el usuario no eligió otro. Un informe guardado
   dentro de esta visita tiene prioridad sobre respuestas de red tardías.
