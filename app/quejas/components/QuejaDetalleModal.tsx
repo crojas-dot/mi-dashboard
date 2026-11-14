@@ -43,7 +43,7 @@ import { Send, Upload, RotateCcw, History, ChevronRight, FileText, Paperclip, Ey
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
-import { CASE_ACTIONS, caseDate } from '@/app/quejas/components/quejaExpedienteModel'
+import { CASE_ACTIONS, caseDate, getCaseProcessCycle } from '@/app/quejas/components/quejaExpedienteModel'
 import { CaseSection, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
@@ -65,6 +65,7 @@ interface Props {
 
 export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPrevious, onNext, onNavigationLockChange }: Props) {
   const [expanded, setExpanded] = useState(false)
+  const [readOnlyStage, setReadOnlyStage] = useState<string | null>(null)
   const [activityOpen, setActivityOpen] = useState(false)
   const [informeOpen, setInformeOpen] = useState(false)
   const [decisionOpen, setDecisionOpen] = useState(false)
@@ -145,6 +146,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     if (!queja || !prevQuejaId) setExpanded(false)
 
     setDecisionProcedencia(null)
+    setReadOnlyStage(null)
     setActivityOpen(false)
     setInformeOpen(false)
     setDecisionOpen(false)
@@ -496,9 +498,16 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     // Cancelar vuelve a la elección sin cerrar el documento ni perder el borrador.
     setDecisionProcedencia(null)
   }
+  const adjuntosCliente = adjuntos.filter(archivo => !archivo.usuario_id)
+  const archivosVisibles = estadoActual === 'Recibido' ? adjuntosCliente : adjuntos
+  const soloLecturaFiles = (items: QuejaAdjunto[]) => adjuntosLoading
+    ? <LoadingSkeleton variant="list" label="Cargando adjuntos…" framed={false} />
+    : adjuntosError ? <p role="alert" className="text-sm text-qms-muted">No se pudieron cargar los archivos.</p>
+    : items.length ? <ListaAdjuntos layout="cards" adjuntos={items} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} />
+    : <p className="text-sm text-qms-muted">Sin archivos registrados.</p>
   const files = <div className="space-y-3">
-    {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las evidencias. <Button size="sm" variant="link" onClick={() => refetchAdjuntos()}>Reintentar</Button></p> : !adjuntos.length ? <p className="text-sm text-qms-muted">Sin archivos adjuntos.</p> : <ListaAdjuntos layout="cards" adjuntos={adjuntos} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={puedeEliminarAdjunto} onEliminar={a => setConfirmarEliminacion(a.id)} />}
-    {(estadoActual === 'En Investigación' || esStaff && publicacionDisponible && ['Recibido', 'Pendiente de Revisión GC', 'Resuelto'].includes(estadoActual)) && <div className="flex flex-wrap items-center gap-2"><label className="ui-button ui-button-secondary ui-button-sm cursor-pointer"><Upload className="size-4" /> Subir archivo<input type="file" className="sr-only" disabled={workflowPending || editing} aria-label="Subir evidencia" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleSubirAdjunto(file) }} /></label>{subiendoAdjunto && <span role="status" className="text-sm text-qms-muted">Subiendo…</span>}</div>}
+    {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando evidencias…" framed={false} /> : adjuntosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las evidencias. <Button size="sm" variant="link" onClick={() => refetchAdjuntos()}>Reintentar</Button></p> : !archivosVisibles.length ? <p className="text-sm text-qms-muted">Sin archivos adjuntos.</p> : <ListaAdjuntos layout="cards" adjuntos={archivosVisibles} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} puedeEliminar={puedeEliminarAdjunto} onEliminar={a => setConfirmarEliminacion(a.id)} />}
+    {!readOnlyStage && (estadoActual === 'En Investigación' || esStaff && publicacionDisponible && ['Recibido', 'Pendiente de Revisión GC', 'Resuelto'].includes(estadoActual)) && <div className="flex flex-wrap items-center gap-2"><label className="ui-button ui-button-secondary ui-button-sm cursor-pointer"><Upload className="size-4" /> Subir archivo<input type="file" className="sr-only" disabled={workflowPending || editing} aria-label="Subir evidencia" onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void handleSubirAdjunto(file) }} /></label>{subiendoAdjunto && <span role="status" className="text-sm text-qms-muted">Subiendo…</span>}</div>}
   </div>
   const editorOpen = decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
@@ -524,40 +533,81 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   // del flujo. El panel lateral conserva sus detalles en todas las etapas.
   // Mantener un alto mínimo común y dejar que los botones crezcan si el texto envuelve.
   const reviewButtonClass = 'min-h-12 w-full min-w-0 max-w-full whitespace-normal px-2 text-center text-sm leading-snug'
-  const workflowActions = canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
+  const workflowActions = !readOnlyStage && canAct && estadoActual !== 'En Investigación' && action?.action && (qualityReview ? <>
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
+  const processSteps = getCaseProcessCycle(queja).steps
+  const currentProcessStage = processSteps.find(step => step.current)?.id
+    ?? (['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'finished' : null)
+  const historicalTitle = processSteps.find(step => step.id === readOnlyStage)?.label ?? 'Etapa seleccionada'
+  const toggleProcessStage = (stage: string) => {
+    if (navigationDisabled) return
+    setReadOnlyStage(current => current === stage || stage === currentProcessStage ? null : stage)
+  }
+  const readOnlyDocument = readOnlyStage && <div data-case-stage-readonly className="min-w-0">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-primary-soft px-5 py-3 text-sm sm:px-8">
+      <span className="flex items-center gap-2 font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />Solo lectura · {historicalTitle}</span>
+      <Button size="sm" variant="secondary" onClick={() => setReadOnlyStage(null)}>Volver a etapa actual</Button>
+    </div>
+    {readOnlyStage === 'evaluation' && <CaseSection variant="document" title="Solicitud del cliente">
+      <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
+      <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>{soloLecturaFiles(adjuntosCliente)}</div>
+      {queja.justificacion_procede && <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Decisión registrada</h4><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div>}
+    </CaseSection>}
+    {readOnlyStage === 'investigation' && <CaseSection variant="document" title="Investigación">
+      {analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium">Análisis registrado</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}
+      {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Aún no hay propuesta registrada.</p>}
+      <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos internos</h4>{soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}</div>
+      <details className="mt-5 border-t border-qms-border pt-4"><summary className="cursor-pointer text-sm font-medium">Ver descripción original</summary><p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></details>
+    </CaseSection>}
+    {readOnlyStage === 'quality_review' && <>
+      <CaseSection variant="document" title="Propuesta del responsable">
+        {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Todavía no hay una propuesta enviada para revisar.</p>}
+      </CaseSection>
+      <details className="group border-t border-qms-border"><summary className="cursor-pointer px-5 py-4 text-sm font-medium sm:px-8">Ver antecedentes</summary><CaseSection variant="document" title="Descripción del cliente"><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>{soloLecturaFiles(adjuntosCliente)}</CaseSection></details>
+    </>}
+    {readOnlyStage === 'finished' && (['Resuelto', 'Finalizado'].includes(estadoActual)
+      ? <QuejaCierreResumen key={queja.id + ':consulta'} queja={queja} adjuntos={adjuntos}
+          adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }}
+          onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} actividad={actividad}
+          actividadLoading={actividadLoading} actividadError={!!actividadError} responsable={responsableActual?.nombre}
+          resolveAuthor={id => usuarios.find(u => u.id === id)?.nombre} />
+      : <CaseSection variant="document" title="Cierre"><p className="text-sm text-qms-muted">Esta etapa todavía no tiene una resolución aprobada para consultar.</p></CaseSection>)}
+  </div>
+
   return <>
     <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
-      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
+      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => setExpanded(current => !current)}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
-      <CaseWorkspace documentKey={queja.id + (qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
+      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
-          {esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="w-full space-y-1.5">
-            <Button size="sm" variant="primary" className="flex min-h-11 w-full min-w-0 justify-center px-3 py-2 text-sm" style={{ width: '100%' }}
+          {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <section data-close-report-shortcut className="space-y-3 rounded-card border border-qms-border bg-qms-surface p-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-4 text-qms-primary" />Documento del expediente</h3>
+            <p className="text-xs leading-relaxed text-qms-muted">Generá el PDF oficial con las evidencias del caso para adjuntarlo al correo final.</p>
+            <Button size="sm" variant="secondary" className="min-h-10 w-full min-w-0 border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
-              <span className="flex items-center gap-2"><FileText aria-hidden="true" className="size-4" />Generar expediente</span>
+              <FileText aria-hidden="true" className="size-4" />Generar expediente
             </Button>
-            <p className="text-center text-[11px] leading-tight text-qms-muted">El PDF se adjunta al guardar.</p>
-          </div>}
+            <p className="text-[11px] text-qms-muted">El PDF se adjunta al guardar.</p>
+          </section>}
           <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
             actionLabel="Ver actividad" icon={<History className="size-4" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={() => setActivityOpen(true)} />
         </div>}
-        compact={<CaseCycle queja={queja} process currentOnly />}
-        cycle={<CaseCycle queja={queja} process />}
+        compact={readOnlyStage ? <span className="text-sm font-medium text-qms-primary">Consulta · {historicalTitle}</span> : <CaseCycle queja={queja} process currentOnly />}
+        cycle={<CaseCycle queja={queja} process selectedStage={readOnlyStage} onStageChange={toggleProcessStage} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
-          actionTitle={estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
-          actionDetail={estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
+          actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
+          actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
           {(estadoActual === 'En Investigación' || qualityReview) && <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAnalisisCalidadOpen(true)}><Eye aria-hidden="true" className="size-4" />Ver análisis</Button>}
           {workflowActions}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
         </CaseAction>}>
-            {qualityReview ? <>
+            {readOnlyStage ? readOnlyDocument : qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
                 <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
               </CaseSection>
