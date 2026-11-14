@@ -38,7 +38,7 @@ test('El workspace mantiene navegación idéntica y lateral fijo en ambos módul
   assert.match(responsible, /headerActions=\{<CaseWorkspaceNavigation/)
   assert.match(quality, /data-close-report-shortcut/)
   assert.match(quality, /variant="primary" className="flex min-h-11 w-full min-w-0 justify-center px-3 py-2 text-sm"/)
-  assert.match(quality, /data-close-report-shortcut className="space-y-1\.5"/)
+  assert.match(quality, /data-close-report-shortcut className="w-full space-y-1\.5"/)
   assert.match(quality, /El PDF se adjunta al guardar\./)
 })
 

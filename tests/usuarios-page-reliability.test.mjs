@@ -33,6 +33,7 @@ function pageHarness({ user = actor, initialized = true, refresh = async () => {
       return pending.promise
     } },
     '@/lib/services/errorToast': { showSuccess: message => successes.push(message), showError: (error, fallback) => errors.push({ error, fallback }) },
+    './components/RolesAccesos': { default: 'RolesAccesos' },
     '@/components/ui/Table': { Table: 'Table', TableHead: 'TableHead', TableHeaderCell: 'TableHeaderCell', TableRow: 'TableRow', TableCell: 'TableCell' },
   }
   for (const name of ['LoadingSkeleton', 'PageHeader', 'Badge', 'EmptyState', 'Button', 'Select']) mocks['@/components/ui/' + name] = { default: name }

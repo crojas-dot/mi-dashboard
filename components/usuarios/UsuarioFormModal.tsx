@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Trash2, KeyRound, Mail, ShieldCheck } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -35,7 +35,6 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [error, setError] = useState<string | null>(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [tab, setTab] = useState<'detalles' | 'seguridad'>('detalles')
-  useEffect(() => { setTab('detalles') }, [open, mode, usuario?.id])
 
   function reportarError(cause: unknown, fallback: string) {
     setError(getUserError(cause, fallback).message)
@@ -165,7 +164,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
             <p className="mt-1 text-xs leading-relaxed text-qms-muted">Se puede generar y guardar una nueva contraseña temporal.</p>
           </div>
           <Button size="sm" variant="secondary" disabled={busy || !onResetPassword}
-            onClick={() => { if (usuario && onResetPassword) onResetPassword(usuario) }}>Restablecer</Button>
+            onClick={() => { if (usuario && onResetPassword) { setTab('detalles'); onResetPassword(usuario) } }}>Restablecer</Button>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-surface p-4">
           <div className="min-w-0">
