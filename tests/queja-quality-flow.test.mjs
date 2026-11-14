@@ -104,7 +104,7 @@ test('correo editable usa RPC versionado sin sustituir respuesta pública, desti
   assert.equal(calls.length, 2)
 })
 
-test('contexto obtiene borrador/aprobación/publicación por expediente, con cancelación y errores cerrados', async () => {
+test('contexto abre con borrador y publicación sin consultar revisión GC, con cancelación y errores cerrados', async () => {
   const calls = [], failure = { message: 'offline' }; let failTable
   const api = loadModule('lib/queries/useQuejaRespuestaCliente.ts', {
     '@tanstack/react-query': { useQuery: options => options },
@@ -118,15 +118,15 @@ test('contexto obtiene borrador/aprobación/publicación por expediente, con can
   const signal = new AbortController().signal
   const result = await api.fetchRespuestaCliente(id, signal)
   assert.equal(result.borrador.table, 'queja_response_drafts')
-  assert.equal(result.aprobacion.table, 'queja_gc_revisiones')
   assert.equal(result.publicada.table, 'queja_public_resolutions')
   for (const call of calls) {
     assert.ok(call.steps.some(([method, value]) => method === 'abortSignal' && value === signal))
     assert.ok(call.steps.some(([method, key, value]) => method === 'eq' && key === 'queja_id' && value === id))
     assert.notEqual(call.steps.find(([method]) => method === 'select')[1], '*')
   }
-  assert.ok(calls[1].steps.some(([method, key, options]) => method === 'order' && key === 'source_revision' && options.ascending === false))
-  for (const table of ['queja_response_drafts', 'queja_gc_revisiones', 'queja_public_resolutions']) {
+  assert.deepEqual(calls.slice(0, 2).map(call => call.table), ['queja_response_drafts', 'queja_public_resolutions'])
+  assert.equal(calls.some(call => call.table === 'queja_gc_revisiones'), false)
+  for (const table of ['queja_response_drafts', 'queja_public_resolutions']) {
     failTable = table; await assert.rejects(api.fetchRespuestaCliente(id), error => error === failure)
   }
   assert.deepEqual(Array.from(api.useRespuestaCliente(id).queryKey), ['quejas', 'respuesta-cliente', id])
