@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef } from 'react'
-import { CircleHelp } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { CircleHelp, X } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ErrorState from '@/components/ui/ErrorState'
 import Select from '@/components/ui/Select'
@@ -27,6 +28,39 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
   const { data: permisos = [], isLoading, error, refetch } = usePermisos(active)
   const actualizar = useActualizarPermiso()
   const guardando = useRef(false)
+  const [ayudaAbierta, setAyudaAbierta] = useState(false)
+  const [posicionAyuda, setPosicionAyuda] = useState({ top: 12, right: 12 })
+  const ayudaBotonRef = useRef<HTMLButtonElement>(null)
+  const ayudaPanelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!ayudaAbierta) return
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { setAyudaAbierta(false); ayudaBotonRef.current?.focus() }
+    }
+    const onPointer = (event: PointerEvent) => {
+      if (event.target instanceof Node && !ayudaBotonRef.current?.contains(event.target)
+        && !ayudaPanelRef.current?.contains(event.target)) setAyudaAbierta(false)
+    }
+    const onScroll = () => setAyudaAbierta(false)
+    document.addEventListener('keydown', onEscape)
+    document.addEventListener('pointerdown', onPointer)
+    window.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('keydown', onEscape)
+      document.removeEventListener('pointerdown', onPointer)
+      window.removeEventListener('scroll', onScroll, true)
+    }
+  }, [ayudaAbierta])
+
+  const toggleAyuda = () => {
+    const rect = ayudaBotonRef.current?.getBoundingClientRect()
+    if (rect) setPosicionAyuda({
+      top: Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - 260)),
+      right: Math.max(12, window.innerWidth - rect.right),
+    })
+    setAyudaAbierta(value => !value)
+  }
 
   if (isLoading) return <LoadingSkeleton label="Cargando permisos…" />
   if (error) return <ErrorState message="No se pudieron cargar los permisos." onRetry={() => void refetch()} />
@@ -94,18 +128,11 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
   return <section data-users-permissions className="flex h-full min-h-0 flex-col">
     <div className="flex shrink-0 items-center justify-between gap-3 border-b border-qms-border px-4 py-2">
       <h2 className="text-sm font-semibold text-qms-dark">Permisos por módulo</h2>
-      <details className="group relative z-20">
-        <summary aria-label="Ayuda sobre niveles de acceso" title="¿Qué significa cada nivel?"
-          className="flex size-9 cursor-pointer list-none items-center justify-center rounded-button border border-qms-border bg-qms-surface text-qms-muted hover:border-qms-primary/30 hover:text-qms-primary [&::-webkit-details-marker]:hidden">
-          <CircleHelp aria-hidden="true" className="size-4" />
-        </summary>
-        <div role="note" className="absolute right-0 top-[calc(100%+8px)] w-[min(360px,85vw)] rounded-card border border-qms-border bg-qms-surface p-4 text-sm leading-relaxed text-qms-dark shadow-lg">
-          <p className="font-semibold">Niveles de acceso</p>
-          <p className="mt-2"><strong>Administración:</strong> representación de lectura y escritura para el administrador. No añade privilegios nuevos.</p>
-          <p className="mt-1"><strong>Edición:</strong> consultar y modificar. <strong>Solo lectura:</strong> consultar. <strong>Sin acceso:</strong> no abrir el módulo.</p>
-          <p className="mt-2 text-qms-muted">Los cambios se guardan al instante sobre los permisos vigentes y aplican al recargar la sesión. Usuarios y Configuración tienen restricciones administrativas.</p>
-        </div>
-      </details>
+      <button ref={ayudaBotonRef} type="button" aria-label="Ayuda sobre niveles de acceso" aria-expanded={ayudaAbierta}
+        aria-controls="ayuda-niveles-qms" title="¿Qué significa cada nivel?" onClick={toggleAyuda}
+        className="flex size-9 cursor-pointer items-center justify-center rounded-button border border-qms-border bg-qms-surface text-qms-muted hover:border-qms-primary/30 hover:text-qms-primary">
+        <CircleHelp aria-hidden="true" className="size-4" />
+      </button>
     </div>
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div data-users-permissions-scroll className="min-h-0 flex-1 overflow-auto overscroll-contain">
@@ -127,5 +154,17 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
       </div>
       <div className="flex shrink-0 items-center gap-2 border-t border-qms-border px-4 py-3 text-xs text-qms-muted"><span aria-hidden="true" className="size-2 rounded-full bg-qms-success" />Los cambios se guardan automáticamente.</div>
     </div>
+    {ayudaAbierta && typeof document !== 'undefined' && createPortal(
+      <div ref={ayudaPanelRef} id="ayuda-niveles-qms" role="dialog" aria-label="Niveles de acceso"
+        className="fixed z-[1000] max-h-[min(55dvh,350px)] w-[min(360px,calc(100vw-24px))] overflow-y-auto rounded-card border border-qms-border bg-qms-surface p-4 text-sm leading-relaxed text-qms-dark shadow-xl"
+        style={{ top: posicionAyuda.top, right: posicionAyuda.right }}>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="font-semibold">Niveles de acceso</h3>
+          <button type="button" onClick={() => setAyudaAbierta(false)} aria-label="Cerrar ayuda" className="rounded-button p-1 text-qms-muted hover:bg-qms-hover-bg"><X aria-hidden="true" className="size-4" /></button>
+        </div>
+        <p><strong>Administración:</strong> lectura y escritura para el administrador, sin privilegios nuevos.</p>
+        <p className="mt-2"><strong>Edición:</strong> consultar y modificar. <strong>Solo lectura:</strong> consultar. <strong>Sin acceso:</strong> no abrir el módulo.</p>
+        <p className="mt-2 text-qms-muted">Los cambios se guardan al instante y aplican al recargar la sesión. Usuarios y Configuración tienen restricciones administrativas.</p>
+      </div>, document.body)}
   </section>
 }
