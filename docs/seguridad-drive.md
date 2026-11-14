@@ -1,11 +1,12 @@
 # Drive: evidencias privadas y registro autorizado
 
-Revisión: **9 de octubre de 2026**. Las versiones SQL usan UTC; algunas se nombran
-con fecha del día siguiente. Esta guía distingue código preparado de despliegue verificado.
+Revisión de los permisos y el registro: **9 de octubre de 2026**.
+Actualización del visor web: **14 de noviembre de 2026**. Las versiones SQL usan UTC;
+esta guía distingue la activación histórica, el código vigente y la verificación remota.
 
 ## Estado
 
-El usuario autorizó la activación. Producción sirve dpl_5RVFbd1Dd4xBtK9HTh4UMGY3St8G; RPC/escritura cliente cerrados por20261009231000 y Storage histórico restringido por20261009230746. El visor conserva iframe inmediato, sin skeleton.
+La activación histórica del **9 de octubre** quedó registrada bajo dpl_5RVFbd1Dd4xBtK9HTh4UMGY3St8G; RPC/escritura cliente cerrados por 20261009231000 y Storage histórico restringido por 20261009230746. Ese despliegue no representa la versión actual de producción. Desde la revisión web del 14 de noviembre el visor privado ya no usa iframe Google; los adjuntos se cargan con la sesión interna QMS.
 
 | Pieza | Estado / evidencia |
 | --- | --- |
