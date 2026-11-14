@@ -91,8 +91,8 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
     </tr>
   ))
 
-  return <section data-users-permissions className="flex min-h-0 h-full flex-col gap-3">
-    <div className="flex shrink-0 items-center justify-between gap-3">
+  return <section data-users-permissions className="flex h-full min-h-0 flex-col">
+    <div className="flex shrink-0 items-center justify-between gap-3 border-b border-qms-border px-4 py-2">
       <h2 className="text-sm font-semibold text-qms-dark">Permisos por módulo</h2>
       <details className="group relative z-20">
         <summary aria-label="Ayuda sobre niveles de acceso" title="¿Qué significa cada nivel?"
@@ -107,7 +107,7 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
         </div>
       </details>
     </div>
-    <div className="ui-panel flex min-h-0 flex-1 flex-col overflow-hidden p-0">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div data-users-permissions-scroll className="min-h-0 flex-1 overflow-auto overscroll-contain">
         <table className="w-full min-w-[710px] border-collapse text-sm">
           <caption className="sr-only">Matriz de roles y permisos por módulo</caption>
@@ -125,7 +125,7 @@ export default function RolesAccesos({ active = true }: { active?: boolean }) {
           </tbody>
         </table>
       </div>
-      <div className="shrink-0 border-t border-qms-border px-4 py-2 text-right text-xs text-qms-muted">Guardado automático al modificar un permiso</div>
+      <div className="flex shrink-0 items-center gap-2 border-t border-qms-border px-4 py-3 text-xs text-qms-muted"><span aria-hidden="true" className="size-2 rounded-full bg-qms-success" />Los cambios se guardan automáticamente.</div>
     </div>
   </section>
 }
