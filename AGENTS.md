@@ -79,6 +79,64 @@ solo al editar esa capa.
 Para trabajo por módulo, registra sus capacidades terminadas y pendientes; no marques
 un módulo como completo solo porque su página o tabla exista.
 
+## Inventario funcional y cobertura — corte del 14 noviembre de 2026
+
+Este inventario complementa el contrato de arquitectura. **Operativo** significa que
+hay ruta/consumidor y lógica integrada en el repositorio; no significa aceptación
+institucional ni que el último commit esté publicado. **Parcial** obliga a respetar
+sus límites. No extrapolar producción, permisos ni ejecución de pruebas por existir
+archivos, migraciones o documentación.
+
+| Área / ruta | Capacidades conectadas en el código | Alcance que NO se debe suponer |
+| --- | --- | --- |
+| Inicio `/`, alias `/dashboard` | KPIs, resumen de Quejas, tareas por vencimiento, actividad y consultas independientes con caché | Dashboard analítico alternativo, métricas de todos los módulos |
+| Quejas `/quejas` | Alta/consulta, filtros, estados y colores de catálogo, área afectada, timeline, plazos, revisión GC, devolución, relación SACP, resolución, expediente oficial y publicación final | Publicar al aprobar GC, omitir PDF/oficio, derivar desde cualquier estado |
+| Mis Quejas `/mis-quejas` | Casos del responsable real, investigación, notas/evidencias, análisis, asistencia, borrador versionado y envío/reenvío a revisión | Acceso a casos ajenos, autoguardado o publicar respuesta ciudadana |
+| Informe y comunicación | Tiptap A4 en modal, versionado, exportación Word/PDF, PDF oficial en Drive por folio/versión, correo editable con borrador/publicación y archivo físico adjunto | Considerar la paginación visual como paginación del PDF; enviar sin documento autorizado |
+| Formulario ciudadano `/q/[token]` | Registro con capacidad privada, validación cliente/API, evidencias limitadas, reintento idempotente, finalización y acceso al seguimiento según estado | Portal de usuario externo con login, ver notas internas o recuperar una capacidad vencida |
+| Seguimiento ciudadano | Enlace de capacidad y consulta del estado, plazos de caducidad y etapas permitidas | Identidad verificada del portador o lectura pública del expediente completo |
+| Usuarios `/usuarios` | CRUD/estado, roles/permisos, restablecimiento de contraseña por API, formulario y listado adaptable | Alta pública, recuperación por email integrada, 2FA operativa o bloqueo distribuido del último admin |
+| Configuración `/configuracion` | Organización, acceso, servicios, marca, catálogos, IA administrada y calendario QMS versionado | Editor SLA legacy como publicador del motor QMS, secretos en el navegador |
+| Documentos `/documentos` | Listado/estados, alta y cambio de versión visible | Control documental completo, historial real y gestión de Drive |
+| SACP `/sacp` | Listado, alta, seguimiento/cierre y vínculo autorizado desde Quejas | Motor completo de eficacia o validaciones administrativas no implementadas |
+| Riesgos `/riesgos` | Listado, alta y matriz | Seguimiento integral de mitigación y controles |
+| Auditorías `/auditorias` | Listado, alta, hallazgos consultables | CRUD completo de hallazgos y workflow de acciones |
+| Revisión por Dirección `/revision` | Reuniones, alta y detalle | Actas y acuerdos con workflow documental completo |
+| Procesos `/procesos` | Listado, alta, tipos y estados | KPIs y documentos vinculados como gestor integral |
+| Reportería `/reporteria` | Selección de módulo, filtros, tabla, resumen, distribución, vencidos e impresión | Persistencia de reportes personalizados, exportador empresarial o envíos |
+| Agenda/notificaciones | Agenda de hoy desde RPC/Query, plazos y novedades por perfil, avisos internos y sonido sujeto a gesto/permisos del navegador | Agenda completa de planificación, avisos push universales o datos de meses que no se consultaron |
+| Integraciones | Supabase Auth/DB/RLS/RPC, Google Drive por API privada, IA por servidor, colas de correo en DB/Edge y emisor Apps Script | Acceso directo público a Drive, email garantizado en inbox, automatización desde Vercel |
+| Seguridad transversal | API Bearer y rol, guards del servidor, RLS, operaciones con revisión esperada, aislamiento de caché por identidad, BotID y cuotas de formulario | Sustituir autorizaciones de backend por controles visuales, MFA/antivirus/telemetría completos |
+
+**Estados y decisiones esenciales:** Recibido → evaluación → En Investigación →
+Pendiente de Revisión GC → Resuelto → respuesta publicada / Finalizado, con rama
+No Procede y devoluciones/reaperturas justificadas. La resolución interna y el
+correo al ciudadano son productos distintos; una aprobación de Calidad no envía el
+mensaje final. Los plazos son del motor QMS y su calendario persistido, no simples
+diferencias de fechas naturales. La asignación y las operaciones conservan revisión
+optimista y permisos efectivos. Los folios anuales no se regeneran por abrir un editor.
+
+**Corte de correcciones del 14 noviembre:** el compositor de Respuesta al cliente
+tiene una sola zona desplazable (el textarea); Para, Asunto y Adjuntos permanecen
+fijos. La hoja A4 no dibuja un marco final solo por un separador, pero debe preservar
+páginas cortas con contenido y permitir hojas reales adicionales. La plantilla solo
+inserta un párrafo vacío editable antes de Anexos. El PDF descargable se pagina
+independientemente de Tiptap; un documento corto se prueba sin hojas en blanco y
+uno largo sin truncamiento. La vista previa utiliza `fetchDriveBlob` por API privada
+Bearer, precarga según selección/hover/focus y comparte una descarga en curso.
+Cuando la API confirma la subida/registro, `recordarDriveBlob` retiene bytes en
+memoria por usuario/rol hasta 45 segundos (máximo 5 entradas), sin redescarga
+inmediata y sin compartir entre sesiones. El primer archivo remoto puede tardar
+por Drive y autorizaciones; no afirmar rendimiento instantáneo sin E2E autenticado.
+
+**Interpretación de pruebas:** los tests Node sobre scroll, deduplicación, PDF
+corto/largo y guardado son regresiones del código, no demostración de experiencia
+en navegador ni de entrega de correo real. Vercel READY significa build disponible;
+confirmar el SHA asociado al alias `mi-dashboard-iota.vercel.app` antes de afirmar
+que una corrección está en producción. La rama de trabajo de este corte es
+`fix/qms-pdf-pages-preview-scroll-20261114`; integrar por PR a `main` sin
+sobrescribir trabajo ajeno y comprobar despliegue de producción.
+
 ## Biblioteca de arquitectura
 
 Este archivo es la entrada y contiene los invariantes que aplican a cualquier cambio.
@@ -134,7 +192,7 @@ Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
   Realtime adicional ni hover. Los avisos existentes invalidan también Agenda.
   Header controla apertura/cierre; UI solo recibe datos/callbacks.
   /dashboard es alias protegido del panel en /. Asignación/devolución salen de
-  eventos reales. SQL aplicado; cliente local sin publicar. [Contrato](docs/agenda-hoy-2026-11-11.md).
+  eventos reales. SQL aplicado; verificar SHA de producción para determinar su publicación. [Contrato](docs/agenda-hoy-2026-11-11.md).
 - Agenda compacta (máximo 320px) abre en calendario con semana D/L/M/X/J/V/S,
   flechas de mes anterior/siguiente, selección circular y puntos por fecha_limite
   real y prioridad. El RPC añade fecha_limite civil CR (null si no existe), caché
@@ -143,7 +201,7 @@ Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
   despliega ahí los restantes recibidos, sin navegar a otro panel. Navegar meses no consulta
   otras agendas ni inventa eventos: puntos solo para los registros recibidos.
   Cada apertura restablece mes actual y selección. Migración 20261111175442 aplicada;
-  UI local sin publicar. [Contrato](docs/agenda-hoy-2026-11-11.md).
+  confirmar publicación por SHA de producción. [Contrato](docs/agenda-hoy-2026-11-11.md).
 - Calendario de Agenda: mes a la izquierda y las dos flechas juntas a la derecha,
   con área 32px e iconos 20px. Grillas gap-1, días 32px y puntos de 4px. Pie de una
   sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
@@ -182,7 +240,7 @@ Detalle: [datos y rendimiento](docs/arquitectura/datos-y-rendimiento.md),
 - No están integrados Seguridad y Estado, MFA/2FA, telemetría persistida/retención anual, fondo personalizado ni selector completo de tema. Formularios públicos: gateway/BotID Basic publicado, variables cifradas y cortes legacy aplicados; Storage histórico restringido por expediente/perfil activo. Ver estado y límites en [su guía](docs/seguridad-formularios-publicos.md).
 - Logout inmediato de UI no revoca universalmente todos los JWT emitidos. APIs privadas conservan rate limit por instancia; formulario público usa cuotas transaccionales PostgreSQL y tiene WAF Vercel publicado. No protegen el login Supabase externo.
 
-Último despliegue web documentado: 19 de octubre en dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF, dominio mi-dashboard-iota.vercel.app. Conserva 20261009230746 (Storage RLS) y 20261009231000 (corte público/Drive); añade seguimiento y cierre de qms_transition interno legacy. Metadata anónima y escritura directa de adjuntos permanecen cerradas. El visor Drive carga bytes por la API privada Bearer de QMS y presenta una URL de objeto local revocable. No reabrir accesos legacy ni restaurar un cliente antiguo sin coordinar su contrato de DB.
+Historial de activación: la entrega del 19 de octubre (`dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF`) incorporó seguimiento, cortes de Storage RLS/Drive y cierre del RPC interno `qms_transition` legacy; es evidencia fechada, **no** el último despliegue actual. Para conocer el código web activo, consultar el alias de producción y su SHA en Vercel. Metadata anónima y escritura directa de adjuntos permanecen cerradas; el visor Drive usa API privada Bearer y URL local revocable. No reabrir accesos legacy ni restaurar clientes antiguos sin coordinar DB.
 
 Detalle público: [seguridad-formularios-publicos.md](docs/seguridad-formularios-publicos.md). Mantener cerrado el acceso público legacy; cualquier corte de workflow interno exige verificar primero su cliente compatible publicado.
 
@@ -626,12 +684,13 @@ fallos previos de informe/paginación y auditorías conservan su fecha y alcance
 [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-- **Web:** despliegue de producción READY del 13 noviembre para el commit de
-  implementación `2a67d36`, verificado contra el alias
-  `mi-dashboard-iota.vercel.app`. Un build exitoso NO equivale a pruebas E2E de
-  permisos, subida Drive, PDF, correo, estados y UX en un navegador autenticado.
-  El cambio posterior del botón y esta documentación requieren su propio deploy
-  verificado. No desplegar sin autorización explícita.
+- **Web:** el proyecto `mi-dashboard` de Vercel usa `main` como rama de producción
+  y `mi-dashboard-iota.vercel.app` como alias público. El corte del 14 noviembre
+  incorpora las correcciones de paginación, scroll y vista previa mediante PR a
+  `main`. Una compilación de preview no actualiza por sí sola el alias;
+  verificar despliegue final, SHA, estado READY y dominio. No interpretar
+  build/CI como pruebas E2E de permisos, Drive, PDF, correo y UX autenticada.
+  Publicar solo con autorización expresa y sin cambios destructivos de DB.
 - **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
   fechada del 10 noviembre; no confundirlos con la web pendiente ni con una auditoría
   remota recién ejecutada. No reabrir accesos legacy o restaurar clientes incompatibles.
