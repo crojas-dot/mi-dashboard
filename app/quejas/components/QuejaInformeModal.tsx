@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import { recordarDriveBlob } from '@/lib/services/driveClient'
 import { ChevronDown, FileDown, FileText, Save } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -322,6 +323,7 @@ function InformeEditor({
         if (!esOficioPublicableQueja(pdf, queja.id) || pdf.tipo_mime.toLowerCase() !== 'application/pdf') {
           throw new Error('No se confirmó un PDF oficial válido en el expediente.')
         }
+        if (operation.isCurrent() && isContextCurrent()) recordarDriveBlob(pdf.storage_path, generado.blob)
       }
       if (isContextCurrent()) {
         queryClient.setQueryData(quejaAdjuntosKey(queja.id), current => {

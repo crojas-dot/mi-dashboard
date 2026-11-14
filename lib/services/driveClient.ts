@@ -83,6 +83,27 @@ export async function fetchDriveBlob(fileId: string, signal?: AbortSignal): Prom
   return blob
 }
 
+/** Reutiliza la copia local SOLO después de que la API confirmara la subida
+ * y su registro oficial. No crea URLs de Drive ni permite acceso entre sesiones. */
+export function recordarDriveBlob(fileId: string, blob: Blob): void {
+  if (!/^[A-Za-z0-9_-]{10,200}$/.test(fileId) || blob.size < 1 || blob.size > 4 * 1024 * 1024) return
+  try {
+    const actor = currentActor()
+    const key = actor + ':' + fileId
+    previews.get(key)?.controller.abort()
+    previews.delete(key)
+    previews.set(key, {
+      owner: actor, expires: Date.now() + PREVIEW_CACHE_MS,
+      promise: Promise.resolve(blob), controller: new AbortController(),
+    })
+    while (previews.size > MAX_PREVIEWS) {
+      const oldest = previews.keys().next().value!
+      previews.get(oldest)?.controller.abort()
+      previews.delete(oldest)
+    }
+  } catch { /* No reutilizar bytes cuando ya no hay sesión QMS. */ }
+}
+
 /** Precarga por intención o por documento elegido, únicamente con la sesión QMS. */
 export function prefetchDriveBlob(fileId: string): void {
   if (!fileId || fileId.includes('/')) return

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { prefetchDriveBlob } from '@/lib/services/driveClient'
+import { prefetchDriveBlob, recordarDriveBlob } from '@/lib/services/driveClient'
 import { useQueryClient } from '@tanstack/react-query'
 import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
@@ -175,6 +175,7 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
       const result = await props.onSubir(file)
       if (operation.isCurrent() && result) {
         if (!esPdfOficial(result, snapshot.id)) throw new Error('El archivo subido no es un PDF oficial válido.')
+        recordarDriveBlob(result.storage_path, file)
         setUploaded(current => [...current, result])
         change({ adjuntoId: result.id })
         setNotice('PDF adjuntado. Podés visualizarlo antes de publicarlo.')
