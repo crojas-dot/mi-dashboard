@@ -30,6 +30,7 @@ test('Quejas ampliado conserva el mismo sistema de tarjetas y columnas que Mis Q
   assert.match(misQuejas, /presentation="reference" documentStyle="cards" readingLayout/)
   assert.match(quejas, /readingLayout documentStyle=\{expanded \? 'cards' : 'sheet'\}/)
   assert.match(quejas, /const documentVariant = expanded \? 'panel' : 'document'/)
+  assert.match(quejas, /const antecedentesVariant = expanded && \(qualityReview \|\| estadoActual === 'Resuelto'\) \? 'document' : documentVariant/)
   assert.match(quejas, /action=\{<div className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}>/)
   assert.match(quejas, /data-case-review-context className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}/)
   assert.match(quejas, /data-case-close-context className=\{expanded \? 'ui-panel overflow-hidden' : undefined\}/)
