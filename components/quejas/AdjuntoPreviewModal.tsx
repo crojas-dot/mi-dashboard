@@ -1,17 +1,19 @@
 'use client'
 
 import { useEffect, useId, useRef, useState, type MouseEvent } from 'react'
-import { Download, ExternalLink, FileText, FileQuestion, X } from 'lucide-react'
+import { Download, FileText, FileQuestion, X } from 'lucide-react'
 import OperationLoading from '@/components/ui/OperationLoading'
 import Spinner from '@/components/ui/Spinner'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { supabase } from '@/lib/supabase'
+import { fetchDriveBlob } from '@/lib/services/driveClient'
+import { useAuthStore } from '@/lib/store/auth-store'
 import { descargarAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { showError } from '@/lib/services/errorToast'
 import { formatBytes } from '@/lib/utils/format'
 
 interface Props { adjunto: QuejaAdjunto | null; onClose: () => void }
-interface LegacyPreview { url?: string; error?: boolean }
+interface FilePreview { url?: string; mime?: string; error?: boolean }
 const esDrive = (path: string) => !path.includes('/')
 function legacyMime(mime: string, nombre: string) {
   const normalized = mime.toLowerCase().split(';')[0].trim()
@@ -47,13 +49,12 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
   const dialogRef = useRef<HTMLDialogElement>(null)
   const backdropDown = useRef(false)
   const downloadPending = useRef(false)
-  const [legacy, setLegacy] = useState<LegacyPreview | null>(null)
+  const [preview, setPreview] = useState<FilePreview | null>(null)
   const [descargando, setDescargando] = useState(false)
   const [attempt, setAttempt] = useState(0)
   const storagePath = adjunto.storage_path
   const drive = esDrive(storagePath)
-  const driveUrl = 'https://drive.google.com/file/d/' + encodeURIComponent(storagePath)
-  const mime = legacyMime(adjunto.tipo_mime ?? '', adjunto.nombre)
+  const mime = preview?.mime ?? legacyMime(adjunto.tipo_mime ?? '', adjunto.nombre)
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -68,15 +69,46 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
   }, [])
 
   useEffect(() => {
-    if (drive) return
+    const controller = new AbortController()
+    const actorId = useAuthStore.getState().user?.id
     let alive = true
-    supabase.storage.from('quejas-adjuntos').createSignedUrl(storagePath, 3600)
-      .then(({ data, error }) => {
-        if (alive) setLegacy(error || !data?.signedUrl ? { error: true } : { url: data.signedUrl })
-      })
-      .catch(() => { if (alive) setLegacy({ error: true }) })
-    return () => { alive = false }
-  }, [storagePath, drive, attempt])
+    let objectUrl: string | null = null
+    setPreview(null)
+
+    async function load() {
+      try {
+        if (!actorId) throw new Error('Sesión no disponible')
+        const blob = drive ? await fetchDriveBlob(storagePath, controller.signal) : await (async () => {
+          const { data, error } = await supabase.storage.from('quejas-adjuntos').download(storagePath)
+          if (error || !data) throw error ?? new Error('No se pudo leer el adjunto')
+          return data
+        })()
+        const session = useAuthStore.getState()
+        if (!alive || controller.signal.aborted || session.user?.id !== actorId || session.signingOut) return
+        objectUrl = URL.createObjectURL(blob)
+        setPreview({ url: objectUrl, mime: legacyMime(blob.type || adjunto.tipo_mime || '', adjunto.nombre) })
+      } catch {
+        if (alive && !controller.signal.aborted) setPreview({ error: true })
+      }
+    }
+    void load()
+    // La sesión QMS, no las cookies de Google, determina la vista. Al cerrarse
+    // o cambiar de usuario se revoca la URL local aunque el modal siga montado.
+    const unsubscribe = useAuthStore.subscribe((session) => {
+      if (session.user?.id !== actorId || session.signingOut) {
+        controller.abort()
+        if (objectUrl) URL.revokeObjectURL(objectUrl)
+        objectUrl = null
+        setPreview({ error: true })
+      }
+    })
+    return () => {
+      alive = false
+      controller.abort()
+      unsubscribe()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [storagePath, drive, attempt, adjunto.tipo_mime, adjunto.nombre])
 
   const outside = (event: MouseEvent<HTMLDialogElement>) => {
     if (event.target !== event.currentTarget) return false
@@ -106,21 +138,16 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
         className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg border border-qms-border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-qms-hover-bg disabled:opacity-50" title="Descargar">
         {descargando ? <Spinner size="sm" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />} Descargar
       </button>
-      {drive && <a href={driveUrl + '/view'} target="_blank" rel="noreferrer"
-        className="hidden shrink-0 rounded-lg border border-qms-border p-1.5 transition-colors hover:bg-qms-hover-bg sm:block" title="Abrir en Google Drive" aria-label="Abrir en Google Drive">
-        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-      </a>}
       <button type="button" onClick={onClose} className="shrink-0 cursor-pointer rounded-lg p-1.5 text-qms-muted transition-colors hover:bg-qms-hover-bg hover:text-qms-dark" title="Cerrar" aria-label="Cerrar visor de documentos">
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
     <div className="flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-qms-hover-bg">
-      {drive ? <iframe key={storagePath} src={driveUrl + '/preview'} title={adjunto.nombre} className="h-full w-full border-0 bg-qms-hover-bg" allow="autoplay" />
-        : legacy?.url ? <div className="flex h-full min-h-0 w-full items-center justify-center overflow-auto p-3"><VistaLegacy url={legacy.url} mime={mime} nombre={adjunto.nombre} /></div>
-        : legacy?.error ? <div className="flex flex-col items-center gap-2 p-10 text-center" role="alert">
+      {preview?.url ? <div className="flex h-full min-h-0 w-full items-center justify-center overflow-auto p-3"><VistaLegacy url={preview.url} mime={mime} nombre={adjunto.nombre} /></div>
+        : preview?.error ? <div className="flex flex-col items-center gap-2 p-10 text-center" role="alert">
           <FileQuestion className="h-12 w-12 text-qms-muted" aria-hidden="true" />
           <p className="text-sm text-qms-muted">No se pudo generar la vista previa de este archivo.</p>
-          <button type="button" className="ui-button ui-button-secondary" onClick={() => { setLegacy(null); setAttempt(value => value + 1) }}>Reintentar vista previa</button>
+          <button type="button" className="ui-button ui-button-secondary" onClick={() => { setPreview(null); setAttempt(value => value + 1) }}>Reintentar vista previa</button>
         </div> : <OperationLoading label="Preparando vista previa…" />}
     </div>
   </dialog>
