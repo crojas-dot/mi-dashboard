@@ -9,13 +9,13 @@ const previews = new Map<string, CachedFile>()
 // Ningún archivo sigue disponible en la caché después de cambiar de identidad
 // o iniciar logout. La autorización real permanece en /api/drive/download.
 useAuthStore.subscribe?.((next, previous) => {
-  if (next.signingOut || next.user?.id !== previous.user?.id) previews.clear()
+  if (next.signingOut || next.user?.id !== previous.user?.id || next.user?.rol !== previous.user?.rol) previews.clear()
 })
 
 function currentActor(): string {
   const session = useAuthStore.getState()
   if (!session.user?.id || session.signingOut) throw new DOMException('La sesión cambió', 'AbortError')
-  return session.user.id
+  return session.user.id + ':' + session.user.rol
 }
 
 function sameActor(actor: string, signal?: AbortSignal): void {
