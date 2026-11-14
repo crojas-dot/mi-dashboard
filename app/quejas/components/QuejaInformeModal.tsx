@@ -14,7 +14,7 @@ import {
 } from '@/lib/queries/useQuejaInforme'
 import { guardarQuejaInforme } from '@/lib/services/quejaInformeService'
 import { subirAdjuntoQueja, esOficioPublicableQueja } from '@/lib/services/quejaWorkflowService'
-import { fetchQuejaAdjuntos, quejaAdjuntosKey, useQuejaAdjuntos } from '@/lib/queries/useQuejas'
+import { fetchQuejaAdjuntos, quejaAdjuntosKey, useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { errorMsg } from '@/lib/services/errorToast'
 import {
   crearPlantillaInforme,
@@ -31,6 +31,7 @@ interface Props {
   autor: string
   onClose: () => void
   onSaved?: (informe: QuejaInforme) => void
+  onPdfReady?: (archivo: QuejaAdjunto) => void
 }
 
 function InformeIcono() {
@@ -185,6 +186,7 @@ function InformeEditor({
   autor,
   onClose,
   onSaved,
+  onPdfReady,
   inicial,
 }: Props & {
   inicial: QuejaInforme | null
@@ -311,6 +313,7 @@ function InformeEditor({
         })
       }
       if (operation.isCurrent()) {
+        onPdfReady?.(pdf)
         setAviso(`Versión ${result.version} guardada con su PDF oficial. El archivo se adjuntará automáticamente en la respuesta al cliente.`)
       }
     } catch (caught) {

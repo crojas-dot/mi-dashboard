@@ -256,7 +256,13 @@ function RespuestaEditor({ queja, initial, ...props }: Props & { initial: Respue
     {editingReport && <QuejaInformeModal
       queja={{ ...snapshot, numero_oficio_resolucion: form.numeroOficio, ...(form.noProcede ? { resolucion: form.noProcede.justificacion, resolucion_formato: form.noProcede.formato } : {}) }}
       anexos={props.adjuntos} autor={props.autor} onClose={() => setEditingReport(false)}
-      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Exportá el PDF y adjuntalo al correo cuando esté listo.'); } }}
+      onSaved={result => { if (reportIsCurrent.current() && result.queja_id === snapshot.id) { setReport(result); setNotice('Informe guardado. Preparando el PDF oficial…'); } }}
+      onPdfReady={file => { if (reportIsCurrent.current() && file.queja_id === snapshot.id) {
+        setUploaded(current => current.some(item => item.id === file.id) ? current : [...current, file])
+        setForm(current => current.adjuntoId ? current : { ...current, adjuntoId: file.id })
+        autoSelected.current = true
+        setNotice('PDF oficial adjuntado automáticamente. Podés previsualizarlo antes de publicar.')
+      } }}
  />}
     <AdjuntoPreviewModal adjunto={previewFile} onClose={() => setPreviewFile(null)} />
     <ConfirmDialog open={confirmPublish} title="Publicar respuesta al cliente" message={<>El cliente recibirá el correo que redactaste con <strong className="break-words">{selectedFile?.nombre}</strong> en formato PDF. Revisá que el mensaje y el documento estén listos para entregarlos. El expediente quedará Finalizado.</>}

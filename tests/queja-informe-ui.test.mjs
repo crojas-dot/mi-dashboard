@@ -78,6 +78,7 @@ function reportHarness({ initial = null, saveError = null, uploadError = null, p
     '@/lib/utils/quejaInforme': {
       crearPlantillaInforme: () => '## Informe inicial\n\nTexto del caso',
       informeFilename: () => 'Informe.docx',
+      informePdfFilename: (_folio, version) => 'Informe-v' + version + '.pdf',
     },
     '@/hooks/useEntityRequestGuard': { useEntityRequestGuard: () => ({ start: () => operation, captureContext: () => () => true }) },
     'lucide-react': { ChevronDown: 'ChevronDown', FileDown: 'FileDown', FileText: 'FileText', Save: 'Save', TriangleAlert: 'TriangleAlert' },
