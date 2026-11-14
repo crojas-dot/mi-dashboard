@@ -516,7 +516,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const requestDocument = <CaseSection variant="document" title="Descripción del cliente" headerActions={areaControl}>
     <div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
     <div className="mt-4 border-t border-qms-border pt-3"><h4 className="mb-2 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>
-      {soloLecturaFiles(adjuntosCliente)}
+      {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
     </div>
   </CaseSection>
   const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>

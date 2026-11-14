@@ -314,16 +314,13 @@ export async function eliminarAdjuntoQueja(adjuntoId: string): Promise<void> {
 }
 
 export async function descargarAdjuntoQueja(adjunto: QuejaAdjunto): Promise<void> {
-  if (adjunto.storage_path.includes('/')) {
-    const { data, error } = await supabase.storage
-      .from('quejas-adjuntos')
-      .createSignedUrl(adjunto.storage_path, 60)
-    if (error || !data?.signedUrl) throw error ?? new Error('No se pudo generar el enlace de descarga')
-    window.open(data.signedUrl, '_blank')
-    return
-  }
-
-  const blob = await fetchDriveBlob(adjunto.storage_path)
+  const blob = adjunto.storage_path.includes('/')
+    ? await (async () => {
+        const { data, error } = await supabase.storage.from('quejas-adjuntos').download(adjunto.storage_path)
+        if (error || !data) throw error ?? new Error('No se pudo descargar el adjunto')
+        return data
+      })()
+    : await fetchDriveBlob(adjunto.storage_path)
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
