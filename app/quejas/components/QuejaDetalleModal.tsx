@@ -615,7 +615,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <CaseSection variant="document" title="Adjuntos de la investigación">
                 {soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}
               </CaseSection>
-            </> : ['Resuelto', 'Finalizado'].includes(estadoActual) ? <QuejaCierreResumen key={queja.id} queja={queja}
+            </> : ['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? <QuejaCierreResumen key={queja.id} queja={queja}
               adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
               onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
