@@ -204,6 +204,7 @@ function InformeEditor({
   )
 
   const [guardando, setGuardando] = useState(false)
+  const [guardandoPdf, setGuardandoPdf] = useState(false)
   const [exportando, setExportando] = useState(false)
   const [exportandoPdf, setExportandoPdf] = useState(false)
   const [confirmClose, setConfirmClose] = useState(false)
@@ -268,9 +269,17 @@ function InformeEditor({
     const snapshot = contenido
 
     setGuardando(true)
+    setGuardandoPdf(false)
     setError('')
     setAviso('')
 
+    // El PDF depende del texto, no de la versión asignada por la DB.
+    // Prepararlo en paralelo reduce la espera sin anticipar una escritura en Drive.
+    const cambiarVersion = !guardado || dirty
+    const prepararPdf = cambiarVersion || !pdfExiste
+      ? import('@/lib/utils/quejaInformePdf').then(module => module.crearInformePdf(snapshot))
+          .then(blob => ({ blob, error: null as unknown }), error => ({ blob: null, error }))
+      : null
     let result: QuejaInforme | null = null
     try {
       result = guardado && !dirty ? guardado : await guardarQuejaInforme({
@@ -290,15 +299,25 @@ function InformeEditor({
       }
 
       const nombrePdf = informePdfFilename(queja.folio, result.version)
-      const existentes = await fetchQuejaAdjuntos(queja.id)
+      const cacheAdjuntos = queryClient.getQueryData<QuejaAdjunto[]>(quejaAdjuntosKey(queja.id)) ?? adjuntosQuery.data
+      // Una versión nueva no puede tener PDF previo: se evita el GET redundante.
+      // Al recuperar una versión sin PDF, se consulta Drive/DB antes de duplicarlo.
+      const existentes = cambiarVersion ? (cacheAdjuntos ?? [])
+        : cacheAdjuntos?.some(file => file.nombre === nombrePdf && esOficioPublicableQueja(file, queja.id))
+          ? cacheAdjuntos
+          : await fetchQuejaAdjuntos(queja.id)
       let pdf = existentes.find(file => file.nombre === nombrePdf
         && file.tipo_mime.toLowerCase() === 'application/pdf'
         && esOficioPublicableQueja(file, queja.id))
 
       if (!pdf) {
-        const { crearInformePdf } = await import('@/lib/utils/quejaInformePdf')
-        const contenidoPdf = await crearInformePdf(result.contenido)
-        const archivo = new File([contenidoPdf], nombrePdf, { type: 'application/pdf' })
+        setGuardandoPdf(true)
+        const generado = prepararPdf
+          ? await prepararPdf
+          : await import('@/lib/utils/quejaInformePdf').then(module => module.crearInformePdf(result!.contenido))
+              .then(blob => ({ blob, error: null as unknown }), error => ({ blob: null, error }))
+        if (!generado.blob) throw generado.error ?? new Error('No se pudo preparar el PDF oficial.')
+        const archivo = new File([generado.blob], nombrePdf, { type: 'application/pdf' })
         pdf = await subirAdjuntoQueja(queja.id, archivo)
         if (!esOficioPublicableQueja(pdf, queja.id) || pdf.tipo_mime.toLowerCase() !== 'application/pdf') {
           throw new Error('No se confirmó un PDF oficial válido en el expediente.')
@@ -321,7 +340,7 @@ function InformeEditor({
           : errorMsg(caught, 'No se pudo guardar el informe. Tu texto se conserva.'))
       }
     } finally {
-      if (operation.isCurrent()) setGuardando(false)
+      if (operation.isCurrent()) { setGuardando(false); setGuardandoPdf(false) }
       operation.finish()
     }
   }
@@ -443,8 +462,10 @@ function InformeEditor({
     }
   }
 
-  const saveStatus = guardando
-    ? 'Guardando…'
+  const saveStatus = guardandoPdf
+    ? 'Registrando PDF en Drive…'
+    : guardando
+    ? 'Guardando versión…'
     : dirty
       ? 'Cambios sin guardar'
       : guardado
