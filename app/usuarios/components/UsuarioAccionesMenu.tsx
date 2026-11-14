@@ -32,6 +32,7 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
       setOpen(false)
     }
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Tab') { setOpen(false); return }
       if (event.key === 'Escape') {
         event.preventDefault()
         setOpen(false)
@@ -46,15 +47,22 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
         items[next].focus()
       }
     }
+    const onFocusIn = (event: FocusEvent) => {
+      if (!(event.target instanceof Node)) return
+      if (triggerRef.current?.contains(event.target) || menuRef.current?.contains(event.target)) return
+      setOpen(false)
+    }
     const closeOnMove = () => setOpen(false)
 
     document.addEventListener('pointerdown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     window.addEventListener('scroll', closeOnMove, true)
     window.addEventListener('resize', closeOnMove)
     return () => {
       document.removeEventListener('pointerdown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
       window.removeEventListener('scroll', closeOnMove, true)
       window.removeEventListener('resize', closeOnMove)
     }
@@ -80,7 +88,7 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
     action()
   }
 
-  const item = 'flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-qms-dark transition-colors hover:bg-qms-hover-bg focus-visible:bg-qms-hover-bg focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
+  const item = 'flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-qms-hover-bg focus-visible:bg-qms-hover-bg focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
   return <>
     <button ref={triggerRef} type="button" onClick={toggle} data-users-action-trigger
       aria-label={`Acciones de ${usuario.nombre}`} title={`Acciones de ${usuario.nombre}`}
@@ -92,17 +100,17 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
       <div ref={menuRef} id={menuId} data-users-actions-menu role="menu" aria-label={`Acciones de ${usuario.nombre}`}
         style={{ position: 'fixed', top: position.top, left: position.left }}
         className="z-[1000] w-56 overflow-hidden rounded-card border border-qms-border bg-qms-surface py-1 shadow-lg">
-        <button type="button" role="menuitem" onClick={() => select(onEditar)} className={item}>
+        <button type="button" role="menuitem" onClick={() => select(onEditar)} className={item + ' text-qms-dark'}>
           <Pencil aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />Editar perfil
         </button>
-        <button type="button" role="menuitem" onClick={() => select(onRestablecer)} className={item}>
+        <button type="button" role="menuitem" onClick={() => select(onRestablecer)} className={item + ' text-qms-dark'}>
           <KeyRound aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />Restablecer contraseña
         </button>
         <div role="separator" className="my-1 border-t border-qms-border" />
         <button type="button" role="menuitem" disabled={activo && esPropio}
           title={activo && esPropio ? 'No podés desactivar tu propia cuenta' : undefined}
           onClick={() => select(onEstado)}
-          className={`${item} ${activo ? 'text-qms-danger hover:bg-red-50' : 'text-qms-success'}`}>
+          className={`${item} ${activo ? 'text-qms-danger hover:bg-soft-red-bg' : 'text-soft-green-text hover:bg-soft-green-bg'}`}>
           {activo ? <UserRoundX aria-hidden="true" className="size-4 shrink-0" /> : <UserRoundCheck aria-hidden="true" className="size-4 shrink-0" />}
           {activo ? 'Desactivar cuenta' : 'Restaurar cuenta'}
         </button>
