@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from 'react'
 import { Plus, Search, Pencil, Trash2, RotateCcw, KeyRound } from 'lucide-react'
+import RolesAccesos from './components/RolesAccesos'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
@@ -38,6 +39,7 @@ export default function UsuariosPage() {
   const deferredSearch = useDeferredValue(search)
   const [filtroRol, setFiltroRol] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [tab, setTab] = useState<'usuarios' | 'roles'>('usuarios')
 
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'crear' | 'editar'>('crear')
@@ -75,6 +77,12 @@ export default function UsuariosPage() {
     setFormMode('editar')
     setUsuarioSel(u)
     setFormOpen(true)
+  }
+
+  function restablecerDesdePerfil(u: Usuario) {
+    setFormOpen(false)
+    setUsuarioSel(null)
+    setResetSel(u)
   }
 
   async function handleFormSuccess(result: { tempPassword?: string }) {
@@ -125,12 +133,22 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Usuarios" description="Gestión de usuarios y accesos del sistema">
+    <div className="mx-auto w-full max-w-6xl space-y-5 pb-6">
+      <PageHeader compact={false} title="Gestión de accesos" description="Administrá las cuentas y los permisos por módulo del sistema.">
         <Button onClick={abrirCrear}><Plus className="h-4 w-4" /> Nuevo usuario</Button>
       </PageHeader>
 
-      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid grid-cols-2 items-center gap-3 lg:grid-cols-[minmax(180px,1fr)_180px_160px]">
+      <div role="tablist" aria-label="Gestión de accesos" className="flex gap-1 border-b border-qms-border">
+        <button type="button" role="tab" id="usuarios-tab-usuarios" aria-controls="usuarios-panel-usuarios"
+          aria-selected={tab === 'usuarios'} onClick={() => setTab('usuarios')}
+          className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'usuarios' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Usuarios</button>
+        <button type="button" role="tab" id="usuarios-tab-roles" aria-controls="usuarios-panel-roles"
+          aria-selected={tab === 'roles'} onClick={() => setTab('roles')}
+          className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${tab === 'roles' ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark'}`}>Roles y permisos</button>
+      </div>
+
+      <section id="usuarios-panel-usuarios" role="tabpanel" aria-labelledby="usuarios-tab-usuarios" hidden={tab !== 'usuarios'} className="space-y-3">
+      <div role="group" aria-label="Buscar y filtrar usuarios" className="grid grid-cols-2 items-center gap-3 rounded-card border border-qms-border bg-qms-surface p-4 lg:grid-cols-[minmax(180px,1fr)_180px_160px]">
         <div className="relative col-span-2 min-w-0 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <input
@@ -197,7 +215,7 @@ export default function UsuariosPage() {
                   <TableCell>
                     <div className="flex items-center justify-end gap-1.5">
                       <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => abrirEditar(u)}>
-                        <Pencil className="h-3.5 w-3.5" /> Editar
+                        <Pencil className="h-3.5 w-3.5" /> Gestionar
                       </Button>
                       <Button size="sm" variant="ghost" className="w-[88px] justify-center" onClick={() => setResetSel(u)}>
                         <KeyRound className="h-3.5 w-3.5" /> Resetear
@@ -219,8 +237,13 @@ export default function UsuariosPage() {
           </tbody>
         </Table>
       )}
+      </section>
+      {tab === 'roles' && <section id="usuarios-panel-roles" role="tabpanel" aria-labelledby="usuarios-tab-roles">
+        <RolesAccesos active />
+      </section>}
 
       <UsuarioFormModal
+        onResetPassword={restablecerDesdePerfil}
         open={formOpen}
         mode={formMode}
         usuario={usuarioSel}

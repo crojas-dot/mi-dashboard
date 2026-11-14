@@ -91,7 +91,7 @@ test('el alta conserva la contraseña y cierra el formulario antes de esperar un
 
 test('un borrado rechazado conserva la selección y propaga el error al modal sin fingir éxito', async () => {
   const page = pageHarness()
-  page.button('Editar', other.id).props.onClick(); page.render()
+  page.button('Gestionar', other.id).props.onClick(); page.render()
   const pending = page.component('UsuarioFormModal').props.onDelete(other)
   assert.equal(page.requests.length, 1)
   assert.deepEqual(clone(page.requests[0].args.slice(0, 2)), ['DELETE', { id: other.id }])
@@ -108,7 +108,7 @@ test('un borrado rechazado conserva la selección y propaga el error al modal si
 
 test('un borrado escrito termina aunque falle el refresco y muestra el fallo del listado por separado', async () => {
   const page = pageHarness({ refresh: async () => { throw new TypeError('Failed to fetch') } })
-  page.button('Editar', other.id).props.onClick(); page.render()
+  page.button('Gestionar', other.id).props.onClick(); page.render()
   const pending = page.component('UsuarioFormModal').props.onDelete(other)
   page.requests[0].resolve()
   await pending; page.render()
@@ -197,3 +197,19 @@ test('el callback de reset propaga el fallo de refresco sin escribir la contrase
   assert.equal(page.requests.length, 0)
 })
 
+
+test('Gestión de accesos contiene Usuarios y Roles, sin perder los callbacks de usuario', () => {
+  const page = pageHarness()
+  const markup = page.render()
+  const tabs = []
+  const visit = value => Array.isArray(value) ? value.forEach(visit) : value?.props ? (value.props.role === 'tab' && tabs.push(value), visit(value.props.children)) : undefined
+  visit(markup)
+  assert.deepEqual(tabs.map(tab => tab.props.children), ['Usuarios', 'Roles y permisos'])
+  assert.ok(page.component('UsuarioFormModal').props.onResetPassword)
+  page.button('Gestionar', other.id).props.onClick()
+  page.render()
+  page.component('UsuarioFormModal').props.onResetPassword(other)
+  page.render()
+  assert.equal(page.component('UsuarioFormModal').props.open, false)
+  assert.equal(page.component('ResetPasswordModal').props.usuario.id, other.id)
+})
