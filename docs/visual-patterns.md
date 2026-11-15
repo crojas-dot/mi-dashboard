@@ -267,10 +267,14 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   refleja exclusivamente la actividad registrada y jamás crea eventos ni fechas
   ficticias. Preparar resolución se mantiene en el pie si la etapa permite editar.
 - En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
-  ampliar el documento. Resolución se edita en la página, con Guardar junto a Asistencia
-  secundaria; Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
-  Guardar es azul solo con cambios. Cancelar abandona la edición, descarta únicamente
-  los cambios sin guardar y restaura el borrador persistido sin enviarlo.
+  ampliar el documento. Resolución se edita sin encabezado adicional, con Asistencia IA
+  en el extremo derecho de la barra Tiptap: un clic lanza el análisis automático y
+  presenta una sugerencia de lectura sin chat, menús ni acordeones. No se sobrescribe
+  el borrador del usuario; solo se permite usar la sugerencia con el editor vacío.
+  El pie inferior mantiene Cancelar y Guardar, siempre azul mientras está visible;
+  Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
+  Cancelar abandona la edición, descarta únicamente los cambios sin guardar
+  y restaura el borrador persistido sin enviarlo.
   Tras confirmación muestra check y Guardado neutral
   deshabilitado, con fecha real en su título; no hay autoguardado ficticio.
   El lienzo mide hasta 720px de alto (70dvh, mínimo 420px), sin reducir la columna central.
