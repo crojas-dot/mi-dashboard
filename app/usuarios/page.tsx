@@ -193,7 +193,7 @@ export default function UsuariosPage() {
               <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Seguridad (2FA)</TableHeaderCell>
               <TableHeaderCell>Último acceso</TableHeaderCell>
-              <TableHeaderCell className="pr-6 text-right">Acciones</TableHeaderCell>
+              <TableHeaderCell className="text-left">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <tbody>
@@ -229,7 +229,7 @@ export default function UsuariosPage() {
                 <TableCell className="whitespace-nowrap text-sm text-qms-muted">
                   {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}
                 </TableCell>
-                <TableCell className="pr-6 text-right">
+                <TableCell className="pl-0 text-left">
                   <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
                     onEditar={() => abrirEditar(u)}
                     onRestablecer={() => setResetSel(u)}
