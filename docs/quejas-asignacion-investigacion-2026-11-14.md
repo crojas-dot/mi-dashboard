@@ -49,7 +49,7 @@ Preserva un único árbol de workspace montado, el ciclo, el foco y los borrador
 
 ## Seguridad
 
-Migración aditiva `20261115035753_quejas_investigacion_asignacion.sql`.
+Migración aditiva `20261115041345_quejas_investigacion_asignacion.sql`.
 La tabla de asignaciones usa RLS; lectura para admin/Calidad con permiso o
 investigador asignado con permiso. No se concede escritura directa a
 `authenticated`. La RPC es `SECURITY DEFINER` con validación explícita
