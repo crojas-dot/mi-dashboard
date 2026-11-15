@@ -44,7 +44,7 @@ function harness({ estado = 'activo', esPropio = false, top = 100, bottom = 136,
 
 test('las tres acciones comparten el mismo menú y cierran al elegir una opción', () => {
   for (const [index, expected, label] of [
-    [0, 'editar', 'Editar perfil'],
+    [0, 'editar', 'Actualizar perfil'],
     [1, 'resetear', 'Restablecer contraseña'],
     [2, 'estado', 'Desactivar cuenta'],
   ]) {
@@ -66,6 +66,7 @@ test('el botón Editar visible despliega las tres acciones sin ejecutar edición
   const ui = harness()
   assert.match(ui.text(ui.trigger()), /Editar/)
   assert.match(ui.trigger().props.className, /bg-qms-primary-soft/)
+  assert.match(ui.trigger().props.className, /select-none/)
   assert.match(ui.trigger().props['aria-label'], /Editar y más acciones de Persona de prueba/)
   assert.equal(ui.trigger().props['aria-haspopup'], 'menu')
   ui.open()

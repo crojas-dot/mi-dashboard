@@ -811,7 +811,7 @@ a edición directamente. En escritorio, respetar `colgroup`
 `24/14/13/19/18/12` con tabla fija y scroll local; encabezado
 `<TableHeaderCell className="pl-0 text-left">Acciones</TableHeaderCell>` y
 celda de acción `pl-0`, sin el antiguo truco de `w-[18px] justify-end`.
-El menú mantiene Editar perfil,
+El menú mantiene Actualizar perfil,
 Restablecer contraseña (generada y guardada por modal existente, NO correo
 de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
 y prohibición de desactivar la cuenta propia. No duplicar mutaciones ni guards.

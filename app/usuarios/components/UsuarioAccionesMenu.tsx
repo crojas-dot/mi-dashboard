@@ -93,7 +93,7 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
     <button ref={triggerRef} type="button" onClick={toggle} data-users-action-trigger
       aria-label={`Editar y más acciones de ${usuario.nombre}`} title={`Editar y más acciones de ${usuario.nombre}`}
       aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
-      className={`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-button border border-qms-primary/25 bg-qms-primary-soft px-2 text-sm font-medium text-qms-primary transition-colors hover:border-qms-primary/40 hover:bg-qms-primary-soft/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary ${open ? 'border-qms-primary/50' : ''}`}>
+      className={`inline-flex min-h-9 cursor-pointer select-none items-center justify-center gap-1 whitespace-nowrap rounded-button border border-qms-primary/25 bg-qms-primary-soft px-2 text-sm font-medium text-qms-primary transition-colors hover:border-qms-primary/40 hover:bg-qms-primary-soft/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary ${open ? 'border-qms-primary/50' : ''}`}>
       <Pencil aria-hidden="true" className="size-3.5 shrink-0" />
       <span>Editar</span>
       <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
@@ -103,7 +103,7 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
         style={{ position: 'fixed', top: position.top, left: position.left }}
         className="z-[1000] w-56 overflow-hidden rounded-card border border-qms-border bg-qms-surface py-1 shadow-lg">
         <button type="button" role="menuitem" onClick={() => select(onEditar)} className={item + ' text-qms-dark'}>
-          <Pencil aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />Editar perfil
+          <Pencil aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />Actualizar perfil
         </button>
         <button type="button" role="menuitem" onClick={() => select(onRestablecer)} className={item + ' text-qms-dark'}>
           <KeyRound aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />Restablecer contraseña
