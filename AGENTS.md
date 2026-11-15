@@ -335,9 +335,13 @@ permisos ni datos persistidos.
   En Mis Quejas/Investigación, Resolución usa la barra Tiptap sin encabezado adicional:
   Asistencia IA es un botón directo a la derecha de formato, sin chat ni acordeones;
   la pista de formato está oculta (errores de límite visibles). La redacción tiene
-  scroll interno, barra superior y pie fijos y esquinas redondeadas. Al lado de IA,
-  Expandir/Contraer aumenta solo la altura hacia arriba conservando ancho y borde
-  inferior; Guardar/Cancelar restablecen el alto habitual. Guardar siempre mantiene
+  scroll interno, barra superior y pie fijos y esquinas redondeadas. No crear
+  separadores adicionales dentro del texto ni fijar la tarjeta central con sticky;
+  al abrir no desplazar el scroll exterior con `scrollIntoView`.
+  IA y Expandir/Contraer están a la derecha, separados por un divisor vertical;
+  el expansor de 44px tiene icono de cuatro esquinas y aumenta solo la altura
+  hacia arriba conservando ancho y borde inferior; Guardar/Cancelar restablecen
+  el alto habitual. Guardar siempre mantiene
   el azul primary incluso deshabilitado; Editar se muestra arriba del borrador
   guardado y reabre el editor expandido. No ampliar todo el expediente.
   Guardar conserva borrador remoto/versionado, sin cambiar estado, revisión de Queja,
