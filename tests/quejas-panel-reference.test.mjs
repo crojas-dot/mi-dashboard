@@ -154,8 +154,11 @@ test('el paso 1 mantiene el ancho del workspace y presenta dos acciones en un so
   assert.equal((result.match(/<button type="button"/g) || []).length, 2)
 })
 
-test('el color y nombre del catálogo prevalecen sobre la variante histórica del estado', () => {
-  for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
+test('los estados posteriores respetan el catálogo y Recibido conserva el badge gris del nuevo diseño', () => {
+  const recibido = html(CaseAction, { queja: { ...queja, estado: 'Recibido', estado_color: 'warning', estado_nombre: 'Etiqueta configurada' }, runs: [], presentation: 'reference' })
+  assert.match(recibido, /bg-gray-200 text-gray-700 border border-gray-300/)
+  assert.match(recibido, /Etiqueta configurada/)
+  for (const estado of ['En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
     const result = html(CaseAction, { queja: { ...queja, estado, estado_color: 'warning', estado_nombre: 'Etiqueta configurada' }, runs: [], presentation: 'reference' })
     assert.match(result, /bg-qms-warning text-qms-warning-text/)
     assert.match(result, /Etiqueta configurada/)
