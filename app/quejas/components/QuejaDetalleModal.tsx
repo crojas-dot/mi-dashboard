@@ -46,7 +46,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info } from 'lucide-react'
+import { ArrowRight, CheckCircle, Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info, XCircle } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
@@ -559,6 +559,23 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   // El responsable propone desde Mis Quejas; la comunicación final exige Calidad.
   const canAct = esStaff
   const editing = !!respuestaCase || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || reaperturaAbierta
+  const openEvaluationDecision = (choice: 'procede' | 'no_procede') => {
+    if (estadoActual !== 'Recibido' || readOnlyStage || !canAct || workflowPending || editing || registroDraft) return
+    if (choice === 'no_procede' && !publicacionVerificada) return
+    beginWorkflowDraft()
+    setResponsableError(false)
+    setResponsableOpenRequest(0)
+    draftVersions.current.workflow++
+    // No Procede con publicación habilitada conserva el editor oficial de respuesta existente.
+    if (choice === 'no_procede' && publicacionDisponible) {
+      setRespuestaNoProcede(true)
+      setRespuestaCase(workflowQueja)
+      setDecisionOpen(false)
+      return
+    }
+    setDecisionProcedencia(choice)
+    setDecisionOpen(true)
+  }
   const openAction = () => {
     if (!canAct || workflowPending || registroDraft) return
     if (estadoActual === 'Resuelto') { setRespuestaCase(queja); return }
@@ -622,6 +639,17 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
+  </> : estadoActual === 'Recibido' ? !editing && <>
+    <button type="button" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}
+      className="w-full flex items-center justify-between px-4 py-2.5 text-[14px] font-semibold text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
+      <span className="flex items-center gap-2"><CheckCircle aria-hidden="true" className="w-4 h-4" />Procede</span>
+      <ArrowRight aria-hidden="true" className="w-4 h-4" />
+    </button>
+    <button type="button" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}
+      className="w-full flex items-center justify-between px-4 py-2.5 text-[14px] font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
+      <span className="flex items-center gap-2"><XCircle aria-hidden="true" className="w-4 h-4" />No Procede</span>
+      <ArrowRight aria-hidden="true" className="w-4 h-4" />
+    </button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
   const processSteps = getCaseProcessCycle(queja).steps

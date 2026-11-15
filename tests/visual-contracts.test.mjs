@@ -556,7 +556,7 @@ function complaintPanelFixture() {
     select(id, estado = 'Recibido') { entity = id ? { id, folio: '2026-001', revision: 1, estado, cliente_nombre: 'Persona de prueba' } : null; render() },
     workspace: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace'),
     editor: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'document'),
-    button: label => nodes().find(node => node.type === 'Button' && (node.props['aria-label'] === label || text(node) === label)),
+    button: label => nodes().find(node => ['Button', 'button'].includes(node.type) && (node.props['aria-label'] === label || text(node) === label)),
   }
 }
 
@@ -820,12 +820,13 @@ test('el expediente ampliado no compone un velo sobre un fondo que ya cubre por 
 test('elegir procedencia conserva el mismo documento y vuelve a bloquearlo al reabrir otra visita', () => {
   const panel = complaintPanelFixture()
   panel.select('test-A')
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  assert.equal(panel.button('Tomar decisión'), undefined)
+  panel.button('Procede').props.onClick(); panel.render()
   const first = panel.editor()
   assert.equal(first.props.open, true)
   assert.equal(first.props.variant, 'document')
   assert.equal(first.props.size, 'xl')
-  panel.button('Procede').props.onClick(); panel.render()
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.required, true)
   assert.equal(panel.editor().props.variant, first.props.variant)
   assert.equal(panel.editor().props.size, first.props.size)
   panel.select(null); panel.select('test-A')
