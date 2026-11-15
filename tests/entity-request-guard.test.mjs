@@ -107,20 +107,20 @@ function panelHarness(kind = 'colaborador') {
     if (value?.props?.hidden && value.type !== 'input' || value?.type === 'Modal' && !value.props.open) return []
     if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return visit(value.type(value.props))
     // El workspace renderiza estas ranuras además del documento central.
-    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter)] : []
+    return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.toolbarActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter)] : []
   }
   const nodes = () => visit(tree)
   function text(value) {
     if (Array.isArray(value)) return value.map(text).join('')
     if (value?.props?.hidden || value?.type === 'Modal' && !value.props.open) return ''
     if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return text(value.type(value.props))
-    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) + text(value.props.requestFooter) : typeof value === 'string' ? value : ''
+    return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.toolbarActions) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) + text(value.props.requestFooter) : typeof value === 'string' ? value : ''
   }
   const button = (label) => nodes().find((node) => ['Button', 'CButton', 'button'].includes(node.type) && text(node).trim() === label.trim())
   return {
     requests, updates, guards, invalidations, toasts, render, nodes, button, invalidateContext,
     select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
-    assistance() { nodes().find(node => node.props['aria-label'] === 'Asistencia para la resolución').props.onClick(); render() },
+    assistance() { const result = nodes().find(node => node.props['aria-label'] === 'Asistencia para la resolución').props.onClick(); render(); return result },
     analysis() { nodes().find(node => node.props['aria-label'] === 'Ver caso completo').props.onClick(); render() },
     notes() { nodes().find(node => node.props['data-investigation-notes-card']).props.onClick(); render() },
     activity() { nodes().find(node => node.props['aria-label'] === 'Ver actividad').props.onClick(); render() },
@@ -153,29 +153,28 @@ for (const kind of ['detalle', 'colaborador']) {
 
 test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue siendo otra visita', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.assistance()
-  const first = panel.button('Análisis IA').props.onClick()
+  panel.select('A')
+  const first = panel.assistance()
   panel.select('B')
   panel.select('A')
-  panel.assistance()
-  const current = panel.button('Análisis IA').props.onClick()
+  const current = panel.assistance()
   panel.requests[0].resolve('RESPUESTA ANTIGUA')
   await first
   panel.render()
   assert.doesNotMatch(panel.contents(), /RESPUESTA ANTIGUA/)
-  assert.equal(panel.button('Análisis IA').props.loading, true)
+  assert.equal(panel.button('Asistencia IA').props.loading, true)
   panel.requests[1].resolve('RESPUESTA VIGENTE')
   await current
   panel.render()
   assert.match(panel.contents(), /RESPUESTA VIGENTE/)
-  assert.equal(panel.button('Análisis IA').props.loading, false)
+  assert.equal(panel.button('Asistencia IA').props.loading, false)
 })
 
 test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', async () => {
   for (const action of ['close', 'unmount']) {
     const panel = panelHarness()
-    panel.select('A'); panel.assistance()
-    const pending = panel.button('Análisis IA').props.onClick()
+    panel.select('A')
+    const pending = panel.assistance()
     if (action === 'close') panel.nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace').props.onClose()
     else panel.unmount()
     panel.requests[0].reject(new Error('respuesta tardía'))
@@ -184,21 +183,22 @@ test('cerrar y desmontar impide publicar respuestas y errores IA tardíos', asyn
   }
 })
 
-test('fallo tardío del chat de A no elimina mensajes ni loading del chat de B', async () => {
+test('la asistencia inicia análisis automático sin chat ni sobrescribir la resolución escrita', async () => {
   const panel = panelHarness()
-  panel.select('A'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta A')
-  const first = panel.button(' Enviar').props.onClick()
-  panel.select('B'); panel.assistance(); panel.input('Hacé una pregunta', 'Pregunta B')
-  const current = panel.button(' Enviar').props.onClick()
-  panel.requests[0].reject(new Error('falló A'))
-  await first
+  panel.select('A')
+  panel.input('Documentá la conclusión', 'Conclusión propia')
+  assert.equal(panel.button('Análisis IA'), undefined)
+  assert.equal(panel.nodes().some(node => node.type === 'details' || node.type === 'summary'), false)
+  const pending = panel.assistance()
+  assert.equal(panel.requests.length, 1)
+  assert.equal(panel.requests[0].kind, 'ai')
+  assert.equal(panel.requests[0].input.tipo_consulta, 'auto')
+  panel.requests[0].resolve('Sugerencia sintética')
+  await pending
   panel.render()
-  assert.match(panel.contents(), /Pregunta B/)
-  assert.equal(panel.button(' Enviar').props.loading, true)
-  panel.requests[1].resolve('Respuesta B')
-  await current
-  panel.render()
-  assert.match(panel.contents(), /Respuesta B/)
+  assert.match(panel.contents(), /Sugerencia sintética/)
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Conclusión propia')
+  assert.equal(panel.button('Usar en resolución').props.disabled, true)
 })
 
 test('la transición confirmada actualiza A aunque se abra B, sin limpiar la resolución de B', async () => {
