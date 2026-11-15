@@ -288,11 +288,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Análisis usa el mismo modal document/xl de procedencia (1040px máximos, 90dvh),
   centrado y nativo en todos los tamaños, sin ampliar el workspace al abrir.
   Primero muestra Observación de Calidad y Procede azul, después Descripción del
-  cliente. Su pie ofrece Preparar resolución. Resolución contiene el scroll cuando
-  el texto o su barra de formato tienen foco, incluso en los límites y estando vacío.
-  Sin foco, desplaza el expediente; conserva el scroll interno y el ancho mediante
-  gutter estable. El editor conserva su nodo y borrador
-  al consultar. GC muestra primero la propuesta;
+  cliente. Su pie ofrece Preparar resolución. La barra de formato y el pie de
+  Resolución permanecen a la vista; solo el contenido del editor tiene scroll
+  interno con gutter estable, incluso sin foco. Un separador fino bajo la barra
+  crea aire antes de la escritura. El marco conserva las cuatro esquinas
+  redondeadas y la pista genérica de Tiptap se oculta sin ocultar límites.
+  El editor conserva su nodo y borrador al consultar. GC muestra primero la propuesta;
   Solicitud y antecedentes conserva el contenido íntegro en un desplegable.
   El selector de formato conserva su ancho explícito y la barra envuelve sus controles
   cuando hace falta, sin ocultarlos detrás de un scroll horizontal. El encabezado existente añade la fecha real, sin otra ficha grande. El resto
