@@ -146,6 +146,9 @@ test('selección conserva el nombre completo accesible y disabled no abre ni sel
 test('el modo avatar se limita al selector de barra sin cambiar la búsqueda', () => {
   const h = pickerHarness({ showAvatar: true, value: usuarios[0] })
   assert.match(h.trigger().props.className, /rounded-full/)
+  assert.match(h.trigger().props.className, /w-64 max-w-full/)
+  assert.match(h.trigger().props.className, /sm:w-\[22rem\]/)
+  assert.match(h.trigger().props.className, /justify-start/)
   assert.match(h.trigger().props['aria-label'], /Ana López/)
   assert.ok(h.nodes().some(node => node.type === 'span' && node.props['aria-hidden'] === 'true' &&
     node.props.className?.includes('rounded-full') && node.props.className?.includes('bg-qms-primary-soft')))
