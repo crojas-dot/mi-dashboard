@@ -138,27 +138,27 @@ test('la evaluación no muestra responsable; las etapas posteriores lo mantienen
   }
 })
 
-test('el paso 1 mantiene el ancho del workspace y presenta dos acciones en un solo panel', () => {
+test('el paso 1 utiliza el mismo panel y los tokens QMS con dos acciones directas', () => {
   const result = renderToStaticMarkup(createElement(CaseAction, {
-    queja: { ...queja, estado: 'Recibido', estado_nombre: 'Recibido' },
+    queja: { ...queja, estado: 'Recibido', estado_nombre: 'Recibido', estado_color: 'blue' },
     runs: [], presentation: 'reference',
   }, createElement('button', { type: 'button' }, 'Procede'), createElement('button', { type: 'button' }, 'No Procede')))
   assert.match(result, /data-case-evaluation-actions/)
-  assert.match(result, /w-80 max-w-full border-l border-gray-200 p-6 bg-gray-50\/40/)
+  assert.match(result, /Siguiente paso/)
   assert.match(result, /Evaluar procedencia/)
+  assert.match(result, /bg-qms-primary text-white/)
   assert.ok(result.indexOf('Recibido') < result.indexOf('Evaluar procedencia'))
   assert.ok(result.indexOf('Procede') < result.indexOf('No Procede'))
-  assert.match(result, /mt-auto p-3\.5 bg-blue-50 border border-blue-100 rounded-lg/)
+  assert.match(result, /bg-qms-primary-soft/)
+  assert.match(result, /border-qms-border/)
   assert.match(result, /Al seleccionar una opción/)
   assert.doesNotMatch(result, /Tomar decisión|Persona responsable|Por asignar/)
+  assert.doesNotMatch(result, /w-80|border-l border-gray-200|p-6 bg-gray-50|bg-blue-50|text-\[12px\]/)
   assert.equal((result.match(/<button type="button"/g) || []).length, 2)
 })
 
-test('los estados posteriores respetan el catálogo y Recibido conserva el badge gris del nuevo diseño', () => {
-  const recibido = html(CaseAction, { queja: { ...queja, estado: 'Recibido', estado_color: 'warning', estado_nombre: 'Etiqueta configurada' }, runs: [], presentation: 'reference' })
-  assert.match(recibido, /bg-gray-200 text-gray-700 border border-gray-300/)
-  assert.match(recibido, /Etiqueta configurada/)
-  for (const estado of ['En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
+test('Recibido y las etapas restantes respetan el color del catálogo', () => {
+  for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
     const result = html(CaseAction, { queja: { ...queja, estado, estado_color: 'warning', estado_nombre: 'Etiqueta configurada' }, runs: [], presentation: 'reference' })
     assert.match(result, /bg-qms-warning text-qms-warning-text/)
     assert.match(result, /Etiqueta configurada/)
