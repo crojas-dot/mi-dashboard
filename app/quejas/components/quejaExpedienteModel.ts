@@ -16,6 +16,19 @@ export const CASE_ACTIONS: Record<string, { step: number; title: string; detail:
   'No Procede': { step: 5, title: 'No procedencia registrada', detail: 'Se conserva la justificación y el oficio explicativo.', action: '' },
 }
 
+/** CTA de consulta del triaje: NUNCA autoriza ni ejecuta una transición de negocio. */
+export function getCaseTriageCta(estado: Queja['estado'], canPublish = false): string {
+  switch (estado) {
+    case 'Recibido': return 'Revisar expediente completo'
+    case 'En Investigación': return 'Ver expediente completo'
+    case 'Pendiente de Revisión GC': return 'Revisar propuesta completa'
+    case 'Resuelto': return canPublish ? 'Revisar y Publicar respuesta' : 'Ver expediente completo'
+    case 'Finalizado':
+    case 'No Procede':
+    default: return 'Ver expediente completo'
+  }
+}
+
 export type CaseAudience = 'quality' | 'investigator'
 export interface CaseRoleCycle {
   label: string
