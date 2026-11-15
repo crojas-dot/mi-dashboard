@@ -244,6 +244,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   if (!queja) return null
 
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
+  const investigationDeadline = caseDeadline(queja, runs)
+  const investigationActionDetail = investigationDeadline.business && investigationDeadline.duration
+    ? `El responsable tiene ${investigationDeadline.duration} días hábiles para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.`
+    : 'El responsable dispone del plazo registrado en el expediente para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.'
   const responsableValue = responsableSeleccionado ? responsables.find(u => u.id === responsableSeleccionado.id) ?? null : responsableActual ?? null
   const workflowQueja = { ...queja, revision: workflowRevision ?? queja.revision }
   const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || subiendoSoporte || subiendoOficioApertura || eliminandoAdjunto != null
@@ -685,8 +689,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <CaseTriageAttachments files={adjuntos.filter(item => !!item.usuario_id)} onPreview={setPreviewAdjunto}
               loading={adjuntosLoading} error={!!adjuntosError} />
           </> : estadoActual === 'En Investigación'
-          ? <CaseTriageExcerpt title="Resumen de investigación"
-              text={analysis?.value || queja.resolucion || queja.descripcion || 'Investigación en curso.'} />
+          ? <div data-investigation-triage-status className="space-y-2">
+              <CaseTriageExcerpt title="Estado de la investigación"
+                text={asignacionLoading ? 'Consultando detalles de asignación…'
+                  : `Investigador asignado: ${responsableActual?.nombre || 'Por asignar'}. ${asignacion?.instrucciones?.trim() || 'En espera de la propuesta del investigador.'}`} />
+              {borradorInvestigador && <p className="text-xs font-medium text-qms-primary">
+                Borrador en curso · última modificación {caseDate(borradorInvestigador.updated_at)}
+              </p>}
+            </div>
           : <>
               <CaseTriageExcerpt title="Solicitud del cliente" text={queja.descripcion || 'Sin descripción registrada.'} />
               <CaseTriageAttachments files={adjuntosCliente} onPreview={setPreviewAdjunto}
@@ -730,9 +740,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         compact={<CaseCycle queja={queja} process currentOnly />}
         cycle={<CaseCycle queja={queja} process selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
-          actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar la propuesta' : undefined}
-          actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? 'La investigación está a cargo de la persona asignada.' : undefined}>
-          {(estadoActual === 'En Investigación' || qualityReview) && <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAnalisisCalidadOpen(true)}><Eye aria-hidden="true" className="size-4" />Ver análisis</Button>}
+          actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
+          actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
+          {qualityReview && <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAnalisisCalidadOpen(true)}><Eye aria-hidden="true" className="size-4" />Ver análisis</Button>}
           {workflowActions}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
         </CaseAction>}>
@@ -748,11 +758,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
               responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} expanded={expanded} />
-            : estadoActual === 'En Investigación' ? <CaseSection variant="document" title="Investigación">
-                {analysis && <div className="mb-4"><RichTextContent value={analysis.value} format={analysis.format} /></div>}
-                {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">La investigación está a cargo de la persona asignada.</p>}
-                <div className="mt-4 border-t border-qms-border pt-3"><h4 className="mb-2 text-sm font-medium">Adjuntos de investigación</h4>{soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}</div>
-              </CaseSection> : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>}
+            : estadoActual === 'En Investigación' ? <QuejaInvestigacionAsignacion
+                responsable={responsableActual?.nombre ?? null}
+                asignacion={asignacion} asignacionLoading={asignacionLoading} asignacionError={!!asignacionError}
+                borrador={borradorInvestigador} borradorLoading={borradorInvestigadorLoading} borradorError={!!borradorInvestigadorError}
+                adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
+                onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} />
+            : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>
       </CaseWorkspace>
     </Modal>
 
