@@ -130,12 +130,28 @@ test('el panel de referencia conserva el color configurado del estado sin añadi
   assert.match(assigned, /Administrador/)
 })
 
-test('el responsable precede a las acciones en todas las etapas sin repetirse', () => {
+test('la evaluación no muestra responsable; las etapas posteriores lo mantienen antes de sus acciones', () => {
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
     const result = html(CaseAction, { queja: { ...queja, estado }, runs: [], presentation: 'reference', responsable: 'Persona responsable', children: createElement('button', null, 'Acción disponible') })
-    assert.equal((result.match(/Persona responsable/g) || []).length, 1)
-    assert.ok(result.indexOf('Persona responsable') < result.indexOf('Acción disponible'))
+    assert.equal((result.match(/Persona responsable/g) || []).length, estado === 'Recibido' ? 0 : 1)
+    if (estado !== 'Recibido') assert.ok(result.indexOf('Persona responsable') < result.indexOf('Acción disponible'))
   }
+})
+
+test('el paso 1 mantiene el ancho del workspace y presenta dos acciones en un solo panel', () => {
+  const result = renderToStaticMarkup(createElement(CaseAction, {
+    queja: { ...queja, estado: 'Recibido', estado_nombre: 'Recibido' },
+    runs: [], presentation: 'reference',
+  }, createElement('button', { type: 'button' }, 'Procede'), createElement('button', { type: 'button' }, 'No Procede')))
+  assert.match(result, /data-case-evaluation-actions/)
+  assert.match(result, /w-80 max-w-full border-l border-gray-200 p-6 bg-gray-50\/40/)
+  assert.match(result, /Evaluar procedencia/)
+  assert.ok(result.indexOf('Recibido') < result.indexOf('Evaluar procedencia'))
+  assert.ok(result.indexOf('Procede') < result.indexOf('No Procede'))
+  assert.match(result, /mt-auto p-3\.5 bg-blue-50 border border-blue-100 rounded-lg/)
+  assert.match(result, /Al seleccionar una opción/)
+  assert.doesNotMatch(result, /Tomar decisión|Persona responsable|Por asignar/)
+  assert.equal((result.match(/<button type="button"/g) || []).length, 2)
 })
 
 test('el color y nombre del catálogo prevalecen sobre la variante histórica del estado', () => {
