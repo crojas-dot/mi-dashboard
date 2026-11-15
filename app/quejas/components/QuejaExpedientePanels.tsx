@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Info, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -263,6 +263,36 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
 
 export function CaseAction({ queja, runs, children, plazoError, condensed = false, variant = 'panel', heading, presentation = 'default', responsable, actionTitle, actionDetail }: { queja: Queja; runs: QuejaPlazoRun[]; children?: ReactNode; plazoError?: boolean; condensed?: boolean; variant?: CaseSectionVariant; heading?: string; presentation?: 'default' | 'reference'; responsable?: string; actionTitle?: string; actionDetail?: string }) {
   const action = CASE_ACTIONS[queja.estado], deadline = caseDeadline(queja, runs)
+  // El paso 1 utiliza las mismas columnas del expediente, solo cambia su contenido.
+  if (presentation === 'reference' && queja.estado === 'Recibido' && !actionTitle) return (
+    <div data-case-evaluation-actions className="w-80 max-w-full border-l border-gray-200 p-6 bg-gray-50/40 overflow-y-auto shrink-0 flex flex-col @min-[1100px]:min-h-[min(64vh,520px)]">
+      <h4 className="text-[12px] font-bold text-gray-400 uppercase tracking-wider mb-4">Siguiente paso</h4>
+      <div className="mb-6">
+        <div className="flex min-w-0 items-center gap-2 mb-3">
+          <span className="inline-flex shrink-0 items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-gray-200 text-gray-700 border border-gray-300">
+            {queja.estado_nombre || 'Recibido'}
+          </span>
+          <span title={deadline.label} className={`min-w-0 text-[12px] font-medium flex items-center gap-1.5 ${deadline.vencido ? 'text-red-600' : 'text-gray-600'}`}>
+            <span aria-hidden="true" className={`w-1.5 h-1.5 shrink-0 rounded-full ${deadline.vencido ? 'bg-red-500' : deadline.variant === 'green' ? 'bg-emerald-500' : deadline.variant === 'amber' ? 'bg-amber-500' : 'bg-gray-400'}`} />
+            <span className="min-w-0 break-words">{deadline.vencido ? 'Vencido' : deadline.label}</span>
+          </span>
+        </div>
+        {plazoError && <p role="alert" className="mb-3 text-xs text-gray-500">No se pudo cargar el detalle del calendario.</p>}
+        <h5 className="text-[16px] font-semibold text-gray-800 mb-1">Evaluar procedencia</h5>
+        <p className="text-[13px] text-gray-600 leading-relaxed mb-5">
+          Revisa la solicitud y selecciona el resultado de la evaluación para continuar con el flujo.
+        </p>
+        {children && <div className="flex flex-col gap-2.5">{children}</div>}
+      </div>
+      <hr className="border-gray-200 mb-6" />
+      {children && <div className="mt-auto p-3.5 bg-blue-50 border border-blue-100 rounded-lg">
+        <p className="text-[12px] text-blue-800 leading-relaxed flex items-start gap-2">
+          <Info aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
+          Al seleccionar una opción, se abrirá el editor para redactar la justificación e instrucciones.
+        </p>
+      </div>}
+    </div>
+  )
   if (presentation === 'reference') return <CaseSection title="Siguiente paso" variant="plain"><Badge variant={queja.estado_color || varianteEstado('quejas', queja.estado)} className="max-w-full whitespace-normal! text-left">{queja.estado_nombre || queja.estado}</Badge>
     <CaseCompletionDate queja={queja} />
     {deadline.vence && <div className="mt-3"><p className="mb-1 text-sm text-qms-muted">{deadline.stageTitle}</p><QuejaPlazoIndicator deadline={deadline} /></div>}
