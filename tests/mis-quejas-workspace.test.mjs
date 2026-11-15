@@ -61,14 +61,14 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
   const visit = value => {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props) return []
-    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
+    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion', 'CaseWorkspaceNavigation'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
     if (value.type === 'Modal' && !value.props.open) return [value]
-    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter)]
+    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter), ...visit(value.props.compactContent)]
   }
   const nodes = () => visit(tree)
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   function render() { do { changed = false; cursor = 0; tree = Panel({ queja, onClose: () => closed++, onUpdated: updated => updates.push(updated), onNavigationLockChange: lock => locks.push(lock), onPrevious() {}, onNext() {} }) } while (changed) }
-  const button = label => nodes().find(node => node.type === 'Button' && (node.props['aria-label'] === label || text(node) === label))
+  const button = label => nodes().find(node => (node.type === 'Button' && (node.props['aria-label'] === label || text(node).trim() === label)) || (node.type === 'button' && text(node).includes(label)))
   return {
     calls, errors, nodes, render, uploads, updates, saves, noteUpdates, noteDeletes,
     remoteDraft(id, value) { drafts.set(id, value); render() },
@@ -134,7 +134,7 @@ test('un único acceso abre Análisis en un modal amplio sin ampliar el trabajo 
   assert.equal(panel.modal().props.expanded, false)
   assert.equal(panel.analysisModal().props.open, true)
   assert.equal(panel.analysisModal().props.variant, 'document')
-  assert.equal(panel.analysisModal().props.size, 'xl')
+  assert.equal(panel.analysisModal().props.size, 'mail')
   assert.ok(panel.nodes().some(node => node.props['data-quality-review']))
   assert.ok(panel.nodes().some(node => node.props['data-client-description']))
   assert.equal(panel.nodes().find(node => node.type === 'Badge' && node.props.children === 'Procede').props.variant, 'blue')
@@ -645,7 +645,7 @@ test('Ver análisis presenta las tres pestañas con adjuntos del cliente e histo
   const modal = panel.analysisModal()
   assert.equal(modal.props.title, 'Análisis del caso')
   assert.equal(modal.props.titleSuffix, '2026-001')
-  assert.equal(modal.props.size, 'xl')
+  assert.equal(modal.props.size, 'mail')
   assert.equal(modal.props.variant, 'document')
   const tabs = panel.nodes().filter(node => node.props.role === 'tab')
   assert.equal(tabs.length, 6)
