@@ -144,7 +144,7 @@ test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificia
   assert.match(actions, /h-11 w-11/)
   assert.match(actions, /<Maximize aria-hidden="true" className="size-5"/)
   assert.match(actions, /<Minimize aria-hidden="true" className="size-5"/)
-  assert.match(source, /h-\\[clamp\\(420px,58dvh,560px\\)\\]/)
+  assert.match(source, /h-\[clamp\(420px,58dvh,560px\)\]/)
 })
 
 test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el alto normal', () => {
