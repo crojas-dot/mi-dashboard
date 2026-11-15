@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **14 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **15 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
@@ -54,6 +54,7 @@ No cargar todos los documentos para una modificación aislada.
 | Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
 | Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
 | Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) |
+| Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar y pestañas), app/usuarios/page.tsx (callbacks), components/usuarios/PasswordModal.tsx y components/usuarios/ResetPasswordModal.tsx (contraseña generada) |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
@@ -84,7 +85,7 @@ solo al editar esa capa.
 Para trabajo por módulo, registra sus capacidades terminadas y pendientes; no marques
 un módulo como completo solo porque su página o tabla exista.
 
-## Inventario funcional y cobertura — corte del 14 noviembre de 2026
+## Inventario funcional y cobertura — corte del 15 noviembre de 2026
 
 Este inventario complementa el contrato de arquitectura. **Operativo** significa que
 hay ruta/consumidor y lógica integrada en el repositorio; no significa aceptación
@@ -100,7 +101,7 @@ archivos, migraciones o documentación.
 | Informe y comunicación | Tiptap A4 en modal, versionado, exportación Word/PDF, PDF oficial en Drive por folio/versión, correo editable con borrador/publicación y archivo físico adjunto | Considerar la paginación visual como paginación del PDF; enviar sin documento autorizado |
 | Formulario ciudadano `/q/[token]` | Registro con capacidad privada, validación cliente/API, evidencias limitadas, reintento idempotente, finalización y acceso al seguimiento según estado | Portal de usuario externo con login, ver notas internas o recuperar una capacidad vencida |
 | Seguimiento ciudadano | Enlace de capacidad y consulta del estado, plazos de caducidad y etapas permitidas | Identidad verificada del portador o lectura pública del expediente completo |
-| Usuarios `/usuarios` | CRUD/estado, roles/permisos, restablecimiento de contraseña por API, formulario y listado adaptable | Alta pública, recuperación por email integrada, 2FA operativa o bloqueo distribuido del último admin |
+| Usuarios `/usuarios` | CRUD/estado, roles/permisos, restablecimiento de contraseña por API, tabla adaptable y dos experiencias de modal: crear en una sola vista y editar por pestañas | Alta pública, invitaciones/recuperación por email, contraseña manual, 2FA, sesiones administrables o bloqueo distribuido del último admin |
 | Configuración `/configuracion` | Organización, acceso, servicios, marca, catálogos, IA administrada y calendario QMS versionado | Editor SLA legacy como publicador del motor QMS, secretos en el navegador |
 | Documentos `/documentos` | Listado/estados, alta y cambio de versión visible | Control documental completo, historial real y gestión de Drive |
 | SACP `/sacp` | Listado, alta, seguimiento/cierre y vínculo autorizado desde Quejas | Motor completo de eficacia o validaciones administrativas no implementadas |
@@ -138,9 +139,9 @@ por Drive y autorizaciones; no afirmar rendimiento instantáneo sin E2E autentic
 corto/largo y guardado son regresiones del código, no demostración de experiencia
 en navegador ni de entrega de correo real. Vercel READY significa build disponible;
 confirmar el SHA asociado al alias `mi-dashboard-iota.vercel.app` antes de afirmar
-que una corrección está en producción. La rama de trabajo de este corte es
-`fix/qms-pdf-pages-preview-scroll-20261114`; integrar por PR a `main` sin
-sobrescribir trabajo ajeno y comprobar despliegue de producción.
+que una corrección está en producción. La rama `fix/qms-pdf-pages-preview-scroll-20261114` pertenece a ese corte
+histórico: para cambios nuevos consultar el `main` vigente y proponer ramas/PR
+sin sobrescribir trabajo ajeno. No inferir por ello el SHA en producción.
 
 ## Biblioteca de arquitectura
 
@@ -799,8 +800,8 @@ Usuarios administra cuentas por API con guards; no asumir cierre transaccional
 distribuido del último admin. El perfil incorpora «Detalles del perfil» y
 «Seguridad y acceso»: crear/editar/activar/desactivar/eliminar y restablecer
 contraseña generada son operativos. La invitación/recuperación por correo, 2FA
-y definición manual desde esta UI son acciones pendientes: solo mostrar toast
-informativo, nunca cambios falsos ni estado 2FA inventado. Usuarios evita
+y definición manual desde esta UI son acciones pendientes: mostrarlas como
+pendientes/deshabilitadas; nunca mostrar éxito, aplicar cambios falsos ni inventar estado 2FA. Usuarios evita
 repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» existente
 y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
 filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
@@ -848,6 +849,67 @@ no atribuirles gestión documental/versionado, mitigación, eficacia o acuerdos 
 por encontrar una tabla o modal. Reportería ofrece filtros/vistas/impresión; no
 confundirla con el informe Word/PDF editable de Quejas ni asumir guardado/envío de
 informes configurables. No asignar porcentajes por cantidad de archivos o pruebas.
+
+## Contrato verificado de Usuarios — 15 noviembre de 2026
+
+Este contrato describe **código en `main`**, inspeccionado el 15-11-2026;
+no certifica pruebas ejecutadas, sesión real ni despliegue de Vercel. El HTML
+aportado por el propietario es referencia de **jerarquía y distribución**,
+nunca licencia para copiar colores, añadir lógica simulada o reemplazar los
+componentes compartidos. Aplicar `docs/visual-patterns.md` y los tokens QMS.
+
+- **Crear nuevo usuario (`mode="crear"`):** `Modal` document de altura `fill`
+  y tamaño `mail`; una sola vista con secciones «Información del usuario» y
+  «Configuración de acceso», scroll interior y pie estable. Campos obligatorios
+  de nombre, correo, rol del sistema y estado inicial; zona ilustrativa de foto
+  explícitamente futura. Al confirmar, generar contraseña temporal segura,
+  efectuar un único `POST /api/usuarios` y mostrarla mediante el
+  `PasswordModal` existente; no enviar invitación real ni hacer creer que 2FA
+  está activa. «Definir manualmente» permanece inhabilitado.
+- **Gestionar usuario (`mode="editar"`):** `Modal` document `fill`, tamaño
+  `lg`; pestañas accesibles «Detalles del perfil» y «Seguridad y acceso».
+  En perfil: avatar con inicial, rol real y formulario de nombre/correo/rol/
+  estado. El formulario se **mantiene montado** al cambiar de pestaña para
+  conservar valores no guardados; no crear un segundo formulario para Seguridad.
+  La edición confirma mediante `PATCH`, sin cambiar identificadores ni realizar
+  una operación antes de pulsar «Guardar cambios».
+- **Seguridad y acceso:** «Restablecer contraseña segura» utiliza
+  `onResetPassword` → `ResetPasswordModal` ya integrado; no sustituir por correo
+  de recuperación ni por edición manual de contraseña. Invitaciones, enlaces de
+  recuperación, cambio obligatorio en el inicio, 2FA y cierre de sesiones son
+  **pendientes**: etiquetas visibles y controles deshabilitados, sin mutaciones,
+  interruptores que aparenten persistencia ni estados artificiales por usuario.
+- **Zona de peligro:** eliminar cuenta requiere confirmación dentro del modo
+  editar. No ofrecer eliminar ni editar rol/estado para la propia cuenta, y
+  mantener la protección efectiva del servidor. Desactivar/restaurar sigue en
+  `UsuarioAccionesMenu`; no duplicar acciones ni convertir el botón «Editar»
+  del listado en actualización automática.
+- **Contratos y accesibilidad:** conservar `FormData` con
+  `nombre`/`email`/`rol`/`estado`, labels/id, campos requeridos,
+  estados de carga, errores sanitizados y bloqueo compartido de guardar/eliminar.
+  Los campos deshabilitados de cuenta propia NO se envían vacíos al API.
+  Si un guardado persistió y falla el refresco del listado, informar sin repetir
+  el `POST`/`PATCH`; no duplicar usuarios. Mantener pestañas y pie operables por
+  teclado, un único scroll interno, responsive y foco coherente.
+- **Tabla y permisos:** «Seguridad (2FA)» se representa como «No disponible»,
+  no como un dato calculado, mientras API/DB no expongan factores reales.
+  `RolesAccesos` se mantiene en la pestaña «Roles y permisos», conservando
+  los dos booleanos de lectura/escritura y la autorización real de admin.
+- **Verificación dirigida antes de integrar:** revisar
+  `tests/usuarios-accesos-layout.test.mjs`,
+  `tests/usuarios-reliability.test.mjs`,
+  `tests/usuarios-table-layout.test.mjs` y
+  `tests/usuarios-acciones-menu.test.mjs`; ejecutar las suites afectadas,
+  `npx tsc --noEmit`, lint, estructura, visual y build según corresponda.
+  Comprobar visualmente crear/editar, pestañas, confirmación, reset, móviles,
+  errores de red y cuenta propia en navegador autenticado. La inspección del
+  código de estas interfaces no equivale a haber corrido las pruebas.
+
+**Regla de actualización:** antes de afirmar «ya está implementado» comprobar
+ruta, consumidor y handler real. Diferenciar cuatro niveles: maqueta de referencia,
+código integrado en la rama inspeccionada, prueba ejecutada y despliegue en
+producción con SHA verificado. Documentar el nivel comprobado y dejar pendientes
+sin operación falsa. No declarar «listo en producción» por un commit en `main`.
 
 ## Verificar, entregar y mantener
 
