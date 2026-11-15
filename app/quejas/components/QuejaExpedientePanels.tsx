@@ -93,7 +93,7 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false }: { children: ReactNode; compact: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean }) {
+export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0 }, [documentKey])
@@ -123,7 +123,9 @@ export function CaseWorkspace({ children, compact, cycle, action, headerMeta, re
     {/* En escritorio el círculo ocupa el margen de página y su etiqueta se alinea con Descripción. */}
     {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${comfortableReading ? 'mx-auto max-w-[1500px]' : ''} ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
     {cyclePlacement === 'header' && expanded && <div data-case-mobile-cycle className="shrink-0 border-b border-qms-border bg-qms-surface px-3 py-2 @min-[1100px]/workspace:hidden">{cycle}</div>}
-    <div data-case-frame className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
+    {!expanded && compactContent && <div data-case-triage className="mx-3 mt-3 min-h-0 flex-1 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4">{compactContent}</div>}
+    {/* No desmontar las columnas ni Tiptap: ocultar el mismo árbol durante el triaje. */}
+    <div data-case-frame style={!expanded && compactContent ? { display: 'none' } : undefined} className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
       {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
       <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
         <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:items-start ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
