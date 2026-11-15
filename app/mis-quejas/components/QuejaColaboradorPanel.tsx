@@ -25,6 +25,7 @@ import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
 import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
+import { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
@@ -112,7 +113,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     const observer = new ResizeObserver(syncHeaderHeight)
     observer.observe(header)
     return () => observer.disconnect()
-  }, [quejaId, investigando])
+  }, [quejaId, investigando, isExpanded])
 
   const handleClose = useCallback(() => {
     scope.invalidate()
@@ -351,12 +352,15 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     restaurarPuntoResolucion()
   }
   const prepararResolucion = () => {
+    if (!investigando || resolutionPending) return
+    setIsExpanded(true)
     setEditandoResolucion(true)
     cerrarAnalisis()
-    requestAnimationFrame(() => {
+    // Primero presentar showModal y el editor existente; después restaurar foco.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       resolutionContainer.current?.scrollIntoView({ block: 'start' })
       resolutionContainer.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
-    })
+    }))
   }
   const plazo = <QuejaPlazoIndicator deadline={deadline} />
   const action = investigando ? null : estado === 'Pendiente de Revisión GC' ? 'Gestión de Calidad revisará la propuesta. Si requiere ajustes, volverá a investigación.' : 'El expediente conserva el trabajo y las evidencias registradas.'
@@ -373,12 +377,67 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 </details>
               </div></div>
 
+  const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
+    responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
+    footer={<CaseTriageFooter title="Mis notas" count={!actividadLoading && !actividadError ? notasInvestigacion.length : undefined}
+      onOpen={abrirNotas} />}>
+    <div className="space-y-4">
+      {reenviarRevision && devolucion && <section data-case-triage-return
+        className="space-y-3 rounded-card border border-qms-warning/30 bg-soft-amber-bg p-3.5 text-soft-amber-text">
+        <h3 className="text-sm font-semibold">Devolución de Calidad</h3>
+        <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{devolucion.motivo}</p>
+        <Button size="sm" variant="secondary" className="w-full" disabled={resolutionPending} onClick={prepararResolucion}>
+          Corregir en editor
+        </Button>
+      </section>}
+      {investigando ? <section data-case-triage-resolution className="space-y-3">
+        <h3 className="text-sm font-semibold text-qms-dark">Estado de la resolución</h3>
+        {resolutionDirty ? <Badge variant="amber">Cambios sin guardar</Badge>
+          : borradorGuardado ? <Badge variant="green">Borrador guardado</Badge>
+          : <Badge variant="neutral">{borradorVersion === null ? 'Comprobando borrador' : 'Sin borrador'}</Badge>}
+        {borradorGuardado && <p className="text-xs text-qms-muted">Guardado: {caseDate(borradorGuardado.updated_at)}</p>}
+        {(resolutionDirty || borradorGuardado) && <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-qms-muted">
+          {resolucion || 'El borrador no contiene texto todavía.'}
+        </p>}
+        {errorBorrador && borradorVersion === null && <p role="alert" className="text-sm text-qms-danger">No se pudo cargar el borrador.
+          <Button size="sm" variant="link" onClick={() => { void recargarBorrador() }}>Reintentar</Button>
+        </p>}
+        <Button size="sm" className="w-full" disabled={resolutionPending || borradorVersion === null}
+          onClick={prepararResolucion}>
+          {resolutionDirty ? 'Continuar editando'
+            : borradorGuardado ? 'Abrir editor para modificar' : 'Redactar resolución'}
+        </Button>
+      </section> : <CaseTriageExcerpt title={tieneDocumentoRegistrado ? 'Resultado registrado' : 'Resumen del expediente'}
+        text={queja.resolucion || queja.descripcion || 'Sin información registrada.'} />}
+      <CaseTriageAttachments files={adjuntosAnalisis} onPreview={setPreviewAdjunto}
+        loading={adjuntosLoading} error={!!adjuntosError} />
+      <div className="space-y-2">
+        <Button size="sm" variant="secondary" className="w-full" onClick={abrirAnalisis}>Ver caso completo</Button>
+        <Button size="sm" variant="secondary" className="w-full" onClick={() => setIsExpanded(true)}>Ampliar expediente →</Button>
+      </div>
+    </div>
+  </CaseTriageSummary>
+
   return <>
-    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose} title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
+    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose}
+      onEscape={() => {
+        if (analisisAbierto) { cerrarAnalisis(); return }
+        if (panelNotas) { cerrarNotas(); return }
+        if (panelAdjuntos) { cerrarAdjuntos(); return }
+        if (isExpanded) { setIsExpanded(false); return }
+        if (resolutionDirty || !!nota.trim()) {
+          showError(null, 'Hay cambios sin guardar. Abrí el editor para guardarlos o descartarlos antes de salir.')
+          return
+        }
+        const row = document.querySelector<HTMLElement>('.ui-case-row[aria-selected="true"]')
+        handleClose()
+        requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
+      }}
+      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => setIsExpanded(value => !value)}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
-      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
+      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
         requestFooter={<div className="space-y-4">
           <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
