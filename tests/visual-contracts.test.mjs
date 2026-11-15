@@ -393,16 +393,16 @@ test('el editor de informe ocupa el viewport sin alterar las variantes existente
 test('los diálogos usan cabecera clara y la variante alta reserva espacio a la lista de adjuntos', () => {
   const { dialog } = modalFixture({ tall: true, variant: 'dialog' })
   const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
-  assert.match(dialog.props.className, /h-\\[min\\(76dvh,720px\\)\\]/)
+  assert.match(dialog.props.className, /h-\[min\(76dvh,720px\)\]/)
   assert.match(header.props.className, /bg-qms-surface/)
   assert.doesNotMatch(header.props.className, /bg-qms-dark/)
   assert.match(dialog.props.children[1].props.className, /flex min-h-0 flex-1 flex-col overflow-hidden/)
 
   const workspace = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Etapas del expediente' })
   const workspaceHeader = workspace.dialog.props.children.find(child => child?.props?.['data-modal-header'])
-  assert.match(workspaceHeader.props.className, /@min-\\[1100px\\]\\/workspace:grid-cols-\\[220px_minmax\\(0,1fr\\)_260px\\]/)
+  assert.match(workspaceHeader.props.className, /@min-\[1100px\]\/workspace:grid-cols-\[220px_minmax\(0,1fr\)_260px\]/)
   assert.equal(workspaceHeader.props.children[1].props.children, 'Etapas del expediente')
-  assert.match(workspaceHeader.props.children[1].props.className, /@min-\\[1100px\\]\\/workspace:px-0/)
+  assert.match(workspaceHeader.props.children[1].props.className, /@min-\[1100px\]\/workspace:px-0/)
 })
 
 test('Ver análisis permite recorrer las pestañas con teclado y conserva la separación de evidencias', () => {
@@ -462,10 +462,10 @@ test('el progreso del encabezado descuenta el gutter real del editor', () => {
   const { dialog } = modalFixture({ variant: 'workspace', expanded: true, headerCenter: 'Proceso' })
   const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
   assert.equal(header.props['data-case-header-grid'], true)
-  assert.match(header.props.className, /grid-cols-\\[220px_minmax/)
+  assert.match(header.props.className, /grid-cols-\[220px_minmax/)
   const stylesheet = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.match(stylesheet, /data-case-header-grid="true"/)
-  assert.match(stylesheet, /padding-right: calc\\(1rem \\+ var\\(--qms-case-scrollbar-width, 0px\\)\\)/)
+  assert.match(stylesheet, /padding-right: calc\(1rem \+ var\(--qms-case-scrollbar-width, 0px\)\)/)
   const shared = fs.readFileSync('app/quejas/components/QuejaExpedientePanels.tsx', 'utf8')
   assert.match(shared, /offsetWidth - scrollport.clientWidth/)
   assert.match(shared, /--qms-case-scrollbar-width/)

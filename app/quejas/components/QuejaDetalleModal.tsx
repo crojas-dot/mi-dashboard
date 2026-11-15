@@ -23,6 +23,7 @@ import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
 import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
+import { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
@@ -115,7 +116,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const draftVersions = useRef({ workflow: 0, comentario: 0 })
   const quejaId = queja?.id ?? ''
   const { data: comentarios = [], isLoading: comentariosLoading, error: comentariosError, refetch: refetchComentarios } = useQuejaComentarios(quejaId, activityOpen)
-  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, activityOpen || analisisCalidadOpen || queja?.estado === 'Resuelto')
+  const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, !!queja)
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   useEffect(() => {
@@ -613,12 +614,58 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       : <CaseSection variant="document" title="Cierre"><p className="text-sm text-qms-muted">Esta etapa todavía no tiene una resolución aprobada para consultar.</p></CaseSection>)}
   </div>
 
+  const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
+    responsable={responsableActual?.nombre}
+    footer={<CaseTriageFooter count={!actividadLoading && !actividadError ? actividad.length : undefined}
+      onOpen={() => setActivityOpen(true)} />}>
+    <div className="space-y-4">
+      {workflowActions && <div className="space-y-2">{workflowActions}</div>}
+      {['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual)
+        ? <QuejaCierreResumen key={queja.id + ':compact'} queja={queja}
+            adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
+            onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
+            actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
+            responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(u => u.id === id)?.nombre}
+            expanded={false} />
+        : qualityReview ? <>
+            <CaseTriageExcerpt title="Propuesta para revisión" text={queja.resolucion || 'Todavía no hay propuesta registrada.'} />
+            <CaseTriageAttachments files={adjuntos.filter(item => !!item.usuario_id)} onPreview={setPreviewAdjunto}
+              loading={adjuntosLoading} error={!!adjuntosError} />
+          </> : estadoActual === 'En Investigación'
+          ? <CaseTriageExcerpt title="Resumen de investigación"
+              text={analysis?.value || queja.resolucion || queja.descripcion || 'Investigación en curso.'} />
+          : <>
+              <CaseTriageExcerpt title="Solicitud del cliente" text={queja.descripcion || 'Sin descripción registrada.'} />
+              <CaseTriageAttachments files={adjuntosCliente} onPreview={setPreviewAdjunto}
+                loading={adjuntosLoading} error={!!adjuntosError} />
+            </>}
+      <Button type="button" data-case-triage-expand size="sm" variant="secondary" className="w-full" onClick={() => setExpanded(true)}>
+        {estadoActual === 'Recibido' ? 'Leer expediente completo' : 'Ver expediente completo'} →
+      </Button>
+    </div>
+  </CaseTriageSummary>
+
   return <>
-    <Modal open={!!queja} onClose={handleClose} title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
+    <Modal open={!!queja} onClose={handleClose}
+      onEscape={() => {
+        if (expanded) {
+          setReadOnlyStage(null); setExpanded(false)
+          requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
+          return
+        }
+        if (navigationDisabled) {
+          showError(null, 'Hay una edición u operación pendiente. Guardá o cancelá los cambios antes de cerrar el expediente.')
+          return
+        }
+        const row = document.querySelector<HTMLElement>('.ui-case-row[aria-selected="true"]')
+        handleClose()
+        requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
+      }}
+      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
-      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} presentation="reference" cyclePlacement="header" readingLayout
+      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-2">

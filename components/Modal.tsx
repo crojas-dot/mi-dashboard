@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, type MouseEvent } from 'react'
 interface ModalProps {
   open: boolean
   onClose: () => void
+  onEscape?: () => void
   title: string
   titleSuffix?: string
   emphasizeTitle?: boolean
@@ -34,7 +35,7 @@ const sizes: Record<string, string> = {
 let scrollLocks = 0
 let previousOverflow = ''
 
-export default function Modal({ open, onClose, title, titleSuffix, emphasizeTitle = false, size = 'md', variant = 'dialog', height = 'fill', tall = false, fixedHeight = false, expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerCenter, headerActions, footer, children }: ModalProps) {
+export default function Modal({ open, onClose, onEscape, title, titleSuffix, emphasizeTitle = false, size = 'md', variant = 'dialog', height = 'fill', tall = false, fixedHeight = false, expanded = false, dismissOnEscape = true, dismissOnBackdrop = true, descriptionId, headerLeading, headerCenter, headerActions, footer, children }: ModalProps) {
   const drawer = variant === 'drawer'
   const workspace = variant === 'workspace'
   const report = variant === 'report'
@@ -110,20 +111,20 @@ export default function Modal({ open, onClose, title, titleSuffix, emphasizeTitl
       onCancel={(event) => {
         // El selector de archivos también emite cancel y burbujea hasta dialog.
         if (event.target !== event.currentTarget) return
-        event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose()
+        event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) (onEscape ?? onClose)()
       }}
       onKeyDownCapture={event => {
         // Consumir Escape aquí evita que ProseMirror o un diálogo de fondo cambien
         // el cierre solicitado por esta vista; el selector superior conserva su Escape.
         const target = event.target && typeof (event.target as Element).closest === 'function' ? event.target as Element : null
         if (event.key === 'Escape' && target?.closest('[contenteditable="true"]') && target.closest('dialog') === event.currentTarget) {
-          event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose()
+          event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) (onEscape ?? onClose)()
         }
       }}
       onKeyDown={event => {
         const target = event.target && typeof (event.target as Element).closest === 'function' ? event.target as Element : null
         if (target && target.closest('dialog') !== event.currentTarget) return
-        if (workspace && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) onClose(); return }
+        if (workspace && event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (dismissOnEscape) (onEscape ?? onClose)(); return }
         if (event.key !== 'Tab') return
         if (workspace && !event.currentTarget.matches(':modal')) return
         const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('a[href], button, input, select, textarea, summary, [tabindex]')]

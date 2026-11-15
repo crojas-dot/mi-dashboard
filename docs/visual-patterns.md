@@ -4,6 +4,44 @@ El panel utiliza React y Tailwind v4, sin Bootstrap ni CoreUI.
 La referencia traducida inspira los controles y la distribución; no se instala
 como otra biblioteca. El azul de marca es **#024796**.
 
+## Regla vigente: triaje contraído de Quejas y Mis Quejas (14 noviembre de 2026)
+
+Este apartado **sustituye únicamente** las instrucciones anteriores para el
+workspace **contraído**. El escritorio **ampliado** (tres columnas desde 1100px,
+Cliente a izquierda, documento/editor al centro, acciones a derecha) conserva
+sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
+
+- `CaseWorkspace` mantiene el árbol completo montado dentro de
+  `data-case-frame` y lo oculta visualmente con `display:none` mientras
+  presenta `data-case-triage`. Cambiar `expanded` no reinstancia Tiptap,
+  no reinicia `visitId` ni el borrador. El progreso compacto usa segmentos
+  horizontales, solo lectura. No montar un editor ficticio en el triaje.
+- `CaseTriageSummary` coloca estado real del catálogo, plazo QMS y responsable
+  primero; limita el resumen a tres líneas y las evidencias a dos chips con
+  "+N más en ampliado". El contenido desplazable es corto; el pie de acceso
+  auxiliar queda fijo, sin un segundo scroll de documentos.
+- En Calidad, las seis etapas usan triaje propio: Recibido (solicitud),
+  En Investigación (extracto), Revisión GC (propuesta y decisiones autorizadas),
+  Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede (solo
+  Solicitud/No procedencia). Los documentos íntegros, acciones ampliadas y
+  permisos se conservan; ninguna acción muta sin su handler anterior.
+- En Mis Quejas, la resolución muestra Sin borrador / Borrador guardado con fecha
+  / Cambios sin guardar y acción de ampliar y enfocar el mismo Tiptap.
+  Devoluciones pendientes aparecen en amarillo con dos líneas y "Corregir en
+  editor"; notas y análisis mantienen sus diálogos existentes y las evidencias
+  se limitan a dos chips en el panel contraído.
+- Escape en ampliado reduce a 40vw y devuelve foco a la CTA del triaje; Escape
+  en contraído cierra y devuelve foco a `ui-case-row`. Si hay cambios locales sin
+  guardar, evitar su pérdida silenciosa. Los diálogos secundarios conservan su
+  propio Escape; el botón X sigue siendo un cierre distinto.
+- No añadir `scroll-smooth`, `backdrop-blur`, consultas nuevas por ampliar,
+  guardados automáticos ni una segunda estructura visual del expandido.
+  Ver `tests/quejas-progressive-disclosure.test.mjs` y las suites del módulo.
+
+Las referencias de 12/13 noviembre que describen Tiptap, adjuntos o listas
+completas visibles en el contraído son históricas; ahora se aplican **solo al
+ampliado**.
+
 ## Dónde modificar cada cosa
 
 | Cambio | Archivo |
@@ -137,7 +175,7 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   mismas esquinas redondeadas arriba y abajo; el borde inferior permanece visible
   al desplazar. Al ampliar no se añade ese marco ni margen. El expediente comienza con Descripción, sin el resumen
   superior de resultado ni la etiqueta Cliente encima;
-  Mis Quejas prioriza Resolución en una tarjeta central amplia, sin bloques debajo.
+  Mis Quejas **ampliado** prioriza Resolución en una tarjeta central amplia, sin bloques debajo.
   Al ampliar Quejas o Mis Quejas, `CaseWorkspace readingLayout` limita el conjunto
   de tres columnas a 1500px, deja 24px entre columnas y adapta los laterales a
   240/270px desde 1100px útiles y 280/300px desde 1360px. Los párrafos se centran
@@ -162,10 +200,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   con cantidad; `ListaAdjuntos layout="modal"` omite encabezados internos, usa filas
   compactas con nombres truncados y acciones visibles al foco/hover (siempre en móvil).
   La zona de subida permanece anclada en el pie incluso sin permiso para subir, pero
-  el botón queda deshabilitado. Se conservan permisos, carga y borradores. En contraído sigue
-  visible sin mostrar el contacto. Adjuntar está en el encabezado, a la izquierda de
-  Guardar/Editar, y abre el selector directamente. Los adjuntos se listan bajo el
-  lienzo con `ListaAdjuntos layout="cards"`, también al editar, sin sheet aparte.
+  el botón queda deshabilitado. Se conservan permisos, carga y borradores.
+  Estas tarjetas completas y el editor permanecen montados, pero solo se ven
+  en el workspace AMPLIADO. El contraído muestra dos chips como máximo y
+  "Mis notas" en el pie. En ampliado, Adjuntar está en el encabezado, a la
+  izquierda de Guardar/Editar, y abre el selector directamente. Los adjuntos
+  se listan bajo el lienzo con `ListaAdjuntos layout="cards"`, sin sheet aparte.
   Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
   A la derecha quedan Acción actual y la devolución real de Calidad,
   en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
