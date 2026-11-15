@@ -17,9 +17,13 @@ ni las tablas, permisos, plazos, correos o publicaciones.
 
 La justificación de procedencia continúa siendo obligatoria, con formato
 `plain` / `markdown`, y la selección de responsable activo es obligatoria.
-Se añaden dos campos **opcionales** separados de la justificación:
+La justificación del único editor Tiptap también es la instrucción para el
+investigador. No existe un segundo campo de texto ni se duplica su captura.
+La pista gris de formato se oculta exclusivamente en este editor; se conservan
+los errores de límite y los controles de edición. Debajo queda únicamente
+**Adjuntar oficio de apertura** (opcional), con la nota de almacenamiento;
+**Cancelar / Guardar** permanece en el footer.
 
-- Instrucciones para el investigador: texto plano, hasta 4.000 caracteres.
 - Un oficio de apertura: archivo privado en Drive asociado a `queja_adjuntos`.
   Al seleccionarlo se sube por la API existente y se muestra chip de vista previa
   y opción de desvincular. Cancelar Procede no elimina el archivo físico subido
@@ -37,12 +41,13 @@ usuario operativo de Calidad que confirmó Procede.
 ## Investigación (Calidad / Admin)
 
 La columna central se titula **Detalles de asignación**. Presenta:
-investigador asignado del expediente actual, instrucciones guardadas si las hay,
+investigador asignado del expediente actual, justificación guardada como instrucciones
+con el formato Tiptap original (o instrucciones históricas si las hay),
 oficio vinculado en `ListaAdjuntos` (visor privado) y aviso de existencia y
 última modificación del borrador guardado por el responsable. No muestra su
 contenido ni habilita edición. Si no hay metadatos de asignación en expedientes
-históricos, muestra responsable real, ausencia explícita de instrucciones y
-estado real del borrador, sin crear registros falsos.
+históricos, muestra responsable real y justificación del expediente cuando existe,
+y el estado real del borrador, sin inventar instrucciones independientes.
 
 La columna derecha se titula **Esperar propuesta del investigador** y explica
 que pasará a **Revisión GC** tras el envío del responsable. Incluye duración
