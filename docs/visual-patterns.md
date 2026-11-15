@@ -17,15 +17,22 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   no reinicia `visitId` ni el borrador. El progreso compacto usa segmentos
   horizontales, solo lectura. No montar un editor ficticio en el triaje.
 - `CaseTriageSummary` coloca estado real del catálogo, plazo QMS y responsable
-  primero; limita el resumen a tres líneas y las evidencias a dos chips con
-  "+N más en ampliado". El contenido desplazable es corto; el pie de acceso
-  auxiliar queda fijo, sin un segundo scroll de documentos.
+  primero; luego aparece una tarjeta de `CaseTriageNextStep` con fondo suave,
+  borde lateral de color, icono, título de etapa y contexto en máximo dos líneas
+  (`text-[13px]`), más un CTA azul primario con icono ArrowRight. La tarjeta
+  debe aportar contexto suficiente para decidir en cinco segundos: **no** dejar
+  un enlace secundario plano, ni una superficie vacía.
+  Debajo se conserva el extracto de tres líneas y máximo dos chips de evidencia
+  con "+N más en ampliado". El scroll es corto y el pie auxiliar sigue fijo.
 - REGLA DE ORO: jamás habilitar decisiones de negocio sobre texto truncado.
-  En contraído, Calidad usa exclusivamente CTA superior de consulta según
-  etapa: Recibido «Revisar expediente completo →»; Investigación «Ver expediente
-  completo →»; Revisión GC «Revisar propuesta completa →»; Resuelto
-  «Revisar y Publicar respuesta →» (solo si existe permiso de Calidad);
-  Finalizado/No Procede «Ver expediente completo →». El CTA solo amplía,
+  En contraído, Calidad usa una tarjeta con título/contexto/CTA según etapa:
+  Recibido «Evaluar procedencia» / «Revisar solicitud completa →»;
+  Investigación «Seguimiento de caso» / «Ver avance del caso completo →»;
+  Revisión GC «Revisión de Calidad» / «Revisar propuesta completa →»;
+  Resuelto «Preparar respuesta al cliente» / «Redactar y publicar respuesta →»
+  (solo cuando el rol está autorizado);
+  Finalizado/No Procede «Expediente cerrado» / «Ver expediente de cierre completo →».
+  El CTA solo amplía,
   nunca aprueba, devuelve, deriva, publica ni abre una transición destructiva.
   Los botones reales «Tomar decisión», «Aprobar», «Devolver», «Derivar a SACP»
   y «Redactar respuesta» permanecen únicamente en la columna derecha del
@@ -34,11 +41,16 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   En Investigación (extracto), Revisión GC (propuesta resumida y dos evidencias),
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
   (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
-- En Mis Quejas, la resolución muestra Sin borrador / Borrador guardado con fecha
-  / Cambios sin guardar y acción de ampliar y enfocar el mismo Tiptap.
-  Devoluciones pendientes aparecen en amarillo con dos líneas y "Corregir en
-  editor"; notas y análisis mantienen sus diálogos existentes y las evidencias
-  se limitan a dos chips en el panel contraído.
+- En Mis Quejas, el «Siguiente paso» adapta título, contexto, icono y CTA:
+  Sin borrador «Redactar resolución» / «Abrir editor para redactar →»;
+  con borrador «Borrador guardado» con fecha / «Abrir editor para modificar →»;
+  con cambios locales «Cambios sin guardar» / «Continuar editando →»;
+  devolución activa en amarillo «Corrección requerida» /
+  «Corregir en editor →». Los CTA abren y enfocan el único Tiptap existente
+  sin guardar ni enviar automáticamente. Un estado de solo lectura también
+  ofrece tarjeta de consulta. La observación de devolución queda resumida a
+  dos líneas, debajo; no repetir un segundo botón de editar. Notas y análisis
+  conservan sus diálogos; las evidencias muestran máximo dos chips.
 - Escape en ampliado reduce a 40vw y devuelve foco a la CTA del triaje; Escape
   en contraído cierra y devuelve foco a `ui-case-row`. Si hay cambios locales sin
   guardar, evitar su pérdida silenciosa. Los diálogos secundarios conservan su
