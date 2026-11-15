@@ -21,7 +21,7 @@ La justificación del único editor Tiptap también es la instrucción para el
 investigador. No existe un segundo campo de texto ni se duplica su captura.
 La pista gris de formato se oculta exclusivamente en este editor; se conservan
 los errores de límite y los controles de edición. Debajo queda únicamente
-**Adjuntar oficio de apertura** (opcional), con la nota de almacenamiento;
+**Adjuntar documento** (opcional), con la nota de almacenamiento;
 **Cancelar / Guardar** permanece en el footer.
 
 - Un oficio de apertura: archivo privado en Drive asociado a `queja_adjuntos`.
@@ -40,14 +40,12 @@ usuario operativo de Calidad que confirmó Procede.
 
 ## Investigación (Calidad / Admin)
 
-La columna central se titula **Detalles de asignación**. Presenta:
-investigador asignado del expediente actual, justificación guardada como instrucciones
-con el formato Tiptap original (o instrucciones históricas si las hay),
-oficio vinculado en `ListaAdjuntos` (visor privado) y aviso de existencia y
-última modificación del borrador guardado por el responsable. No muestra su
-contenido ni habilita edición. Si no hay metadatos de asignación en expedientes
-históricos, muestra responsable real y justificación del expediente cuando existe,
-y el estado real del borrador, sin inventar instrucciones independientes.
+La columna central se titula **Detalles de asignación**. Su orden es:
+**Justificación de Calidad** primero (la decisión Procede en su formato Tiptap),
+**Investigador asignado** debajo y, por último, el documento vinculado en
+`ListaAdjuntos` (visor privado). Si no existe justificación pero hay instrucciones
+históricas, se usan como respaldo de lectura. No se muestra ni se consulta un
+borrador del investigador desde `/quejas` y no se inventan registros inexistentes.
 
 La columna derecha se titula **Esperar propuesta del investigador** y explica
 que pasará a **Revisión GC** tras el envío del responsable. Incluye duración
@@ -68,8 +66,8 @@ La tabla de asignaciones usa RLS; lectura para admin/Calidad con permiso o
 investigador asignado con permiso. No se concede escritura directa a
 `authenticated`. La RPC es `SECURITY DEFINER` con validación explícita
 de la identidad y rol actual; `EXECUTE` concedido solo a authenticated.
-El borrador remoto ya tiene RLS que habilita metadatos para Calidad sin
-conceder derechos de modificación.
+La interfaz de Calidad no consulta los borradores remotos del investigador;
+la gestión y edición de esos borradores continúa exclusivamente en `/mis-quejas`.
 
 La publicación del backend/migración precede al cliente: este no debe invocar
 una RPC inexistente. Probar transición con un expediente sintético y roles
