@@ -24,6 +24,7 @@ import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaCl
 import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionAsignacion from '@/app/quejas/components/QuejaInvestigacionAsignacion'
+import DecisionProcedenciaBadge from '@/app/quejas/components/DecisionProcedenciaBadge'
 import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
@@ -256,19 +257,20 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const prepararPublicacion = (estado: PublicacionQuejaInput['estado'], value?: string | null,
-    format?: 'plain' | 'markdown'): PublicacionQuejaInput | 'legacy' | null => {
+    format?: 'plain' | 'markdown', respuestaAlternativa?: string): PublicacionQuejaInput | 'legacy' | null => {
     if (!esStaff) { showError(null, 'La comunicación final debe aprobarla Gestión de Calidad.'); return null }
     if (!publicacionVerificada) { showError(null, 'Comprobá la publicación de la respuesta antes de guardar.'); return null }
     // Solo false confirmado conserva el contrato anterior. Un error de red nunca
     // convierte la publicación obligatoria en una transición legacy.
     if (!publicacionDisponible) return 'legacy'
     const archivo = oficiosPublicables.find(adjunto => adjunto.id === oficioAdjuntoId) ?? null
-    const error = !respuestaPublica.trim() || respuestaPublica.trim().length > 10000
+    const contenidoRespuesta = respuestaAlternativa ?? respuestaPublica
+    const error = !contenidoRespuesta.trim() || contenidoRespuesta.trim().length > 10000
       ? 'Escribí la respuesta al cliente, de hasta 10.000 caracteres.'
       : !oficioWorkflow.trim() ? 'Registrá el número del oficio emitido por ECA.'
         : !archivo ? 'Seleccioná o adjuntá el oficio definitivo de este expediente.' : null
     if (error) { setPublicacionError(error); setDocumentTab('cliente'); showError(null, error); return null }
-    return { estado, respuestaPublica, numeroOficio: oficioWorkflow, adjunto: archivo, resolucion: value, resolucionFormato: format }
+    return { estado, respuestaPublica: contenidoRespuesta, numeroOficio: oficioWorkflow, adjunto: archivo, resolucion: value, resolucionFormato: format }
   }
 
   const beginWorkflowDraft = () => {
@@ -329,8 +331,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     }
     // El documento interno (justificación) ya ES la respuesta al cliente al declarar
     // No Procede: se comparte la fuente, sin redactar un texto paralelo en el panel.
-    if (!respuestaPublica.trim()) setRespuestaPublica(justificacion)
-    const publication = prepararPublicacion('No Procede', justificacion, justificacionFormato)
+    const contenidoRespuesta = respuestaPublica.trim() ? respuestaPublica : justificacion
+    if (!respuestaPublica.trim()) setRespuestaPublica(contenidoRespuesta)
+    const publication = prepararPublicacion('No Procede', justificacion, justificacionFormato, contenidoRespuesta)
     if (!publication) return
     if (!oficioWorkflow.trim()) { showError(null, 'Registrá el número del oficio explicativo antes de marcar como No Procede'); return }
     await runCaseUpdate(
@@ -752,7 +755,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError}
               responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} expanded={expanded} />
             : estadoActual === 'En Investigación' ? <QuejaInvestigacionAsignacion
-                responsable={responsableActual?.nombre ?? null}
+                responsable={responsableActual?.nombre ?? null} responsableEmail={responsableActual?.email ?? null}
                 justificacionProcede={queja.justificacion_procede} justificacionFormato={queja.justificacion_procede_formato}
                 asignacion={asignacion} asignacionLoading={asignacionLoading} asignacionError={!!asignacionError}
                 adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
@@ -767,9 +770,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
       resolveAuthor={event => event.usuario_id ? usuarios.find(u => u.id === event.usuario_id)?.nombre : undefined} />
     <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
-      headerActions={decisionOpen && decisionProcedencia ? <>
+      titleAccessory={decisionOpen && decisionProcedencia ? <DecisionProcedenciaBadge value={decisionProcedencia}
+        disabled={workflowPending || subiendoOficioApertura}
+        onChange={next => { draftVersions.current.workflow++; setDecisionProcedencia(next); setDocumentTab('interno'); setResponsableError(false) }} /> : undefined}
+      headerActions={decisionOpen && decisionProcedencia === 'procede' ? <>
         {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
-        <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label={`Cambiar decisión: ${decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}`} title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>{decisionProcedencia === 'procede' ? 'Procede' : 'No Procede'}</Button>
       </> : undefined}
       footer={decisionOpen && !decisionProcedencia ? undefined : <div className="flex flex-wrap items-center justify-end gap-2">
       {!reviewOpen && <Button variant="ghost" onClick={decisionOpen ? volverAElegirDecision : closeEditor} disabled={workflowPending}>Cancelar</Button>}
@@ -794,7 +799,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <div><h3 className="text-base font-semibold text-qms-dark">Seleccioná una decisión</h3><p className="mt-2 text-sm text-qms-muted">Después podés redactar su justificación y guardar.</p></div>
             <div role="group" aria-label="Decisión" className="grid w-full max-w-md grid-cols-2 gap-3">
               <Button variant="primary" className="min-h-11 min-w-0 text-base" disabled={workflowPending} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('procede') }}>Procede</Button>
-              <Button variant="danger" className="min-h-11 min-w-0 bg-qms-danger! text-base text-white!" disabled={workflowPending || !publicacionVerificada} onClick={() => { draftVersions.current.workflow++; if (publicacionDisponible) { setRespuestaNoProcede(true); setRespuestaCase(workflowQueja); setDecisionOpen(false); } else setDecisionProcedencia('no_procede') }}>No Procede</Button>
+              <Button variant="danger" className="min-h-11 min-w-0 bg-qms-danger! text-base text-white!" disabled={workflowPending || !publicacionVerificada} onClick={() => { draftVersions.current.workflow++; setDecisionProcedencia('no_procede') }}>No Procede</Button>
             </div>
           </div>}
           {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
