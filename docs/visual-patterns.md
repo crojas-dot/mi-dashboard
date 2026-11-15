@@ -271,13 +271,16 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   en el extremo derecho de la barra Tiptap: un clic lanza el análisis automático y
   presenta una sugerencia de lectura sin chat, menús ni acordeones. No se sobrescribe
   el borrador del usuario; solo se permite usar la sugerencia con el editor vacío.
-  El pie inferior mantiene Cancelar y Guardar, siempre azul mientras está visible;
-  Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
-  Cancelar abandona la edición, descarta únicamente los cambios sin guardar
-  y restaura el borrador persistido sin enviarlo.
-  Tras confirmación muestra check y Guardado neutral
-  deshabilitado, con fecha real en su título; no hay autoguardado ficticio.
-  El lienzo mide hasta 720px de alto (70dvh, mínimo 420px), sin reducir la columna central.
+  El pie inferior anclado mantiene Cancelar y Guardar; Guardar conserva su azul
+  primario aun deshabilitado, mientras el bloqueo evita una escritura vacía.
+  Cancelar restaura el borrador persistido y contrae la altura sin enviar nada.
+  Tras guardar, Editar pasa arriba del documento, con fecha real en su título.
+  Editar vuelve a modo escritura expandido verticalmente; el botón junto a
+  Asistencia permite Expandir/Contraer sin ampliar las columnas del expediente,
+  sin cambiar ancho ni mover el pie y sin remontar Tiptap. Guardar confirma y
+  vuelve a la altura habitual. No hay autoguardado.
+  El lienzo por defecto conserva aproximadamente 700px de alto y altura flexible
+  en pantallas bajas; solo su documento tiene scroll vertical interno.
   El envío queda siempre en Acción actual; no se duplica al pie del editor.
   Las tarjetas usan radios/tokens del sistema: azul para edición,
   amarillo para devolución y púrpura en el icono
