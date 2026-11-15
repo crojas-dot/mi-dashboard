@@ -119,7 +119,7 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.ok(panel.button('Expandir editor verticalmente'))
   assert.ok(panel.nodes().find(node => node.props['data-resolution-shell']))
   assert.equal(panel.editor().props.showFormattingHint, false)
-  assert.match(panel.nodes().find(node => node.props['data-resolution-inline']).props.className, /overflow-visible/)
+  assert.match(panel.nodes().find(node => node.props['data-resolution-inline']).props.className, /overflow-hidden/)
   assert.equal(panel.editor().props.layout, 'fill')
   assert.equal(panel.editor().props.minHeight, 540)
   assert.equal(panel.editor().props.variant, 'document')
@@ -135,7 +135,7 @@ test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el
   panel.select('A')
   const editorId = panel.editor().props.id
   const original = panel.nodes().find(node => node.props['data-resolution-inline'])
-  original.ref.current = {
+  original.props.ref.current = {
     getBoundingClientRect: () => ({ top: 92, bottom: 780, left: 365, width: 860, height: 688 }),
     closest: () => ({ getBoundingClientRect: () => ({ top: 0, bottom: 900 }) }),
   }
@@ -162,7 +162,7 @@ test('Guardar azul y Cancelar restauran altura normal; Editar arriba reabre expa
   assert.match(panel.button('Guardar').props.className, /disabled:opacity-100!/)
   panel.editor().props.onChange('Borrador', 'plain'); panel.render()
   const card = panel.nodes().find(node => node.props['data-resolution-inline'])
-  card.ref.current = {
+  card.props.ref.current = {
     getBoundingClientRect: () => ({ top: 92, bottom: 780, left: 365, width: 860, height: 688 }),
     closest: () => ({ getBoundingClientRect: () => ({ top: 0, bottom: 900 }) }),
   }
