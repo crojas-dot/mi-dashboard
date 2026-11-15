@@ -18,7 +18,7 @@ Quejas mantiene `AAAA-NNN`; otros módulos conservan sus prefijos. Calendario ad
 
 [Asignación y seguimiento de investigación de Quejas](../quejas-asignacion-investigacion-2026-11-14.md):
 Procede con instrucciones y oficio opcionales, transición atómica, vistas de Calidad
-sin repetir evaluación y metadatos del borrador sin edición.
+sin repetir evaluación, con justificación antes del responsable y sin avisos de borrador.
 
 [Limpieza compartida de Quejas/Mis Quejas](../quejas-panel-2026-10-13.md)
 ubica la selección persistente de fila con fondo #F0F4F7 (`ui-case-row`, `qms-row-selected`), contacto solo al ampliar,
