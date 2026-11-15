@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ClipboardCheck, Eye, FilePenLine, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
+import { ClipboardCheck, Eye, FilePenLine, Maximize2, Minimize2, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -61,6 +61,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [borradorGuardado, setBorradorGuardado] = useState<QuejaResolucionDraft | null>(null)
   const [guardandoResolucion, setGuardandoResolucion] = useState(false)
   const [editandoResolucion, setEditandoResolucion] = useState(true)
+  const [resolutionOverlay, setResolutionOverlay] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
   const [nota, setNota] = useState('')
   const [notaEditando, setNotaEditando] = useState<QuejaActividad | null>(null)
   const [notaEdicion, setNotaEdicion] = useState('')
@@ -96,9 +97,30 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     onNavigationLockChange?.(!!queja && navigationLocked)
     return () => onNavigationLockChange?.(false)
   }, [queja, navigationLocked, onNavigationLockChange])
+  // El editor ampliado conserva el nodo, la anchura y el borde inferior original.
+  const expandirResolucion = () => {
+    const card = resolutionContainer.current
+    if (!card) return
+    const bounds = card.getBoundingClientRect()
+    const dialogBounds = card.closest('dialog')?.getBoundingClientRect()
+    const top = Math.max(8, (dialogBounds?.top ?? 0) + 8)
+    const bottom = Math.min(bounds.bottom, (dialogBounds?.bottom ?? window.innerHeight) - 8, window.innerHeight - 8)
+    if (bottom - top < bounds.height) return
+    setResolutionOverlay({ top, left: bounds.left, width: bounds.width, height: bottom - top })
+  }
+  const contraerResolucion = () => setResolutionOverlay(null)
+  useEffect(() => {
+    if (!resolutionOverlay) return
+    const onResize = () => setResolutionOverlay(null)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [resolutionOverlay])
+  useEffect(() => { setResolutionOverlay(null) }, [isExpanded])
+
   const handleClose = useCallback(() => {
     scope.invalidate()
     resolutionCaret.current = null
+    setResolutionOverlay(null)
     setIsExpanded(false)
     setAnalisisAbierto(false)
     setPanelNotas(false)
@@ -112,6 +134,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [prevInvestigando, setPrevInvestigando] = useState(investigando)
   if (prevInvestigando !== investigando) {
     setPrevInvestigando(investigando)
+    setResolutionOverlay(null)
     if (investigando) {
       setBorradorVersion(null); setBorradorGuardado(null)
       setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
@@ -120,6 +143,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   }
   if ((queja?.id ?? null) !== prevQuejaId) {
     setPrevQuejaId(queja?.id ?? null)
+    setResolutionOverlay(null)
     setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
     setBorradorVersion(null); setBorradorGuardado(null); setGuardandoResolucion(false)
     setEditandoResolucion(true)
@@ -160,7 +184,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       if (operation.isCurrent()) {
         setBorradorVersion(saved.version); setBorradorGuardado(saved)
         setAiResult('')
-        if (draftVersions.current.resolucion === draftVersion) setEditandoResolucion(false)
+        if (draftVersions.current.resolucion === draftVersion) { setEditandoResolucion(false); setResolutionOverlay(null) }
         showSuccess('Borrador guardado en el expediente')
       }
     } catch (error) {
@@ -178,6 +202,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setResolucion(borradorGuardado?.contenido ?? '')
     setResolucionFormato(borradorGuardado?.formato ?? 'plain')
     setEditandoResolucion(false)
+    setResolutionOverlay(null)
     setAiResult('')
     setErrorResolucion(null)
   }
@@ -458,24 +483,45 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devoluciones[0] ?? devolucion} devoluciones={devoluciones} folio={queja.folio}
           archivos={adjuntos} onPreview={setPreviewAdjunto} onEditor={prepararResolucion}
           open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
-        {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          {errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          <div className="min-w-0"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución"
+        {investigando ? <div data-resolution-shell className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
+          <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
+            style={resolutionOverlay ?? undefined}
+            className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
+          {errorBorrador && borradorVersion === null && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
+          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-2 sm:px-5">
+            <span className="text-sm font-medium text-qms-muted">Borrador guardado</span>
+            <Button data-resolution-edit size="sm" variant="secondary"
+              title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
+              disabled={resolutionPending} onClick={() => { setEditandoResolucion(true); expandirResolucion() }}>
+              <Pencil aria-hidden="true" className="size-4 shrink-0" />Editar
+            </Button>
+          </div>}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución"
             placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
             value={resolucion} format={resolucionFormato}
             onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }}
-            variant="document" layout="content" minHeight={540} maxLength={DOCUMENT_LIMIT} required
-            readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null}
-            toolbarActions={editandoResolucion ? <Button size="sm" variant="secondary" data-resolution-assist
-              className="shrink-0 border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:bg-qms-hover-bg"
-              aria-label="Asistencia para la resolución" title="Generar análisis IA"
-              onClick={handleAnalisisAuto} loading={aiAutoLoading} loadingLabel="Analizando…"
-              disabled={resolutionPending}>
-              <WandSparkles aria-hidden="true" className="size-4" />Asistencia IA
-            </Button> : undefined}
+            variant="document" layout="fill" minHeight={540} maxLength={DOCUMENT_LIMIT} required
+            showFormattingHint={false} readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null}
+            toolbarActions={editandoResolucion ? <>
+              <Button size="sm" variant="secondary" data-resolution-assist
+                className="shrink-0 border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:bg-qms-hover-bg"
+                aria-label="Asistencia para la resolución" title="Generar análisis IA"
+                onClick={handleAnalisisAuto} loading={aiAutoLoading} loadingLabel="Analizando…"
+                disabled={resolutionPending}>
+                <WandSparkles aria-hidden="true" className="size-4" />Asistencia IA
+              </Button>
+              <Button size="icon" variant="ghost" data-resolution-expand
+                aria-label={resolutionOverlay ? 'Contraer editor' : 'Expandir editor verticalmente'}
+                aria-pressed={!!resolutionOverlay}
+                title={resolutionOverlay ? 'Contraer editor' : 'Expandir editor verticalmente'}
+                onClick={resolutionOverlay ? contraerResolucion : expandirResolucion}
+                className="size-9 shrink-0">
+                {resolutionOverlay ? <Minimize2 aria-hidden="true" className="size-4" /> : <Maximize2 aria-hidden="true" className="size-4" />}
+              </Button>
+            </> : undefined}
             className="mis-quejas-resolution-editor" /></div>
           {aiResult && editandoResolucion && <section data-resolution-assistance role="region"
-            aria-label="Análisis sugerido" className="min-w-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8">
+            aria-label="Análisis sugerido" className="min-w-0 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8">
             <div className="flex min-w-0 items-center justify-between gap-3">
               <p className="text-sm font-semibold text-qms-dark">Análisis sugerido</p>
               <button type="button" aria-label="Cerrar sugerencia" onClick={() => setAiResult('')}
@@ -483,7 +529,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 <X aria-hidden="true" className="size-4" />
               </button>
             </div>
-            <div className="mt-2 max-h-48 overflow-y-auto overscroll-contain rounded-card border border-qms-border bg-qms-surface p-3 text-sm leading-relaxed">
+            <div className="mt-2 max-h-40 overflow-y-auto overscroll-contain rounded-card border border-qms-border bg-qms-surface p-3 text-sm leading-relaxed">
               <RichTextContent value={aiResult} format="markdown" />
             </div>
             <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
@@ -494,7 +540,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
               </Button>
             </div>
           </section>}
-          <div data-resolution-footer className="sticky bottom-0 z-20 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-b-card border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
+          <div data-resolution-footer className="sticky bottom-0 z-20 flex shrink-0 min-w-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>
               <span className="text-sm font-semibold text-qms-dark">Resolución</span>
@@ -502,21 +548,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 {guardandoResolucion ? 'Guardando…' : borradorVersion === null ? 'Cargando borrador…' : resolutionDirty ? 'Cambios sin guardar' : resolutionSaved ? 'Borrador guardado' : 'Sin cambios'}
               </span>
             </div>
-            <div className="flex min-w-0 items-center justify-end gap-2">
-              {editandoResolucion
-                ? <>
-                  <Button data-resolution-cancel size="sm" variant="secondary" onClick={handleCancelarEdicionResolucion} disabled={resolutionPending}>Cancelar</Button>
-                  <Button data-resolution-save size="sm" variant="primary" onClick={handleGuardarResolucion}
-                    loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>
-                    <Save aria-hidden="true" className="size-4 shrink-0" />Guardar
-                  </Button>
-                </>
-                : <Button data-resolution-edit size="sm" variant="secondary"
-                    title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
-                    disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}>
-                    <Pencil aria-hidden="true" className="size-4 shrink-0" />Editar
-                  </Button>}
-            </div>
+            {editandoResolucion && <div className="flex min-w-0 items-center justify-end gap-2">
+              <Button data-resolution-cancel size="sm" variant="secondary" onClick={handleCancelarEdicionResolucion} disabled={resolutionPending}>Cancelar</Button>
+              <Button data-resolution-save size="sm" variant="primary"
+                className="disabled:border-qms-primary! disabled:bg-qms-primary! disabled:text-white! disabled:opacity-100!"
+                title={!resolutionDirty ? 'Sin cambios pendientes de guardar' : undefined}
+                onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>
+                <Save aria-hidden="true" className="size-4 shrink-0" />Guardar
+              </Button>
+            </div>}
+          </div>
           </div>
         </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel"><div data-reading-copy>{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
           {queja.numero_oficio_resolucion && <p className="mt-3 break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}</div>
