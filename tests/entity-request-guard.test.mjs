@@ -116,7 +116,7 @@ function panelHarness(kind = 'colaborador') {
     if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return text(value.type(value.props))
     return value?.props ? text(value.props.headerActions) + text(value.props.children) + text(value.props.footer) + text(value.props.compact) + text(value.props.cycle) + text(value.props.action) + text(value.props.request) + text(value.props.requestFooter) : typeof value === 'string' ? value : ''
   }
-  const button = (label) => nodes().find((node) => ['Button', 'CButton'].includes(node.type) && text(node).trim() === label.trim())
+  const button = (label) => nodes().find((node) => ['Button', 'CButton', 'button'].includes(node.type) && text(node).trim() === label.trim())
   return {
     requests, updates, guards, invalidations, toasts, render, nodes, button, invalidateContext,
     select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
@@ -418,7 +418,7 @@ for (const kind of ['colaborador', 'detalle']) {
 test('detalle: decisión de A no limpia la justificación ni el loading de B', async () => {
   const panel = panelHarness('detalle')
   const decide = id => {
-    panel.select(id, { estado: 'Recibido' }); panel.button('Tomar decisión').props.onClick(); panel.render()
+    panel.select(id, { estado: 'Recibido' }); 
     panel.button('No Procede').props.onClick(); panel.render()
     panel.input('justificación', 'Justificación ' + id)
     return panel.button('Guardar').props.onClick()
@@ -491,14 +491,14 @@ test('área guardada de una visita anterior no limpia el borrador de otra visita
 test('decisión conserva revisión del borrador al cerrar y volver a abrir con una lectura más nueva', async () => {
   const panel = panelHarness('detalle')
   panel.select('A', { estado: 'Recibido', revision: 17 })
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  
   panel.button('Procede').props.onClick(); panel.render()
   panel.input('justificación', 'Decisión original')
   const select = panel.nodes().find(node => node.props.id?.startsWith('queja-responsable-') && node.props.onSelect)
   select.props.onSelect({ id: 'owner', nombre: 'Responsable', rol: 'colaborador' }); panel.render()
   panel.nodes().find(node => node.type === 'Modal' && node.props.title.startsWith('Decisión de procedencia')).props.onClose(); panel.render()
   panel.select('A', { estado: 'Recibido', revision: 99 })
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  
   assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Decisión original')
   const submit = panel.button('Guardar').props.onClick
   const pending = submit(); submit()
@@ -515,7 +515,7 @@ test('decisión conserva revisión del borrador al cerrar y volver a abrir con u
 test('Procede sin responsable muestra error en el selector del encabezado antes de cualquier escritura', async () => {
   const panel = panelHarness('detalle')
   panel.select('A', { estado: 'Recibido', responsable_id: null })
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  
   panel.button('Procede').props.onClick(); panel.render()
   await panel.button('Guardar').props.onClick(); panel.render()
   const picker = () => panel.nodes().find(node => node.props.id?.startsWith('queja-responsable-') && node.props.onSelect)
@@ -538,7 +538,7 @@ test('Cancelar Procede o No Procede vuelve a elegir, conserva borrador y solo X 
   for (const choice of ['Procede', 'No Procede']) {
     const panel = panelHarness('detalle')
     panel.select('A', { estado: 'Recibido', revision: 17 })
-    panel.button('Tomar decisión').props.onClick(); panel.render()
+    
     panel.button(choice).props.onClick(); panel.render()
     panel.input('justificación', 'Texto conservado')
     panel.button('Cancelar').props.onClick(); panel.render()
@@ -559,7 +559,7 @@ test('Cancelar Procede o No Procede vuelve a elegir, conserva borrador y solo X 
 test('No Procede exige oficio antes de transicionar y no mezcla otra visita', async () => {
   const panel = panelHarness('detalle')
   panel.select('A', { estado: 'Recibido', numero_oficio_resolucion: '' })
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  
   panel.button('No Procede').props.onClick(); panel.render()
   panel.input('justificación', 'Motivo de no procedencia')
   await panel.button('Guardar').props.onClick(); panel.render()
@@ -570,7 +570,7 @@ test('No Procede exige oficio antes de transicionar y no mezcla otra visita', as
   assert.equal(panel.requests[0].input[1], 'No Procede')
   assert.equal(panel.requests[0].input[2].numeroOficio, 'ECA-GC-2026-009')
   panel.select('B', { estado: 'Recibido' })
-  panel.button('Tomar decisión').props.onClick(); panel.render()
+  
   panel.button('Procede').props.onClick(); panel.render()
   panel.input('justificación', 'Borrador de B')
   panel.requests[0].resolve({ id: 'A', revision: 5, estado: 'No Procede' })
