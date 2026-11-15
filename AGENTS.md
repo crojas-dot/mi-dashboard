@@ -482,6 +482,53 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   devuelve foco a `ui-case-row` (si hay cambios locales sin guardar, bloquear
   el descarte accidental y pedir guardar o cancelar). Los diálogos auxiliares
   cierran primero, sin colapsar el expediente. No usar scroll-smooth ni backdrop-blur.
+- En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
+  lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
+  y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
+  tienen fondo y anillo opacos para que la línea vertical no atraviese iconos.
+  Las tarjetas conservan línea discreta, nodos de 32 px,
+  cabeceras suaves y texto de 14 px. Contraído, las tarjetas mantienen
+  124 px desde 580 px útiles del lienzo y resumen de dos líneas. Expandido,
+  usan altura fluida basada en la ventana (124–212 px, 21dvh) para aprovechar
+  el espacio sin crear scroll innecesario; desde 700 px de ancho útil el
+  resumen puede mostrar tres líneas. En estrecho crecen según contenido. Cada tarjeta abre Modal
+  variant=document size=mail con navegación Anterior/Siguiente y acceso a
+  adjuntos reales. El artículo del visor usa todo el ancho interior útil y texto
+  de lectura de 16 px, como el patrón de Análisis, sin cambiar el modal.
+  No atribuir documentos internos sin asociación de etapa,
+  ni inventar autores/fechas. No modificar el timeline lateral ni las notas
+  del responsable solo para igualar una maqueta.
+- Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
+  y puntos grises para los anteriores, con anillo blanco sin círculo doble.
+  El modal «Historial y observaciones» de Calidad está centrado y usa size mail;
+  autores conocidos se resuelven desde cada contexto, sin inventar usuarios.
+- Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
+  estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
+  `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
+  [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
+  o scroll-smooth en scrollports internos. Laterales sticky sin max-height ni
+  overflow propios: el lienzo principal controla el único scroll; ampliado sin
+  velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
+- Visor privado: NO usar iframe externo, preconnect, enlace externo ni
+  autenticación directa contra drive.google.com. Los archivos Drive se consultan por
+  fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
+  activo, rol, expediente, pertenencia y privacidad física de Drive. El navegador
+  recibe un Blob local con URL.createObjectURL y la revoca al cerrar/cambiar
+  de sesión o de documento. Archivos legacy Storage usan download autenticado
+  con el mismo usuario Supabase; nunca se abre URL firmada externa. Sin sesión
+  válida o si cambia la identidad, mostrar error y no conservar la vista.
+  Sin soporte de vista previa para un MIME, ofrecer Descargar, sin dar permisos
+  nuevos ni exponer service role. Para acortar la espera se precargan hasta dos
+  adjuntos Drive del expediente y se anticipa el documento al hover/focus; los
+  bytes ya autorizados se reutilizan en memoria hasta 45 segundos y un máximo
+  de 5 entradas. La caché se separa por usuario/rol y se limpia ante cambio de
+  identidad, rol o logout, nunca usa cookies Google, almacenamiento persistente
+  ni URLs públicas. La primera consulta puede demorar por verificaciones de
+  permisos/privacidad en la API; no prometer latencia en milisegundos.
+
+Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
+[capa visual](docs/arquitectura/visual.md) y [panel](docs/quejas-panel-2026-10-13.md).
+
 ### Contrato de aceptación: triaje contextual y directorio (14-11-2026)
 
 - **Calidad / `/quejas`:** cada estado tiene una sola tarjeta compartida
@@ -533,52 +580,6 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   `.github/workflows/qms-workspace-verify.yml`. Una prueba de código correcta
   no sustituye inspección visual y operativa en navegador autenticado.
 
-- En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
-  lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
-  y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
-  tienen fondo y anillo opacos para que la línea vertical no atraviese iconos.
-  Las tarjetas conservan línea discreta, nodos de 32 px,
-  cabeceras suaves y texto de 14 px. Contraído, las tarjetas mantienen
-  124 px desde 580 px útiles del lienzo y resumen de dos líneas. Expandido,
-  usan altura fluida basada en la ventana (124–212 px, 21dvh) para aprovechar
-  el espacio sin crear scroll innecesario; desde 700 px de ancho útil el
-  resumen puede mostrar tres líneas. En estrecho crecen según contenido. Cada tarjeta abre Modal
-  variant=document size=mail con navegación Anterior/Siguiente y acceso a
-  adjuntos reales. El artículo del visor usa todo el ancho interior útil y texto
-  de lectura de 16 px, como el patrón de Análisis, sin cambiar el modal.
-  No atribuir documentos internos sin asociación de etapa,
-  ni inventar autores/fechas. No modificar el timeline lateral ni las notas
-  del responsable solo para igualar una maqueta.
-- Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
-  y puntos grises para los anteriores, con anillo blanco sin círculo doble.
-  El modal «Historial y observaciones» de Calidad está centrado y usa size mail;
-  autores conocidos se resuelven desde cada contexto, sin inventar usuarios.
-- Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
-  estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
-  `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
-  [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
-  o scroll-smooth en scrollports internos. Laterales sticky sin max-height ni
-  overflow propios: el lienzo principal controla el único scroll; ampliado sin
-  velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
-- Visor privado: NO usar iframe externo, preconnect, enlace externo ni
-  autenticación directa contra drive.google.com. Los archivos Drive se consultan por
-  fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
-  activo, rol, expediente, pertenencia y privacidad física de Drive. El navegador
-  recibe un Blob local con URL.createObjectURL y la revoca al cerrar/cambiar
-  de sesión o de documento. Archivos legacy Storage usan download autenticado
-  con el mismo usuario Supabase; nunca se abre URL firmada externa. Sin sesión
-  válida o si cambia la identidad, mostrar error y no conservar la vista.
-  Sin soporte de vista previa para un MIME, ofrecer Descargar, sin dar permisos
-  nuevos ni exponer service role. Para acortar la espera se precargan hasta dos
-  adjuntos Drive del expediente y se anticipa el documento al hover/focus; los
-  bytes ya autorizados se reutilizan en memoria hasta 45 segundos y un máximo
-  de 5 entradas. La caché se separa por usuario/rol y se limpia ante cambio de
-  identidad, rol o logout, nunca usa cookies Google, almacenamiento persistente
-  ni URLs públicas. La primera consulta puede demorar por verificaciones de
-  permisos/privacidad en la API; no prometer latencia en milisegundos.
-
-Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
-[capa visual](docs/arquitectura/visual.md) y [panel](docs/quejas-panel-2026-10-13.md).
 
 ## Informe y correo de respuesta al cliente
 
