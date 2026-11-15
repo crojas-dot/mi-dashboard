@@ -338,10 +338,15 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Workspace lateral derecho de 40vw/100dvh; la tabla conserva columnas, filtros y
   scroll en ambos ejes. Móvil y ampliado usan diálogo nativo. Cerrar restablece el
   lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
-- Contraído: etapa actual y segmentos horizontales arriba; acciones primero y luego
-  documento dentro de un único marco desplazable. Sin desplegable de datos del
-  cliente ni espacio reservado. El contacto se mantiene oculto/montado para no
-  remontar el documento al ampliar.
+- Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
+  etapa y segmentos horizontales no interactivos, tarjeta compacta de estado/plazo/
+  responsable, decisión principal, extracto de tres líneas, máximo dos chips de
+  adjuntos y contador "+N más en ampliado", acceso al expediente completo.
+  El pie es compacto: Historial y observaciones (Calidad) o Mis notas (responsable).
+  NO renderizar en pantalla el documento largo ni los laterales duplicados. El
+  árbol completo de tres columnas, las instancias de Tiptap, el estado de visita,
+  revisiones y borradores siguen MONTADOS (ocultación por display, sin desmontaje).
+  La tabla y la geometría del drawer no cambian.
 - Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
   izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
   se alinean con Descripción. Por debajo se apila sin desbordar el diálogo.
@@ -360,9 +365,10 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
   expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
   Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
-- Mis Quejas trabaja sin pestañas ni modal de escritura. Resolución es la primera
-  tarjeta central, con ancho completo y lienzo `min(70dvh,720px)`, mínimo 420px;
-  no hay secciones ni acciones debajo del editor. `CaseWorkspace documentStyle="cards"` conserva
+- En Mis Quejas AMPLIADO, Resolución continúa como la primera tarjeta central,
+  sin pestañas ni modal adicional de escritura, con ancho completo y lienzo
+  `min(70dvh,720px)`, mínimo 420px; no hay secciones ni acciones debajo del
+  editor. `CaseWorkspace documentStyle="cards"` conserva
   las columnas; la hoja de Quejas sigue siendo el valor predeterminado.
   Notas es una tarjeta compacta debajo del cliente (`requestFooter`): cantidad real,
   última fecha o Sin notas todavía; abre un diálogo centrado (`variant="dialog"`) para
@@ -426,13 +432,25 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   contraído se conserva el indicador visual no interactivo de la etapa actual.
   Al reducir o cambiar el folio se cierra la consulta. Nunca fingir registros
   de etapas futuras ni permitir mutaciones desde una vista histórica.
-- Divulgación progresiva: Recibido muestra descripción y adjuntos del cliente;
-  Investigación operativa en Mis Quejas conserva Tiptap, notas y evidencias;
-  vistas de consulta y Revisión GC se centran en texto de la etapa y archivos
-  internos al final, sin acordeones «Ver antecedentes» ni solicitar contexto
-  repetido. Resuelto y Finalizado utilizan el mismo resumen de cierre;
-  «Redactar respuesta» solo está disponible cuando corresponda. En Resuelto,
-  «Generar expediente» es una acción secundaria compacta con su lógica intacta.
+- Divulgación progresiva en ambos módulos y TODAS sus etapas: Recibido muestra
+  descripción truncada (3 líneas) y dos adjuntos del cliente; En Investigación
+  de Calidad muestra solo un extracto; revisión GC presenta propuesta truncada
+  (3 líneas), dos archivos internos y los handlers existentes de Aprobar/Devolver/
+  SACP sujetos a permisos. Resuelto/Finalizado muestran únicamente los pasos de
+  `QuejaCierreResumen`; No Procede solo Solicitud y No procedencia. La respuesta
+  al cliente sigue disponible en Resuelto. Mis Quejas usa en contraído un estado
+  de resolución (sin borrador, guardado con fecha, cambios locales sin guardar),
+  aviso amarillo de devolución de 2 líneas y "Corregir en editor" cuando aplica;
+  evidencia limitada a dos chips, acceso Mis notas y Ver caso completo (Análisis).
+  Ampliar para redactar activa edición y enfoca el mismo Tiptap, sin autoguardado.
+  El workspace AMPLIADO mantiene intacta su distribución de cliente/documento/
+  acciones, 3 columnas desde 1100px útiles, los controles, permisos y documentos.
+  Solo al ampliar se muestran lectura y redacción completas. No crear consultas
+  adicionales en la transición: TanStack Query conserva el ámbito y claves.
+  Escape en ampliado colapsa sin perder el borrador; en contraído cierra y
+  devuelve foco a `ui-case-row` (si hay cambios locales sin guardar, bloquear
+  el descarte accidental y pedir guardar o cancelar). Los diálogos auxiliares
+  cierran primero, sin colapsar el expediente. No usar scroll-smooth ni backdrop-blur.
 - En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
   lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
   y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
