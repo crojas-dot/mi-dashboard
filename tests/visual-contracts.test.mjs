@@ -532,6 +532,8 @@ function complaintPanelFixture() {
     '@/lib/queries/useUsuarios': { useUsuarios: () => ({}) },
     '@/lib/queries/useQuejaComentarios': { useQuejaComentarios: () => ({}), useCrearQuejaComentario: () => ({}) },
     '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}) },
+    '@/lib/queries/useQuejaResolucionDraft': { useQuejaResolucionDraft: () => ({ data:null, isLoading:false, error:null }) },
+    '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data:null, isLoading:false, error:null }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
     '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => ({ data: false }) },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({}) },
