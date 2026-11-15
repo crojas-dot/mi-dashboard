@@ -38,7 +38,7 @@ test('etapa 2 presenta responsable, instrucciones, oficio y fecha real del borra
   assert.match(value, /Otra evidencia\.docx/)
   assert.match(value, /El investigador tiene un borrador en curso/)
   assert.match(value, /Última modificación/)
-  assert.match(value, /<time dateTime=/)
+  assert.match(value, /<time date[Tt]ime=/)
   assert.doesNotMatch(value, /PRIVADO DE PRUEBA/, 'Calidad solo ve metadatos, no texto del borrador')
   assert.doesNotMatch(value, /La investigación está a cargo de la persona asignada/)
 })
