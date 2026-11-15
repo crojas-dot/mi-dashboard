@@ -640,11 +640,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
   </> : estadoActual === 'Recibido' ? !editing && <>
-    <Button size="sm" className="min-h-10 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}>
+    <Button size="sm" className="min-h-12 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}>
       <span className="flex items-center gap-2"><CheckCircle aria-hidden="true" className="size-4" />Procede</span>
       <ArrowRight aria-hidden="true" className="size-4" />
     </Button>
-    <Button size="sm" variant="danger" className="min-h-10 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}>
+    <Button size="sm" variant="danger" className="min-h-12 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}>
       <span className="flex items-center gap-2"><XCircle aria-hidden="true" className="size-4" />No Procede</span>
       <ArrowRight aria-hidden="true" className="size-4" />
     </Button>
@@ -916,7 +916,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
     {respuestaCase && esStaff && <QuejaRespuestaClienteModal key={respuestaCase.id + (respuestaNoProcede ? ':rejected' : ':approved')} queja={respuestaCase} noProcede={respuestaNoProcede} autor={user?.nombre ?? 'Gestión de Calidad'} adjuntos={adjuntos} archivosLoading={adjuntosLoading} archivosError={!!adjuntosError}
-      onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); if (!completed) setDecisionOpen(true) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
+      onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); setDecisionOpen(false) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
     {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'}
       onClose={() => setInformeOpen(false)} />}
     <ConfirmDialog open={confirmarSACP} title="Derivar a SACP" message="Se creará una acción correctiva vinculada a esta queja. La revisión de Calidad y la respuesta al cliente continuarán su flujo independiente." confirmLabel="Crear acción SACP" loading={derivando} onCancel={() => setConfirmarSACP(false)} onConfirm={() => { void handleDerivarSACP() }} />
