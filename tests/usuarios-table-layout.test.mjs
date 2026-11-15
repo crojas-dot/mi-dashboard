@@ -18,13 +18,15 @@ test('Usuario ocupa solo 24% y las demás columnas comienzan más a la izquierda
   assert.ok(widths[5] >= 12, 'Acciones tiene aire sin recortar el menú')
 })
 
-test('la letra A de Acciones coincide con el eje de tres puntos, sin trucos de ancho', () => {
-  assert.match(page, /<TableHeaderCell className="pl-\[18px\] text-left">Acciones<\/TableHeaderCell>/)
+test('Acciones alinea la cabecera con un botón Editar visible y mantiene menú flotante', () => {
+  assert.match(page, /<TableHeaderCell className="pl-0 text-left">Acciones<\/TableHeaderCell>/)
   assert.match(page, /<TableCell className="pl-0 text-left">\s*<UsuarioAccionesMenu/)
-  assert.doesNotMatch(page, /w-\[18px\] justify-end whitespace-nowrap">Acciones/)
-  assert.match(menu, /inline-flex size-9/)
-  assert.match(menu, /<MoreVertical aria-hidden="true" className="size-\[18px\]"/)
-  // Celda pl-0: icono de 18px centrado en botón de 36px => eje x = 18px.
+  assert.match(menu, /inline-flex min-h-9/)
+  assert.match(menu, /border-qms-primary\/25 bg-qms-primary-soft/)
+  assert.match(menu, /<Pencil aria-hidden="true" className="size-3\.5 shrink-0" \/>/)
+  assert.match(menu, /<span>Editar<\/span>/)
+  assert.match(menu, /<ChevronDown aria-hidden="true"/)
+  assert.doesNotMatch(menu, /MoreVertical/)
   assert.match(menu, /data-users-action-trigger/)
   assert.match(menu, /createPortal\(/)
 })
