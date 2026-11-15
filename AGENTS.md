@@ -805,9 +805,17 @@ repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» exis
 y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
 filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
 mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
-scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal
-de usuario tiene tamaño mail/alto fill fijo y conserva el formulario montado al
-cambiar a Seguridad. La tabla sigue el orden Usuario, Rol, Estado,
+scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal de Usuarios usa el mismo Modal del sistema y altura fill, con
+dos experiencias diferenciadas: **crear** es mail (896px), una sola vista
+desplazable con «Información del usuario» y «Configuración de acceso»;
+**editar** es lg (700px), con pestañas «Detalles del perfil» y «Seguridad y
+acceso», avatar inicial y zona de peligro con confirmación de eliminación.
+Los campos comparten el contrato de FormData y el formulario permanece montado
+al consultar Seguridad. La contraseña de alta sigue siendo generada y revelada
+una sola vez por PasswordModal; no hay invitaciones realmente enviadas.
+El restablecimiento generado sigue abriendo ResetPasswordModal. Invitación,
+contraseña manual, recuperación por correo, 2FA y cierre de sesiones están
+rotulados como pendientes y no ejecutan mutaciones ni muestran estados ficticios. La tabla sigue el orden Usuario, Rol, Estado,
 Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
 factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
 no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
