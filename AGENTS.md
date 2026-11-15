@@ -374,14 +374,16 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   última fecha o Sin notas todavía; abre un diálogo centrado (`variant="dialog"`) para
   leer/agregar. Cada nota propia de esta investigación ofrece menú de tres puntos con
   Editar/Eliminar y confirmación en línea; Escape o pulsar fuera lo cierra. Las notas
-  de devolución de Calidad conservan su historial sin acciones. En contraído la
-  tarjeta sigue disponible y el contacto permanece oculto. El borrador de nota
-  pertenece a la visita y no se pierde al cerrar ese panel.
+  de devolución de Calidad conservan su historial sin acciones. Solo en el
+  AMPLIADO queda la tarjeta bajo el cliente; en el contraído se sustituye
+  visualmente por la acción fija "Mis notas" del pie. El contacto, la tarjeta
+  y el borrador de nota permanecen montados durante el cambio de presentación.
   Adjuntar evidencia abre el selector nativo desde el botón Adjuntar del encabezado,
   a la izquierda de Guardar/Editar; cancelar el selector no cierra el expediente.
-  Los adjuntos se listan dentro de la misma tarjeta, debajo del lienzo, tanto al
-  editar como con el borrador guardado, con `ListaAdjuntos layout="cards"`; comparten
-  la consulta y los permisos existentes, sin sheet ni contador adicional.
+  Solo en AMPLIADO los adjuntos se listan dentro de la misma tarjeta,
+  debajo del lienzo, tanto al editar como con el borrador guardado, con
+  `ListaAdjuntos layout="cards"`; en contraído se muestran máximo dos chips
+  y un contador de archivos adicionales sin descargar ni eliminar registros.
   Acción actual queda a la derecha. `QuejaInvestigacionResumen` muestra únicamente
   la devolución real de Calidad en amarillo cuando existe; sin ella no reserva espacio.
   No repetir ahí el contexto, Cliente, evaluación ni Procede. Ver caso completo queda en Acción actual, encima de
