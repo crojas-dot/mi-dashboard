@@ -51,8 +51,13 @@ sin modificar otra visita o identidad. El borrador guardado permite navegar entr
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
 El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
-a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil. El scroll del editor sigue
-dependiendo del foco.
+a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y
+Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil.
+La redacción desplaza únicamente su contenido, mientras toolbar y pie se mantienen;
+la pista genérica de Tiptap está oculta. Expandir/Contraer se ubica junto a
+Asistencia IA, aumenta la altura hacia arriba y conserva ancho y pie. Guardar
+o cancelar restablece el alto, sin modificar el flujo ni el borrador fuera
+de los handlers existentes.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
 última fecha o Sin notas todavía. Ver notas abre un diálogo centrado con las notas
