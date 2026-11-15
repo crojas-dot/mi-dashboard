@@ -344,7 +344,9 @@ permisos ni datos persistidos.
   hacia arriba conservando ancho y borde inferior; Guardar/Cancelar restablecen
   el alto habitual. Guardar siempre mantiene
   el azul primary incluso deshabilitado; Editar se muestra arriba del borrador
-  guardado y reabre el editor expandido. No ampliar todo el expediente.
+  guardado y reabre el editor **sin expansión automática**. El tamaño base es
+  `h-[clamp(420px,58dvh,560px)]`; solo el botón Expandir aplica el overlay
+  vertical, sin ampliar todo el expediente.
   Guardar conserva borrador remoto/versionado, sin cambiar estado, revisión de Queja,
   propuesta enviada ni avisar a GC/cliente. Las ediciones
   posteriores sin guardar siguen siendo de la visita; no hay autoguardado.
@@ -797,26 +799,31 @@ useActualizarPermiso, escrituras por nivel sobre leer/escribir, guardado inmedia
 restricciones de configuración solo admin y usuarios solo admin; NO inventar
 permisos distintos de esos dos booleanos ni simular guardado al hacer clic.
 Usuarios administra cuentas por API con guards; no asumir cierre transaccional
-distribuido del último admin. El perfil incorpora «Detalles del perfil» y
-«Seguridad y acceso»: crear/editar/activar/desactivar/eliminar y restablecer
-contraseña generada son operativos. La invitación/recuperación por correo, 2FA
-y definición manual desde esta UI son acciones pendientes: mostrarlas como
-pendientes/deshabilitadas; nunca mostrar éxito, aplicar cambios falsos ni inventar estado 2FA. Usuarios evita
+distribuido del último admin. Crear/editar/activar/desactivar/eliminar y
+restablecer o definir contraseña **desde el propio panel** utilizan el API existente.
+Invitaciones/recuperación por correo, 2FA, cambio obligatorio al entrar y cierre
+remoto de sesiones siguen pendientes, visibles pero deshabilitados: nunca mostrar
+éxito, aplicar cambios falsos ni inventar estado 2FA. Usuarios evita
 repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» existente
 y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
 filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
 mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
-scroll vertical interno y tarjetas móviles sin scroll horizontal. El modal de Usuarios usa el mismo Modal del sistema y altura fill, con
-dos experiencias diferenciadas: **crear** es mail (896px), una sola vista
-desplazable con «Información del usuario» y «Configuración de acceso»;
-**editar** es lg (700px), con pestañas «Detalles del perfil» y «Seguridad y
-acceso», avatar inicial y zona de peligro con confirmación de eliminación.
-Los campos comparten el contrato de FormData y el formulario permanece montado
-al consultar Seguridad. La contraseña de alta sigue siendo generada y revelada
-una sola vez por PasswordModal; no hay invitaciones realmente enviadas.
-El restablecimiento generado sigue abriendo ResetPasswordModal. Invitación,
-contraseña manual, recuperación por correo, 2FA y cierre de sesiones están
-rotulados como pendientes y no ejecutan mutaciones ni muestran estados ficticios. La tabla sigue el orden Usuario, Rol, Estado,
+scroll vertical interno y tarjetas móviles sin scroll horizontal. Ambos modales usan
+`Modal` `variant="document" size="mail" height="fill"` (896 px / 90dvh),
+con cabecera, scroll único y pie fijo. Crear mantiene una vista con «Información
+del usuario» y «Configuración de acceso»; tras el alta muestra y permite copiar
+la contraseña temporal **dentro del mismo modal** hasta pulsar Listo.
+Editar conserva pestañas «Detalles del perfil» y «Seguridad y acceso», avatar,
+y zona de peligro con confirmación. FormData permanece montado al cambiar de tab.
+La pestaña Seguridad preselecciona contraseña generada, ofrece regenerar, mostrar,
+copiar, cancelar o guardar; la contraseña manual también se guarda con PATCH
+validado sin abrir una segunda ventana. El botón «Restablecer contraseña» del
+menú abre directamente esa pestaña. No renderizar `PasswordModal` ni
+`ResetPasswordModal` desde `/usuarios`; ambos componentes legacy permanecen
+en el repositorio solo por compatibilidad hasta su eventual retiro.
+Invitación, recuperación por correo, cambio forzado al iniciar, 2FA y sesiones
+son controles pendientes y **deshabilitados** sin estados ficticios.
+La tabla sigue el orden Usuario, Rol, Estado,
 Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
 factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
 no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
@@ -833,8 +840,9 @@ a edición directamente. En escritorio, respetar `colgroup`
 `<TableHeaderCell className="pl-0 text-left">Acciones</TableHeaderCell>` y
 celda de acción `pl-0`, sin el antiguo truco de `w-[18px] justify-end`.
 El menú mantiene Actualizar perfil,
-Restablecer contraseña (generada y guardada por modal existente, NO correo
-de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
+Restablecer contraseña (abre Seguridad del mismo modal de Gestionar usuario;
+NO correo de recuperación ni un segundo diálogo), y Desactivar/Restaurar
+cuenta según estado, con confirmación
 y prohibición de desactivar la cuenta propia. No duplicar mutaciones ni guards.
 El menú se muestra en portal fuera del scroll de tabla/tarjetas, para no
 recortarse al final; soporta clic externo, Escape, flechas y foco accesible.
@@ -850,66 +858,60 @@ por encontrar una tabla o modal. Reportería ofrece filtros/vistas/impresión; n
 confundirla con el informe Word/PDF editable de Quejas ni asumir guardado/envío de
 informes configurables. No asignar porcentajes por cantidad de archivos o pruebas.
 
-## Contrato verificado de Usuarios — 15 noviembre de 2026
+## Contrato de Usuarios actualizado — 15 noviembre de 2026
 
-Este contrato describe **código en `main`**, inspeccionado el 15-11-2026;
-no certifica pruebas ejecutadas, sesión real ni despliegue de Vercel. El HTML
-aportado por el propietario es referencia de **jerarquía y distribución**,
-nunca licencia para copiar colores, añadir lógica simulada o reemplazar los
-componentes compartidos. Aplicar `docs/visual-patterns.md` y los tokens QMS.
+**Fuente:** `components/usuarios/UsuarioFormModal.tsx` y `app/usuarios/page.tsx` en
+`main`. El HTML externo aporta distribución y jerarquía, nunca funcionalidades
+simuladas ni colores distintos a `docs/visual-patterns.md`. La implementación
+en repositorio no implica que se hayan ejecutado las pruebas ni que esté publicada.
 
-- **Crear nuevo usuario (`mode="crear"`):** `Modal` document de altura `fill`
-  y tamaño `mail`; una sola vista con secciones «Información del usuario» y
-  «Configuración de acceso», scroll interior y pie estable. Campos obligatorios
-  de nombre, correo, rol del sistema y estado inicial; zona ilustrativa de foto
-  explícitamente futura. Al confirmar, generar contraseña temporal segura,
-  efectuar un único `POST /api/usuarios` y mostrarla mediante el
-  `PasswordModal` existente; no enviar invitación real ni hacer creer que 2FA
-  está activa. «Definir manualmente» permanece inhabilitado.
-- **Gestionar usuario (`mode="editar"`):** `Modal` document `fill`, tamaño
-  `lg`; pestañas accesibles «Detalles del perfil» y «Seguridad y acceso».
-  En perfil: avatar con inicial, rol real y formulario de nombre/correo/rol/
-  estado. El formulario se **mantiene montado** al cambiar de pestaña para
-  conservar valores no guardados; no crear un segundo formulario para Seguridad.
-  La edición confirma mediante `PATCH`, sin cambiar identificadores ni realizar
-  una operación antes de pulsar «Guardar cambios».
-- **Seguridad y acceso:** «Restablecer contraseña segura» utiliza
-  `onResetPassword` → `ResetPasswordModal` ya integrado; no sustituir por correo
-  de recuperación ni por edición manual de contraseña. Invitaciones, enlaces de
-  recuperación, cambio obligatorio en el inicio, 2FA y cierre de sesiones son
-  **pendientes**: etiquetas visibles y controles deshabilitados, sin mutaciones,
-  interruptores que aparenten persistencia ni estados artificiales por usuario.
-- **Zona de peligro:** eliminar cuenta requiere confirmación dentro del modo
-  editar. No ofrecer eliminar ni editar rol/estado para la propia cuenta, y
-  mantener la protección efectiva del servidor. Desactivar/restaurar sigue en
-  `UsuarioAccionesMenu`; no duplicar acciones ni convertir el botón «Editar»
-  del listado en actualización automática.
-- **Contratos y accesibilidad:** conservar `FormData` con
-  `nombre`/`email`/`rol`/`estado`, labels/id, campos requeridos,
-  estados de carga, errores sanitizados y bloqueo compartido de guardar/eliminar.
-  Los campos deshabilitados de cuenta propia NO se envían vacíos al API.
-  Si un guardado persistió y falla el refresco del listado, informar sin repetir
-  el `POST`/`PATCH`; no duplicar usuarios. Mantener pestañas y pie operables por
-  teclado, un único scroll interno, responsive y foco coherente.
-- **Tabla y permisos:** «Seguridad (2FA)» se representa como «No disponible»,
-  no como un dato calculado, mientras API/DB no expongan factores reales.
-  `RolesAccesos` se mantiene en la pestaña «Roles y permisos», conservando
-  los dos booleanos de lectura/escritura y la autorización real de admin.
-- **Verificación dirigida antes de integrar:** revisar
-  `tests/usuarios-accesos-layout.test.mjs`,
+- **Mismo tamaño y distinto contenido:** alta y gestión usan `Modal` document
+  `size="mail" height="fill"`, ancho máximo 896 px. Cabecera y pie fijos;
+  el contenido tiene **un único scroll**; responsive, legibilidad y foco accesibles.
+- **Alta:** una vista con perfil y configuración de acceso; genera contraseña
+  segura y efectúa un solo `POST`. Luego, **sin cerrar ni abrir `PasswordModal`**,
+  bloquea la repetición del alta, muestra una vez la contraseña temporal dentro
+  del mismo formulario, permite mostrar/ocultar y copiar, y ofrece «Listo».
+  Cerrar limpia los datos sensibles locales. Un refresco fallido no debe duplicar
+  la escritura ni ocultar la clave ya creada.
+- **Gestión:** «Detalles del perfil» y «Seguridad y acceso». Preservar el
+  `FormData` de nombre/correo/rol/estado sin desmontarlo entre tabs; la propia
+  cuenta no puede modificar rol/estado ni eliminarse. Zona de peligro con
+  confirmación de eliminación dentro del mismo diálogo.
+- **Contraseñas integradas:** Seguridad tiene seleccionado por defecto
+  «Generar contraseña segura». Panel expandible **en el mismo modal** con
+  regeneración, visibilidad, copia, cancelar y «Guardar contraseña».
+  «Definir contraseña manual» también es operativo con mínimo 8 caracteres.
+  Ambos hacen `PATCH /api/usuarios` con `{ id, newPassword }` usando el
+  servicio existente y bloqueos anti-doble escritura. No cambiar contraseña
+  al hacer clic en el método: solo al pulsar Guardar. Si PATCH ya se completó,
+  no repetirlo porque falle invalidación de lista; conservar el estado de éxito.
+  «Restablecer contraseña» del menú abre `Gestionar usuario` en la pestaña
+  Seguridad; nunca montar otro modal de reseteo sobre él.
+- **Controles futuros:** invitación/recuperación por correo, forzar cambio en
+  siguiente inicio, 2FA, restablecer 2FA y cerrar sesiones permanecen visibles
+  pero deshabilitados y marcados «Pendiente». Ningún interruptor premarcado
+  debe representar configuración real inexistente. La tabla continúa mostrando
+  «No disponible» para el 2FA hasta que API/DB proporcionen datos verdaderos.
+- **Permisos y verificaciones:** backend Bearer/rol/admin, RLS y operaciones
+  autorizadas siguen siendo fuente de verdad; no reemplazarlos por UI.
+  Validar con `tests/usuarios-accesos-layout.test.mjs`,
+  `tests/usuarios-page-reliability.test.mjs`,
   `tests/usuarios-reliability.test.mjs`,
   `tests/usuarios-table-layout.test.mjs` y
-  `tests/usuarios-acciones-menu.test.mjs`; ejecutar las suites afectadas,
-  `npx tsc --noEmit`, lint, estructura, visual y build según corresponda.
-  Comprobar visualmente crear/editar, pestañas, confirmación, reset, móviles,
-  errores de red y cuenta propia en navegador autenticado. La inspección del
-  código de estas interfaces no equivale a haber corrido las pruebas.
+  `tests/usuarios-acciones-menu.test.mjs`, más TS/lint/build y navegador
+  autenticado, antes de afirmar entrega. No crear usuarios reales para QA.
+- **Mis Quejas (ajuste del 15-11):** pulsar «Editar» sobre el borrador guardado
+  reabre el mismo Tiptap con `resolutionOverlay=null` y altura normal
+  `clamp(420px,58dvh,560px)`. La expansión vertical solo ocurre si se pulsa
+  explícitamente Expandir. El workspace debe continuar ampliándose al elegir
+  «Redactar/Corregir» desde el triaje compacto, porque el documento completo
+  no se edita en esa vista, pero esto NO amplía automáticamente el editor vertical.
 
-**Regla de actualización:** antes de afirmar «ya está implementado» comprobar
-ruta, consumidor y handler real. Diferenciar cuatro niveles: maqueta de referencia,
-código integrado en la rama inspeccionada, prueba ejecutada y despliegue en
-producción con SHA verificado. Documentar el nivel comprobado y dejar pendientes
-sin operación falsa. No declarar «listo en producción» por un commit en `main`.
+**Niveles de evidencia:** diseño de referencia, código integrado, pruebas
+realmente ejecutadas y producción con SHA verificado son categorías distintas.
+El corte previo de Vercel permanece histórico. Consultar CI/despliegue actual
+antes de afirmar que una modificación de `main` está disponible en producción.
 
 ## Verificar, entregar y mantener
 
