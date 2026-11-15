@@ -102,7 +102,7 @@ test('errores del RPC conservan revisión y no fabrican una asignación confirma
 })
 
 test('la migración mantiene autorizaciones y transición atómica sin escritura directa pública', () => {
-  const sql = fs.readFileSync('supabase/migrations/20261115035753_quejas_investigacion_asignacion.sql', 'utf8')
+  const sql = fs.readFileSync('supabase/migrations/20261115041345_quejas_investigacion_asignacion.sql', 'utf8')
   assert.match(sql, /create table public\.queja_investigation_assignments/)
   assert.match(sql, /alter table public\.queja_investigation_assignments enable row level security/)
   assert.match(sql, /create policy assignment_context_authorized_read/)
