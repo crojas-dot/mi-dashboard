@@ -1,0 +1,30 @@
+name: Verificación de CaseWorkspace
+
+on:
+  pull_request:
+    paths:
+      - 'app/quejas/**'
+      - 'app/mis-quejas/**'
+      - 'components/Modal.tsx'
+      - 'tests/quejas-progressive-disclosure.test.mjs'
+      - 'docs/visual-patterns.md'
+      - 'AGENTS.md'
+      - '.github/workflows/qms-workspace-verify.yml'
+
+jobs:
+  qms-workspace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: node --test tests/quejas-progressive-disclosure.test.mjs tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs tests/quejas-stepper-consulta.test.mjs
+      - run: npm run build
+      - run: npm run check:structure
+      - run: npm run check:visual
