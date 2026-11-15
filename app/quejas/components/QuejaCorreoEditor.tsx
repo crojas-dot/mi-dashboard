@@ -18,9 +18,9 @@ interface Props {
 /** Redacción sin marcos interiores; Para y N.º de oficio comparten la primera fila. */
 export default function QuejaCorreoEditor({ destinatario, oficio, onOficioChange, correo, onChange, disabled = false, id }: Props) {
   const messageRef = useRef<HTMLTextAreaElement>(null)
-  return <section aria-label="Redactar correo al cliente" className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-qms-surface">
+  return <section aria-label="Redactar correo al cliente" className="flex h-full min-h-0 flex-col overflow-hidden bg-qms-surface">
     <div className="shrink-0 px-5 pt-3 sm:px-8 sm:pt-4">
-      <div className="flex min-w-0 flex-col gap-3 border-b border-qms-border py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+      <div className="flex min-w-0 flex-col gap-3 border-b border-gray-100 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <span className="w-12 shrink-0 text-sm text-qms-muted">Para</span>
           {destinatario
@@ -35,10 +35,10 @@ export default function QuejaCorreoEditor({ destinatario, oficio, onOficioChange
           <input id={id + '-oficio'} type="text" required value={oficio} maxLength={REGISTRO_QUEJA_LIMITES.oficio} disabled={disabled}
             onChange={event => onOficioChange(event.target.value)}
             placeholder="Oficio oficial de ECA"
-            className="min-w-0 flex-1 border-0 border-b border-qms-border bg-transparent px-1 py-1.5 text-sm text-qms-dark outline-none transition-colors focus:border-qms-primary focus-visible:ring-0 disabled:opacity-65" />
+            className="min-w-0 flex-1 rounded-sm border-0 bg-transparent px-1 py-1.5 text-sm text-qms-dark outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:opacity-65" />
         </div>
       </div>
-      <div className="flex min-w-0 items-center gap-4 border-b border-qms-border py-3">
+      <div className="flex min-w-0 items-center gap-4 border-b border-gray-100 py-3">
         <label htmlFor={id + '-asunto'} className="w-12 shrink-0 text-sm text-qms-muted">Asunto</label>
         <input id={id + '-asunto'} type="text" autoComplete="off" value={correo.asunto} maxLength={CORREO_QUEJA_LIMITES.asunto} required disabled={disabled}
           onChange={event => onChange({ ...correo, asunto: event.target.value })}
@@ -46,13 +46,12 @@ export default function QuejaCorreoEditor({ destinatario, oficio, onOficioChange
           placeholder="Asunto del correo" />
       </div>
     </div>
-    <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] px-5 py-5 sm:px-8 sm:py-6">
+    <div className="flex min-h-0 flex-1 flex-col px-5 py-5 sm:px-8 sm:py-6">
       <label htmlFor={id + '-mensaje'} className="sr-only">Mensaje</label>
       <textarea data-response-message-scroll ref={messageRef} id={id + '-mensaje'} value={correo.cuerpo} maxLength={CORREO_QUEJA_LIMITES.cuerpo} required disabled={disabled}
         onChange={event => onChange({ ...correo, cuerpo: event.target.value })}
-        className="h-full min-h-0 w-full resize-none overflow-y-auto overscroll-contain border-0 bg-transparent text-base leading-[1.75] text-qms-dark outline-none placeholder:text-qms-muted focus-visible:ring-0 disabled:opacity-65"
+        className="h-full min-h-0 w-full flex-1 resize-none overflow-y-auto overscroll-contain border-0 bg-transparent text-base leading-[1.75] text-qms-dark focus:border-transparent focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 placeholder:text-qms-muted disabled:opacity-65"
         placeholder="Escriba su mensaje aquí..." />
-      <span className="mt-4 text-right text-xs text-qms-muted">{correo.cuerpo.length} / {CORREO_QUEJA_LIMITES.cuerpo.toLocaleString('es-CR')}</span>
     </div>
   </section>
 }
