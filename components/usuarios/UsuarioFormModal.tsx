@@ -39,7 +39,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [tab, setTab] = useState<'detalles' | 'seguridad'>(initialTab)
   const [claveModo, setClaveModo] = useState<'generada' | 'manual'>('generada')
   const [clave, setClave] = useState(() => initialTab === 'seguridad' && esEditar ? generatePassword(16) : '')
-  const [claveVisible, setClaveVisible] = useState(false)
+  const [claveVisible, setClaveVisible] = useState(initialTab === 'seguridad')
   const [claveGuardada, setClaveGuardada] = useState(false)
   const [claveCopiada, setClaveCopiada] = useState(false)
   const [createdPassword, setCreatedPassword] = useState('')
@@ -339,7 +339,9 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
                         <h4 className="text-sm font-semibold text-qms-dark">Enviar invitación por correo</h4>
-                        <span className="shrink-0 rounded-button border border-qms-border bg-qms-surface px-2 py-1 text-[11px] font-medium text-qms-muted">Pendiente</span>
+                        <label className="flex shrink-0 items-center gap-2 text-xs text-qms-muted">
+                          <input type="checkbox" disabled aria-label="Enviar invitación (pendiente)" title={mensajePendiente} className="size-4 accent-qms-primary" />Pendiente
+                        </label>
                       </div>
                       <p className="mt-1 text-xs leading-relaxed text-qms-muted">La invitación con enlace de activación se integrará en una próxima etapa. Todavía no se envía automáticamente.</p>
                     </div>
@@ -365,6 +367,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                       </h4>
                       <p className="mt-1 text-xs leading-relaxed text-qms-muted">La configuración de factores todavía no está disponible en el sistema.</p>
                     </div>
+                    <input type="checkbox" disabled aria-label="Requerir 2FA al crear (pendiente)" title={mensajePendiente} className="mt-0.5 size-4 shrink-0 accent-qms-primary" />
                   </div>
                 </div>
               </section>
