@@ -54,7 +54,7 @@ No cargar todos los documentos para una modificación aislada.
 | Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
 | Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
 | Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) |
-| Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar y pestañas), app/usuarios/page.tsx (callbacks), components/usuarios/PasswordModal.tsx y components/usuarios/ResetPasswordModal.tsx (contraseña generada) |
+| Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar, contraseña integrada y pestañas), app/usuarios/page.tsx (callbacks); PasswordModal.tsx y ResetPasswordModal.tsx solo legacy, sin montaje en Usuarios |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
