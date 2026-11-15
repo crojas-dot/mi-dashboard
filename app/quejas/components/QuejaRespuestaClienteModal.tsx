@@ -237,7 +237,7 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
             <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
               <Upload aria-hidden="true" className="size-4" />Subir archivo
             </Button>
-            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 ">
+            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-gray-50 px-3 py-1.5">
               <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
               <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
                 className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
@@ -247,13 +247,6 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
                 className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
                 onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
             </div>}
-              <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
-              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
-          </div>
-          <p className="min-w-0 text-right text-xs leading-relaxed text-gray-500">
-            {selectedFile ? 'El PDF seleccionado se enviará con el correo.'
-              : informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}
-          </p>
           {noProcede && <div className="flex min-w-0 items-center">
             <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
               const visit = scope.capture(), context = scope.captureContext()
@@ -261,6 +254,14 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
               setEditingReport(true)
             }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
           </div>}
+              <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
+              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+          </div>
+          <p className="min-w-0 text-right text-xs leading-relaxed text-gray-500">
+            {selectedFile ? 'El PDF seleccionado se enviará con el correo.'
+              : informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}
+          </p>
+
           {props.archivosError && <p role="alert" className="w-full text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
           {informeError && !report && <p role="alert" className="w-full text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}
         </section>
