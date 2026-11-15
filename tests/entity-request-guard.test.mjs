@@ -70,10 +70,12 @@ function panelHarness(kind = 'colaborador') {
     '@/lib/services/quejaInvestigacionService': { actualizarNotaInvestigacion: async () => {}, eliminarNotaInvestigacion: async () => {} },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
     '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: () => ({ data:null,isFetching:false,error:null }) },
+    '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data:null,isLoading:false,error:null }) },
     '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => ({ data: false }) },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({}), quejaAdjuntosKey: (id) => ['attachments', id] },
     '@/lib/services/quejaWorkflowService': {
       transicionarQueja: (...input) => request('transition', input),
+      iniciarInvestigacionQueja: (...input) => request('assignment', input),
       enviarResolucionBorradorRevision: (q,version,resolucion,resolucionFormato) => request('transition',[q,'Pendiente de Revisión GC',{ version,resolucion,resolucionFormato }]),
       guardarResolucionBorrador: (...input) => request('draft',input),
       revisarResolucionQueja: (...input) => request('review', input),
