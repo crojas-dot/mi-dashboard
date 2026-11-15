@@ -95,6 +95,13 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
         await mutateUsuario('POST', { ...perfil, password }, fallback)
         result = { tempPassword: password }
         setCreatedPassword(password)
+        // Llevar al resultado dentro del scroll del modal, sin mover la página exterior.
+        if (typeof requestAnimationFrame === 'function') {
+          requestAnimationFrame(() => {
+            const scrollport = document.querySelector<HTMLElement>('[data-user-editor-scroll]')
+            if (scrollport) scrollport.scrollTop = scrollport.scrollHeight
+          })
+        }
       }
       showSuccess(esEditar ? 'Usuario actualizado' : 'Usuario creado')
       try {
