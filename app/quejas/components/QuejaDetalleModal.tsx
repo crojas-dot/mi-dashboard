@@ -764,7 +764,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
                 borrador={borradorInvestigador} borradorLoading={borradorInvestigadorLoading} borradorError={!!borradorInvestigadorError}
                 adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
                 onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} />
-            : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>
+            : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>}
       </CaseWorkspace>
     </Modal>
 
