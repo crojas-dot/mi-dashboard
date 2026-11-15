@@ -38,6 +38,9 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Los botones directos «Procede» y «No Procede» de Evaluación, «Aprobar», «Devolver», «Derivar a SACP»
   y «Redactar respuesta» permanecen únicamente en la columna derecha del
   ampliado, con sus mismos handlers, permisos y validaciones.
+  Evaluación reutiliza el `CaseSection` plano, `Badge`, `QuejaPlazoIndicator`
+  y `Button` con variantes primary/danger y tokens QMS. No añadir un segundo
+  `w-80`, padding, bordes, altura o fondo dentro de la columna del workspace.
 - Las seis etapas usan triaje propio: Recibido (solicitud),
   En Investigación (extracto), Revisión GC (propuesta resumida y dos evidencias),
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
