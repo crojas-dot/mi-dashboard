@@ -639,7 +639,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <CaseTriageAttachments files={adjuntosCliente} onPreview={setPreviewAdjunto}
                 loading={adjuntosLoading} error={!!adjuntosError} />
             </>}
-      <Button type="button" size="sm" variant="secondary" className="w-full" onClick={() => setExpanded(true)}>
+      <Button type="button" data-case-triage-expand size="sm" variant="secondary" className="w-full" onClick={() => setExpanded(true)}>
         {estadoActual === 'Recibido' ? 'Leer expediente completo' : 'Ver expediente completo'} →
       </Button>
     </div>
@@ -648,7 +648,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   return <>
     <Modal open={!!queja} onClose={handleClose}
       onEscape={() => {
-        if (expanded) { setReadOnlyStage(null); setExpanded(false); return }
+        if (expanded) {
+          setReadOnlyStage(null); setExpanded(false)
+          requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
+          return
+        }
         const row = document.querySelector<HTMLElement>('.ui-case-row[aria-selected="true"]')
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
