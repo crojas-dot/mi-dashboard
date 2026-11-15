@@ -387,7 +387,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         <h3 className="text-sm font-semibold">Devolución de Calidad</h3>
         <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{devolucion.motivo}</p>
         <Button size="sm" variant="secondary" className="w-full" disabled={resolutionPending} onClick={prepararResolucion}>
-          Corregir en editor
+          Corregir en editor →
         </Button>
       </section>}
       {investigando ? <section data-case-triage-resolution className="space-y-3">
@@ -404,8 +404,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         </p>}
         <Button size="sm" className="w-full" disabled={resolutionPending || borradorVersion === null}
           onClick={prepararResolucion}>
-          {resolutionDirty ? 'Continuar editando'
-            : borradorGuardado ? 'Abrir editor para modificar' : 'Redactar resolución'}
+          {resolutionDirty ? 'Continuar editando →'
+            : borradorGuardado ? 'Abrir editor para modificar →' : 'Redactar resolución →'}
         </Button>
       </section> : <CaseTriageExcerpt title={tieneDocumentoRegistrado ? 'Resultado registrado' : 'Resumen del expediente'}
         text={queja.resolucion || queja.descripcion || 'Sin información registrada.'} />}

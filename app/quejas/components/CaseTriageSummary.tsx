@@ -11,11 +11,12 @@ import type { QuejaPlazoRun } from '@/lib/queries/useQuejaSeguimiento'
 import { caseDeadline } from './quejaExpedienteModel'
 
 /** Triaje común sin editores. El expediente íntegro permanece montado en CaseWorkspace. */
-export function CaseTriageSummary({ queja, runs, responsable, plazoError = false, children, footer }: {
+export function CaseTriageSummary({ queja, runs, responsable, plazoError = false, primaryAction, children, footer }: {
   queja: Queja
   runs: QuejaPlazoRun[]
   responsable?: string
   plazoError?: boolean
+  primaryAction?: ReactNode
   children: ReactNode
   footer: ReactNode
 }) {
@@ -37,6 +38,7 @@ export function CaseTriageSummary({ queja, runs, responsable, plazoError = false
           </div>
         </dl>
         {plazoError && <p role="alert" className="text-xs text-qms-muted">No se pudo consultar el detalle del calendario.</p>}
+        {primaryAction && <div data-case-triage-review-cta>{primaryAction}</div>}
       </section>
       {children}
     </div>

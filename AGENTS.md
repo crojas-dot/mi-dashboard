@@ -340,8 +340,15 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
 - Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
   etapa y segmentos horizontales no interactivos, tarjeta compacta de estado/plazo/
-  responsable, decisión principal, extracto de tres líneas, máximo dos chips de
-  adjuntos y contador "+N más en ampliado", acceso al expediente completo.
+  responsable y CTA superior de consulta/ampliación; extracto de tres líneas,
+  máximo dos chips de adjuntos y contador "+N más en ampliado".
+  REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
+  acción crítica (Tomar decisión, Aprobar, Devolver, Derivar a SACP, Enviar a GC,
+  Resolver, Publicar) se ejecuta desde contraído. Solo el botón
+  "Revisar expediente completo →" o variante contextual expande el workspace;
+  los botones originales de negocio viven únicamente en la columna derecha del
+  AMPLIADO. Acciones auxiliares seguras como abrir Notas/Historial/Análisis
+  o abrir el editor sí se permiten sin ejecutar transiciones.
   El pie es compacto: Historial y observaciones (Calidad) o Mis notas (responsable).
   NO renderizar en pantalla el documento largo ni los laterales duplicados. El
   árbol completo de tres columnas, las instancias de Tiptap, el estado de visita,
@@ -437,8 +444,14 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Divulgación progresiva en ambos módulos y TODAS sus etapas: Recibido muestra
   descripción truncada (3 líneas) y dos adjuntos del cliente; En Investigación
   de Calidad muestra solo un extracto; revisión GC presenta propuesta truncada
-  (3 líneas), dos archivos internos y los handlers existentes de Aprobar/Devolver/
-  SACP sujetos a permisos. Resuelto/Finalizado muestran únicamente los pasos de
+  (3 líneas), dos archivos internos y CTA "Revisar propuesta completa →".
+  Los handlers existentes de Aprobar/Devolver/SACP NO se montan en la superficie
+  visible del contraído; permanecen intactos exclusivamente en la columna derecha
+  del ampliado. En Recibido el CTA es "Revisar expediente completo →", sin
+  botón "Tomar decisión". En Resuelto la persona autorizada ve
+  "Revisar y Publicar respuesta →" para llegar al panel ampliado y seguir el
+  flujo existente de correo/publicación (sin publicar directamente).
+  Resuelto/Finalizado muestran únicamente los pasos de
   `QuejaCierreResumen`; No Procede solo Solicitud y No procedencia. La respuesta
   al cliente sigue disponible en Resuelto. Mis Quejas usa en contraído un estado
   de resolución (sin borrador, guardado con fecha, cambios locales sin guardar),
