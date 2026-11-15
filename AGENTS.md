@@ -45,6 +45,7 @@ No cargar todos los documentos para una modificación aislada.
 | Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol |
 | Tarjetas de «Siguiente paso» y triaje compacto | app/quejas/components/CaseTriageSummary.tsx (CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments); metadatos por etapa en quejaExpedienteModel.ts; integración en QuejaDetalleModal.tsx y QuejaColaboradorPanel.tsx |
 | Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md) |
+| Asignación de investigación de Calidad | QuejaInvestigacionAsignacion.tsx, useQuejaInvestigationAssignment.ts, iniciarInvestigacionQueja en quejaWorkflowService.ts; migración 20261115035753_quejas_investigacion_asignacion.sql |
 | Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
@@ -272,7 +273,17 @@ permisos ni datos persistidos.
   Migración 20261111155021 aplicada. No renumerar ni borrar las 153 quejas existentes;
   el generador salta números ya ocupados y conserva el crecimiento después de 999.
   El borrado para lanzamiento es un trabajo futuro, todavía no autorizado para ejecutar.
-- Procede requiere justificación y responsable. Investigación prepara la propuesta;
+- Procede requiere justificación y responsable; permite instrucciones opcionales (hasta
+  4.000 caracteres) y un oficio de apertura opcional. La transición y los metadatos
+  vinculados se guardan en una sola transacción DB, con la revisión esperada, sin
+  mezclar instrucciones con justificación de procedencia ni introducir autoguardado.
+  La subida a Drive persiste el archivo inmediatamente: cancelar la decisión deja
+  el adjunto como archivo ordinario sin asignarle oficio; solo confirmar Procede
+  guarda su asociación. La tabla de asignación tiene SELECT autorizado y ninguna
+  escritura directa para authenticated. Calidad consulta solo metadatos del borrador
+  del responsable, nunca su contenido ni su editor. La documentación vigente está
+  en docs/quejas-asignacion-investigacion-2026-11-14.md.
+  Investigación prepara la propuesta;
   enviarla a Revisión GC no publica ni notifica al cliente. Aprobar y continuar pasa
   a Resuelto; Calidad prepara después la comunicación final. Publicar respuesta
   congela el correo y documento elegidos y pasa atómicamente a Finalizado.
@@ -453,7 +464,9 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   de etapas futuras ni permitir mutaciones desde una vista histórica.
 - Divulgación progresiva en ambos módulos y TODAS sus etapas: Recibido muestra
   descripción truncada (3 líneas) y dos adjuntos del cliente; En Investigación
-  de Calidad muestra solo un extracto; revisión GC presenta propuesta truncada
+  de Calidad muestra estado, responsable e instrucciones reales (no reciclar la
+  justificación de la evaluación como análisis); el CTA es «Ver estado de la
+  investigación →». Revisión GC presenta propuesta truncada
   (3 líneas), dos archivos internos y CTA "Revisar propuesta completa →".
   Los handlers existentes de Aprobar/Devolver/SACP NO se montan en la superficie
   visible del contraído; permanecen intactos exclusivamente en la columna derecha
