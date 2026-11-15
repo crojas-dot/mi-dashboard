@@ -132,7 +132,7 @@ test('menú flotante conserva acciones reales sin activar 2FA ficticio ni expone
   assert.match(actions, /document\.body/)
   assert.match(actions, /aria-haspopup="menu"/)
   assert.match(actions, /role="menu"/)
-  assert.match(actions, /Editar perfil/)
+  assert.match(actions, /Actualizar perfil/)
   assert.match(actions, /Restablecer contraseña/)
   assert.match(actions, /Desactivar cuenta/)
   assert.match(actions, /Restaurar cuenta/)
