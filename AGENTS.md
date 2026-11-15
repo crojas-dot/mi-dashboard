@@ -340,12 +340,14 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
 - Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
   etapa y segmentos horizontales no interactivos, tarjeta compacta de estado/plazo/
-  responsable y CTA superior de consulta/ampliación; extracto de tres líneas,
-  máximo dos chips de adjuntos y contador "+N más en ampliado".
+  responsable y tarjeta de «Siguiente paso» superior, con fondo suave y borde
+  acentuado, icono, título, explicación de 2 líneas y CTA principal azul.
+  No reducir el triaje a un botón plano o una vista vacía. Debajo conservar
+  extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
   REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
   acción crítica (Tomar decisión, Aprobar, Devolver, Derivar a SACP, Enviar a GC,
   Resolver, Publicar) se ejecuta desde contraído. Solo el botón
-  "Revisar expediente completo →" o variante contextual expande el workspace;
+  CTA principal contextual (con flecha a la derecha) expande el workspace;
   los botones originales de negocio viven únicamente en la columna derecha del
   AMPLIADO. Acciones auxiliares seguras como abrir Notas/Historial/Análisis
   o abrir el editor sí se permiten sin ejecutar transiciones.
@@ -447,16 +449,22 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   (3 líneas), dos archivos internos y CTA "Revisar propuesta completa →".
   Los handlers existentes de Aprobar/Devolver/SACP NO se montan en la superficie
   visible del contraído; permanecen intactos exclusivamente en la columna derecha
-  del ampliado. En Recibido el CTA es "Revisar expediente completo →", sin
-  botón "Tomar decisión". En Resuelto la persona autorizada ve
-  "Revisar y Publicar respuesta →" para llegar al panel ampliado y seguir el
+  del ampliado. En Recibido el CTA «Revisar solicitud completa →» abre
+  la evaluación, sin botón «Tomar decisión». En Revisión GC el CTA dice
+  «Revisar propuesta completa →». En Resuelto, la persona autorizada ve
+  «Redactar y publicar respuesta →» para llegar al panel ampliado y seguir el
   flujo existente de correo/publicación (sin publicar directamente).
   Resuelto/Finalizado muestran únicamente los pasos de
   `QuejaCierreResumen`; No Procede solo Solicitud y No procedencia. La respuesta
   al cliente sigue disponible en Resuelto. Mis Quejas usa en contraído un estado
   de resolución (sin borrador, guardado con fecha, cambios locales sin guardar),
-  aviso amarillo de devolución de 2 líneas y "Corregir en editor" cuando aplica;
-  evidencia limitada a dos chips, acceso Mis notas y Ver caso completo (Análisis).
+  alerta amarilla de devolución de 2 líneas y tarjeta «Corrección requerida»
+  con CTA «Corregir en editor →» cuando aplica. Sin borrador la tarjeta dice
+  «Redactar resolución», con fecha guardada dice «Borrador guardado» y con
+  cambios locales «Cambios sin guardar», cada una con explicación de dos líneas
+  y botón azul para abrir el mismo editor. Los estados de Mis Quejas en solo
+  lectura también tienen tarjeta de consulta, nunca vacío. Evidencia limitada
+  a dos chips, acceso Mis notas y Ver caso completo (Análisis).
   Ampliar para redactar activa edición y enfoca el mismo Tiptap, sin autoguardado.
   El workspace AMPLIADO mantiene intacta su distribución de cliente/documento/
   acciones, 3 columnas desde 1100px útiles, los controles, permisos y documentos.
