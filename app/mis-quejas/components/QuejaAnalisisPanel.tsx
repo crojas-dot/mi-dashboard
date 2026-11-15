@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
 import { Clock3, FileText, LockKeyhole, Paperclip, UserRound } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
@@ -87,10 +87,14 @@ export function QuejaTimeline({ actividad, loading, error, onRetry, resolveAutho
 export default function QuejaAnalisisPanel(props: Props) {
   const { queja } = props
   const [activeTab, setActiveTab] = useState<AnalysisTab>('analisis')
+  const [tabContext, setTabContext] = useState({ caseId: queja.id, open: props.open })
   const scrollRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
+  // Restablecer la pestaña en la misma renderización que abre otro expediente.
+  // Evita un efecto síncrono extra y no enseña una pestaña previa durante un frame.
+  if (tabContext.caseId !== queja.id || tabContext.open !== props.open) {
+    setTabContext({ caseId: queja.id, open: props.open })
     if (props.open) setActiveTab('analisis')
-  }, [props.open, queja.id])
+  }
 
   const analysis = getQuejaAnalysis(queja)
   const adjuntosCliente = props.adjuntos.filter(adjunto => !adjunto.usuario_id)
