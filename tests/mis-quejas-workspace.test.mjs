@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { loadModule } from './load-module.mjs'
+import { readFileSync } from 'node:fs'
 
 // Los eventos y estados son del componente real; red, sesión y editor pesado son dobles locales.
 function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait } = {}) {
@@ -128,6 +129,21 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.equal(panel.button('Enviar a Revisión GC').props.disabled, true)
   assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
   assert.equal(panel.nodes().some(node => node.props.role === 'tab' || node.type === 'Modal' && node.props.open && node.props.variant === 'document'), false)
+})
+
+test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificiales', () => {
+  const source = readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  const css = readFileSync('app/styles/components.css', 'utf8')
+  assert.doesNotMatch(source, /scrollIntoView\(\{ block: 'start' \}\)/)
+  assert.match(source, /if \(scrollport\) scrollport\.scrollTop = 0/)
+  assert.match(source, /focus\(\{ preventScroll: true \}\)/)
+  assert.doesNotMatch(css, /\[data-case-document\]:has\(\[data-resolution-shell\]\)\s*\{\s*position:\s*sticky/)
+  assert.doesNotMatch(css, /\.mis-quejas-resolution-editor \[data-rich-text-viewport\]::before/)
+  const actions = source.slice(source.indexOf('data-resolution-toolbar-actions'), source.indexOf('className="mis-quejas-resolution-editor"'))
+  assert.match(actions, /data-resolution-expand-separator/)
+  assert.match(actions, /h-11 w-11/)
+  assert.match(actions, /<Maximize aria-hidden="true" className="size-5"/)
+  assert.match(actions, /<Minimize aria-hidden="true" className="size-5"/)
 })
 
 test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el alto normal', () => {
