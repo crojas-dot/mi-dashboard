@@ -680,7 +680,9 @@ Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no ha
 factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
 no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
 Estado usa punto y fondo discretos semánticos; Rol conserva el badge existente.
-Acciones es un único menú de tres puntos al final: Editar perfil,
+Acciones es un único menú de tres puntos en la última columna, alineada
+**a la izquierda como los demás encabezados y celdas**, sin pegar el botón
+al extremo derecho de la tabla: Editar perfil,
 Restablecer contraseña (generada y guardada por modal existente, NO correo
 de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
 y prohibición de desactivar la cuenta propia. No duplicar mutaciones ni guards.
