@@ -193,7 +193,7 @@ export default function UsuariosPage() {
               <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Seguridad (2FA)</TableHeaderCell>
               <TableHeaderCell>Último acceso</TableHeaderCell>
-              <TableHeaderCell className="pl-[18px] text-left">Acciones</TableHeaderCell>
+              <TableHeaderCell className="pl-0 text-left">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <tbody>
