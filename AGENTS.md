@@ -43,6 +43,7 @@ No cargar todos los documentos para una modificación aislada.
 | Controles, modales y cargas | components/ui/ y components/Modal.tsx |
 | Páginas y editores | app/<modulo>/page.tsx y sus components/ |
 | Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol |
+| Tarjetas de «Siguiente paso» y triaje compacto | app/quejas/components/CaseTriageSummary.tsx (CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments); metadatos por etapa en quejaExpedienteModel.ts; integración en QuejaDetalleModal.tsx y QuejaColaboradorPanel.tsx |
 | Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md) |
 | Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
@@ -51,6 +52,7 @@ No cargar todos los documentos para una modificación aislada.
 | PDF oficial automático por versión | QuejaInformeModal.tsx; subirAdjuntoQueja; informePdfFilename en lib/utils/quejaInforme.ts; quejaAdjuntosKey |
 | Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
 | Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
+| Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
@@ -343,12 +345,17 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   responsable y tarjeta de «Siguiente paso» superior, con fondo suave y
   contorno uniforme tenue (SIN rayas verticales de color ni `border-l-4`),
   icono, título, explicación de 2 líneas y CTA principal azul.
+  El contorno es `border` uniforme y tenue: prohibidos `border-l-2`,
+  `border-l-4` y otros acentos verticales en todas las tarjetas de triaje,
+  incluida la observación amarilla de devolución de Mis Quejas.
+  Los tonos azul, ámbar y verde se aplican con fondos suaves y borde fino;
+  conservar iconografía, legibilidad y hover del botón azul institucional.
   No reducir el triaje a un botón plano o una vista vacía. Debajo conservar
   extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
   REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
   acción crítica (Tomar decisión, Aprobar, Devolver, Derivar a SACP, Enviar a GC,
-  Resolver, Publicar) se ejecuta desde contraído. Solo el botón
-  CTA principal contextual (con flecha a la derecha) expande el workspace;
+  Resolver, Publicar) se ejecuta desde contraído. El CTA principal contextual
+  (con flecha a la derecha) únicamente expande el workspace;
   los botones originales de negocio viven únicamente en la columna derecha del
   AMPLIADO. Acciones auxiliares seguras como abrir Notas/Historial/Análisis
   o abrir el editor sí se permiten sin ejecutar transiciones.
@@ -475,6 +482,57 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   devuelve foco a `ui-case-row` (si hay cambios locales sin guardar, bloquear
   el descarte accidental y pedir guardar o cancelar). Los diálogos auxiliares
   cierran primero, sin colapsar el expediente. No usar scroll-smooth ni backdrop-blur.
+### Contrato de aceptación: triaje contextual y directorio (14-11-2026)
+
+- **Calidad / `/quejas`:** cada estado tiene una sola tarjeta compartida
+  `CaseTriageNextStep` en el bloque superior de `CaseTriageSummary`.
+  `getCaseTriageNextStep` define el título, la descripción breve, el icono,
+  el tono y la etiqueta (separados del código persistido y del catálogo):
+  - Recibido: «Evaluar procedencia» → «Revisar solicitud completa».
+  - En Investigación: «Seguimiento de caso» → «Ver avance del caso completo»,
+    mencionando al responsable real cuando se conoce.
+  - Pendiente de Revisión GC: «Revisión de Calidad» →
+    «Revisar propuesta completa».
+  - Resuelto, con permiso: «Preparar respuesta al cliente» →
+    «Redactar y publicar respuesta» (**solo abre**; publicar sigue en ampliado).
+  - Finalizado / No Procede: «Expediente cerrado» →
+    «Ver expediente de cierre completo».
+  - Estados desconocidos o sin permiso: CTA de consulta, jamás un permiso
+    implícito de publicación. Mantener el ciclo real y las tarjetas de cierre;
+    No Procede no debe inventar etapa de investigación ni aprobación.
+- **Responsable / `/mis-quejas`:** Sin borrador → «Redactar resolución»;
+  borrador con fecha → «Borrador guardado»; cambios locales →
+  «Cambios sin guardar»; devolución de Calidad → «Corrección requerida»
+  con alerta ámbar y motivo de dos líneas; también los estados de consulta
+  ofrecen «Siguiente paso» descriptivo. Cada CTA de edición amplía y enfoca
+  el **mismo** Tiptap. No añadir otro botón de editar bajo la observación
+  ni volver a insertar el editor en el contraído.
+- **Prueba visual obligatoria:** en todas las etapas, la tarjeta debe mostrar
+  icono, título claro, descripción `line-clamp-2` a 13px y CTA principal azul
+  con flecha. Fondo tonal suave, borde exterior fino **en los cuatro lados**,
+  sin raya vertical decorativa. Evitar tanto el vacío como el scroll largo:
+  extracto de tres líneas, hasta dos chips y contador; pie auxiliar fijo.
+- **Acciones y persistencia:** el CTA de la tarjeta nunca llama a
+  `guardarResolucionBorrador`, `enviarResolucionBorradorRevision`, aprobar,
+  devolver, derivar ni publicar. Toda acción de negocio permanece en el ampliado;
+  este conserva DOM/Tiptap, `visitId`, revisiones, borradores, permisos y datos.
+  Escape colapsa primero y los diálogos auxiliares se cierran antes; no añadir
+  autosave, consultas de red por expansión, `scroll-smooth` ni `backdrop-blur`.
+- **Usuarios:** verificar a la vez ancho reducido de la primera columna,
+  comienzo de Rol/Estado/Seguridad/Último acceso más a la izquierda, último
+  12 % reservado a Acciones y eje de los tres puntos bajo la **A**.
+  No cambiar `UsuarioAccionesMenu`, su portal ni sus handlers, ni sustituir
+  las tarjetas de móvil por tabla horizontal.
+- **Pruebas mínimas antes de integrar:** `npx tsc --noEmit`,
+  `npm run lint`, `node --test tests/quejas-progressive-disclosure.test.mjs
+  tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs
+  tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs
+  tests/usuarios-acciones-menu.test.mjs`, `npm run build`,
+  `npm run check:structure` y `npm run check:visual`.
+  La automatización de referencia es
+  `.github/workflows/qms-workspace-verify.yml`. Una prueba de código correcta
+  no sustituye inspección visual y operativa en navegador autenticado.
+
 - En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
   lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
   y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
@@ -729,7 +787,10 @@ espacio a nombres/correos ni alterar los datos, el orden o la versión móvil.
 Acciones conserva la última columna: la letra inicial «A» del encabezado
 se alinea con el eje de los tres puntos mediante el padding del encabezado
 (18px) y la celda mantiene el botón de tamaño 36px sin mover su alineación
-interna ni su comportamiento.
+interna ni su comportamiento. En escritorio, respetar `colgroup`
+`24/14/13/19/18/12` con tabla fija y scroll local; encabezado
+`<TableHeaderCell className="pl-[18px] text-left">Acciones</TableHeaderCell>` y
+celda de acción `pl-0`, sin el antiguo truco de `w-[18px] justify-end`.
 El menú mantiene Editar perfil,
 Restablecer contraseña (generada y guardada por modal existente, NO correo
 de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
