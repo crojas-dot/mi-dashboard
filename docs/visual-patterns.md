@@ -61,8 +61,9 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Cancelar/Guardar y la validación del responsable no cambian. La pista de formato
   del editor se oculta solo aquí, no los errores de límite.
   La columna derecha informa «Esperar propuesta del investigador» con duración real
-  del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
-  disponible cuando corresponda a Revisión GC. No inventar un visor ni una
+  del calendario QMS. En **Quejas**, ningún estado incluye el botón «Ver análisis»;
+  Revisión GC ya presenta la propuesta y sus adjuntos en el lienzo central.
+  Ese botón se reserva para **Mis Quejas**. No inventar un visor ni una
   propuesta enviada antes de tiempo.
 - En Mis Quejas, el «Siguiente paso» adapta título, contexto, icono y CTA:
   Sin borrador «Redactar resolución» / «Abrir editor para redactar →»;
@@ -276,8 +277,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Cancelar restaura el borrador persistido y contrae la altura sin enviar nada.
   Tras guardar, Editar pasa arriba del documento, con fecha real en su título.
   Editar vuelve a modo escritura expandido verticalmente; el botón junto a
-  Asistencia permite Expandir/Contraer sin ampliar las columnas del expediente,
-  sin cambiar ancho ni mover el pie y sin remontar Tiptap. Guardar confirma y
+  Asistencia permite Expandir/Contraer con icono de cuatro esquinas, botón
+  de 44px y separador vertical respecto de IA, sin ampliar las columnas del
+  expediente, sin cambiar ancho ni mover el pie y sin remontar Tiptap.
+  Al abrir el editor se restablece el scroll exterior arriba sin
+  `scrollIntoView`, y el lienzo central no usa sticky propio.
+  Guardar confirma y
   vuelve a la altura habitual. No hay autoguardado.
   El lienzo por defecto conserva aproximadamente 700px de alto y altura flexible
   en pantallas bajas; solo su documento tiene scroll vertical interno.
@@ -290,9 +295,10 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Primero muestra Observación de Calidad y Procede azul, después Descripción del
   cliente. Su pie ofrece Preparar resolución. La barra de formato y el pie de
   Resolución permanecen a la vista; solo el contenido del editor tiene scroll
-  interno con gutter estable, incluso sin foco. Un separador fino bajo la barra
-  crea aire antes de la escritura. El marco conserva las cuatro esquinas
-  redondeadas y la pista genérica de Tiptap se oculta sin ocultar límites.
+  interno con gutter estable, incluso sin foco. La barra ya tiene un separador
+  inferior: no añadir líneas mediante pseudo-elementos dentro del texto.
+  El marco conserva las cuatro esquinas redondeadas y la pista genérica de
+  Tiptap se oculta sin ocultar límites.
   El editor conserva su nodo y borrador al consultar. GC muestra primero la propuesta;
   Solicitud y antecedentes conserva el contenido íntegro en un desplegable.
   El selector de formato conserva su ancho explícito y la barra envuelve sus controles

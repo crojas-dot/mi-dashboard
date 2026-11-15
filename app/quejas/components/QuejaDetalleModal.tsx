@@ -21,7 +21,7 @@ import AreaQuejaControl from '@/app/quejas/components/AreaQuejaControl'
 import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
-import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
+import { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionAsignacion from '@/app/quejas/components/QuejaInvestigacionAsignacion'
 import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
@@ -79,7 +79,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [informeOpen, setInformeOpen] = useState(false)
   const [decisionOpen, setDecisionOpen] = useState(false)
   const [reviewOpen, setReviewOpen] = useState(false)
-  const [analisisCalidadOpen, setAnalisisCalidadOpen] = useState(false)
   const [subiendoSoporte, setSubiendoSoporte] = useState(false)
   const [motivoDevolucion, setMotivoDevolucion] = useState('')
   const [confirmarSACP, setConfirmarSACP] = useState(false)
@@ -192,7 +191,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setInformeOpen(false)
     setDecisionOpen(false)
     setReviewOpen(false)
-    setAnalisisCalidadOpen(false)
     setSubiendoSoporte(false)
     setMotivoDevolucion('')
     setConfirmarSACP(false)
@@ -231,7 +229,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setVisibleCliente(false)
   }
 
-  const navigationDisabled = informeOpen || !!respuestaCase || subiendoOficioApertura || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || analisisCalidadOpen || subiendoSoporte || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
+  const navigationDisabled = informeOpen || !!respuestaCase || subiendoOficioApertura || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || subiendoSoporte || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
   useEffect(() => {
     // La tabla permanece operativa, pero no puede descartar una edición/subida en curso.
     onNavigationLockChange?.(!!queja && navigationDisabled)
@@ -761,7 +759,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
-          {qualityReview && <Button size="sm" variant="secondary" className="mt-2 w-full" onClick={() => setAnalisisCalidadOpen(true)}><Eye aria-hidden="true" className="size-4" />Ver análisis</Button>}
           {workflowActions}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
         </CaseAction>}>
@@ -787,11 +784,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       </CaseWorkspace>
     </Modal>
 
-    <QuejaAnalisisPanel queja={queja} open={analisisCalidadOpen} onClose={() => setAnalisisCalidadOpen(false)}
-      adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }}
-      onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
-      actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
-      resolveAuthor={event => event.usuario_id ? usuarios.find(u => u.id === event.usuario_id)?.nombre : undefined} />
     <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
       headerActions={decisionOpen && decisionProcedencia === 'no_procede' ? <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label="Cambiar decisión: No Procede" title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>No Procede</Button> : undefined}
       footer={decisionOpen && !decisionProcedencia ? undefined : <div className="flex flex-wrap items-center justify-end gap-2">

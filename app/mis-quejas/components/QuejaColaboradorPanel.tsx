@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ClipboardCheck, Eye, FilePenLine, Maximize2, Minimize2, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
+import { ClipboardCheck, Eye, FilePenLine, Maximize, Minimize, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -364,8 +364,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     cerrarAnalisis()
     // Primero presentar showModal y el editor existente; después restaurar foco.
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      resolutionContainer.current?.scrollIntoView({ block: 'start' })
-      resolutionContainer.current?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
+      // Abrir el editor no debe desplazar el scroll exterior y ocultar su margen superior.
+      const card = resolutionContainer.current
+      const scrollport = card?.closest<HTMLElement>('[data-case-scroll]')
+      if (scrollport) scrollport.scrollTop = 0
+      card?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
     }))
   }
   const plazo = <QuejaPlazoIndicator deadline={deadline} />
@@ -503,7 +506,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }}
             variant="document" layout="fill" minHeight={540} maxLength={DOCUMENT_LIMIT} required
             showFormattingHint={false} readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null}
-            toolbarActions={editandoResolucion ? <>
+            toolbarActions={editandoResolucion ? <div data-resolution-toolbar-actions className="flex shrink-0 items-center gap-3">
               <Button size="sm" variant="secondary" data-resolution-assist
                 className="shrink-0 border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:bg-qms-hover-bg"
                 aria-label="Asistencia para la resolución" title="Generar análisis IA"
@@ -511,15 +514,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 disabled={resolutionPending}>
                 <WandSparkles aria-hidden="true" className="size-4" />Asistencia IA
               </Button>
-              <Button size="icon" variant="ghost" data-resolution-expand
+              <span data-resolution-expand-separator aria-hidden="true" className="h-7 w-px shrink-0 bg-qms-border" />
+              <Button size="icon" variant="secondary" data-resolution-expand
                 aria-label={resolutionOverlay ? 'Contraer editor' : 'Expandir editor verticalmente'}
                 aria-pressed={!!resolutionOverlay}
                 title={resolutionOverlay ? 'Contraer editor' : 'Expandir editor verticalmente'}
                 onClick={resolutionOverlay ? contraerResolucion : expandirResolucion}
-                className="size-9 shrink-0">
-                {resolutionOverlay ? <Minimize2 aria-hidden="true" className="size-4" /> : <Maximize2 aria-hidden="true" className="size-4" />}
+                className="h-11 w-11 shrink-0 border-qms-border text-qms-primary hover:bg-qms-primary-soft">
+                {resolutionOverlay ? <Minimize aria-hidden="true" className="size-5" /> : <Maximize aria-hidden="true" className="size-5" />}
               </Button>
-            </> : undefined}
+            </div> : undefined}
             className="mis-quejas-resolution-editor" /></div>
           {aiResult && editandoResolucion && <section data-resolution-assistance role="region"
             aria-label="Análisis sugerido" className="min-w-0 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8">
