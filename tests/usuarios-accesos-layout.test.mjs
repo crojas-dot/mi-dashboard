@@ -111,14 +111,15 @@ test('directorio adopta columnas sin Alta, Seguridad junto a Estado y acciones a
   const headers = ['Usuario', 'Rol', 'Estado', 'Seguridad (2FA)', 'Último acceso', 'Acciones']
   let previous = 0
   for (const heading of headers) {
-    const current = table.indexOf('>' + heading + '</TableHeaderCell>', previous)
+    const current = table.indexOf('>' + heading + (heading === 'Acciones' ? '</span>' : '</TableHeaderCell>'), previous)
     assert.ok(current > previous, 'Columna en el orden solicitado: ' + heading)
     previous = current
   }
   assert.doesNotMatch(table, />Alta<\/TableHeaderCell>/)
-  assert.match(table, /TableHeaderCell className="text-left">Acciones/)
+  assert.match(table, /TableHeaderCell className="pl-0 text-left"><span className="flex w-\[18px\] justify-end whitespace-nowrap">Acciones<\/span><\/TableHeaderCell>/)
   assert.match(table, /TableCell className="pl-0 text-left">[\s\S]*?<UsuarioAccionesMenu usuario=\{u\}/)
   assert.doesNotMatch(table, /text-right[^>]*>Acciones<\/TableHeaderCell>/)
+  assert.match(table, /TableCell className="pl-0 text-left">[\s\S]*?<UsuarioAccionesMenu usuario=\{u\}/)
   assert.match(users, /data-users-mobile-list/)
   assert.equal((users.match(/<UsuarioAccionesMenu usuario=\{u\}/g) || []).length, 2)
   assert.equal((users.match(/data-users-security/g) || []).length, 2)
