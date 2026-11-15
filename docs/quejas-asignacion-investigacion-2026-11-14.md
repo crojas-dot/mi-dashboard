@@ -51,8 +51,9 @@ La columna derecha se titula **Esperar propuesta del investigador** y explica
 que pasará a **Revisión GC** tras el envío del responsable. Incluye duración
 en días hábiles **solo si** `caseDeadline` dispone de la regla QMS vigente
 validada; de lo contrario, usa un texto genérico, no un número inventado.
-No existe botón «Ver análisis» durante En Investigación; ese botón sigue
-disponible cuando se revisa una propuesta realmente enviada en GC.
+No existe botón «Ver análisis» en ningún paso de **Quejas**.
+La revisión de GC muestra la propuesta del responsable y sus adjuntos
+directamente en el lienzo central. «Ver análisis» pertenece a **Mis Quejas**.
 
 El panel contraído 40vw mantiene `CaseTriageNextStep`, estado/plazo/responsable
 y CTA azul **«Ver estado de la investigación →»**: solo expande al escritorio.
