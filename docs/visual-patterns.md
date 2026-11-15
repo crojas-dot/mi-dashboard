@@ -43,19 +43,22 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
   (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
 - En etapa 2 de Calidad (solo workspace ampliado), la columna central muestra
-  «Detalles de asignación»: investigador, justificación de Procede como instrucciones
-  (en su formato original), oficio de apertura vinculado y aviso con fecha de última
-  modificación del borrador remoto cuando exista. Datos de instrucciones anteriores
-  a la simplificación siguen legibles; nunca se pide escribirlas dos veces.
+  «Detalles de asignación»: primero «Justificación de Calidad» con el texto
+  original de Procede y su formato, inmediatamente debajo el bloque
+  «Investigador asignado», y después los documentos vinculados.
+  No renderizar tarjeta ni mensaje de borrador del responsable, haya o no
+  borrador; tampoco consultarlo desde Calidad. Los borradores de `/mis-quejas`
+  permanecen intactos. Los datos históricos de instrucciones siguen legibles
+  como respaldo cuando no existe justificación; no se captura texto duplicado.
   La evaluación no se muestra como «análisis» del investigador.
-  En el modal de Procede solo queda Tiptap arriba, Adjuntar documento y la
+  En el modal de Procede solo queda Tiptap arriba, el botón «Adjuntar documento» y la
   nota sobre almacenamiento debajo, y Cancelar/Guardar en el pie. La pista de
   formato del editor no es visible aquí, pero sí los errores de límite; no
   modificar los demás editores.
   La columna derecha informa «Esperar propuesta del investigador» con duración real
   del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
-  disponible cuando corresponda a Revisión GC. No mostrar el contenido del borrador
-  ni inventar un visor o una propuesta enviada antes de tiempo.
+  disponible cuando corresponda a Revisión GC. No inventar un visor ni una
+  propuesta enviada antes de tiempo.
 - En Mis Quejas, el «Siguiente paso» adapta título, contexto, icono y CTA:
   Sin borrador «Redactar resolución» / «Abrir editor para redactar →»;
   con borrador «Borrador guardado» con fecha / «Abrir editor para modificar →»;
