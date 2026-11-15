@@ -153,7 +153,7 @@ test('el paso 1 utiliza el mismo panel y los tokens QMS con dos acciones directa
   assert.match(result, /border-qms-border/)
   assert.match(result, /Al seleccionar una opción/)
   assert.doesNotMatch(result, /Tomar decisión|Persona responsable|Por asignar/)
-  assert.doesNotMatch(result, /w-80|border-l border-gray-200|p-6 bg-gray-50|bg-blue-50|text-\\[12px\\]/)
+  assert.doesNotMatch(result, /w-80|border-l border-gray-200|p-6 bg-gray-50|bg-blue-50|text-\[12px\]/)
   assert.equal((result.match(/<button type="button"/g) || []).length, 2)
 })
 
