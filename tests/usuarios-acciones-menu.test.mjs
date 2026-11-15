@@ -62,6 +62,17 @@ test('las tres acciones comparten el mismo menú y cierran al elegir una opción
   }
 })
 
+test('el botón Editar visible despliega las tres acciones sin ejecutar edición directamente', () => {
+  const ui = harness()
+  assert.match(ui.text(ui.trigger()), /Editar/)
+  assert.match(ui.trigger().props.className, /bg-qms-primary-soft/)
+  assert.match(ui.trigger().props['aria-label'], /Editar y más acciones de Persona de prueba/)
+  assert.equal(ui.trigger().props['aria-haspopup'], 'menu')
+  ui.open()
+  assert.deepEqual(ui.callbacks, [], 'abrir el menú no debe editar al usuario')
+  assert.equal(ui.actions().length, 3)
+})
+
 test('la cuenta propia impide desactivar; las cuentas inactivas pueden restaurarse', () => {
   const propio = harness({ esPropio: true })
   propio.open()
