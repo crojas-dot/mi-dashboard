@@ -1,14 +1,15 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { ChevronRight, Paperclip } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, ClipboardCheck, FileCheck2, FilePenLine, FolderCheck, MailCheck, Paperclip, SearchCheck, ShieldCheck, TriangleAlert, ChevronRight } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import { varianteEstado } from '@/lib/constants/estados'
 import type { Queja } from '@/lib/types'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import type { QuejaPlazoRun } from '@/lib/queries/useQuejaSeguimiento'
-import { caseDeadline } from './quejaExpedienteModel'
+import { caseDeadline, type CaseTriageNextStepData } from './quejaExpedienteModel'
+import Button from '@/components/ui/Button'
 
 /** Triaje común sin editores. El expediente íntegro permanece montado en CaseWorkspace. */
 export function CaseTriageSummary({ queja, runs, responsable, plazoError = false, primaryAction, children, footer }: {
@@ -44,6 +45,53 @@ export function CaseTriageSummary({ queja, runs, responsable, plazoError = false
     </div>
     <div data-case-triage-footer className="shrink-0 border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-5">{footer}</div>
   </div>
+}
+
+const nextStepIcons = {
+  clipboard: ClipboardCheck,
+  search: SearchCheck,
+  review: ShieldCheck,
+  mail: MailCheck,
+  archive: FolderCheck,
+  edit: FilePenLine,
+  saved: FileCheck2,
+  warning: TriangleAlert,
+  file: BookOpenCheck,
+} as const
+
+const nextStepTones = {
+  blue: 'border-blue-200 border-l-blue-500 bg-blue-50/70 text-blue-700',
+  amber: 'border-amber-200 border-l-amber-500 bg-amber-50/80 text-amber-800',
+  green: 'border-emerald-200 border-l-emerald-500 bg-emerald-50/70 text-emerald-700',
+  slate: 'border-slate-200 border-l-slate-400 bg-slate-50 text-slate-600',
+} as const
+
+/** Orienta antes de ampliar. No tiene handlers de aprobar, devolver, enviar ni publicar. */
+export function CaseTriageNextStep({ step, onOpen, disabled = false }: {
+  step: CaseTriageNextStepData
+  onOpen: () => void
+  disabled?: boolean
+}) {
+  const Icon = nextStepIcons[step.icon]
+  return <section data-case-triage-next-step aria-label="Siguiente paso"
+    className={`min-w-0 rounded-md border border-l-4 px-3.5 py-3.5 sm:px-4 ${nextStepTones[step.tone]}`}>
+    <div className="flex min-w-0 items-start gap-3">
+      <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/75">
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold tracking-wide uppercase">Siguiente paso</p>
+        <h3 className="mt-0.5 text-sm font-semibold text-qms-dark">{step.title}</h3>
+        <p className="mt-1 line-clamp-2 break-words text-[13px] leading-[1.45rem] text-slate-600">{step.description}</p>
+      </div>
+    </div>
+    <Button type="button" data-case-triage-expand size="sm" variant="primary"
+      className="mt-3 min-h-10 w-full justify-center gap-2 rounded-md bg-qms-primary! px-3 text-white! shadow-sm hover:bg-blue-700! focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700"
+      disabled={disabled} onClick={onOpen}>
+      <span className="min-w-0 break-words text-center">{step.ctaLabel}</span>
+      <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+    </Button>
+  </section>
 }
 
 export function CaseTriageExcerpt({ title, text, children }: { title: string; text: string; children?: ReactNode }) {
