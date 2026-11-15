@@ -16,17 +16,66 @@ export const CASE_ACTIONS: Record<string, { step: number; title: string; detail:
   'No Procede': { step: 5, title: 'No procedencia registrada', detail: 'Se conserva la justificación y el oficio explicativo.', action: '' },
 }
 
-/** CTA de consulta del triaje: NUNCA autoriza ni ejecuta una transición de negocio. */
-export function getCaseTriageCta(estado: Queja['estado'], canPublish = false): string {
+/** Proyección breve del siguiente paso: nunca ejecuta una transición de negocio. */
+export type CaseTriageTone = 'blue' | 'amber' | 'green' | 'slate'
+export type CaseTriageIcon = 'clipboard' | 'search' | 'review' | 'mail' | 'archive' | 'edit' | 'saved' | 'warning' | 'file'
+
+export interface CaseTriageNextStepData {
+  title: string
+  description: string
+  ctaLabel: string
+  icon: CaseTriageIcon
+  tone: CaseTriageTone
+}
+
+export function getCaseTriageNextStep(
+  estado: Queja['estado'],
+  { responsable, canPublish = false }: { responsable?: string; canPublish?: boolean } = {},
+): CaseTriageNextStepData {
   switch (estado) {
-    case 'Recibido': return 'Revisar expediente completo'
-    case 'En Investigación': return 'Ver expediente completo'
-    case 'Pendiente de Revisión GC': return 'Revisar propuesta completa'
-    case 'Resuelto': return canPublish ? 'Revisar y Publicar respuesta' : 'Ver expediente completo'
+    case 'Recibido': return {
+      title: 'Evaluar procedencia',
+      description: 'Revisa la solicitud y evidencias para determinar si procede.',
+      ctaLabel: 'Revisar solicitud completa', icon: 'clipboard', tone: 'blue',
+    }
+    case 'En Investigación': return {
+      title: 'Seguimiento de caso',
+      description: responsable
+        ? `El caso está siendo investigado por ${responsable}.`
+        : 'El caso está en investigación, pendiente del trabajo de la persona responsable.',
+      ctaLabel: 'Ver avance del caso completo', icon: 'search', tone: 'blue',
+    }
+    case 'Pendiente de Revisión GC': return {
+      title: 'Revisión de Calidad',
+      description: 'Revisa la propuesta y evidencias enviadas por el responsable.',
+      ctaLabel: 'Revisar propuesta completa', icon: 'review', tone: 'amber',
+    }
+    case 'Resuelto': return canPublish ? {
+      title: 'Preparar respuesta al cliente',
+      description: 'El caso fue aprobado. Redacta el correo y adjunta el oficio final.',
+      ctaLabel: 'Redactar y publicar respuesta', icon: 'mail', tone: 'blue',
+    } : {
+      title: 'Consultar resolución',
+      description: 'Consulta la resolución aprobada y los documentos disponibles.',
+      ctaLabel: 'Ver expediente completo', icon: 'file', tone: 'blue',
+    }
     case 'Finalizado':
-    case 'No Procede':
-    default: return 'Ver expediente completo'
+    case 'No Procede': return {
+      title: 'Expediente cerrado',
+      description: 'Consulta el resumen de cierre, el análisis y las comunicaciones registradas.',
+      ctaLabel: 'Ver expediente de cierre completo', icon: 'archive', tone: 'green',
+    }
+    default: return {
+      title: 'Consultar expediente',
+      description: 'Revisa el estado y los documentos asociados a este caso.',
+      ctaLabel: 'Ver expediente completo', icon: 'file', tone: 'slate',
+    }
   }
+}
+
+/** Compatibilidad: el CTA de triaje es solo consulta, nunca una acción de negocio. */
+export function getCaseTriageCta(estado: Queja['estado'], canPublish = false): string {
+  return getCaseTriageNextStep(estado, { canPublish }).ctaLabel
 }
 
 export type CaseAudience = 'quality' | 'investigator'
