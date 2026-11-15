@@ -57,7 +57,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
     } },
     '@/hooks/useQuejaAttachmentActions': { useQuejaAttachmentActions: () => ({ previewAdjunto: null, confirmarEliminacion: null, subiendoAdjunto: uploading, eliminandoAdjunto: null, handleSubirAdjunto: async file => { uploads.push(file) }, setConfirmarEliminacion() {} }) },
     '@/app/mis-quejas/components/useQuejaAssistant': { useQuejaAssistant: () => ({ aiAutoLoading: false, chatLoading: false, aiResult: '', chat: [], chatInput: '', setAiResult() {}, setChatInput() {}, handleAnalisisAuto() { assistCalls.push('auto') }, handleEnviarIA() {}, setModoEdicion() {} }) },
-  }, { window: { getSelection: () => null, matchMedia: () => ({ matches: true }) }, requestAnimationFrame() {} })
+  }, { window: { innerHeight: 900, getSelection: () => null, matchMedia: () => ({ matches: true }), addEventListener() {}, removeEventListener() {} }, requestAnimationFrame() {} })
   const visit = value => {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props) return []
@@ -115,9 +115,12 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   const footer = panel.nodes().find(node => node.props['data-resolution-footer'])
   assert.ok(footer)
   assert.match(footer.props.className, /sticky bottom-0/)
-  assert.match(panel.editor().props.toolbarActions.props['aria-label'], /Asistencia para la resolución/)
+  assert.ok(panel.button('Asistencia para la resolución'))
+  assert.ok(panel.button('Expandir editor verticalmente'))
+  assert.ok(panel.nodes().find(node => node.props['data-resolution-shell']))
+  assert.equal(panel.editor().props.showFormattingHint, false)
   assert.match(panel.nodes().find(node => node.props['data-resolution-inline']).props.className, /overflow-visible/)
-  assert.equal(panel.editor().props.layout, 'content')
+  assert.equal(panel.editor().props.layout, 'fill')
   assert.equal(panel.editor().props.minHeight, 540)
   assert.equal(panel.editor().props.variant, 'document')
   assert.equal(panel.editor().props.maxLength, 10000)
@@ -125,6 +128,57 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.equal(panel.button('Enviar a Revisión GC').props.disabled, true)
   assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
   assert.equal(panel.nodes().some(node => node.props.role === 'tab' || node.type === 'Modal' && node.props.open && node.props.variant === 'document'), false)
+})
+
+test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el alto normal', () => {
+  const panel = fixture()
+  panel.select('A')
+  const editorId = panel.editor().props.id
+  const original = panel.nodes().find(node => node.props['data-resolution-inline'])
+  original.ref.current = {
+    getBoundingClientRect: () => ({ top: 92, bottom: 780, left: 365, width: 860, height: 688 }),
+    closest: () => ({ getBoundingClientRect: () => ({ top: 0, bottom: 900 }) }),
+  }
+  panel.button('Expandir editor verticalmente').props.onClick(); panel.render()
+  const expanded = panel.nodes().find(node => node.props['data-resolution-inline'])
+  assert.equal(expanded.props['data-resolution-expanded'], 'true')
+  assert.equal(expanded.props.style.left, 365)
+  assert.equal(expanded.props.style.width, 860)
+  assert.equal(expanded.props.style.top, 8)
+  assert.equal(expanded.props.style.height, 772)
+  assert.match(expanded.props.className, /fixed/)
+  assert.equal(panel.editor().props.id, editorId)
+  assert.ok(panel.button('Contraer editor'))
+  assert.ok(panel.nodes().find(node => node.props['data-resolution-footer']))
+  panel.button('Contraer editor').props.onClick(); panel.render()
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
+  assert.equal(panel.editor().props.id, editorId)
+})
+
+test('Guardar azul y Cancelar restauran altura normal; Editar arriba reabre expandido', async () => {
+  const panel = fixture()
+  panel.select('A')
+  assert.equal(panel.button('Guardar').props.variant, 'primary')
+  assert.match(panel.button('Guardar').props.className, /disabled:opacity-100!/)
+  panel.editor().props.onChange('Borrador', 'plain'); panel.render()
+  const card = panel.nodes().find(node => node.props['data-resolution-inline'])
+  card.ref.current = {
+    getBoundingClientRect: () => ({ top: 92, bottom: 780, left: 365, width: 860, height: 688 }),
+    closest: () => ({ getBoundingClientRect: () => ({ top: 0, bottom: 900 }) }),
+  }
+  panel.button('Expandir editor verticalmente').props.onClick(); panel.render()
+  assert.ok(panel.button('Contraer editor'))
+  await panel.button('Guardar').props.onClick(); panel.render()
+  assert.equal(panel.button('Contraer editor'), undefined)
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
+  const top = panel.nodes().find(node => node.props['data-resolution-saved-toolbar'])
+  assert.ok(top)
+  assert.ok(panel.button('Editar'))
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-footer']) !== undefined, true)
+  panel.button('Editar').props.onClick(); panel.render()
+  assert.ok(panel.button('Contraer editor'))
+  panel.button('Cancelar').props.onClick(); panel.render()
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
 })
 
 test('un único acceso abre Análisis en un modal amplio sin ampliar el trabajo ni perder el borrador', () => {
