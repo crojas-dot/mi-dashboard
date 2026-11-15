@@ -23,6 +23,7 @@ import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
 import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
+import QuejaInvestigacionAsignacion from '@/app/quejas/components/QuejaInvestigacionAsignacion'
 import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
@@ -36,6 +37,7 @@ import {
   derivarQuejaASACP,
   subirAdjuntoQueja,
   transicionarQueja,
+  iniciarInvestigacionQueja,
   esOficioPublicableQueja,
   resolverQuejaConDocumento,
   revisarResolucionQueja,
@@ -46,9 +48,11 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
 import { Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
+import { useQuejaResolucionDraft } from '@/lib/queries/useQuejaResolucionDraft'
+import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
-import { CASE_ACTIONS, caseDate, getCaseProcessCycle, getCaseTriageNextStep } from '@/app/quejas/components/quejaExpedienteModel'
+import { CASE_ACTIONS, caseDate, caseDeadline, getCaseProcessCycle, getCaseTriageNextStep } from '@/app/quejas/components/quejaExpedienteModel'
 import { CaseSection, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
@@ -93,6 +97,11 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [responsableSeleccionado, setResponsableSeleccionado] = useState<Usuario | null>(null)
   const [responsableError, setResponsableError] = useState(false)
   const [responsableOpenRequest, setResponsableOpenRequest] = useState(0)
+  const [instruccionesAsignacion, setInstruccionesAsignacion] = useState('')
+  const [oficioApertura, setOficioApertura] = useState<QuejaAdjunto | null>(null)
+  const [subiendoOficioApertura, setSubiendoOficioApertura] = useState(false)
+  const [errorOficioApertura, setErrorOficioApertura] = useState('')
+  const inputOficioAperturaRef = useRef<HTMLInputElement>(null)
   const [resolucionAbierta, setResolucionAbierta] = useState(false)
   const [resolucion, setResolucion] = useState('')
   const [resolucionFormato, setResolucionFormato] = useState<'plain' | 'markdown'>('plain')
@@ -118,6 +127,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const { data: comentarios = [], isLoading: comentariosLoading, error: comentariosError, refetch: refetchComentarios } = useQuejaComentarios(quejaId, activityOpen)
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, !!queja)
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
+  const investigationActive = queja?.estado === 'En Investigación'
+  const { data: asignacion, isLoading: asignacionLoading, error: asignacionError } = useQuejaInvestigationAssignment(quejaId, investigationActive)
+  const { data: borradorInvestigador, isLoading: borradorInvestigadorLoading, error: borradorInvestigadorError } = useQuejaResolucionDraft(quejaId, investigationActive)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   useEffect(() => {
     if (!quejaId || adjuntosLoading || adjuntosError) return
@@ -197,6 +209,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setResponsableSeleccionado(null)
     setResponsableError(false)
     setResponsableOpenRequest(0)
+    setInstruccionesAsignacion('')
+    setOficioApertura(null)
+    setSubiendoOficioApertura(false)
+    setErrorOficioApertura('')
     setResolucionAbierta(false)
     setResolucion('')
     setResolucionFormato('plain')
@@ -219,7 +235,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setVisibleCliente(false)
   }
 
-  const navigationDisabled = informeOpen || !!respuestaCase || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || analisisCalidadOpen || subiendoSoporte || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
+  const navigationDisabled = informeOpen || !!respuestaCase || subiendoOficioApertura || loading || reabriendo || derivando || guardandoRegistro || !!registroDraft || decisionOpen || resolucionAbierta || reviewOpen || analisisCalidadOpen || subiendoSoporte || reaperturaAbierta || agregandoComentario || !!nuevoComentario.trim() || subiendoAdjunto || eliminandoAdjunto != null
   useEffect(() => {
     // La tabla permanece operativa, pero no puede descartar una edición/subida en curso.
     onNavigationLockChange?.(!!queja && navigationDisabled)
@@ -230,7 +246,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
   const responsableValue = responsableSeleccionado ? responsables.find(u => u.id === responsableSeleccionado.id) ?? null : responsableActual ?? null
   const workflowQueja = { ...queja, revision: workflowRevision ?? queja.revision }
-  const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || subiendoSoporte || eliminandoAdjunto != null
+  const workflowPending = loading || reabriendo || derivando || guardandoRegistro || subiendoAdjunto || subiendoSoporte || subiendoOficioApertura || eliminandoAdjunto != null
   const publicacionDisponible = publicacion.data === true
   const publicacionVerificada = !publicacion.isLoading && !publicacion.error && typeof publicacion.data === 'boolean'
   const oficiosPublicables = adjuntos.filter(adjunto => esOficioPublicableQueja(adjunto, queja.id))
