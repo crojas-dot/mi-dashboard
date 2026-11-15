@@ -49,8 +49,7 @@ sin modificar otra visita o identidad. El borrador guardado permite navegar entr
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
 El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
-a fondo blanco con texto, icono y borde rojos. Guardar y Asistencia permanecen juntos
-solo en modo de escritura, en escritorio y móvil. El scroll del editor sigue
+a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil. El scroll del editor sigue
 dependiendo del foco.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
