@@ -340,8 +340,9 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
 - Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
   etapa y segmentos horizontales no interactivos, tarjeta compacta de estado/plazo/
-  responsable y tarjeta de «Siguiente paso» superior, con fondo suave y borde
-  acentuado, icono, título, explicación de 2 líneas y CTA principal azul.
+  responsable y tarjeta de «Siguiente paso» superior, con fondo suave y
+  contorno uniforme tenue (SIN rayas verticales de color ni `border-l-4`),
+  icono, título, explicación de 2 líneas y CTA principal azul.
   No reducir el triaje a un botón plano o una vista vacía. Debajo conservar
   extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
   REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
@@ -721,10 +722,14 @@ Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no ha
 factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
 no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
 Estado usa punto y fondo discretos semánticos; Rol conserva el badge existente.
-Acciones conserva la última columna, su ancho y la posición original del
-botón de tres puntos; únicamente el TEXTO del encabezado se desplaza a la
-izquierda para que la letra final «s» quede sobre el centro del icono vertical
-(ambos anclados a 18 px del inicio de la celda, sin mover el botón).
+La tabla de Usuarios aprovecha el espacio: Usuario 24 %, Rol 14 %, Estado 13 %,
+Seguridad (2FA) 19 %, Último acceso 18 % y Acciones 12 % en escritorio.
+Las columnas posteriores a Usuario comienzan más a la izquierda, sin quitar
+espacio a nombres/correos ni alterar los datos, el orden o la versión móvil.
+Acciones conserva la última columna: la letra inicial «A» del encabezado
+se alinea con el eje de los tres puntos mediante el padding del encabezado
+(18px) y la celda mantiene el botón de tamaño 36px sin mover su alineación
+interna ni su comportamiento.
 El menú mantiene Editar perfil,
 Restablecer contraseña (generada y guardada por modal existente, NO correo
 de recuperación), y Desactivar/Restaurar cuenta según estado, con confirmación
