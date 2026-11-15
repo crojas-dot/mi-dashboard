@@ -18,8 +18,6 @@ import EmptyState from '@/components/ui/EmptyState'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import UsuarioFormModal from '@/components/usuarios/UsuarioFormModal'
-import PasswordModal from '@/components/usuarios/PasswordModal'
-import ResetPasswordModal from '@/components/usuarios/ResetPasswordModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import {
   getDirectoryRoleAvatarClass,
@@ -46,8 +44,7 @@ export default function UsuariosPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [formMode, setFormMode] = useState<'crear' | 'editar'>('crear')
   const [usuarioSel, setUsuarioSel] = useState<Usuario | null>(null)
-  const [resetSel, setResetSel] = useState<Usuario | null>(null)
-  const [pwModal, setPwModal] = useState<{ password: string; title: string; subtitle?: string } | null>(null)
+  const [formTab, setFormTab] = useState<'detalles' | 'seguridad'>('detalles')
   const [confirmar, setConfirmar] = useState<{ usuario: Usuario; accion: 'desactivar' | 'activar' } | null>(null)
   const cambioEstado = useOperationLock<'estado'>()
   const confirmando = cambioEstado.operation !== null
@@ -75,32 +72,25 @@ export default function UsuariosPage() {
   const esAuto = (u: Usuario) => u.id === user?.id
 
   function abrirCrear() {
+    setFormTab('detalles')
     setFormMode('crear')
     setUsuarioSel(null)
     setFormOpen(true)
   }
 
-  function abrirEditar(u: Usuario) {
+  function abrirEditar(u: Usuario, initialTab: 'detalles' | 'seguridad' = 'detalles') {
+    setFormTab(initialTab)
     setFormMode('editar')
     setUsuarioSel(u)
     setFormOpen(true)
   }
 
-  function restablecerDesdePerfil(u: Usuario) {
-    setFormOpen(false)
-    setUsuarioSel(null)
-    setResetSel(u)
-  }
-
   async function handleFormSuccess(result: { tempPassword?: string }) {
-    setFormOpen(false)
-    setUsuarioSel(null)
-    if (result.tempPassword) {
-      setPwModal({
-        password: result.tempPassword,
-        title: formMode === 'crear' ? 'Usuario creado' : 'Contraseña actualizada',
-        subtitle: formMode === 'crear' ? 'Contraseña temporal del nuevo usuario' : 'Nueva contraseña para el usuario',
-      })
+    // El alta conserva el modal abierto para copiar la clave temporal una sola vez.
+    // La edición se cierra; ninguna operación abre un segundo modal.
+    if (!result.tempPassword) {
+      setFormOpen(false)
+      setUsuarioSel(null)
     }
     await invalidateUsuarios()
   }
@@ -232,7 +222,7 @@ export default function UsuariosPage() {
                 <TableCell className="pl-0 text-left">
                   <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
                     onEditar={() => abrirEditar(u)}
-                    onRestablecer={() => setResetSel(u)}
+                    onRestablecer={() => abrirEditar(u, 'seguridad')}
                     onEstado={() => u.estado === 'activo' ? pedirDesactivar(u) : setConfirmar({ usuario: u, accion: 'activar' })} />
                 </TableCell>
               </TableRow>
@@ -265,7 +255,7 @@ export default function UsuariosPage() {
                 <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}</p>
                 <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
                   onEditar={() => abrirEditar(u)}
-                  onRestablecer={() => setResetSel(u)}
+                  onRestablecer={() => abrirEditar(u, 'seguridad')}
                   onEstado={() => u.estado === 'activo' ? pedirDesactivar(u) : setConfirmar({ usuario: u, accion: 'activar' })} />
               </div>
             </article>
@@ -294,33 +284,17 @@ export default function UsuariosPage() {
       </section>}
       </div>
 
-      <UsuarioFormModal
-        onResetPassword={restablecerDesdePerfil}
-        open={formOpen}
+      {formOpen && <UsuarioFormModal
+        open
         mode={formMode}
+        initialTab={formTab}
         usuario={usuarioSel}
         esAuto={usuarioSel ? esAuto(usuarioSel) : false}
         onClose={() => { setFormOpen(false); setUsuarioSel(null) }}
         onSuccess={handleFormSuccess}
+        onPasswordSaved={() => invalidateUsuarios()}
         onDelete={eliminarUsuario}
-      />
-
-      {pwModal && (
-        <PasswordModal
-          open={!!pwModal}
-          password={pwModal.password}
-          title={pwModal.title}
-          subtitle={pwModal.subtitle}
-          onClose={() => setPwModal(null)}
-        />
-      )}
-
-      <ResetPasswordModal
-        open={!!resetSel}
-        usuario={resetSel}
-        onClose={() => setResetSel(null)}
-        onSaved={() => invalidateUsuarios()}
-      />
+      />}
 
       <ConfirmDialog
         open={!!confirmar}
