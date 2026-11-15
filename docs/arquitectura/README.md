@@ -16,6 +16,10 @@ triggers de alta de SACP/Auditorías/Riesgos y la compatibilidad con RPC anterio
 DB aplicada, históricos intactos; modales sin reserva previa en el cliente local.
 Quejas mantiene `AAAA-NNN`; otros módulos conservan sus prefijos. Calendario adicional aplazado.
 
+[Asignación y seguimiento de investigación de Quejas](../quejas-asignacion-investigacion-2026-11-14.md):
+Procede con instrucciones y oficio opcionales, transición atómica, vistas de Calidad
+sin repetir evaluación y metadatos del borrador sin edición.
+
 [Limpieza compartida de Quejas/Mis Quejas](../quejas-panel-2026-10-13.md)
 ubica la selección persistente de fila con fondo #F0F4F7 (`ui-case-row`, `qms-row-selected`), contacto solo al ampliar,
 responsable antes de acciones, área junto a Descripción y adjuntos sin marcos
