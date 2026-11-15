@@ -89,14 +89,8 @@
   }
 }
 
-/* Solo el documento de Investigación queda sticky en la columna central;
-   el ciclo, los dos paneles laterales y su ancho no se alteran. */
-[data-case-document]:has([data-resolution-shell]) {
-  position: sticky;
-  top: 0.75rem;
-  align-self: start;
-}
-
+/* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
+   así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
    Anular la capa transformada del scrollport evita que capture position:fixed. */
 [data-case-scroll]:has([data-resolution-expanded="true"]) {
@@ -130,24 +124,8 @@
   scrollbar-gutter: stable;
 }
 
-/* Separador corto y aire bajo el toolbar, sin sumar un encabezado. */
-.mis-quejas-resolution-editor [data-rich-text-viewport]::before {
-  content: '';
-  display: block;
-  height: 1px;
-  margin: 12px 24px 0;
-  background: var(--color-qms-border);
-  pointer-events: none;
-}
-
-.mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
-  top: 2.25rem;
-}
-@media (max-width: 639px) {
-  .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
-    top: 1.75rem;
-  }
-}
+/* La barra ya tiene su propio border-bottom: no dibujar otra línea dentro
+   del contenido editable ni desplazar el placeholder respecto de Tiptap. */
 
 /* Solo Mis Quejas ampliado: tarjetas laterales holgadas y lectura central
    con ancho máximo, sin reducir el lienzo ni crear un segundo scroll. */
