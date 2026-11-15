@@ -195,7 +195,9 @@ test('aprobar solo registra la revisión original y continúa a respuesta sin ca
 
 test('rechazo abre la respuesta al cliente con revisión capturada; cancelar vuelve a decidir; false confirmado usa legacy', async () => {
   const panel = panelFixture(); panel.select({ estado: 'Recibido', numero_oficio_resolucion: '' })
-  panel.click('Tomar decisión'); panel.click('No Procede')
+  assert.equal(panel.button('Tomar decisión'), undefined)
+  assert.ok(panel.button('Procede'))
+  panel.click('No Procede')
   // Con publicación confirmada la justificación y el oficio se redactan dentro de la
   // respuesta al cliente; el panel no mantiene un editor ni campos públicos paralelos.
   assert.equal(panel.nodes().find(node => node.type === 'Editor'), undefined)
@@ -212,7 +214,7 @@ test('rechazo abre la respuesta al cliente con revisión capturada; cancelar vue
 
   // Publicación false confirmada conserva el contrato legacy con justificación y oficio.
   const legacy = panelFixture(); legacy.availability({ data: false }); legacy.select({ estado: 'Recibido', numero_oficio_resolucion: '' })
-  legacy.click('Tomar decisión'); legacy.click('No Procede'); legacy.edit('Justificación interna')
+  legacy.click('No Procede'); legacy.edit('Justificación interna')
   await legacy.click('Guardar')
   assert.equal(legacy.requests.length, 0)
   assert.match(legacy.toasts.at(-1), /número del oficio/)
@@ -231,9 +233,11 @@ test('rechazo abre la respuesta al cliente con revisión capturada; cancelar vue
 
 test('flag público no confirmado bloquea publicación de No Procede; analista no aprueba', async () => {
   for (const availability of [{ isLoading: true }, { error: new Error('offline') }, {}]) {
-    const panel = panelFixture(); panel.availability(availability); panel.select({ estado: 'Recibido' }); panel.click('Tomar decisión'); panel.click('No Procede'); panel.edit('Justificación')
-    assert.equal(panel.button('Guardar').props.disabled, true)
-    await panel.click('Guardar')
+    const panel = panelFixture(); panel.availability(availability); panel.select({ estado: 'Recibido' })
+    assert.equal(panel.button('No Procede').props.disabled, true)
+    panel.click('No Procede')
+    assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
+    assert.equal(panel.button('Guardar'), undefined)
     assert.equal(panel.requests.length, 0)
   }
   const analyst = panelFixture({ role: 'colaborador' }); analyst.select({ estado: 'En Investigación', responsable_id: 'staff' })
@@ -242,14 +246,14 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
 
 test('cambiar de visita descarta la respuesta en curso y la nueva visita abre su propia decisión', () => {
   const panel = panelFixture(); panel.select({ estado: 'Recibido' })
-  panel.click('Tomar decisión'); panel.click('No Procede')
+  panel.click('No Procede')
   const first = panel.nodes().find(node => node.type === 'Response')
   assert.equal(first.props.queja.id, quejaId)
   // Cambiar de visita retira la respuesta de A: no queda editor ni modal de otra visita.
   panel.select({ id: otherId, estado: 'Recibido' })
   assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
   assert.equal(panel.nodes().find(node => node.type === 'Editor'), undefined)
-  panel.click('Tomar decisión'); panel.click('No Procede')
+  panel.click('No Procede')
   const second = panel.nodes().find(node => node.type === 'Response')
   assert.equal(second.props.queja.id, otherId)
   assert.equal(second.props.noProcede, true)
