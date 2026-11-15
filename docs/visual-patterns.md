@@ -271,13 +271,16 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   en el extremo derecho de la barra Tiptap: un clic lanza el análisis automático y
   presenta una sugerencia de lectura sin chat, menús ni acordeones. No se sobrescribe
   el borrador del usuario; solo se permite usar la sugerencia con el editor vacío.
-  El pie inferior mantiene Cancelar y Guardar, siempre azul mientras está visible;
-  Guardar conserva un borrador remoto sin enviar a GC ni notificar al cliente.
-  Cancelar abandona la edición, descarta únicamente los cambios sin guardar
-  y restaura el borrador persistido sin enviarlo.
-  Tras confirmación muestra check y Guardado neutral
-  deshabilitado, con fecha real en su título; no hay autoguardado ficticio.
-  El lienzo mide hasta 720px de alto (70dvh, mínimo 420px), sin reducir la columna central.
+  El pie inferior anclado mantiene Cancelar y Guardar; Guardar conserva su azul
+  primario aun deshabilitado, mientras el bloqueo evita una escritura vacía.
+  Cancelar restaura el borrador persistido y contrae la altura sin enviar nada.
+  Tras guardar, Editar pasa arriba del documento, con fecha real en su título.
+  Editar vuelve a modo escritura expandido verticalmente; el botón junto a
+  Asistencia permite Expandir/Contraer sin ampliar las columnas del expediente,
+  sin cambiar ancho ni mover el pie y sin remontar Tiptap. Guardar confirma y
+  vuelve a la altura habitual. No hay autoguardado.
+  El lienzo por defecto conserva aproximadamente 700px de alto y altura flexible
+  en pantallas bajas; solo su documento tiene scroll vertical interno.
   El envío queda siempre en Acción actual; no se duplica al pie del editor.
   Las tarjetas usan radios/tokens del sistema: azul para edición,
   amarillo para devolución y púrpura en el icono
@@ -285,11 +288,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Análisis usa el mismo modal document/xl de procedencia (1040px máximos, 90dvh),
   centrado y nativo en todos los tamaños, sin ampliar el workspace al abrir.
   Primero muestra Observación de Calidad y Procede azul, después Descripción del
-  cliente. Su pie ofrece Preparar resolución. Resolución contiene el scroll cuando
-  el texto o su barra de formato tienen foco, incluso en los límites y estando vacío.
-  Sin foco, desplaza el expediente; conserva el scroll interno y el ancho mediante
-  gutter estable. El editor conserva su nodo y borrador
-  al consultar. GC muestra primero la propuesta;
+  cliente. Su pie ofrece Preparar resolución. La barra de formato y el pie de
+  Resolución permanecen a la vista; solo el contenido del editor tiene scroll
+  interno con gutter estable, incluso sin foco. Un separador fino bajo la barra
+  crea aire antes de la escritura. El marco conserva las cuatro esquinas
+  redondeadas y la pista genérica de Tiptap se oculta sin ocultar límites.
+  El editor conserva su nodo y borrador al consultar. GC muestra primero la propuesta;
   Solicitud y antecedentes conserva el contenido íntegro en un desplegable.
   El selector de formato conserva su ancho explícito y la barra envuelve sus controles
   cuando hace falta, sin ocultarlos detrás de un scroll horizontal. El encabezado existente añade la fecha real, sin otra ficha grande. El resto

@@ -334,7 +334,12 @@ permisos ni datos persistidos.
   conserva el error visible, no una edición remota.
   En Mis Quejas/Investigación, Resolución usa la barra Tiptap sin encabezado adicional:
   Asistencia IA es un botón directo a la derecha de formato, sin chat ni acordeones;
-  Cancelar y Guardar permanecen en el pie del editor (Guardar siempre variante primary).
+  la pista de formato está oculta (errores de límite visibles). La redacción tiene
+  scroll interno, barra superior y pie fijos y esquinas redondeadas. Al lado de IA,
+  Expandir/Contraer aumenta solo la altura hacia arriba conservando ancho y borde
+  inferior; Guardar/Cancelar restablecen el alto habitual. Guardar siempre mantiene
+  el azul primary incluso deshabilitado; Editar se muestra arriba del borrador
+  guardado y reabre el editor expandido. No ampliar todo el expediente.
   Guardar conserva borrador remoto/versionado, sin cambiar estado, revisión de Queja,
   propuesta enviada ni avisar a GC/cliente. Las ediciones
   posteriores sin guardar siguen siendo de la visita; no hay autoguardado.

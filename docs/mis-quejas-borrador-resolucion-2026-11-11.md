@@ -40,17 +40,24 @@ Un refetch posterior no reemplaza texto ni versión capturados.
 
 Guardar y Enviar comparten el lock síncrono del workflow. Durante el guardado se
 bloquea el doble envío; el editor conserva su nodo. Guardar mantiene la variante azul incluso antes de editar;
-se deshabilita si no hay cambios. Tras confirmación remota, el pie pasa a ofrecer
-Editar, con la fecha real en su título. Editar devuelve al modo de escritura:
-Guardar y Asistencia IA reaparecen en sus respectivas ubicaciones y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
+se deshabilita si no hay cambios, pero sin perder el color azul. Tras confirmación
+remota, Editar aparece arriba del documento (con fecha real en su título),
+no en el pie. Editar devuelve al modo de escritura y lo expande verticalmente;
+Guardar y Asistencia IA reaparecen en sus respectivas ubicaciones y el lienzo
+deja de ser solo lectura. Reabrir carga el guardado en ese
 mismo modo de lectura.
 Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ámbito,
 sin modificar otra visita o identidad. El borrador guardado permite navegar entre
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
 El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
-a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil. El scroll del editor sigue
-dependiendo del foco.
+a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y
+Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil.
+La redacción desplaza únicamente su contenido, mientras toolbar y pie se mantienen;
+la pista genérica de Tiptap está oculta. Expandir/Contraer se ubica junto a
+Asistencia IA, aumenta la altura hacia arriba y conserva ancho y pie. Guardar
+o cancelar restablece el alto, sin modificar el flujo ni el borrador fuera
+de los handlers existentes.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
 última fecha o Sin notas todavía. Ver notas abre un diálogo centrado con las notas

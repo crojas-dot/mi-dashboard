@@ -89,28 +89,64 @@
   }
 }
 
-/* Solo el scroll del expediente mueve el documento. El contenedor interno
-   debe dejar de recortar la barra de formato para que el sticky funcione. */
+/* Solo el documento de Investigación queda sticky en la columna central;
+   el ciclo, los dos paneles laterales y su ancho no se alteran. */
+[data-case-document]:has([data-resolution-shell]) {
+  position: sticky;
+  top: 0.75rem;
+  align-self: start;
+}
+
+/* La ampliación vertical conserva el editor real: sin remount de Tiptap.
+   Anular la capa transformada del scrollport evita que capture position:fixed. */
+[data-case-scroll]:has([data-resolution-expanded="true"]) {
+  will-change: auto !important;
+}
+
 .mis-quejas-resolution-editor > div:nth-child(2) {
-  overflow: visible;
+  overflow: hidden;
+  border-start-start-radius: var(--radius-card);
+  border-start-end-radius: var(--radius-card);
 }
 
 .mis-quejas-resolution-editor [data-rich-text-toolbar] {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 20;
   min-height: 44px;
   flex-wrap: wrap;
   overflow: visible;
   background: var(--color-qms-surface);
+  border-start-start-radius: var(--radius-card);
+  border-start-end-radius: var(--radius-card);
 }
 
-/* Mis Quejas usa un único scroll del expediente. El editor crece con el texto,
-   tanto durante la escritura como en lectura: no hay scroll interior ni gutter. */
+/* Barra y pie inmóviles; el área de escritura es el único scroll del editor. */
 .mis-quejas-resolution-editor [data-rich-text-viewport] {
-  overflow: visible;
-  overscroll-behavior: auto;
-  scrollbar-gutter: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Separador corto y aire bajo el toolbar, sin sumar un encabezado. */
+.mis-quejas-resolution-editor [data-rich-text-viewport]::before {
+  content: '';
+  display: block;
+  height: 1px;
+  margin: 12px 24px 0;
+  background: var(--color-qms-border);
+  pointer-events: none;
+}
+
+.mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+  top: 2.25rem;
+}
+@media (max-width: 639px) {
+  .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
+    top: 1.75rem;
+  }
 }
 
 /* Solo Mis Quejas ampliado: tarjetas laterales holgadas y lectura central
