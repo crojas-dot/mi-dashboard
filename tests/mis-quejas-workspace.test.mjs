@@ -43,6 +43,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
     },
     '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: id => ({ data: draftError ? undefined : drafts.get(id) ?? null, error: draftError ? new Error('Lectura fallida') : null, isFetching: false, refetch() {} }) },
     '@/lib/queries/useQuejaActividad': { quejaActividadKey: id => ['quejas', 'actividad', id], useQuejaActividad: () => ({ data: actividad, isLoading: false, error: null, refetch() {} }), useCrearQuejaActividad: () => ({ mutateAsync: async () => {} }) },
+    '@/lib/queries/useQuejaDevoluciones': { useQuejaDevoluciones: () => ({ data: [] }) },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: [{ id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' }, { id: 'file', usuario_id: 'owner', nombre: 'Informe.pdf' }] }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}) },
     '@/hooks/useEntityRequestGuard': { useEntityRequestGuard: id => {
