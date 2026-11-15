@@ -138,6 +138,9 @@ test('cada etapa de Calidad contiene título, contexto, icono, tono y CTA promin
     const result = html(CaseTriageNextStep, { step, onOpen() {} })
     assert.match(result, /data-case-triage-next-step/)
     assert.match(result, /data-case-triage-expand/)
+    assert.match(result, /rounded-md border px-3\.5/, 'marco fino y uniforme')
+    assert.doesNotMatch(result, /border-l-(?:\d|blue|amber|emerald|slate)/,
+      'ninguna etapa debe tener rayas verticales decorativas')
     assert.match(result, /bg-qms-primary/)
     assert.match(result, /text-white/)
     assert.match(result, /hover:bg-blue-700/)
@@ -194,6 +197,14 @@ test('en Quejas las acciones reales existen solo en la columna del AMPLIADO', ()
   const actionColumn = source.split('action={<CaseAction ')[1]?.split('</CaseAction>')[0]
   assert.ok(actionColumn)
   assert.match(actionColumn, /\{workflowActions\}/)
+})
+
+test('aviso de devolución en Mis Quejas también evita la raya lateral', () => {
+  const source = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  const notice = source.split('<section data-case-triage-return')[1]?.split('</section>')[0]
+  assert.ok(notice, 'la observación de Calidad permanece visible')
+  assert.match(notice, /rounded-md border border-amber-100 bg-amber-50/)
+  assert.doesNotMatch(notice, /border-l-|border-l-2|border-l-4/)
 })
 
 test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios locales', () => {
