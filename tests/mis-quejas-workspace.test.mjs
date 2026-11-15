@@ -144,6 +144,7 @@ test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificia
   assert.match(actions, /h-11 w-11/)
   assert.match(actions, /<Maximize aria-hidden="true" className="size-5"/)
   assert.match(actions, /<Minimize aria-hidden="true" className="size-5"/)
+  assert.match(source, /h-\\[clamp\\(420px,58dvh,560px\\)\\]/)
 })
 
 test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el alto normal', () => {
@@ -171,7 +172,7 @@ test('expandir conserva ancho y pie sin remontar el editor; contraer restaura el
   assert.equal(panel.editor().props.id, editorId)
 })
 
-test('Guardar azul y Cancelar restauran altura normal; Editar arriba reabre expandido', async () => {
+test('Guardar y Cancelar restauran altura normal; Editar no expande hasta solicitarlo', async () => {
   const panel = fixture()
   panel.select('A')
   assert.equal(panel.button('Guardar').props.variant, 'primary')
@@ -192,6 +193,9 @@ test('Guardar azul y Cancelar restauran altura normal; Editar arriba reabre expa
   assert.ok(panel.button('Editar'))
   assert.equal(panel.nodes().find(node => node.props['data-resolution-footer']) !== undefined, true)
   panel.button('Editar').props.onClick(); panel.render()
+  assert.ok(panel.button('Expandir editor verticalmente'))
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
+  panel.button('Expandir editor verticalmente').props.onClick(); panel.render()
   assert.ok(panel.button('Contraer editor'))
   panel.button('Cancelar').props.onClick(); panel.render()
   assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
