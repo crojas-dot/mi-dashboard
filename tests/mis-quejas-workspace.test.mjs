@@ -202,7 +202,7 @@ test('un mensaje de devolución largo se resume y abre el modal con el texto ín
   const modal = panel.nodes().find(node => node.type === 'Modal' && node.props.title === 'Devolución de Calidad')
   assert.ok(modal)
   assert.equal(modal.props.open, true)
-  const motivos = modal.props.children.props.children.map(item => item.props.children[1].props.children)
+  const motivos = Array.from(modal.props.children.props.children, item => item.props.children[1].props.children)
   assert.deepEqual(motivos, [motivo])
 })
 
@@ -217,7 +217,7 @@ test('dos devoluciones cortas también habilitan Ver más y se muestran de nueva
   assert.ok(panel.button('Ver más'))
   panel.button('Ver más').props.onClick(); panel.render()
   const modal = panel.nodes().find(node => node.type === 'Modal' && node.props.title === 'Devolución de Calidad')
-  const motivos = modal.props.children.props.children.map(item => item.props.children[1].props.children)
+  const motivos = Array.from(modal.props.children.props.children, item => item.props.children[1].props.children)
   assert.deepEqual(motivos, ['Segunda observación.', 'Primera observación.'])
 })
 
