@@ -28,8 +28,8 @@ test('la evaluación omite responsable por asignar y ancla la acción al fondo',
   const { CaseAction } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
   const markup = renderToStaticMarkup(createElement(CaseAction, {
     queja: { id: 'case', folio: '2026-001', estado: 'Recibido', estado_color: 'blue' },
-    runs: [], presentation: 'reference', children: createElement('button', null, 'Tomar decisión'),
-  }))
+    runs: [], presentation: 'reference',
+  }, createElement('button', null, 'Tomar decisión')))
   assert.match(markup, /Evaluar procedencia/)
   assert.match(markup, /data-case-action-reference/)
   assert.doesNotMatch(markup, /Responsable|Por asignar/)
