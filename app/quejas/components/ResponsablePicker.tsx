@@ -69,7 +69,7 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
       const topEdge = (viewport?.offsetTop ?? 0) + 8
       const rightEdge = leftEdge + (viewport?.width ?? window.innerWidth) - 16
       const bottomEdge = topEdge + (viewport?.height ?? window.innerHeight) - 16
-      const width = Math.min(320, rightEdge - leftEdge)
+      const width = Math.min(showAvatar ? 384 : 320, rightEdge - leftEdge)
       const below = bottomEdge - anchor.bottom - 6
       const above = anchor.top - topEdge - 6
       const useAbove = below < 200 && above > below
@@ -97,7 +97,7 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
       window.visualViewport?.removeEventListener('scroll', position)
       if (nativePopover && popup.matches(':popover-open')) popup.hidePopover()
     }
-  }, [open, disabled])
+  }, [open, disabled, showAvatar])
 
   useEffect(() => {
     if (!open || disabled) return
@@ -137,7 +137,7 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
       variant={showAvatar ? "secondary" : "ghost"}
       size="sm"
       disabled={disabled}
-      className={`${showAvatar ? 'max-w-[180px] rounded-full py-1 pl-1.5 pr-2.5' : 'max-w-[100px] gap-1.5 px-1.5 sm:max-w-[150px]'} ${validationMessage ? 'border-qms-danger text-qms-danger' : ''}`}
+      className={`${showAvatar ? 'w-64 max-w-full justify-start rounded-full py-1 pl-1.5 pr-2.5 sm:w-[22rem]' : 'max-w-[100px] gap-1.5 px-1.5 sm:max-w-[150px]'} ${validationMessage ? 'border-qms-danger text-qms-danger' : ''}`}
       aria-label={value ? `Responsable de investigación: ${value.nombre}` : 'Asignar responsable de investigación'}
       aria-haspopup="listbox"
       aria-expanded={open && !disabled}
@@ -155,7 +155,7 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
             {value?.nombre.trim().charAt(0).toLocaleUpperCase('es') || '?'}
           </span>
         : <UserRound aria-hidden="true" className="h-4 w-4 shrink-0" />}
-      <span className="min-w-0 truncate">{value?.nombre || 'Responsable'}</span>
+      <span className={showAvatar ? "min-w-0 flex-1 truncate text-left" : "min-w-0 truncate"}>{value?.nombre || 'Responsable'}</span>
       <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
     </Button>
     {open && !disabled && <div ref={popupRef} data-responsable-picker className="fixed z-[70] m-0 flex flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface p-0 text-qms-dark shadow-lg" style={{ inset: 'auto' }}>

@@ -297,11 +297,14 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   anterior, estado y siguiente en una fila, con iconos y nombres accesibles.
 - Las tablas compartidas conservan un mínimo de 640px y scroll horizontal local
   para evitar columnas ilegibles. No permitir que ensanchen la página completa.
-- Usuarios usa la tabla de escritorio fija en proporciones 24/14/13/19/18/12 %
-  (Usuario/Rol/Estado/Seguridad/Último acceso/Acciones). La inicial «A» de
-  Acciones coincide con el eje vertical de los tres puntos; no desplazar el menú
-  de tres opciones ni modificar su lógica. Mantener tarjetas móviles y filtros
-  sin desplazamiento horizontal inesperado.
+- Usuarios conserva la tabla de escritorio fija en proporciones 24/14/13/19/18/12 %
+  (Usuario/Rol/Estado/Seguridad/Último acceso/Acciones). El encabezado Acciones
+  se alinea con el borde izquierdo del botón «Editar», que reemplaza los tres puntos
+  por lápiz, texto y desplegable con tonos del sistema. Mantener las tres opciones,
+  permisos, portal, foco y tarjetas móviles sin desplazamiento horizontal inesperado.
+- En el modal de Procede, el chip con avatar del responsable puede extenderse
+  hacia la izquierda hasta 22rem; el popover conserva su anclaje derecho y busca
+  los mismos usuarios. No modificar la anchura del modal ni el lienzo Tiptap.
 - Usuarios usa filtros en cuadrícula; las pestañas de Documentos pueden saltar
   de fila. El panel de Mis Quejas ocupa el viewport móvil y conserva los 500px
   y la reserva de espacio únicamente desde el breakpoint `lg`.

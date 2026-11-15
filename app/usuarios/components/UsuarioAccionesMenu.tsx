@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { KeyRound, MoreVertical, Pencil, UserRoundCheck, UserRoundX } from 'lucide-react'
+import { ChevronDown, KeyRound, Pencil, UserRoundCheck, UserRoundX } from 'lucide-react'
 import type { Usuario } from '@/lib/queries/useUsuarios'
 
 interface Props {
@@ -91,10 +91,12 @@ export default function UsuarioAccionesMenu({ usuario, esPropio, onEditar, onRes
   const item = 'flex w-full cursor-pointer items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium transition-colors hover:bg-qms-hover-bg focus-visible:bg-qms-hover-bg focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40'
   return <>
     <button ref={triggerRef} type="button" onClick={toggle} data-users-action-trigger
-      aria-label={`Acciones de ${usuario.nombre}`} title={`Acciones de ${usuario.nombre}`}
+      aria-label={`Editar y más acciones de ${usuario.nombre}`} title={`Editar y más acciones de ${usuario.nombre}`}
       aria-haspopup="menu" aria-expanded={open} aria-controls={open ? menuId : undefined}
-      className={`inline-flex size-9 cursor-pointer items-center justify-center rounded-button text-qms-muted transition-colors hover:bg-qms-hover-bg hover:text-qms-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary ${open ? 'bg-qms-hover-bg text-qms-dark' : ''}`}>
-      <MoreVertical aria-hidden="true" className="size-[18px]" />
+      className={`inline-flex min-h-9 cursor-pointer items-center justify-center gap-1 whitespace-nowrap rounded-button border border-qms-primary/25 bg-qms-primary-soft px-2 text-sm font-medium text-qms-primary transition-colors hover:border-qms-primary/40 hover:bg-qms-primary-soft/80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary ${open ? 'border-qms-primary/50' : ''}`}>
+      <Pencil aria-hidden="true" className="size-3.5 shrink-0" />
+      <span>Editar</span>
+      <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && createPortal(
       <div ref={menuRef} id={menuId} data-users-actions-menu role="menu" aria-label={`Acciones de ${usuario.nombre}`}
