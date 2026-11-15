@@ -653,6 +653,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
           return
         }
+        if (navigationDisabled) {
+          showError(null, 'Hay una edición u operación pendiente. Guardá o cancelá los cambios antes de cerrar el expediente.')
+          return
+        }
         const row = document.querySelector<HTMLElement>('.ui-case-row[aria-selected="true"]')
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
