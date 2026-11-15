@@ -445,6 +445,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         if (panelNotas) { cerrarNotas(); return }
         if (panelAdjuntos) { cerrarAdjuntos(); return }
         if (isExpanded) {
+          setResolutionOverlay(null)
           setIsExpanded(false)
           requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
           return
