@@ -115,7 +115,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [resolutionOverlay])
-  useEffect(() => { setResolutionOverlay(null) }, [isExpanded])
 
   const handleClose = useCallback(() => {
     scope.invalidate()
@@ -359,6 +358,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   }
   const prepararResolucion = () => {
     if (!investigando || resolutionPending) return
+    setResolutionOverlay(null)
     setIsExpanded(true)
     setEditandoResolucion(true)
     cerrarAnalisis()
@@ -459,7 +459,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
-      headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => setIsExpanded(value => !value)}
+      headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
