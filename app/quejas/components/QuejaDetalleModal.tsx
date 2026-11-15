@@ -23,7 +23,7 @@ import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
 import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
-import { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
+import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import type { Queja } from '@/lib/types'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import { useUsuarios, type Usuario } from '@/lib/queries/useUsuarios'
@@ -48,7 +48,7 @@ import { Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info } from
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
-import { CASE_ACTIONS, caseDate, getCaseProcessCycle, getCaseTriageCta } from '@/app/quejas/components/quejaExpedienteModel'
+import { CASE_ACTIONS, caseDate, getCaseProcessCycle, getCaseTriageNextStep } from '@/app/quejas/components/quejaExpedienteModel'
 import { CaseSection, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
@@ -616,10 +616,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
     responsable={responsableActual?.nombre}
-    primaryAction={<Button type="button" data-case-triage-expand size="sm" variant="secondary"
-      className="w-full" onClick={() => { setReadOnlyStage(null); setExpanded(true) }}>
-      {getCaseTriageCta(estadoActual, esStaff)} →
-    </Button>}
+    primaryAction={<CaseTriageNextStep
+      step={getCaseTriageNextStep(estadoActual, { responsable: responsableActual?.nombre, canPublish: esStaff })}
+      onOpen={() => { setReadOnlyStage(null); setExpanded(true) }} />}
     footer={<CaseTriageFooter count={!actividadLoading && !actividadError ? actividad.length : undefined}
       onOpen={() => setActivityOpen(true)} />}>
     <div className="space-y-4">
