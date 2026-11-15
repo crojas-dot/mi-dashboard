@@ -277,8 +277,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Cancelar restaura el borrador persistido y contrae la altura sin enviar nada.
   Tras guardar, Editar pasa arriba del documento, con fecha real en su título.
   Editar vuelve a modo escritura expandido verticalmente; el botón junto a
-  Asistencia permite Expandir/Contraer sin ampliar las columnas del expediente,
-  sin cambiar ancho ni mover el pie y sin remontar Tiptap. Guardar confirma y
+  Asistencia permite Expandir/Contraer con icono de cuatro esquinas, botón
+  de 44px y separador vertical respecto de IA, sin ampliar las columnas del
+  expediente, sin cambiar ancho ni mover el pie y sin remontar Tiptap.
+  Al abrir el editor se restablece el scroll exterior arriba sin
+  `scrollIntoView`, y el lienzo central no usa sticky propio.
+  Guardar confirma y
   vuelve a la altura habitual. No hay autoguardado.
   El lienzo por defecto conserva aproximadamente 700px de alto y altura flexible
   en pantallas bajas; solo su documento tiene scroll vertical interno.
