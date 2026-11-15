@@ -138,6 +138,17 @@ test('Calidad espera propuesta, no reabre evaluación: CTA compacto, plazo real 
   assert.doesNotMatch(modal, /La investigación está a cargo de la persona asignada\./)
 })
 
+test('Procede no muestra botón de decisión en el encabezado; mantiene selector responsable', () => {
+  const modal = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const start = modal.indexOf('headerActions={decisionOpen && decisionProcedencia ?')
+  const end = modal.indexOf('footer={decisionOpen', start)
+  assert.ok(start >= 0 && end > start)
+  const header = modal.slice(start, end)
+  assert.match(header, /decisionProcedencia === 'procede' && <ResponsablePicker/)
+  assert.match(header, /decisionProcedencia === 'no_procede' && <Button/)
+  assert.doesNotMatch(header, />Procede<\/Button>/)
+})
+
 test('el editor de Procede es el único campo de instrucciones y su ayuda gris está oculta solo aquí', () => {
   const modal = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
   const editor = fs.readFileSync('components/ui/RichTextEditorBody.tsx', 'utf8')
