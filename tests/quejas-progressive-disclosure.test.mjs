@@ -30,7 +30,7 @@ test('el triaje se ve solo contraído y conserva el MISMO documento y editor mon
     assert.equal((result.match(/data-editor-preserved/g) || []).length, 1)
     assert.equal((result.match(/Borrador local/g) || []).length, 1)
     assert.equal((result.match(/Guardar en ampliado/g) || []).length, 1)
-    assert.equal((result.match(/data-case-triage=""/g) || []).length, expanded ? 0 : 1)
+    assert.equal((result.match(/data-case-triage(?==| |>)/g) || []).length, expanded ? 0 : 1)
     assert.equal(/data-case-frame[^>]*style="display:none"/.test(result), !expanded)
     if (!expanded) assert.match(result, /Solo triaje/)
     else assert.match(result, /@min-\[1100px\]:grid-cols-\[240px_minmax\(0,1fr\)_270px\]/)
