@@ -28,11 +28,11 @@ export default function QuejaInvestigacionAsignacion({
     ? adjuntos.find(file => file.id === asignacion.oficio_adjunto_id)
     : null
   const otrosAdjuntos = adjuntos.filter(file => !!file.usuario_id && file.id !== oficio?.id)
-  // Expedientes previos pueden conservar instrucciones independientes; para los nuevos
-  // la única fuente es la justificación guardada durante Procede.
-  const instruccionesAnteriores = asignacion?.instrucciones?.trim()
-  const instrucciones = instruccionesAnteriores || justificacionProcede?.trim() || ''
-  const instruccionesFormato = instruccionesAnteriores ? 'plain' : justificacionFormato ?? 'plain'
+  // La justificación de Calidad es la fuente principal; si un expediente antiguo
+  // solo guardó instrucciones independientes, se muestran como respaldo.
+  const justificacionPrincipal = justificacionProcede?.trim()
+  const instrucciones = justificacionPrincipal || asignacion?.instrucciones?.trim() || ''
+  const instruccionesFormato = justificacionPrincipal ? justificacionFormato ?? 'plain' : 'plain'
   return <CaseSection variant="document" source="Gestión de Calidad" title="Detalles de asignación">
     <div data-investigation-assignment className="space-y-5 text-sm">
       {instrucciones ? <section data-investigation-instructions>
@@ -43,7 +43,6 @@ export default function QuejaInvestigacionAsignacion({
         </section> : asignacionLoading ? <p className="text-sm text-qms-muted">Consultando detalles de la asignación…</p>
         : <p className="text-sm text-qms-muted">Sin justificación registrada para esta asignación.</p>}
       {asignacionError && <p role="alert" className="text-sm text-qms-danger">No se pudieron consultar los archivos vinculados a la asignación.</p>}
-
 
       <div className="flex items-start gap-3 rounded-md border border-qms-border bg-qms-hover-bg/50 px-4 py-3.5">
         <UserRound aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-qms-primary" />
