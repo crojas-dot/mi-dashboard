@@ -53,15 +53,15 @@ export default function QuejaPublicacionPanel(props: Props) {
               <option value="">{props.archivosLoading ? 'Cargando archivos…' : 'Seleccionar oficio adjunto'}</option>
               {archivos.map(adjunto => <option key={adjunto.id} value={adjunto.id}>{adjunto.nombre}</option>)}
             </Select>
-            <label title="Adjuntar oficio" className={`ui-button ui-button-secondary ui-button-sm shrink-0 ${props.disabled || props.subiendo ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+            <label title="Subir archivo" className={`ui-button ui-button-secondary ui-button-sm shrink-0 ${props.disabled || props.subiendo ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
               <Upload className="size-4" aria-hidden="true" />
-              <span>Adjuntar oficio</span>
-              <input type="file" className="sr-only" aria-label="Adjuntar oficio" disabled={props.disabled || props.subiendo}
+              <span>Subir archivo</span>
+              <input type="file" className="sr-only" aria-label="Subir archivo" disabled={props.disabled || props.subiendo}
                 onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) props.onSubir(file) }} />
             </label>
           </div>
         </Field>
-      {props.subiendo ? <p role="status" className="text-xs text-qms-muted">Subiendo oficio…</p> : props.archivosError
+      {props.subiendo ? <p role="status" className="text-xs text-qms-muted">Subiendo archivo…</p> : props.archivosError
         ? <p role="alert" className="text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>
         : <p className="text-xs text-qms-muted">PDF recomendado. Se conservan los formatos admitidos en el expediente. Solo se publica el oficio seleccionado.</p>}
       {props.resolucionAprobada && <details className="pb-4"><summary className="cursor-pointer py-2 text-sm font-medium text-qms-primary">Consultar resolución aprobada</summary><div className="pt-2"><RichTextContent value={props.resolucionAprobada.value} format={props.resolucionAprobada.format} /></div></details>}
