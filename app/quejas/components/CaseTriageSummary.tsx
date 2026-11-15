@@ -60,10 +60,10 @@ const nextStepIcons = {
 } as const
 
 const nextStepTones = {
-  blue: 'border-blue-200 border-l-blue-500 bg-blue-50/70 text-blue-700',
-  amber: 'border-amber-200 border-l-amber-500 bg-amber-50/80 text-amber-800',
-  green: 'border-emerald-200 border-l-emerald-500 bg-emerald-50/70 text-emerald-700',
-  slate: 'border-slate-200 border-l-slate-400 bg-slate-50 text-slate-600',
+  blue: 'border-blue-100 bg-blue-50/70 text-blue-700',
+  amber: 'border-amber-100 bg-amber-50/80 text-amber-800',
+  green: 'border-emerald-100 bg-emerald-50/70 text-emerald-700',
+  slate: 'border-slate-100 bg-slate-50 text-slate-600',
 } as const
 
 /** Orienta antes de ampliar. No tiene handlers de aprobar, devolver, enviar ni publicar. */
@@ -74,7 +74,7 @@ export function CaseTriageNextStep({ step, onOpen, disabled = false }: {
 }) {
   const Icon = nextStepIcons[step.icon]
   return <section data-case-triage-next-step aria-label="Siguiente paso"
-    className={`min-w-0 rounded-md border border-l-4 px-3.5 py-3.5 sm:px-4 ${nextStepTones[step.tone]}`}>
+    className={`min-w-0 rounded-md border px-3.5 py-3.5 sm:px-4 ${nextStepTones[step.tone]}`}>
     <div className="flex min-w-0 items-start gap-3">
       <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/75">
         <Icon className="size-5" />
