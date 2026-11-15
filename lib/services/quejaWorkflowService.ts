@@ -112,6 +112,35 @@ export function transicionarQueja(queja: ExpedienteVersionado, nuevoEstado: stri
   })
 }
 
+/** Evaluación Procede y registro opcional de instrucciones/oficio, atómicos en DB.
+ * Mantiene la revisión original y los mismos permisos del workflow; sin escrituras parciales. */
+export function iniciarInvestigacionQueja(
+  queja: ExpedienteVersionado,
+  input: {
+    justificacion: string
+    formato: 'plain' | 'markdown'
+    responsableId: string
+    instrucciones?: string
+    oficioAdjuntoId?: string | null
+  },
+) {
+  const justification = input.justificacion.trim()
+  const instructions = (input.instrucciones ?? '').trim()
+  if (!justification || justification.length > 10000 || !['plain', 'markdown'].includes(input.formato)
+    || !input.responsableId || instructions.length > 4000) {
+    throw new Error('Revisá la justificación, responsable e instrucciones antes de continuar.')
+  }
+  return callRpc<Queja>('qms_start_investigation_with_assignment', {
+    p_id: queja.id,
+    p_expected: revisionEsperada(queja),
+    p_justification: justification,
+    p_justification_format: input.formato,
+    p_owner: input.responsableId,
+    p_instructions: instructions || null,
+    p_office_attachment: input.oficioAdjuntoId || null,
+  })
+}
+
 /** Solo adjuntos institucionales del expediente; las evidencias ciudadanas siguen privadas. */
 export function esOficioPublicableQueja(adjunto: QuejaAdjunto | null | undefined, quejaId: string): adjunto is QuejaAdjunto {
   return !!adjunto && adjunto.queja_id === quejaId && typeof adjunto.usuario_id === 'string' && !!adjunto.usuario_id

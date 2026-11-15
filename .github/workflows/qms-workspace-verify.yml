@@ -4,6 +4,14 @@ on:
   pull_request:
     paths:
       - 'app/quejas/**'
+      - 'lib/queries/useQuejaInvestigationAssignment.ts'
+      - 'lib/queries/useQuejaResolucionDraft.ts'
+      - 'lib/services/quejaWorkflowService.ts'
+      - 'supabase/migrations/*quejas_investigacion_asignacion.sql'
+      - 'tests/quejas-asignacion-investigacion.test.mjs'
+      - 'tests/queja-publicacion.test.mjs'
+      - 'tests/entity-request-guard.test.mjs'
+      - 'tests/visual-contracts.test.mjs'
       - 'app/mis-quejas/**'
       - 'app/usuarios/**'
       - 'tests/usuarios-table-layout.test.mjs'
@@ -27,7 +35,7 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run lint
-      - run: node --test tests/quejas-progressive-disclosure.test.mjs tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs tests/usuarios-acciones-menu.test.mjs
+      - run: node --test tests/quejas-progressive-disclosure.test.mjs tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs tests/usuarios-acciones-menu.test.mjs tests/quejas-asignacion-investigacion.test.mjs tests/quejas-ui-refinada.test.mjs tests/usuarios-acceso-workflow.test.mjs
       - run: npm run build
         env:
           # Datos públicos ficticios: permiten prerenderizar sin conectar CI a Supabase real.

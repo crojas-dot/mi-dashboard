@@ -82,7 +82,7 @@ test('las etapas de Calidad usan resúmenes y conservan tres tarjetas salvo No P
   assert.match(source, /CaseTriageAttachments files=\{adjuntosCliente\}/)
   assert.match(source, /CaseTriageAttachments files=\{adjuntos\.filter\(item => !!item\.usuario_id\)\}/)
   assert.match(source, /CaseTriageExcerpt title="Propuesta para revisión"/)
-  assert.match(source, /CaseTriageExcerpt title="Resumen de investigación"/)
+  assert.match(source, /CaseTriageExcerpt title="Estado de la investigación"/)
   assert.match(source, /QuejaCierreResumen key=\{queja\.id \+ ':compact'\}/)
   assert.match(source, /CaseTriageFooter count=/)
   assert.match(source, /onEscape=\{\(\) => \{/)
@@ -91,7 +91,7 @@ test('las etapas de Calidad usan resúmenes y conservan tres tarjetas salvo No P
 test('la CTA segura depende de la etapa y no contiene instrucciones de mutación', () => {
   for (const [estado, expected] of [
     ['Recibido', 'Revisar solicitud completa'],
-    ['En Investigación', 'Ver avance del caso completo'],
+    ['En Investigación', 'Ver estado de la investigación'],
     ['Pendiente de Revisión GC', 'Revisar propuesta completa'],
     ['Finalizado', 'Ver expediente de cierre completo'],
     ['No Procede', 'Ver expediente de cierre completo'],
@@ -122,7 +122,7 @@ test('la CTA de revisión aparece arriba, antes del extracto, sin botones críti
 test('cada etapa de Calidad contiene título, contexto, icono, tono y CTA prominente', () => {
   const cases = [
     ['Recibido', 'Evaluar procedencia', 'Revisa la solicitud y evidencias', 'Revisar solicitud completa', 'clipboard', 'blue'],
-    ['En Investigación', 'Seguimiento de caso', 'por María Responsable', 'Ver avance del caso completo', 'search', 'blue'],
+    ['En Investigación', 'Seguimiento de caso', 'por María Responsable', 'Ver estado de la investigación', 'search', 'blue'],
     ['Pendiente de Revisión GC', 'Revisión de Calidad', 'Revisa la propuesta y evidencias', 'Revisar propuesta completa', 'review', 'amber'],
     ['Resuelto', 'Preparar respuesta al cliente', 'El caso fue aprobado', 'Redactar y publicar respuesta', 'mail', 'blue'],
     ['Finalizado', 'Expediente cerrado', 'Consulta el resumen de cierre', 'Ver expediente de cierre completo', 'archive', 'green'],

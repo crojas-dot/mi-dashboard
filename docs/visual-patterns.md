@@ -28,7 +28,7 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
 - REGLA DE ORO: jamás habilitar decisiones de negocio sobre texto truncado.
   En contraído, Calidad usa una tarjeta con título/contexto/CTA según etapa:
   Recibido «Evaluar procedencia» / «Revisar solicitud completa →»;
-  Investigación «Seguimiento de caso» / «Ver avance del caso completo →»;
+  Investigación «Seguimiento de caso» / «Ver estado de la investigación →»;
   Revisión GC «Revisión de Calidad» / «Revisar propuesta completa →»;
   Resuelto «Preparar respuesta al cliente» / «Redactar y publicar respuesta →»
   (solo cuando el rol está autorizado);
@@ -42,6 +42,14 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   En Investigación (extracto), Revisión GC (propuesta resumida y dos evidencias),
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
   (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
+- En etapa 2 de Calidad (solo workspace ampliado), la columna central muestra
+  «Detalles de asignación»: investigador, instrucciones guardadas, oficio de apertura
+  vinculado y aviso con fecha de última modificación del borrador remoto cuando exista.
+  No copiar `getQuejaAnalysis` de la evaluación ni mostrar el texto genérico anterior.
+  La columna derecha informa «Esperar propuesta del investigador» con duración real
+  del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
+  disponible cuando corresponda a Revisión GC. No mostrar el contenido del borrador
+  ni inventar un visor o una propuesta enviada antes de tiempo.
 - En Mis Quejas, el «Siguiente paso» adapta título, contexto, icono y CTA:
   Sin borrador «Redactar resolución» / «Abrir editor para redactar →»;
   con borrador «Borrador guardado» con fecha / «Abrir editor para modificar →»;
