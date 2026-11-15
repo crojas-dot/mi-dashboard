@@ -417,7 +417,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       onOpen={abrirNotas} />}>
     <div className="space-y-4">
       {reenviarRevision && devolucion && <section data-case-triage-return
-        className="space-y-1.5 border-l-2 border-amber-300 bg-amber-50/40 py-2 pl-3 pr-2 text-amber-900">
+        className="space-y-1.5 rounded-md border border-amber-100 bg-amber-50/50 px-3 py-2.5 text-amber-900">
         <h3 className="text-xs font-semibold">Observación de Calidad</h3>
         <p className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed">{devolucion.motivo}</p>
       </section>}
