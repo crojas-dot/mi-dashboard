@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
@@ -150,11 +151,20 @@ test('el paso 1 utiliza el mismo panel y los tokens QMS con dos acciones directa
   assert.ok(result.indexOf('Recibido') < result.indexOf('Evaluar procedencia'))
   assert.ok(result.indexOf('Procede') < result.indexOf('No Procede'))
   assert.match(result, /bg-qms-primary-soft/)
+  assert.match(result, /mt-4 flex min-w-0 flex-col gap-3\.5/)
   assert.match(result, /border-qms-border/)
   assert.match(result, /Al seleccionar una opción/)
   assert.doesNotMatch(result, /Tomar decisión|Persona responsable|Por asignar/)
   assert.doesNotMatch(result, /w-80|border-l border-gray-200|p-6 bg-gray-50|bg-blue-50|text-\[12px\]/)
   assert.equal((result.match(/<button type="button"/g) || []).length, 2)
+})
+
+test('las dos acciones tienen 48 px y cerrar No Procede no reabre la selección', () => {
+  const source = readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  assert.match(source, /<Button size="sm" className="min-h-12 w-full min-w-0 justify-between" onClick=\{\(\) => openEvaluationDecision\('procede'\)\}/)
+  assert.match(source, /<Button size="sm" variant="danger" className="min-h-12 w-full min-w-0 justify-between" onClick=\{\(\) => openEvaluationDecision\('no_procede'\)\}/)
+  assert.match(source, /if \(respuestaNoProcede\) \{ setDecisionProcedencia\(null\); setDecisionOpen\(false\) \}/)
+  assert.doesNotMatch(source, /if \(!completed\) setDecisionOpen\(true\)/)
 })
 
 test('Recibido y las etapas restantes respetan el color del catálogo', () => {
