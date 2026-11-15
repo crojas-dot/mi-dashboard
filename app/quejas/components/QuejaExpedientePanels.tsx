@@ -276,7 +276,7 @@ export function CaseAction({ queja, runs, children, plazoError, condensed = fals
         <h4 className="mt-5 text-base font-semibold text-qms-dark">Evaluar procedencia</h4>
         <p className="mt-2 text-sm leading-relaxed text-qms-muted">Revisa la solicitud y selecciona el resultado de la evaluación para continuar con el flujo.</p>
         {children && <>
-          <div className="mt-4 flex min-w-0 flex-col gap-2">{children}</div>
+          <div className="mt-4 flex min-w-0 flex-col gap-3.5">{children}</div>
           <div className="mt-auto pt-5">
             <div className="flex items-start gap-2 rounded-card border border-qms-border bg-qms-primary-soft p-3 text-sm leading-relaxed text-qms-primary">
               <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
