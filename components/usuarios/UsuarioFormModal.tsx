@@ -158,7 +158,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           onClick={() => setConfirmarEliminar(false)}>Cancelar</Button>
         <Button type="button" size="sm" variant="danger" disabled={busy}
           loading={eliminando} onClick={handleEliminar}>
-          <Trash2 aria-hidden="true" className="size-4" />Confirmar eliminación
+          <Trash2 aria-hidden="true" className="size-4" />Eliminar
         </Button>
       </div>
     </div>}
@@ -191,7 +191,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           <form key={usuario?.id ?? 'nuevo'} id={formId} role={esEditar ? 'tabpanel' : undefined}
             aria-label={esEditar ? 'Detalles del perfil' : 'Crear nuevo usuario'}
             aria-labelledby={esEditar ? 'usuario-tab-detalles' : undefined}
-            hidden={tab !== 'detalles'} onSubmit={handleSubmit}
+            hidden={esEditar && tab !== 'detalles'} onSubmit={handleSubmit}
             className={esEditar ? 'mx-auto max-w-3xl' : 'mx-auto max-w-4xl space-y-7'}>
             {error && <div role="alert" className="mb-4 rounded-card border border-qms-danger/30 bg-qms-danger/5 p-3 text-sm text-qms-danger">{error}</div>}
             {esEditar ? <div data-user-profile-layout className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
@@ -347,7 +347,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           </p>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
             <Button type="button" variant="secondary" disabled={busy} onClick={cerrar}>{esEditar && tab === 'seguridad' ? 'Cerrar' : 'Cancelar'}</Button>
-            {tab === 'detalles' && <Button type="submit" form={formId} loading={saving} disabled={busy}>
+            {(!esEditar || tab === 'detalles') && <Button type="submit" form={formId} loading={saving} disabled={busy}>
               {!saving && (esEditar ? <Pencil aria-hidden="true" className="size-4" /> : <UserPlus aria-hidden="true" className="size-4" />)}
               {esEditar ? 'Guardar cambios' : 'Crear usuario'}
             </Button>}
