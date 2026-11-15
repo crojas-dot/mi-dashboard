@@ -413,7 +413,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         loading={adjuntosLoading} error={!!adjuntosError} />
       <div className="space-y-2">
         <Button size="sm" variant="secondary" className="w-full" onClick={abrirAnalisis}>Ver caso completo</Button>
-        <Button size="sm" variant="secondary" className="w-full" onClick={() => setIsExpanded(true)}>Ampliar expediente →</Button>
+        <Button data-case-triage-expand size="sm" variant="secondary" className="w-full" onClick={() => setIsExpanded(true)}>Ampliar expediente →</Button>
       </div>
     </div>
   </CaseTriageSummary>
@@ -424,7 +424,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         if (analisisAbierto) { cerrarAnalisis(); return }
         if (panelNotas) { cerrarNotas(); return }
         if (panelAdjuntos) { cerrarAdjuntos(); return }
-        if (isExpanded) { setIsExpanded(false); return }
+        if (isExpanded) {
+          setIsExpanded(false)
+          requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
+          return
+        }
         if (resolutionDirty || !!nota.trim()) {
           showError(null, 'Hay cambios sin guardar. Abrí el editor para guardarlos o descartarlos antes de salir.')
           return
