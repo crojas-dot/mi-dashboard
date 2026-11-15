@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, CircleHelp, ClipboardCheck, Eye, FilePenLine, Pencil, Save, Send } from 'lucide-react'
+import { ClipboardCheck, Eye, FilePenLine, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -53,7 +53,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [panelNotas, setPanelNotas] = useState(false)
   const [panelAdjuntos, setPanelAdjuntos] = useState(false)
   const resolutionContainer = useRef<HTMLDivElement>(null)
-  const resolutionHeaderRef = useRef<HTMLDivElement>(null)
   const resolutionCaret = useRef<{ range: Range; version: number } | null>(null)
   const [resolucion, setResolucion] = useState('')
   const [resolucionFormato, setResolucionFormato] = useState<'plain' | 'markdown'>('plain')
@@ -68,7 +67,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [notaMenu, setNotaMenu] = useState<string | null>(null)
   const [notaEliminar, setNotaEliminar] = useState<string | null>(null)
   const [operandoNota, setOperandoNota] = useState(false)
-  const [assistanceOpen, setAssistanceOpen] = useState(false)
   const [verMotivoDevolucion, setVerMotivoDevolucion] = useState(false)
   const [errorResolucion, setErrorResolucion] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -79,10 +77,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     eliminandoAdjunto, confirmarEliminacion, setConfirmarEliminacion,
     handleSubirAdjunto: handleSubirAdjuntoAnalisis, handleEliminarAdjunto, handleDescargarAdjunto,
   } = useQuejaAttachmentActions(queja?.id ?? null, scope)
-  const {
-    aiAutoLoading, aiResult, chat, chatInput, setChatInput,
-    chatLoading, handleAnalisisAuto, handleEnviarIA,
-  } = useQuejaAssistant(queja?.id ?? null, scope)
+  const { aiAutoLoading, aiResult, setAiResult, handleAnalisisAuto } = useQuejaAssistant(queja?.id ?? null, scope)
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId)
   const crearActividad = useCrearQuejaActividad()
@@ -95,26 +90,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const { data: borradorRemoto, isFetching: cargandoBorrador, error: errorBorrador, refetch: recargarBorrador } = useQuejaResolucionDraft(quejaId, investigando)
   const resolutionDirty = borradorGuardado ? resolucion !== borradorGuardado.contenido || resolucionFormato !== borradorGuardado.formato : !!resolucion.trim()
   const resolutionSaved = !!borradorGuardado && !resolutionDirty
-  const resolutionPending = loading || guardandoResolucion || investigando && borradorVersion === null || subiendoAdjuntoAnalisis || !!eliminandoAdjunto || aiAutoLoading || chatLoading
+  const resolutionPending = loading || guardandoResolucion || investigando && borradorVersion === null || subiendoAdjuntoAnalisis || !!eliminandoAdjunto || aiAutoLoading
   const navigationLocked = analisisAbierto || panelNotas || panelAdjuntos || resolutionPending || agregandoNota || operandoNota || resolutionDirty || !!nota.trim() || !!notaEditando || !!aiResult.trim()
   useEffect(() => {
     onNavigationLockChange?.(!!queja && navigationLocked)
     return () => onNavigationLockChange?.(false)
   }, [queja, navigationLocked, onNavigationLockChange])
-  // La barra de formato se fija justo debajo del encabezado real del editor.
-  // Su altura puede variar cuando cambian el ancho, el idioma o los controles.
-  useLayoutEffect(() => {
-    if (!investigando) return
-    const container = resolutionContainer.current
-    const header = resolutionHeaderRef.current
-    if (!container || !header) return
-    const syncHeaderHeight = () => container.style.setProperty('--qms-resolution-header-height', `${header.offsetHeight}px`)
-    syncHeaderHeight()
-    const observer = new ResizeObserver(syncHeaderHeight)
-    observer.observe(header)
-    return () => observer.disconnect()
-  }, [quejaId, investigando, isExpanded])
-
   const handleClose = useCallback(() => {
     scope.invalidate()
     resolutionCaret.current = null
@@ -123,15 +104,14 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setPanelNotas(false)
     setPanelAdjuntos(false)
     setNotaMenu(null); setNotaEliminar(null)
-    setAssistanceOpen(false)
+    setAiResult('')
     onNavigationLockChange?.(false)
     onClose()
-  }, [scope, onClose, onNavigationLockChange])
+  }, [scope, onClose, onNavigationLockChange, setAiResult])
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   const [prevInvestigando, setPrevInvestigando] = useState(investigando)
   if (prevInvestigando !== investigando) {
     setPrevInvestigando(investigando)
-    setAssistanceOpen(false)
     if (investigando) {
       setBorradorVersion(null); setBorradorGuardado(null)
       setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
@@ -147,7 +127,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setAnalisisAbierto(false)
     setPanelNotas(false)
     setPanelAdjuntos(false)
-    setNota(''); setAssistanceOpen(false); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
+    setNota(''); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
   }
   if (!queja) return null
   // La primera lectura hidrata esta visita; un refetch no sobrescribe lo escrito
@@ -179,6 +159,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       if (isContextCurrent()) queryClient.setQueryData(quejaResolucionDraftKey(queja.id), saved)
       if (operation.isCurrent()) {
         setBorradorVersion(saved.version); setBorradorGuardado(saved)
+        setAiResult('')
         if (draftVersions.current.resolucion === draftVersion) setEditandoResolucion(false)
         showSuccess('Borrador guardado en el expediente')
       }
@@ -197,7 +178,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setResolucion(borradorGuardado?.contenido ?? '')
     setResolucionFormato(borradorGuardado?.formato ?? 'plain')
     setEditandoResolucion(false)
-    setAssistanceOpen(false)
+    setAiResult('')
     setErrorResolucion(null)
   }
   const puedeModificarNota = (item: QuejaActividad) => investigando && item.usuario_id === user?.id && esNotaInvestigacion(item)
@@ -263,7 +244,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         if (draftVersions.current.resolucion === draftVersion) {
           setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
           setBorradorVersion(0); setBorradorGuardado(null)
-          setAssistanceOpen(false)
+          setAiResult('')
         }
       }
     } catch (error) {
@@ -397,17 +378,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         description: 'Revisa el estado y los antecedentes de este caso antes de continuar.',
         ctaLabel: 'Ver expediente completo', icon: 'file', tone: 'blue',
       }
-  // La ayuda se despliega fuera de la cabecera para no comprimir sus controles.
-  const assistance = <div id={`queja-${queja.id}-asistencia`} data-resolution-assistance role="region" aria-label="Asistencia para la resolución" hidden={!assistanceOpen || !investigando || !editandoResolucion} className="min-w-0 shrink-0 border-b border-qms-border px-4 py-3"><div className="max-h-[30dvh] overflow-y-auto overscroll-contain">
-                <p className="text-xs text-qms-muted">La sugerencia no se guarda ni se envía. Revisala antes de usarla en la resolución.</p>
-                <Button className="mt-3" size="sm" variant="ghost" onClick={handleAnalisisAuto} loading={aiAutoLoading} disabled={!investigando}>Análisis IA</Button>
-                {aiResult && <div className="mt-3 space-y-3"><RichTextContent value={aiResult} format="markdown" /><Button size="sm" variant="secondary" disabled={aiResult.length > DOCUMENT_LIMIT || !!resolucion.trim() || !investigando} onClick={() => { draftVersions.current.resolucion++; setResolucion(aiResult); setResolucionFormato('markdown'); if (resolucionRevision === null) setResolucionRevision(queja.revision) }}>Usar en resolución</Button></div>}
-                <details className="min-w-0 py-4"><summary className="cursor-pointer text-sm text-qms-muted">Consultar al asistente</summary><p className="mt-3 text-xs text-qms-muted">Solo consulta al proveedor configurado cuando enviás una pregunta.</p>
-                  <div className="mt-4 max-h-72 space-y-3 overflow-y-auto">{chat.map(message => <div key={message.id} className={`rounded-card p-3 text-sm ${message.role === 'user' ? 'bg-qms-primary-soft' : 'bg-qms-hover-bg'}`}><p className="mb-1 text-xs font-medium text-qms-muted">{message.role === 'user' ? 'Tu consulta' : 'Asistente'}</p><p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p></div>)}</div>
-                  <div className="mt-4 flex flex-wrap items-end gap-2"><textarea aria-label="Pregunta al asistente" rows={2} maxLength={DOCUMENT_LIMIT} placeholder="Hacé una pregunta sobre esta queja..." className="ui-textarea min-w-0 flex-[1_1_12rem] resize-none px-3 py-2 text-sm" value={chatInput} onChange={event => setChatInput(event.target.value)} disabled={chatLoading || !investigando} /><Button size="sm" variant="secondary" onClick={handleEnviarIA} loading={chatLoading} disabled={!chatInput.trim() || !investigando}><Send className="size-4" /> Enviar</Button></div>
-                </details>
-              </div></div>
-
   const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
     responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
     primaryAction={<CaseTriageNextStep step={triageStep}
@@ -489,12 +459,65 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           archivos={adjuntos} onPreview={setPreviewAdjunto} onEditor={prepararResolucion}
           open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
         {investigando ? <div ref={resolutionContainer} data-resolution-inline className="min-w-0 scroll-mt-4 overflow-visible rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          <div ref={resolutionHeaderRef} data-resolution-header className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 rounded-t-card border-b border-qms-border bg-qms-surface px-5 py-4 sm:px-8"><div className="flex min-w-0 items-center gap-3"><span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-5" /></span><div><h3 className="text-base font-semibold">Resolución</h3><p className="mt-0.5 text-xs text-qms-muted">{editandoResolucion ? 'Redactá la propuesta para revisión de Calidad.' : borradorGuardado ? 'Propuesta guardada. Editá para continuar.' : 'Sin propuesta guardada. Editá para comenzar.'}</p></div></div><div className="flex flex-wrap items-center justify-end gap-2">{editandoResolucion
-            ? <><Button data-resolution-cancel size="sm" variant="secondary" className="px-2! sm:px-3!" onClick={handleCancelarEdicionResolucion} disabled={resolutionPending}>Cancelar</Button><Button data-resolution-save size="sm" className="px-2! sm:px-3!" variant={resolutionDirty ? 'primary' : 'secondary'} onClick={handleGuardarResolucion} loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>{resolutionSaved ? <Check aria-hidden="true" className="size-4 shrink-0" /> : <Save aria-hidden="true" className="size-4 shrink-0" />}Guardar</Button></>
-            : <Button data-resolution-edit size="sm" className="px-2! sm:px-3!" variant="secondary" title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'} disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}><Pencil aria-hidden="true" className="size-4 shrink-0" />Editar</Button>}{editandoResolucion && <Button size="sm" className="px-2! sm:px-3!" variant="secondary" aria-label="Asistencia para la resolución" title="Asistencia para la resolución" aria-expanded={assistanceOpen} aria-controls={`queja-${queja.id}-asistencia`} disabled={resolutionPending} onClick={() => setAssistanceOpen(open => !open)}><CircleHelp className="size-4" />Asistencia</Button>}</div><span role="status" className="sr-only">{guardandoResolucion ? 'Guardando borrador…' : borradorVersion === null ? 'Cargando borrador…' : resolutionSaved ? 'Borrador guardado' : resolutionDirty ? 'Cambios sin guardar' : 'Sin contenido todavía'}</span></div>
-          {assistance}
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          <div className="min-w-0"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución" placeholder="Documentá la conclusión y los hallazgos de tu investigación..." value={resolucion} format={resolucionFormato} onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }} variant="document" layout="content" minHeight={540} maxLength={DOCUMENT_LIMIT} required readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null} className="mis-quejas-resolution-editor" /></div>
+          <div className="min-w-0"><RichTextEditor id={`colaborador-resolucion-${queja.id}`} label="Resolución"
+            placeholder="Documentá la conclusión y los hallazgos de tu investigación..."
+            value={resolucion} format={resolucionFormato}
+            onChange={(value, format) => { if (resolucionRevision === null) setResolucionRevision(queja.revision); draftVersions.current.resolucion++; setResolucion(value); setResolucionFormato(format) }}
+            variant="document" layout="content" minHeight={540} maxLength={DOCUMENT_LIMIT} required
+            readOnly={!editandoResolucion} disabled={loading || guardandoResolucion || borradorVersion === null}
+            toolbarActions={editandoResolucion ? <Button size="sm" variant="secondary" data-resolution-assist
+              className="shrink-0 border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:bg-qms-hover-bg"
+              aria-label="Asistencia para la resolución" title="Generar análisis IA"
+              onClick={handleAnalisisAuto} loading={aiAutoLoading} loadingLabel="Analizando…"
+              disabled={resolutionPending}>
+              <WandSparkles aria-hidden="true" className="size-4" />Asistencia IA
+            </Button> : undefined}
+            className="mis-quejas-resolution-editor" /></div>
+          {aiResult && editandoResolucion && <section data-resolution-assistance role="region"
+            aria-label="Análisis sugerido" className="min-w-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8">
+            <div className="flex min-w-0 items-center justify-between gap-3">
+              <p className="text-sm font-semibold text-qms-dark">Análisis sugerido</p>
+              <button type="button" aria-label="Cerrar sugerencia" onClick={() => setAiResult('')}
+                className="inline-flex size-7 shrink-0 items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark">
+                <X aria-hidden="true" className="size-4" />
+              </button>
+            </div>
+            <div className="mt-2 max-h-48 overflow-y-auto overscroll-contain rounded-card border border-qms-border bg-qms-surface p-3 text-sm leading-relaxed">
+              <RichTextContent value={aiResult} format="markdown" />
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-qms-muted">Revisá la sugerencia: no se guarda ni se envía automáticamente.</p>
+              <Button size="sm" variant="secondary" disabled={aiResult.length > DOCUMENT_LIMIT || !!resolucion.trim() || !investigando}
+                onClick={() => { draftVersions.current.resolucion++; setResolucion(aiResult); setResolucionFormato('markdown'); if (resolucionRevision === null) setResolucionRevision(queja.revision); setAiResult('') }}>
+                Usar en resolución
+              </Button>
+            </div>
+          </section>}
+          <div data-resolution-footer className="sticky bottom-0 z-20 flex min-w-0 flex-wrap items-center justify-between gap-3 rounded-b-card border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
+            <div className="flex min-w-0 flex-wrap items-center gap-3">
+              <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>
+              <span className="text-sm font-semibold text-qms-dark">Resolución</span>
+              <span aria-live="polite" className={`text-xs ${resolutionDirty ? 'text-qms-warning-text' : 'text-qms-muted'}`}>
+                {guardandoResolucion ? 'Guardando…' : borradorVersion === null ? 'Cargando borrador…' : resolutionDirty ? 'Cambios sin guardar' : resolutionSaved ? 'Borrador guardado' : 'Sin cambios'}
+              </span>
+            </div>
+            <div className="flex min-w-0 items-center justify-end gap-2">
+              {editandoResolucion
+                ? <>
+                  <Button data-resolution-cancel size="sm" variant="secondary" onClick={handleCancelarEdicionResolucion} disabled={resolutionPending}>Cancelar</Button>
+                  <Button data-resolution-save size="sm" variant="primary" onClick={handleGuardarResolucion}
+                    loading={guardandoResolucion} loadingLabel="Guardando…" disabled={!resolutionDirty || resolutionPending}>
+                    <Save aria-hidden="true" className="size-4 shrink-0" />Guardar
+                  </Button>
+                </>
+                : <Button data-resolution-edit size="sm" variant="secondary"
+                    title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
+                    disabled={resolutionPending} onClick={() => setEditandoResolucion(true)}>
+                    <Pencil aria-hidden="true" className="size-4 shrink-0" />Editar
+                  </Button>}
+            </div>
+          </div>
         </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel"><div data-reading-copy>{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
           {queja.numero_oficio_resolucion && <p className="mt-3 break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}</div>
         </CaseSection>}
