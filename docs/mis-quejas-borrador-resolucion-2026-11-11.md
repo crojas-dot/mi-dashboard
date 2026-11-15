@@ -39,10 +39,10 @@ escribir encima de un borrador desconocido; un fallo ofrece Reintentar borrador.
 Un refetch posterior no reemplaza texto ni versión capturados.
 
 Guardar y Enviar comparten el lock síncrono del workflow. Durante el guardado se
-bloquea el doble envío; el editor conserva su nodo. Guardar es azul solo con cambios;
-tras confirmación remota muestra check y el encabezado pasa a ofrecer Editar, con la
-fecha real en su título. Editar devuelve al modo de escritura: Guardar y Asistencia
-reaparecen y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
+bloquea el doble envío; el editor conserva su nodo. Guardar mantiene la variante azul incluso antes de editar;
+se deshabilita si no hay cambios. Tras confirmación remota, el pie pasa a ofrecer
+Editar, con la fecha real en su título. Editar devuelve al modo de escritura:
+Guardar y Asistencia IA reaparecen en sus respectivas ubicaciones y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
 mismo modo de lectura.
 Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ámbito,
 sin modificar otra visita o identidad. El borrador guardado permite navegar entre
