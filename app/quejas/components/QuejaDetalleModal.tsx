@@ -48,7 +48,6 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
 import { Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { useQuejaResolucionDraft } from '@/lib/queries/useQuejaResolucionDraft'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
@@ -128,7 +127,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const investigationActive = queja?.estado === 'En Investigación'
   const { data: asignacion, isLoading: asignacionLoading, error: asignacionError } = useQuejaInvestigationAssignment(quejaId, investigationActive)
-  const { data: borradorInvestigador, isLoading: borradorInvestigadorLoading, error: borradorInvestigadorError } = useQuejaResolucionDraft(quejaId, investigationActive)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   useEffect(() => {
     if (!quejaId || adjuntosLoading || adjuntosError) return
@@ -391,8 +389,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       }
     } catch (error) {
       if (operation.isCurrent()) {
-        setErrorOficioApertura(errorMsg(error, 'No se pudo adjuntar el oficio de apertura.'))
-        showError(error, 'No se pudo adjuntar el oficio de apertura.')
+        setErrorOficioApertura(errorMsg(error, 'No se pudo adjuntar el documento.'))
+        showError(error, 'No se pudo adjuntar el documento.')
       }
     } finally {
       if (operation.isCurrent()) setSubiendoOficioApertura(false)
@@ -691,9 +689,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <CaseTriageExcerpt title="Estado de la investigación"
                 text={asignacionLoading ? 'Consultando detalles de asignación…'
                   : `Investigador asignado: ${responsableActual?.nombre || 'Por asignar'}. ${asignacion?.instrucciones?.trim() || queja.justificacion_procede || 'En espera de la propuesta del investigador.'}`} />
-              {borradorInvestigador && <p className="text-xs font-medium text-qms-primary">
-                Borrador en curso · última modificación {caseDate(borradorInvestigador.updated_at)}
-              </p>}
             </div>
           : <>
               <CaseTriageExcerpt title="Solicitud del cliente" text={queja.descripcion || 'Sin descripción registrada.'} />
@@ -760,7 +755,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
                 responsable={responsableActual?.nombre ?? null}
                 justificacionProcede={queja.justificacion_procede} justificacionFormato={queja.justificacion_procede_formato}
                 asignacion={asignacion} asignacionLoading={asignacionLoading} asignacionError={!!asignacionError}
-                borrador={borradorInvestigador} borradorLoading={borradorInvestigadorLoading} borradorError={!!borradorInvestigadorError}
                 adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
                 onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} />
             : <>{requestDocument}{estadoActual === 'No Procede' && investigationDocument}</>}
@@ -811,9 +805,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" variant="secondary" disabled={workflowPending}
                 onClick={() => inputOficioAperturaRef.current?.click()}>
-                <Paperclip aria-hidden="true" className="size-4" />{subiendoOficioApertura ? 'Subiendo oficio…' : 'Adjuntar oficio de apertura'}
+                <Paperclip aria-hidden="true" className="size-4" />{subiendoOficioApertura ? 'Subiendo documento…' : 'Adjuntar documento'}
               </Button>
-              <input ref={inputOficioAperturaRef} type="file" className="sr-only" aria-label="Seleccionar oficio de apertura"
+              <input ref={inputOficioAperturaRef} type="file" className="sr-only" aria-label="Seleccionar documento"
                 disabled={workflowPending} onChange={event => {
                   const file = event.target.files?.[0]; event.target.value = ''
                   if (file) void subirOficioApertura(file)
