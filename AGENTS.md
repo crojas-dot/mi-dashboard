@@ -584,11 +584,11 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   este conserva DOM/Tiptap, `visitId`, revisiones, borradores, permisos y datos.
   Escape colapsa primero y los diálogos auxiliares se cierran antes; no añadir
   autosave, consultas de red por expansión, `scroll-smooth` ni `backdrop-blur`.
-- **Usuarios:** verificar a la vez ancho reducido de la primera columna,
-  comienzo de Rol/Estado/Seguridad/Último acceso más a la izquierda, último
-  12 % reservado a Acciones y eje de los tres puntos bajo la **A**.
-  No cambiar `UsuarioAccionesMenu`, su portal ni sus handlers, ni sustituir
-  las tarjetas de móvil por tabla horizontal.
+- **Usuarios:** conservar la tabla y sus columnas 24/14/13/19/18/12 %.
+  En Acciones, el botón «Editar» (lápiz, texto y flecha) reemplaza los tres puntos,
+  alineado con el encabezado. Conservar `UsuarioAccionesMenu`, su portal,
+  sus tres handlers, permisos y tarjetas móviles; no convertirlo en una acción
+  de edición automática ni crear scroll horizontal fuera de la tabla.
 - **Pruebas mínimas antes de integrar:** `npx tsc --noEmit`,
   `npm run lint`, `node --test tests/quejas-progressive-disclosure.test.mjs
   tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs
@@ -804,12 +804,12 @@ La tabla de Usuarios aprovecha el espacio: Usuario 24 %, Rol 14 %, Estado 13 %,
 Seguridad (2FA) 19 %, Último acceso 18 % y Acciones 12 % en escritorio.
 Las columnas posteriores a Usuario comienzan más a la izquierda, sin quitar
 espacio a nombres/correos ni alterar los datos, el orden o la versión móvil.
-Acciones conserva la última columna: la letra inicial «A» del encabezado
-se alinea con el eje de los tres puntos mediante el padding del encabezado
-(18px) y la celda mantiene el botón de tamaño 36px sin mover su alineación
-interna ni su comportamiento. En escritorio, respetar `colgroup`
+Acciones conserva la última columna y su proporción: el encabezado se
+alinea con el comienzo del botón «Editar» con icono lápiz y chevron, en lugar
+de los tres puntos. Su clic despliega las mismas tres acciones; no llama
+a edición directamente. En escritorio, respetar `colgroup`
 `24/14/13/19/18/12` con tabla fija y scroll local; encabezado
-`<TableHeaderCell className="pl-[18px] text-left">Acciones</TableHeaderCell>` y
+`<TableHeaderCell className="pl-0 text-left">Acciones</TableHeaderCell>` y
 celda de acción `pl-0`, sin el antiguo truco de `w-[18px] justify-end`.
 El menú mantiene Editar perfil,
 Restablecer contraseña (generada y guardada por modal existente, NO correo
