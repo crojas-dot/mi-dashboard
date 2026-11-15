@@ -332,8 +332,11 @@ permisos ni datos persistidos.
   contenido esperado (CAS); el historial de devolución/aprobación/cierre y las notas
   ajenas no se reescriben. Migración 20261112054513 sin aplicar: sin ella la UI
   conserva el error visible, no una edición remota.
-  Resolución ofrece Guardar junto a Asistencia: borrador remoto/versionado, sin cambiar
-  estado, revisión de Queja, propuesta enviada ni avisar a GC/cliente. Las ediciones
+  En Mis Quejas/Investigación, Resolución usa la barra Tiptap sin encabezado adicional:
+  Asistencia IA es un botón directo a la derecha de formato, sin chat ni acordeones;
+  Cancelar y Guardar permanecen en el pie del editor (Guardar siempre variante primary).
+  Guardar conserva borrador remoto/versionado, sin cambiar estado, revisión de Queja,
+  propuesta enviada ni avisar a GC/cliente. Las ediciones
   posteriores sin guardar siguen siendo de la visita; no hay autoguardado.
   Guardar y Enviar comparan revisión de expediente y versión de borrador; no forzar
   reintentos con una lectura nueva. Al enviar/reasignar/cambiar estado, DB limpia el
