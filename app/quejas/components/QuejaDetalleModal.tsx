@@ -257,19 +257,20 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const prepararPublicacion = (estado: PublicacionQuejaInput['estado'], value?: string | null,
-    format?: 'plain' | 'markdown'): PublicacionQuejaInput | 'legacy' | null => {
+    format?: 'plain' | 'markdown', respuestaAlternativa?: string): PublicacionQuejaInput | 'legacy' | null => {
     if (!esStaff) { showError(null, 'La comunicación final debe aprobarla Gestión de Calidad.'); return null }
     if (!publicacionVerificada) { showError(null, 'Comprobá la publicación de la respuesta antes de guardar.'); return null }
     // Solo false confirmado conserva el contrato anterior. Un error de red nunca
     // convierte la publicación obligatoria en una transición legacy.
     if (!publicacionDisponible) return 'legacy'
     const archivo = oficiosPublicables.find(adjunto => adjunto.id === oficioAdjuntoId) ?? null
-    const error = !respuestaPublica.trim() || respuestaPublica.trim().length > 10000
+    const contenidoRespuesta = respuestaAlternativa ?? respuestaPublica
+    const error = !contenidoRespuesta.trim() || contenidoRespuesta.trim().length > 10000
       ? 'Escribí la respuesta al cliente, de hasta 10.000 caracteres.'
       : !oficioWorkflow.trim() ? 'Registrá el número del oficio emitido por ECA.'
         : !archivo ? 'Seleccioná o adjuntá el oficio definitivo de este expediente.' : null
     if (error) { setPublicacionError(error); setDocumentTab('cliente'); showError(null, error); return null }
-    return { estado, respuestaPublica, numeroOficio: oficioWorkflow, adjunto: archivo, resolucion: value, resolucionFormato: format }
+    return { estado, respuestaPublica: contenidoRespuesta, numeroOficio: oficioWorkflow, adjunto: archivo, resolucion: value, resolucionFormato: format }
   }
 
   const beginWorkflowDraft = () => {
@@ -330,8 +331,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     }
     // El documento interno (justificación) ya ES la respuesta al cliente al declarar
     // No Procede: se comparte la fuente, sin redactar un texto paralelo en el panel.
-    if (!respuestaPublica.trim()) setRespuestaPublica(justificacion)
-    const publication = prepararPublicacion('No Procede', justificacion, justificacionFormato)
+    const contenidoRespuesta = respuestaPublica.trim() ? respuestaPublica : justificacion
+    if (!respuestaPublica.trim()) setRespuestaPublica(contenidoRespuesta)
+    const publication = prepararPublicacion('No Procede', justificacion, justificacionFormato, contenidoRespuesta)
     if (!publication) return
     if (!oficioWorkflow.trim()) { showError(null, 'Registrá el número del oficio explicativo antes de marcar como No Procede'); return }
     await runCaseUpdate(
