@@ -45,7 +45,7 @@ No cargar todos los documentos para una modificación aislada.
 | Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol |
 | Tarjetas de «Siguiente paso» y triaje compacto | app/quejas/components/CaseTriageSummary.tsx (CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments); metadatos por etapa en quejaExpedienteModel.ts; integración en QuejaDetalleModal.tsx y QuejaColaboradorPanel.tsx |
 | Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md) |
-| Asignación de investigación de Calidad | QuejaInvestigacionAsignacion.tsx, useQuejaInvestigationAssignment.ts, iniciarInvestigacionQueja en quejaWorkflowService.ts; migración 20261115035753_quejas_investigacion_asignacion.sql |
+| Asignación de investigación de Calidad | QuejaInvestigacionAsignacion.tsx, useQuejaInvestigationAssignment.ts, iniciarInvestigacionQueja en quejaWorkflowService.ts; migración 20261115041345_quejas_investigacion_asignacion.sql |
 | Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
