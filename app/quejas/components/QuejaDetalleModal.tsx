@@ -640,16 +640,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
   </> : estadoActual === 'Recibido' ? !editing && <>
-    <button type="button" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}
-      className="w-full flex items-center justify-between px-4 py-2.5 text-[14px] font-semibold text-white bg-blue-600 rounded-lg shadow-sm hover:bg-blue-700 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-700">
-      <span className="flex items-center gap-2"><CheckCircle aria-hidden="true" className="w-4 h-4" />Procede</span>
-      <ArrowRight aria-hidden="true" className="w-4 h-4" />
-    </button>
-    <button type="button" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}
-      className="w-full flex items-center justify-between px-4 py-2.5 text-[14px] font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600">
-      <span className="flex items-center gap-2"><XCircle aria-hidden="true" className="w-4 h-4" />No Procede</span>
-      <ArrowRight aria-hidden="true" className="w-4 h-4" />
-    </button>
+    <Button size="sm" className="min-h-10 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}>
+      <span className="flex items-center gap-2"><CheckCircle aria-hidden="true" className="size-4" />Procede</span>
+      <ArrowRight aria-hidden="true" className="size-4" />
+    </Button>
+    <Button size="sm" variant="danger" className="min-h-10 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}>
+      <span className="flex items-center gap-2"><XCircle aria-hidden="true" className="size-4" />No Procede</span>
+      <ArrowRight aria-hidden="true" className="size-4" />
+    </Button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
   const processSteps = getCaseProcessCycle(queja).steps
