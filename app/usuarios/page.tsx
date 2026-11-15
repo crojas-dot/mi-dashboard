@@ -185,7 +185,7 @@ export default function UsuariosPage() {
         <div className="min-h-0 flex-1">
         <div className="hidden h-full min-h-0 xl:block">
         <Table className="table-fixed min-w-[940px]" containerClassName="h-full min-h-0 overflow-auto overscroll-contain border-0 rounded-none shadow-none">
-          <colgroup><col className="w-[32%]" /><col className="w-[13%]" /><col className="w-[12%]" /><col className="w-[17%]" /><col className="w-[19%]" /><col className="w-[7%]" /></colgroup>
+          <colgroup><col className="w-[24%]" /><col className="w-[14%]" /><col className="w-[13%]" /><col className="w-[19%]" /><col className="w-[18%]" /><col className="w-[12%]" /></colgroup>
           <TableHead className="sticky top-0 z-10">
             <tr>
               <TableHeaderCell className="pl-6">Usuario</TableHeaderCell>
@@ -193,7 +193,7 @@ export default function UsuariosPage() {
               <TableHeaderCell>Estado</TableHeaderCell>
               <TableHeaderCell>Seguridad (2FA)</TableHeaderCell>
               <TableHeaderCell>Último acceso</TableHeaderCell>
-              <TableHeaderCell className="pl-0 text-left"><span className="flex w-[18px] justify-end whitespace-nowrap">Acciones</span></TableHeaderCell>
+              <TableHeaderCell className="pl-[18px] text-left">Acciones</TableHeaderCell>
             </tr>
           </TableHead>
           <tbody>
