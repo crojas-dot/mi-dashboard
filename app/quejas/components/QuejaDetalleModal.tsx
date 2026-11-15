@@ -343,6 +343,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const handleGuardarProcede = async () => {
+    if (workflowPending) return
     const responsable = responsableValue
     if (!responsable) {
       setResponsableError(true)
@@ -354,13 +355,47 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       showError(null, 'La justificación es obligatoria para iniciar la investigación')
       return
     }
+    if (errorOficioApertura) {
+      showError(null, 'Revisá el error del oficio de apertura o continuá sin ese archivo.')
+      return
+    }
     await runCaseUpdate(
-      () => transicionarQueja(workflowQueja, 'En Investigación', {
-        justificacionProcede: justificacion, justificacionFormato, responsableId: responsable.id,
+      () => iniciarInvestigacionQueja(workflowQueja, {
+        justificacion, formato: justificacionFormato, responsableId: responsable.id,
+        instrucciones: instruccionesAsignacion, oficioAdjuntoId: oficioApertura?.id,
       }),
-      'Queja en investigación. Plazo: 15 días hábiles.', 'No se pudo iniciar la investigación',
-      () => { setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion(''); setResponsableSeleccionado(null) },
+      'Queja asignada a investigación.', 'No se pudo iniciar la investigación',
+      () => {
+        setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion('')
+        setResponsableSeleccionado(null); setInstruccionesAsignacion('')
+        setOficioApertura(null); setErrorOficioApertura('')
+      },
     )
+  }
+
+  const subirOficioApertura = async (file: File) => {
+    if (!decisionOpen || decisionProcedencia !== 'procede' || workflowPending) return
+    const operation = scope.start('investigation-office-upload')
+    if (!operation) return
+    const isContextCurrent = scope.captureContext()
+    setSubiendoOficioApertura(true)
+    setErrorOficioApertura('')
+    try {
+      const adjunto = await subirAdjuntoQueja(queja.id, file)
+      if (isContextCurrent()) void refetchAdjuntos()
+      if (operation.isCurrent()) {
+        draftVersions.current.workflow++
+        setOficioApertura(adjunto)
+      }
+    } catch (error) {
+      if (operation.isCurrent()) {
+        setErrorOficioApertura(errorMsg(error, 'No se pudo adjuntar el oficio de apertura.'))
+        showError(error, 'No se pudo adjuntar el oficio de apertura.')
+      }
+    } finally {
+      if (operation.isCurrent()) setSubiendoOficioApertura(false)
+      operation.finish()
+    }
   }
 
   const handleConfirmarResolucion = async () => {
