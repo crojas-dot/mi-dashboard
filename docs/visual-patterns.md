@@ -35,7 +35,7 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Finalizado/No Procede «Expediente cerrado» / «Ver expediente de cierre completo →».
   El CTA solo amplía,
   nunca aprueba, devuelve, deriva, publica ni abre una transición destructiva.
-  Los botones reales «Tomar decisión», «Aprobar», «Devolver», «Derivar a SACP»
+  Los botones directos «Procede» y «No Procede» de Evaluación, «Aprobar», «Devolver», «Derivar a SACP»
   y «Redactar respuesta» permanecen únicamente en la columna derecha del
   ampliado, con sus mismos handlers, permisos y validaciones.
 - Las seis etapas usan triaje propio: Recibido (solicitud),
