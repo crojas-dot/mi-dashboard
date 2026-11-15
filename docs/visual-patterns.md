@@ -200,10 +200,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   con cantidad; `ListaAdjuntos layout="modal"` omite encabezados internos, usa filas
   compactas con nombres truncados y acciones visibles al foco/hover (siempre en móvil).
   La zona de subida permanece anclada en el pie incluso sin permiso para subir, pero
-  el botón queda deshabilitado. Se conservan permisos, carga y borradores. En contraído sigue
-  visible sin mostrar el contacto. Adjuntar está en el encabezado, a la izquierda de
-  Guardar/Editar, y abre el selector directamente. Los adjuntos se listan bajo el
-  lienzo con `ListaAdjuntos layout="cards"`, también al editar, sin sheet aparte.
+  el botón queda deshabilitado. Se conservan permisos, carga y borradores.
+  Estas tarjetas completas y el editor permanecen montados, pero solo se ven
+  en el workspace AMPLIADO. El contraído muestra dos chips como máximo y
+  "Mis notas" en el pie. En ampliado, Adjuntar está en el encabezado, a la
+  izquierda de Guardar/Editar, y abre el selector directamente. Los adjuntos
+  se listan bajo el lienzo con `ListaAdjuntos layout="cards"`, sin sheet aparte.
   Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
   A la derecha quedan Acción actual y la devolución real de Calidad,
   en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
