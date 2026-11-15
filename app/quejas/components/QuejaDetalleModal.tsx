@@ -795,6 +795,41 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
           <div hidden={!decisionProcedencia} className={`${decisionProcedencia ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
           <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder="Escribí la justificación de la decisión…" value={justificacion} format={justificacionFormato} variant="document" layout="fill" autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
+          {decisionProcedencia === 'procede' && <section data-assignment-compose
+            className="max-h-[38dvh] shrink-0 space-y-3 overflow-y-auto overscroll-contain border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-6">
+            <div>
+              <label htmlFor={'queja-instrucciones-asignacion-' + queja.id} className="text-sm font-semibold text-qms-dark">Instrucciones para el investigador <span className="font-normal text-qms-muted">(opcional)</span></label>
+              <textarea id={'queja-instrucciones-asignacion-' + queja.id} rows={2} maxLength={4000}
+                className="ui-textarea mt-2 w-full resize-y px-3 py-2 text-sm leading-relaxed"
+                placeholder="Indicaciones para recopilar evidencias o preparar la propuesta…"
+                value={instruccionesAsignacion} disabled={workflowPending}
+                onChange={event => { draftVersions.current.workflow++; setInstruccionesAsignacion(event.target.value) }} />
+              <p className="mt-1 text-right text-xs text-qms-muted">{instruccionesAsignacion.length} / 4.000</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" size="sm" variant="secondary" disabled={workflowPending}
+                onClick={() => inputOficioAperturaRef.current?.click()}>
+                <Paperclip aria-hidden="true" className="size-4" />{subiendoOficioApertura ? 'Subiendo oficio…' : 'Adjuntar oficio de apertura'}
+              </Button>
+              <input ref={inputOficioAperturaRef} type="file" className="sr-only" aria-label="Seleccionar oficio de apertura"
+                disabled={workflowPending} onChange={event => {
+                  const file = event.target.files?.[0]; event.target.value = ''
+                  if (file) void subirOficioApertura(file)
+                }} />
+              {oficioApertura && <div className="inline-flex max-w-full items-center gap-2 rounded-md border border-qms-border bg-qms-hover-bg px-2.5 py-1.5 text-sm">
+                <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
+                <button type="button" className="max-w-52 truncate text-left hover:text-qms-primary"
+                  onClick={() => setPreviewAdjunto(oficioApertura)} title={'Previsualizar ' + oficioApertura.nombre}>{oficioApertura.nombre}</button>
+                <button type="button" disabled={workflowPending} aria-label="Desvincular oficio de apertura" className="text-xs text-qms-muted hover:text-qms-danger"
+                  onClick={() => { draftVersions.current.workflow++; setOficioApertura(null) }}>Quitar</button>
+              </div>}
+            </div>
+            {errorOficioApertura && <div role="alert" className="flex flex-wrap items-center gap-2 text-xs text-qms-danger">
+              <span>{errorOficioApertura}</span>
+              <Button type="button" variant="link" size="sm" onClick={() => setErrorOficioApertura('')}>Continuar sin oficio</Button>
+            </div>}
+            <p className="text-xs leading-relaxed text-qms-muted">El archivo se almacena en el expediente al subirlo, incluso si cancelás la decisión. Solo se identifica como oficio de apertura al confirmar Procede.</p>
+          </section>}
           {decisionProcedencia === 'no_procede' && !publicacionDisponible && <div className="h-[108px] shrink-0 overflow-y-auto border-t border-qms-border px-4 py-3"><Field id={'queja-oficio-rechazo-' + queja.id} label="N.º de oficio explicativo"><Input id={'queja-oficio-rechazo-' + queja.id} required maxLength={REGISTRO_QUEJA_LIMITES.oficio} value={oficioWorkflow} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setOficioWorkflow(event.target.value) }} /></Field></div>}
           </div>
         </>}
