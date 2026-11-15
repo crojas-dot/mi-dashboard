@@ -16,11 +16,12 @@ interface ResponsablePickerProps {
   openRequest?: number
   loading?: boolean
   errorMessage?: string
+  showAvatar?: boolean
 }
 
 const searchable = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es')
 
-export default function ResponsablePicker({ id, options, value, onSelect, disabled = false, validationMessage, openRequest = 0, loading = false, errorMessage }: ResponsablePickerProps) {
+export default function ResponsablePicker({ id, options, value, onSelect, disabled = false, validationMessage, openRequest = 0, loading = false, errorMessage, showAvatar = false }: ResponsablePickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
@@ -133,10 +134,10 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
     <Button
       id={id}
       ref={buttonRef}
-      variant="ghost"
+      variant={showAvatar ? "secondary" : "ghost"}
       size="sm"
       disabled={disabled}
-      className={`max-w-[100px] gap-1.5 px-1.5 sm:max-w-[150px] ${validationMessage ? 'border-qms-danger text-qms-danger' : ''}`}
+      className={`${showAvatar ? 'max-w-[180px] rounded-full py-1 pl-1.5 pr-2.5' : 'max-w-[100px] gap-1.5 px-1.5 sm:max-w-[150px]'} ${validationMessage ? 'border-qms-danger text-qms-danger' : ''}`}
       aria-label={value ? `Responsable de investigación: ${value.nombre}` : 'Asignar responsable de investigación'}
       aria-haspopup="listbox"
       aria-expanded={open && !disabled}
@@ -149,7 +150,11 @@ export default function ResponsablePicker({ id, options, value, onSelect, disabl
         if (event.key === 'ArrowDown' || event.key === 'ArrowUp') { event.preventDefault(); show() }
       }}
     >
-      <UserRound aria-hidden="true" className="h-4 w-4 shrink-0" />
+      {showAvatar
+        ? <span aria-hidden="true" className="flex size-7 shrink-0 items-center justify-center rounded-full bg-qms-primary-soft text-xs font-semibold text-qms-primary">
+            {value?.nombre.trim().charAt(0).toLocaleUpperCase('es') || '?'}
+          </span>
+        : <UserRound aria-hidden="true" className="h-4 w-4 shrink-0" />}
       <span className="min-w-0 truncate">{value?.nombre || 'Responsable'}</span>
       <ChevronDown aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
     </Button>
