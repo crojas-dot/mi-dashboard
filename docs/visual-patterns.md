@@ -316,6 +316,17 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   se alinea con el borde izquierdo del botón «Editar», que reemplaza los tres puntos
   por lápiz, texto y desplegable con tonos del sistema. Mantener las tres opciones,
   permisos, portal, foco y tarjetas móviles sin desplazamiento horizontal inesperado.
+- Los formularios de Usuarios siguen dos composiciones sobre Modal nativo:
+  «Crear nuevo usuario» mantiene ancho mail con una vista única y scroll propio:
+  información del usuario (avatar provisional, nombre, correo, rol y estado)
+  y configuración de acceso (contraseña temporal real, invitación/2FA pendientes).
+  «Gestionar usuario» es más estrecho (lg), con pestañas Detalles del perfil
+  y Seguridad y acceso, avatar con inicial, campos persistidos y zona de peligro.
+  Restablecer contraseña invoca el modal funcional existente, y Eliminar exige
+  la confirmación actual. Las funciones sin API (invitación, manual, recuperación,
+  2FA, sesiones) se muestran como pendientes o deshabilitadas: sin estados fingidos,
+  toasts de éxito ni generación local de claves que no se guarden. Ambos mantienen
+  la paleta QMS, scroll interior y footer estable.
 - En el modal de Procede, el chip con avatar del responsable puede extenderse
   hacia la izquierda hasta 22rem; el popover conserva su anclaje derecho y busca
   los mismos usuarios. No modificar la anchura del modal ni el lienzo Tiptap.

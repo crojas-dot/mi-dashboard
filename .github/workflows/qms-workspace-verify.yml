@@ -21,6 +21,10 @@ on:
       - 'tests/usuarios-table-layout.test.mjs'
       - 'tests/usuarios-acciones-menu.test.mjs'
       - 'components/Modal.tsx'
+      - 'components/usuarios/UsuarioFormModal.tsx'
+      - 'tests/usuarios-reliability.test.mjs'
+      - 'tests/usuarios-accesos-layout.test.mjs'
+      - 'tests/usuarios-page-reliability.test.mjs'
       - 'tests/quejas-progressive-disclosure.test.mjs'
       - 'docs/visual-patterns.md'
       - 'AGENTS.md'
@@ -39,7 +43,7 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run lint
-      - run: node --test tests/quejas-progressive-disclosure.test.mjs tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs tests/usuarios-acciones-menu.test.mjs tests/quejas-asignacion-investigacion.test.mjs tests/responsable-picker.test.mjs tests/queja-correo.test.mjs tests/quejas-ui-refinada.test.mjs tests/usuarios-acceso-workflow.test.mjs
+      - run: node --test tests/quejas-progressive-disclosure.test.mjs tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs tests/usuarios-acciones-menu.test.mjs tests/quejas-asignacion-investigacion.test.mjs tests/responsable-picker.test.mjs tests/queja-correo.test.mjs tests/quejas-ui-refinada.test.mjs tests/usuarios-acceso-workflow.test.mjs tests/usuarios-reliability.test.mjs tests/usuarios-accesos-layout.test.mjs tests/usuarios-page-reliability.test.mjs
       - run: node --test --test-name-pattern='IA de A|cerrar y desmontar impide|la asistencia inicia' tests/entity-request-guard.test.mjs
       - run: npm run build
         env:
