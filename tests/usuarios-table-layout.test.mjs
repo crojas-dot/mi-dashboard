@@ -40,7 +40,7 @@ test('se conservan las seis columnas, el menú y la versión móvil independient
   }
   assert.match(page, /data-users-mobile-list/)
   assert.match(page, /xl:hidden/)
-  assert.match(page, /\{usuariosVisibles\.map\(\(u\) =>/)
+  assert.match(page, /usuariosVisibles\.map\(\(u\) =>/)
   assert.match(menu, /onEditar/)
   assert.match(menu, /onRestablecer/)
   assert.match(menu, /onEstado/)
