@@ -18,7 +18,8 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   horizontales, solo lectura. No montar un editor ficticio en el triaje.
 - `CaseTriageSummary` coloca estado real del catálogo, plazo QMS y responsable
   primero; luego aparece una tarjeta de `CaseTriageNextStep` con fondo suave,
-  borde lateral de color, icono, título de etapa y contexto en máximo dos líneas
+  borde fino uniforme sin franjas laterales ni líneas verticales decorativas,
+  icono, título de etapa y contexto en máximo dos líneas
   (`text-[13px]`), más un CTA azul primario con icono ArrowRight. La tarjeta
   debe aportar contexto suficiente para decidir en cinco segundos: **no** dejar
   un enlace secundario plano, ni una superficie vacía.
@@ -274,6 +275,11 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   anterior, estado y siguiente en una fila, con iconos y nombres accesibles.
 - Las tablas compartidas conservan un mínimo de 640px y scroll horizontal local
   para evitar columnas ilegibles. No permitir que ensanchen la página completa.
+- Usuarios usa la tabla de escritorio fija en proporciones 24/14/13/19/18/12 %
+  (Usuario/Rol/Estado/Seguridad/Último acceso/Acciones). La inicial «A» de
+  Acciones coincide con el eje vertical de los tres puntos; no desplazar el menú
+  de tres opciones ni modificar su lógica. Mantener tarjetas móviles y filtros
+  sin desplazamiento horizontal inesperado.
 - Usuarios usa filtros en cuadrícula; las pestañas de Documentos pueden saltar
   de fila. El panel de Mis Quejas ocupa el viewport móvil y conserva los 500px
   y la reserva de espacio únicamente desde el breakpoint `lg`.
