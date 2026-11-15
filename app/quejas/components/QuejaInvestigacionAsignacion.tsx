@@ -5,16 +5,19 @@ import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import type { QuejaResolucionDraft } from '@/lib/queries/useQuejaResolucionDraft'
 import type { QuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
+import RichTextContent from '@/components/ui/RichTextContent'
 import { CaseSection } from './QuejaExpedientePanels'
 import { caseDate } from './quejaExpedienteModel'
 
 /** Etapa 2 para Calidad: asignación y progreso, nunca la evaluación anterior. */
 export default function QuejaInvestigacionAsignacion({
-  responsable, asignacion, asignacionLoading, asignacionError,
+  responsable, justificacionProcede, justificacionFormato, asignacion, asignacionLoading, asignacionError,
   borrador, borradorLoading, borradorError,
   adjuntos, adjuntosLoading, adjuntosError, onPreview, onDownload,
 }: {
   responsable: string | null
+  justificacionProcede?: string | null
+  justificacionFormato?: 'plain' | 'markdown'
   asignacion: QuejaInvestigationAssignment | null | undefined
   asignacionLoading: boolean
   asignacionError: boolean
@@ -31,6 +34,11 @@ export default function QuejaInvestigacionAsignacion({
     ? adjuntos.find(file => file.id === asignacion.oficio_adjunto_id)
     : null
   const otrosAdjuntos = adjuntos.filter(file => !!file.usuario_id && file.id !== oficio?.id)
+  // Expedientes previos pueden conservar instrucciones independientes; para los nuevos
+  // la única fuente es la justificación guardada durante Procede.
+  const instruccionesAnteriores = asignacion?.instrucciones?.trim()
+  const instrucciones = instruccionesAnteriores || justificacionProcede?.trim() || ''
+  const instruccionesFormato = instruccionesAnteriores ? 'plain' : justificacionFormato ?? 'plain'
   return <CaseSection variant="document" source="Gestión de Calidad" title="Detalles de asignación">
     <div data-investigation-assignment className="space-y-5 text-sm">
       <div className="flex items-start gap-3 rounded-md border border-qms-border bg-qms-hover-bg/50 px-4 py-3.5">
@@ -41,14 +49,14 @@ export default function QuejaInvestigacionAsignacion({
         </div>
       </div>
 
-      {asignacionLoading ? <p className="text-sm text-qms-muted">Consultando detalles de la asignación…</p>
-        : asignacionError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron consultar las instrucciones de asignación.</p>
-        : asignacion?.instrucciones?.trim() ? <section data-investigation-instructions>
-            <h4 className="mb-2 flex items-center gap-2 font-semibold text-qms-dark">
-              <ClipboardList aria-hidden="true" className="size-4 text-qms-primary" /> Instrucciones de Calidad
-            </h4>
-            <p className="whitespace-pre-wrap break-words leading-relaxed text-qms-muted">{asignacion.instrucciones}</p>
-          </section> : <p className="text-sm text-qms-muted">Sin instrucciones adicionales registradas para esta asignación.</p>}
+      {instrucciones ? <section data-investigation-instructions>
+          <h4 className="mb-2 flex items-center gap-2 font-semibold text-qms-dark">
+            <ClipboardList aria-hidden="true" className="size-4 text-qms-primary" /> Justificación e instrucciones de Calidad
+          </h4>
+          <RichTextContent value={instrucciones} format={instruccionesFormato} />
+        </section> : asignacionLoading ? <p className="text-sm text-qms-muted">Consultando detalles de la asignación…</p>
+        : <p className="text-sm text-qms-muted">Sin instrucciones registradas para esta asignación.</p>}
+      {asignacionError && <p role="alert" className="text-sm text-qms-danger">No se pudieron consultar los archivos vinculados a la asignación.</p>}
 
       {!!asignacion?.oficio_adjunto_id && <section data-investigation-office>
         <h4 className="mb-2 flex items-center gap-2 font-semibold text-qms-dark">

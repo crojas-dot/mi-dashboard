@@ -17,6 +17,8 @@ export interface RichTextEditorProps {
   /** Enfoca al habilitar el editor, incluso si su carga lazy termina después. */
   autoFocus?: boolean
   placeholder?: string
+  /** Oculta la sugerencia de formato, pero mantiene visibles los errores de límite. */
+  showFormattingHint?: boolean
   required?: boolean
   variant?: 'field' | 'document'
   /** fill mantiene la barra visible y desplaza solo el documento en un lienzo fijo. */

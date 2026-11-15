@@ -97,7 +97,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const [responsableSeleccionado, setResponsableSeleccionado] = useState<Usuario | null>(null)
   const [responsableError, setResponsableError] = useState(false)
   const [responsableOpenRequest, setResponsableOpenRequest] = useState(0)
-  const [instruccionesAsignacion, setInstruccionesAsignacion] = useState('')
   const [oficioApertura, setOficioApertura] = useState<QuejaAdjunto | null>(null)
   const [subiendoOficioApertura, setSubiendoOficioApertura] = useState(false)
   const [errorOficioApertura, setErrorOficioApertura] = useState('')
@@ -209,7 +208,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     setResponsableSeleccionado(null)
     setResponsableError(false)
     setResponsableOpenRequest(0)
-    setInstruccionesAsignacion('')
     setOficioApertura(null)
     setSubiendoOficioApertura(false)
     setErrorOficioApertura('')
@@ -366,12 +364,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     await runCaseUpdate(
       () => iniciarInvestigacionQueja(workflowQueja, {
         justificacion, formato: justificacionFormato, responsableId: responsable.id,
-        instrucciones: instruccionesAsignacion, oficioAdjuntoId: oficioApertura?.id,
+        oficioAdjuntoId: oficioApertura?.id,
       }),
       'Queja asignada a investigación.', 'No se pudo iniciar la investigación',
       () => {
         setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion('')
-        setResponsableSeleccionado(null); setInstruccionesAsignacion('')
+        setResponsableSeleccionado(null)
         setOficioApertura(null); setErrorOficioApertura('')
       },
     )
@@ -692,7 +690,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           ? <div data-investigation-triage-status className="space-y-2">
               <CaseTriageExcerpt title="Estado de la investigación"
                 text={asignacionLoading ? 'Consultando detalles de asignación…'
-                  : `Investigador asignado: ${responsableActual?.nombre || 'Por asignar'}. ${asignacion?.instrucciones?.trim() || 'En espera de la propuesta del investigador.'}`} />
+                  : `Investigador asignado: ${responsableActual?.nombre || 'Por asignar'}. ${asignacion?.instrucciones?.trim() || queja.justificacion_procede || 'En espera de la propuesta del investigador.'}`} />
               {borradorInvestigador && <p className="text-xs font-medium text-qms-primary">
                 Borrador en curso · última modificación {caseDate(borradorInvestigador.updated_at)}
               </p>}
@@ -760,6 +758,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               responsable={responsableActual?.nombre} resolveAuthor={id => usuarios.find(usuario => usuario.id === id)?.nombre} expanded={expanded} />
             : estadoActual === 'En Investigación' ? <QuejaInvestigacionAsignacion
                 responsable={responsableActual?.nombre ?? null}
+                justificacionProcede={queja.justificacion_procede} justificacionFormato={queja.justificacion_procede_formato}
                 asignacion={asignacion} asignacionLoading={asignacionLoading} asignacionError={!!asignacionError}
                 borrador={borradorInvestigador} borradorLoading={borradorInvestigadorLoading} borradorError={!!borradorInvestigadorError}
                 adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
@@ -806,18 +805,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           </div>}
           {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
           <div hidden={!decisionProcedencia} className={`${decisionProcedencia ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
-          <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder="Escribí la justificación de la decisión…" value={justificacion} format={justificacionFormato} variant="document" layout="fill" autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
+          <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder={decisionProcedencia === 'procede' ? 'Escribe la justificación de la decisión e instrucciones para el investigador...' : 'Escribí la justificación de la decisión…'} showFormattingHint={decisionProcedencia !== 'procede'} value={justificacion} format={justificacionFormato} variant="document" layout="fill" autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
           {decisionProcedencia === 'procede' && <section data-assignment-compose
-            className="max-h-[38dvh] shrink-0 space-y-3 overflow-y-auto overscroll-contain border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-6">
-            <div>
-              <label htmlFor={'queja-instrucciones-asignacion-' + queja.id} className="text-sm font-semibold text-qms-dark">Instrucciones para el investigador <span className="font-normal text-qms-muted">(opcional)</span></label>
-              <textarea id={'queja-instrucciones-asignacion-' + queja.id} rows={2} maxLength={4000}
-                className="ui-textarea mt-2 w-full resize-y px-3 py-2 text-sm leading-relaxed"
-                placeholder="Indicaciones para recopilar evidencias o preparar la propuesta…"
-                value={instruccionesAsignacion} disabled={workflowPending}
-                onChange={event => { draftVersions.current.workflow++; setInstruccionesAsignacion(event.target.value) }} />
-              <p className="mt-1 text-right text-xs text-qms-muted">{instruccionesAsignacion.length} / 4.000</p>
-            </div>
+            className="shrink-0 space-y-2 border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-6">
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" variant="secondary" disabled={workflowPending}
                 onClick={() => inputOficioAperturaRef.current?.click()}>

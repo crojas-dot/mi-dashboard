@@ -43,9 +43,15 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
   (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
 - En etapa 2 de Calidad (solo workspace ampliado), la columna central muestra
-  «Detalles de asignación»: investigador, instrucciones guardadas, oficio de apertura
-  vinculado y aviso con fecha de última modificación del borrador remoto cuando exista.
-  No copiar `getQuejaAnalysis` de la evaluación ni mostrar el texto genérico anterior.
+  «Detalles de asignación»: investigador, justificación de Procede como instrucciones
+  (en su formato original), oficio de apertura vinculado y aviso con fecha de última
+  modificación del borrador remoto cuando exista. Datos de instrucciones anteriores
+  a la simplificación siguen legibles; nunca se pide escribirlas dos veces.
+  La evaluación no se muestra como «análisis» del investigador.
+  En el modal de Procede solo queda Tiptap arriba, Adjuntar documento y la
+  nota sobre almacenamiento debajo, y Cancelar/Guardar en el pie. La pista de
+  formato del editor no es visible aquí, pero sí los errores de límite; no
+  modificar los demás editores.
   La columna derecha informa «Esperar propuesta del investigador» con duración real
   del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
   disponible cuando corresponda a Revisión GC. No mostrar el contenido del borrador
