@@ -119,7 +119,6 @@ test('directorio adopta columnas sin Alta, Seguridad junto a Estado y acciones a
   assert.match(table, /TableHeaderCell className="pl-0 text-left"><span className="flex w-\[18px\] justify-end whitespace-nowrap">Acciones<\/span><\/TableHeaderCell>/)
   assert.match(table, /TableCell className="pl-0 text-left">[\s\S]*?<UsuarioAccionesMenu usuario=\{u\}/)
   assert.doesNotMatch(table, /text-right[^>]*>Acciones<\/TableHeaderCell>/)
-  assert.match(table, /TableCell className="pl-0 text-left">[\s\S]*?<UsuarioAccionesMenu usuario=\{u\}/)
   assert.match(users, /data-users-mobile-list/)
   assert.equal((users.match(/<UsuarioAccionesMenu usuario=\{u\}/g) || []).length, 2)
   assert.equal((users.match(/data-users-security/g) || []).length, 2)
