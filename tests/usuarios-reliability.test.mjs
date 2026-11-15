@@ -10,8 +10,8 @@ function modalHarness(file, overrides = {}) {
   let cursor = 0, tree, closes = 0, generated = 0
   const state = (initial) => {
     const index = cursor++
-    if (!(index in slots)) slots[index] = initial
-    return [slots[index], (value) => { slots[index] = value }]
+    if (!(index in slots)) slots[index] = typeof initial === 'function' ? initial() : initial
+    return [slots[index], (value) => { slots[index] = typeof value === 'function' ? value(slots[index]) : value }]
   }
   const request = (...args) => new Promise((resolve, reject) => requests.push({ args, resolve, reject }))
   const props = { open: true, mode: 'crear', usuario: null, onClose: () => closes++,
@@ -58,9 +58,8 @@ test('guardar usuario bloquea duplicados y recupera el formulario después de fa
   const retry = modal.submit()
   modal.requests[1].resolve()
   await retry
-  modal.props.open = false; modal.render()
-  modal.props.open = true; modal.render()
-  assert.equal(modal.button('Crear usuario').props.loading, false)
+  modal.render()
+  assert.ok(modal.button('Listo'), 'el usuario copia su clave sin abrir otro modal')
   assert.equal(modal.successes[0].tempPassword, modal.requests[1].args[1].password)
 })
 
@@ -82,6 +81,29 @@ test('eliminar usuario recupera el modal si falla la red y no envía doble borra
   await pending; modal.render()
   assert.equal(modal.button('Eliminar').props.loading, false)
   assert.equal(modal.errors.length, 1)
+})
+
+test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras repetidas', async () => {
+  const modal = modalHarness('components/usuarios/UsuarioFormModal.tsx', {
+    mode: 'editar',
+    initialTab: 'seguridad',
+    usuario: { id: 'otro', nombre: 'Otro', rol: 'colaborador', estado: 'activo' },
+  })
+  const pending = modal.button('Guardar contraseña').props.onClick()
+  assert.equal(modal.requests.length, 1)
+  assert.equal(modal.requests[0].args[0], 'PATCH')
+  assert.equal(modal.requests[0].args[1].id, 'otro')
+  assert.ok(modal.requests[0].args[1].newPassword.length >= 8)
+  modal.close()
+  assert.equal(modal.closes(), 0)
+  await modal.button('Guardar contraseña').props.onClick()
+  assert.equal(modal.requests.length, 1)
+  modal.requests[0].resolve()
+  await pending
+  modal.render()
+  assert.ok(modal.button('Generar otra contraseña'))
+  assert.equal(modal.button('Guardar contraseña'), undefined)
+  assert.equal(modal.closes(), 0)
 })
 
 test('reset conserva la contraseña tras un fallo y la limpia después del éxito', async () => {
@@ -225,9 +247,11 @@ test('el alta exitosa conserva la contraseña entregada aunque falle el callback
   await pending; modal.render()
   assert.equal(modal.requests.length, 1)
   assert.equal(saved.tempPassword, modal.requests[0].args[1].password)
-  assert.equal(modal.closes(), 1)
-  assert.equal(modal.button('Crear usuario').props.loading, false)
+  assert.equal(modal.closes(), 0)
+  assert.ok(modal.button('Listo'), 'el alta conserva la contraseña en el formulario')
   assert.match(modal.errors[0][1], /usuario se guardó.*listado/)
+  modal.close()
+  assert.equal(modal.closes(), 1)
 })
 
 test('un reset escrito no se reenvía si falla el refresco y limpia el borrador', async () => {
