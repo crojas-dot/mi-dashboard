@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import { loadModule } from './load-module.mjs'
 
 const { CaseWorkspace, CaseCycle } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
+const { getCaseTriageCta } = loadModule('app/quejas/components/quejaExpedienteModel.ts')
 const { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } =
   loadModule('app/quejas/components/CaseTriageSummary.tsx')
 const html = (component, props) => renderToStaticMarkup(createElement(component, props))
@@ -87,6 +88,48 @@ test('las etapas de Calidad usan resúmenes y conservan tres tarjetas salvo No P
   assert.match(source, /onEscape=\{\(\) => \{/)
 })
 
+test('la CTA segura depende de la etapa y no contiene instrucciones de mutación', () => {
+  for (const [estado, expected] of [
+    ['Recibido', 'Revisar expediente completo'],
+    ['En Investigación', 'Ver expediente completo'],
+    ['Pendiente de Revisión GC', 'Revisar propuesta completa'],
+    ['Finalizado', 'Ver expediente completo'],
+    ['No Procede', 'Ver expediente completo'],
+  ]) {
+    assert.equal(getCaseTriageCta(estado), expected)
+    assert.equal(getCaseTriageCta(estado, true), expected)
+  }
+  assert.equal(getCaseTriageCta('Resuelto', true), 'Revisar y Publicar respuesta')
+  assert.equal(getCaseTriageCta('Resuelto', false), 'Ver expediente completo')
+  assert.equal(getCaseTriageCta('Estado no registrado'), 'Ver expediente completo')
+})
+
+test('la CTA de revisión aparece arriba, antes del extracto, sin botones críticos', () => {
+  const result = html(CaseTriageSummary, {
+    queja: { ...queja, estado: 'Pendiente de Revisión GC' }, runs: [], responsable: 'Responsable',
+    primaryAction: createElement('button', { type: 'button', 'data-case-triage-expand': true }, 'Revisar propuesta completa →'),
+    children: createElement(CaseTriageExcerpt, { title: 'Propuesta para revisión', text: 'Texto abreviado' }),
+    footer: createElement(CaseTriageFooter, { count: 2, onOpen() {} }),
+  })
+  assert.match(result, /data-case-triage-review-cta/)
+  assert.match(result, /data-case-triage-expand/)
+  assert.ok(result.indexOf('Revisar propuesta completa') < result.indexOf('Propuesta para revisión'))
+  assert.doesNotMatch(result, /Tomar decisión|Aprobar y continuar|Devolver a investigación|Derivar a SACP|Publicar respuesta|Enviar a Revisión GC/)
+})
+
+test('en Quejas las acciones reales existen solo en la columna del AMPLIADO', () => {
+  const source = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const triage = source.split('  const compactTriage = ')[1]?.split('\n  return <>')[0]
+  assert.ok(triage, 'se mantiene un triaje específico')
+  assert.match(triage, /primaryAction=\{<Button/)
+  assert.match(triage, /getCaseTriageCta\(estadoActual, esStaff\)/)
+  assert.doesNotMatch(triage, /workflowActions|handleAprobarResolucion|setReviewOpen\(true\)|pedirDesactivar|onClick=\{openAction\}|runCaseUpdate/)
+  assert.equal((source.match(/\{workflowActions\}/g) || []).length, 1, 'una única instancia de las acciones originales')
+  const actionColumn = source.split('action={<CaseAction ')[1]?.split('</CaseAction>')[0]
+  assert.ok(actionColumn)
+  assert.match(actionColumn, /\{workflowActions\}/)
+})
+
 test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios locales', () => {
   const source = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
   assert.match(source, /compactContent=\{compactTriage\}/)
@@ -94,7 +137,10 @@ test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios l
   assert.match(source, /Borrador guardado/)
   assert.match(source, /Cambios sin guardar/)
   assert.match(source, /Redactar resolución/)
-  assert.match(source, /Corregir en editor/)
+  assert.match(source, /Corregir en editor →/)
+  assert.match(source, /Continuar editando →/)
+  assert.match(source, /Abrir editor para modificar →/)
+  assert.match(source, /Redactar resolución →/)
   assert.match(source, /line-clamp-2/)
   assert.match(source, /CaseTriageAttachments files=\{adjuntosAnalisis\}/)
   assert.match(source, /const prepararResolucion = \(\) => \{[\s\S]*setIsExpanded\(true\)[\s\S]*setEditandoResolucion\(true\)/)
