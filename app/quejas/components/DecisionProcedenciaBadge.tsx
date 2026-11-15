@@ -84,3 +84,4 @@ export default function DecisionProcedenciaBadge({ value, onChange, disabled = f
       </button>
     </div>}
   </div>
+}
