@@ -35,6 +35,7 @@ function modalHarness(file, overrides = {}) {
       visit(tree).find((node) => node.type === 'form').props.onSubmit({ preventDefault() {}, currentTarget: values }),
     close: () => tree.props.onClose(), closes: () => closes,
     alert: () => text(visit(tree).find((node) => node.props.role === 'alert')),
+    input: (label) => visit(tree).find((node) => node.type === 'input' && node.props['aria-label'] === label),
     control: (title) => visit(tree).find((node) => node.props.title === title),
   }
 }
@@ -103,6 +104,25 @@ test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras r
   modal.render()
   assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.button('Guardar contraseña'), undefined)
+  assert.equal(modal.closes(), 0)
+})
+
+test('contraseña manual se escribe y guarda dentro del modal existente', async () => {
+  const modal = modalHarness('components/usuarios/UsuarioFormModal.tsx', {
+    mode: 'editar', initialTab: 'seguridad', usuario: { id: 'otro', nombre: 'Otro' },
+  })
+  modal.button('Definir contraseña manual').props.onClick()
+  modal.render()
+  modal.input('Nueva contraseña manual').props.onChange({ target: { value: 'Manual-12345!' } })
+  modal.render()
+  const pending = modal.button('Guardar contraseña').props.onClick()
+  assert.equal(modal.requests.length, 1)
+  assert.equal(modal.requests[0].args[0], 'PATCH')
+  assert.equal(modal.requests[0].args[1].newPassword, 'Manual-12345!')
+  modal.requests[0].resolve()
+  await pending
+  modal.render()
+  assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.closes(), 0)
 })
 
@@ -329,7 +349,7 @@ test('apiFetch conserva signal, headers y opciones al moverlo fuera de useUsuari
 test('Usuario conserva nombres FormData y asocia etiquetas al usar controles compartidos', () => {
   for (const [esAuto, operation] of [[false, null], [true, null], [false, 'guardar']]) {
     const { default: Form } = loadModule('components/usuarios/UsuarioFormModal.tsx', {
-      react: { ...React, useState: initial => [initial, () => {}] },
+      react: { ...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] },
       '@/components/Modal': { default: ({ children }) => children },
       '@/lib/hooks/useOperationLock': { useOperationLock: () => ({
         operation, isLocked: () => operation !== null, begin: () => false, finish() {},
