@@ -123,6 +123,8 @@ function panelFixture(options = {}) {
     '@/lib/queries/useUsuarios': { useUsuarios: () => ({ data: [] }) },
     '@/lib/queries/useQuejaComentarios': { useQuejaComentarios: () => ({}), useCrearQuejaComentario: () => ({}) },
     '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}) },
+    '@/lib/queries/useQuejaResolucionDraft': { useQuejaResolucionDraft: () => ({ data:null,isLoading:false,error:null }) },
+    '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data:null,isLoading:false,error:null }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
     '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => availability },
     '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: files.filter(file => file.queja_id === entity?.id), refetch() {} }) },
@@ -134,7 +136,7 @@ function panelFixture(options = {}) {
       handleSubirAdjunto: file => { requests.push({ kind: 'upload', file }); uploading = true }, setPreviewAdjunto() {} }) },
     '@/lib/services/quejaWorkflowService': { esOficioPublicableQueja: service.esOficioPublicableQueja,
       revisarResolucionQueja: (...args) => mutation('review', ...args),
-      transicionarQueja: (...args) => mutation('legacy', ...args), resolverQuejaConDocumento: (...args) => mutation('publish', ...args) },
+      transicionarQueja: (...args) => mutation('legacy', ...args), iniciarInvestigacionQueja: (...args) => mutation('assignment', ...args), resolverQuejaConDocumento: (...args) => mutation('publish', ...args) },
     '@/lib/services/errorToast': { showError: (_error, message) => toasts.push(message), showSuccess: message => toasts.push(message) },
   })
   const render = () => { do { cursor = 0; changed = false; tree = Panel({ queja: entity, onClose() {}, onUpdated: (...args) => updates.push(args) }) } while (changed) }
