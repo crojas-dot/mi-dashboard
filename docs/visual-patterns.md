@@ -291,9 +291,10 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   Primero muestra Observación de Calidad y Procede azul, después Descripción del
   cliente. Su pie ofrece Preparar resolución. La barra de formato y el pie de
   Resolución permanecen a la vista; solo el contenido del editor tiene scroll
-  interno con gutter estable, incluso sin foco. Un separador fino bajo la barra
-  crea aire antes de la escritura. El marco conserva las cuatro esquinas
-  redondeadas y la pista genérica de Tiptap se oculta sin ocultar límites.
+  interno con gutter estable, incluso sin foco. La barra ya tiene un separador
+  inferior: no añadir líneas mediante pseudo-elementos dentro del texto.
+  El marco conserva las cuatro esquinas redondeadas y la pista genérica de
+  Tiptap se oculta sin ocultar límites.
   El editor conserva su nodo y borrador al consultar. GC muestra primero la propuesta;
   Solicitud y antecedentes conserva el contenido íntegro en un desplegable.
   El selector de formato conserva su ancho explícito y la barra envuelve sus controles
