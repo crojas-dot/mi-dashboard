@@ -46,13 +46,12 @@ export default function QuejaCorreoEditor({ destinatario, oficio, onOficioChange
           placeholder="Asunto del correo" />
       </div>
     </div>
-    <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] px-5 py-5 sm:px-8 sm:py-6">
+    <div className="grid min-h-0 grid-rows-[minmax(0,1fr)] px-5 py-5 sm:px-8 sm:py-6">
       <label htmlFor={id + '-mensaje'} className="sr-only">Mensaje</label>
       <textarea data-response-message-scroll ref={messageRef} id={id + '-mensaje'} value={correo.cuerpo} maxLength={CORREO_QUEJA_LIMITES.cuerpo} required disabled={disabled}
         onChange={event => onChange({ ...correo, cuerpo: event.target.value })}
         className="h-full min-h-0 w-full resize-none overflow-y-auto overscroll-contain border-0 bg-transparent text-base leading-[1.75] text-qms-dark outline-none placeholder:text-qms-muted focus-visible:ring-0 disabled:opacity-65"
         placeholder="Escriba su mensaje aquí..." />
-      <span className="mt-4 text-right text-xs text-qms-muted">{correo.cuerpo.length} / {CORREO_QUEJA_LIMITES.cuerpo.toLocaleString('es-CR')}</span>
     </div>
   </section>
 }

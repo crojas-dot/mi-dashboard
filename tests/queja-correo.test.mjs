@@ -96,7 +96,8 @@ test('correo normal y No procede mantienen un único scroll en el mensaje, tambi
     const markup = renderToStaticMarkup(createElement(Editor, { id: 'correo-scroll', destinatario: 'ana@example.test',
       oficio: '2026-001', correo, onOficioChange() {}, onChange() {} }))
     assert.match(markup, /grid h-full min-h-0 grid-rows-\[auto_minmax\(0,1fr\)\] overflow-hidden/)
-    assert.match(markup, /grid min-h-0 grid-rows-\[minmax\(0,1fr\)_auto\]/)
+    assert.match(markup, /grid min-h-0 grid-rows-\[minmax\(0,1fr\)\]/)
+    assert.doesNotMatch(markup, /data-response-character-count/)
     assert.match(markup, /data-response-message-scroll/)
     assert.match(markup, /h-full min-h-0 w-full resize-none overflow-y-auto overscroll-contain/)
   }
@@ -126,6 +127,10 @@ test('correo normal y No procede mantienen un único scroll en el mensaje, tambi
   const composer = modal.slice(start, modal.indexOf('\n    </Modal>', start))
   assert.match(composer, /<div className="min-h-0 overflow-hidden">[\s\S]*<QuejaCorreoEditor/)
   assert.match(composer, /<section data-response-attachments[\s\S]*noProcede && <div/)
+  assert.match(composer, /data-response-attachment-hint[\s\S]*data-response-character-count[\s\S]*data-response-upload-row/)
+  assert.match(composer, /data-response-upload-row[\s\S]*Subir archivo[\s\S]*noProcede && <div[\s\S]*Preparar documento \(opcional\)/)
+  assert.match(modal, /CORREO_QUEJA_LIMITES\.cuerpo\.toLocaleString\('es-CR'\)/)
+  assert.doesNotMatch(composer, /border-t border-qms-border\/60 pt-3/)
   assert.doesNotMatch(composer, /overflow-y-auto|scrollbar-gutter/)
 })
 

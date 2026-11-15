@@ -793,10 +793,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
       resolveAuthor={event => event.usuario_id ? usuarios.find(u => u.id === event.usuario_id)?.nombre : undefined} />
     <Modal open={editorOpen} onClose={closeEditor} title={workflowTitle + ' · ' + queja.folio} size={reviewOpen ? 'mail' : 'xl'} variant="document" height="fill" dismissOnEscape={!decisionOpen} dismissOnBackdrop={!decisionOpen}
-      headerActions={decisionOpen && decisionProcedencia ? <>
-        {decisionProcedencia === 'procede' && <ResponsablePicker id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue} onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending} loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined} validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined} openRequest={responsableOpenRequest} />}
-        {decisionProcedencia === 'no_procede' && <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label="Cambiar decisión: No Procede" title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>No Procede</Button>}
-      </> : undefined}
+      headerActions={decisionOpen && decisionProcedencia === 'no_procede' ? <Button size="sm" variant="ghost" className="text-sm font-normal text-qms-muted" aria-label="Cambiar decisión: No Procede" title="Cambiar decisión" disabled={workflowPending} onClick={volverAElegirDecision}>No Procede</Button> : undefined}
       footer={decisionOpen && !decisionProcedencia ? undefined : <div className="flex flex-wrap items-center justify-end gap-2">
       {!reviewOpen && <Button variant="ghost" onClick={decisionOpen ? volverAElegirDecision : closeEditor} disabled={workflowPending}>Cancelar</Button>}
       {decisionOpen && decisionProcedencia && <Button variant={decisionProcedencia === 'no_procede' ? 'danger' : 'primary'} disabled={workflowPending || (decisionProcedencia === 'procede' ? usuariosLoading || !!usuariosError : !publicacionVerificada)} onClick={decisionProcedencia === 'procede' ? handleGuardarProcede : handleGuardarNoProcede} loading={loading}>{decisionProcedencia === 'no_procede' && publicacionDisponible ? 'Publicar no procedencia' : 'Guardar'}</Button>}
@@ -825,14 +822,22 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           </div>}
           {/* Conservar la instancia oculta mantiene borrador, historial y carga del editor. */}
           <div hidden={!decisionProcedencia} className={`${decisionProcedencia ? 'flex' : 'hidden'} min-h-0 flex-1 flex-col`}>
-          <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder={decisionProcedencia === 'procede' ? 'Escribe la justificación de la decisión e instrucciones para el investigador...' : 'Escribí la justificación de la decisión…'} showFormattingHint={decisionProcedencia !== 'procede'} value={justificacion} format={justificacionFormato} variant="document" layout="fill" autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
+          <RichTextEditor id={'queja-procedencia-' + queja.id} label={decisionProcedencia === 'procede' ? 'Justificación de procedencia' : decisionProcedencia === 'no_procede' ? 'Justificación de no procedencia' : 'Justificación de la decisión'} placeholder={decisionProcedencia === 'procede' ? 'Escribe la justificación de la decisión e instrucciones para el investigador...' : 'Escribí la justificación de la decisión…'} showFormattingHint={decisionProcedencia !== 'procede'} value={justificacion} format={justificacionFormato} variant="document" layout="fill"
+            toolbarActions={decisionProcedencia === 'procede' ? <ResponsablePicker
+              id={'queja-responsable-' + queja.id} options={responsables} value={responsableValue}
+              onSelect={usuario => { void handleSeleccionarResponsable(usuario) }} disabled={workflowPending}
+              loading={usuariosLoading} errorMessage={usuariosError ? 'No se pudo cargar el listado de responsables.' : undefined}
+              validationMessage={responsableError ? 'Debés asignar un responsable antes de guardar.' : undefined}
+              openRequest={responsableOpenRequest} showAvatar /> : undefined}
+            autoFocus={!!decisionProcedencia} required disabled={workflowPending || !decisionProcedencia} onChange={(value, format) => { draftVersions.current.workflow++; setJustificacion(value); setJustificacionFormato(format) }} />
           {decisionProcedencia === 'procede' && <section data-assignment-compose
             className="shrink-0 space-y-2 border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-6">
             <div className="flex flex-wrap items-center gap-2">
               <Button type="button" size="sm" variant="secondary" disabled={workflowPending}
                 onClick={() => inputOficioAperturaRef.current?.click()}>
-                <Paperclip aria-hidden="true" className="size-4" />{subiendoOficioApertura ? 'Subiendo documento…' : 'Adjuntar documento'}
+                <Paperclip aria-hidden="true" className="size-4" />{subiendoOficioApertura ? 'Subiendo archivo…' : 'Subir archivo'}
               </Button>
+              <p className="min-w-[15rem] flex-1 text-xs leading-relaxed text-qms-muted">El archivo se almacena en el expediente al subirlo, incluso si cancelás la decisión. Solo se identifica como oficio de apertura al confirmar Procede.</p>
               <input ref={inputOficioAperturaRef} type="file" className="sr-only" aria-label="Seleccionar documento"
                 disabled={workflowPending} onChange={event => {
                   const file = event.target.files?.[0]; event.target.value = ''
@@ -850,7 +855,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <span>{errorOficioApertura}</span>
               <Button type="button" variant="link" size="sm" onClick={() => setErrorOficioApertura('')}>Continuar sin oficio</Button>
             </div>}
-            <p className="text-xs leading-relaxed text-qms-muted">El archivo se almacena en el expediente al subirlo, incluso si cancelás la decisión. Solo se identifica como oficio de apertura al confirmar Procede.</p>
           </section>}
           {decisionProcedencia === 'no_procede' && !publicacionDisponible && <div className="h-[108px] shrink-0 overflow-y-auto border-t border-qms-border px-4 py-3"><Field id={'queja-oficio-rechazo-' + queja.id} label="N.º de oficio explicativo"><Input id={'queja-oficio-rechazo-' + queja.id} required maxLength={REGISTRO_QUEJA_LIMITES.oficio} value={oficioWorkflow} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setOficioWorkflow(event.target.value) }} /></Field></div>}
           </div>

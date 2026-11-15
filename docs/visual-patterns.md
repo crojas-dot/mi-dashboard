@@ -54,10 +54,12 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   permanecen intactos. Los datos históricos de instrucciones siguen legibles
   como respaldo cuando no existe justificación; no se captura texto duplicado.
   La evaluación no se muestra como «análisis» del investigador.
-  En el modal de Procede solo queda Tiptap arriba, el botón «Adjuntar documento» y la
-  nota sobre almacenamiento debajo, y Cancelar/Guardar en el pie. La pista de
-  formato del editor no es visible aquí, pero sí los errores de límite; no
-  modificar los demás editores.
+  En el modal de Procede, el selector de responsable con avatar utiliza el slot
+  opcional de la barra Tiptap a la derecha, sin añadir una segunda barra ni
+  modificar el lienzo. Debajo de la redacción, «Subir archivo» comparte la fila
+  con la nota sobre almacenamiento y se conserva el archivo elegido; el pie
+  Cancelar/Guardar y la validación del responsable no cambian. La pista de formato
+  del editor se oculta solo aquí, no los errores de límite.
   La columna derecha informa «Esperar propuesta del investigador» con duración real
   del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
   disponible cuando corresponda a Revisión GC. No inventar un visor ni una
@@ -427,10 +429,13 @@ que crece con el texto, de modo que la región de composición hace **un solo sc
 desde los destinatarios hasta los adjuntos. Hay más aire entre renglones y márgenes.
 El pie con Publicar respuesta, Descartar y Guardar borrador se mantiene fijo.
 
-La sección inferior permanece visible al redactar: ofrece **Subir archivo**
-y un chip del PDF seleccionado con acciones de previsualizar o quitar la selección.
-El selector desplegable se elimina. Si no existe PDF seleccionado se muestra
-un aviso discreto; no se inventa un informe. La selección del chip se puede
+La sección inferior comparte composición entre «No Procede» y el cierre:
+la nota de PDF a la izquierda y el contador de caracteres a la derecha;
+debajo, **Subir archivo** a la izquierda y, solo en «No Procede», la acción
+«Preparar documento (opcional)» a la derecha. El chip de PDF conserva las
+acciones de previsualizar o quitar la selección. El selector desplegable se
+elimina. Si no existe PDF seleccionado se muestra un aviso discreto;
+no se inventa un informe. La selección del chip se puede
 quitar sin borrar el archivo almacenado. El cuerpo del mensaje tiene scroll
 propio dentro del compositor y el pie de publicación permanece fijo. Si
 existe un PDF institucional previamente generado para el folio y versión guardada

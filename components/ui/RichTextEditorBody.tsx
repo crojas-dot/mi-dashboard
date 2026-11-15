@@ -303,6 +303,7 @@ export default function RichTextEditorBody({
   minHeight = 240,
   maxLength = 10000,
   className = '',
+  toolbarActions,
 }: RichTextEditorProps) {
   const isDocument = variant === 'document'
   const isPagedDocument = isDocument && pagination
@@ -607,8 +608,9 @@ export default function RichTextEditorBody({
           hidden={readOnly}
           role="group"
           aria-label={`Formato de ${label}`}
-          className={`${readOnly ? 'hidden' : 'flex'} shrink-0 flex-nowrap items-center gap-1 overflow-x-auto border-b border-qms-border bg-qms-surface px-2 py-1`}
+          className={`${readOnly ? 'hidden' : 'flex'} shrink-0 flex-nowrap items-center gap-1 ${toolbarActions ? 'overflow-visible' : 'overflow-x-auto'} border-b border-qms-border bg-qms-surface px-2 py-1`}
         >
+          <div className={toolbarActions ? 'flex min-w-0 flex-1 items-center gap-1 overflow-x-auto' : 'contents'}>
           <Select
             aria-label="Estilo de texto"
             wrapperClassName="mr-1 w-40 shrink-0"
@@ -693,6 +695,8 @@ export default function RichTextEditorBody({
               </Button>
             )
           )}
+          </div>
+          {toolbarActions && <div data-rich-text-toolbar-actions className="ml-auto shrink-0 pl-2">{toolbarActions}</div>}
         </div>
 
         <div
