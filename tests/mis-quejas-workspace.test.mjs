@@ -4,7 +4,7 @@ import { loadModule } from './load-module.mjs'
 
 // Los eventos y estados son del componente real; red, sesión y editor pesado son dobles locales.
 function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait } = {}) {
-  const slots = [], calls = [], locks = [], errors = [], uploads = [], updates = [], saves = [], noteUpdates = [], noteDeletes = []
+  const slots = [], calls = [], locks = [], errors = [], uploads = [], updates = [], saves = [], noteUpdates = [], noteDeletes = [], assistCalls = []
   const drafts = new Map(initialDraft ? [[initialDraft.queja_id, initialDraft]] : [])
   let draftError = false, generation = 0, guardId, active = false
   const lanes = new Set()
@@ -56,21 +56,21 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
       } }
     } },
     '@/hooks/useQuejaAttachmentActions': { useQuejaAttachmentActions: () => ({ previewAdjunto: null, confirmarEliminacion: null, subiendoAdjunto: uploading, eliminandoAdjunto: null, handleSubirAdjunto: async file => { uploads.push(file) }, setConfirmarEliminacion() {} }) },
-    '@/app/mis-quejas/components/useQuejaAssistant': { useQuejaAssistant: () => ({ aiAutoLoading: false, chatLoading: false, aiResult: '', chat: [], chatInput: '', setAiResult() {}, setChatInput() {}, handleAnalisisAuto() {}, handleEnviarIA() {}, setModoEdicion() {} }) },
+    '@/app/mis-quejas/components/useQuejaAssistant': { useQuejaAssistant: () => ({ aiAutoLoading: false, chatLoading: false, aiResult: '', chat: [], chatInput: '', setAiResult() {}, setChatInput() {}, handleAnalisisAuto() { assistCalls.push('auto') }, handleEnviarIA() {}, setModoEdicion() {} }) },
   }, { window: { getSelection: () => null, matchMedia: () => ({ matches: true }) }, requestAnimationFrame() {} })
   const visit = value => {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props) return []
     if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion', 'CaseWorkspaceNavigation'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
     if (value.type === 'Modal' && !value.props.open) return [value]
-    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter), ...visit(value.props.compactContent)]
+    return [value, ...visit(value.props.children), ...visit(value.props.toolbarActions), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter), ...visit(value.props.compactContent)]
   }
   const nodes = () => visit(tree)
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   function render() { do { changed = false; cursor = 0; tree = Panel({ queja, onClose: () => closed++, onUpdated: updated => updates.push(updated), onNavigationLockChange: lock => locks.push(lock), onPrevious() {}, onNext() {} }) } while (changed) }
   const button = label => nodes().find(node => (node.type === 'Button' && (node.props['aria-label'] === label || text(node).trim() === label)) || (node.type === 'button' && text(node).includes(label)))
   return {
-    calls, errors, nodes, render, uploads, updates, saves, noteUpdates, noteDeletes,
+    calls, errors, nodes, render, uploads, updates, saves, noteUpdates, noteDeletes, assistCalls,
     remoteDraft(id, value) { drafts.set(id, value); render() },
     draftError(value) { draftError = value; render() },
     select(id, extra = {}) { queja = id ? { id, folio: '2026-001', cliente_nombre: 'Persona sintética', fecha: '2026-10-15', categoria: 'Queja', estado: 'En Investigación', responsable_id: 'owner', revision: 7, ...extra } : null; render() },
@@ -111,8 +111,11 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.ok(panel.modal().props.headerCenter)
   assert.equal(workspace.props.cycle.props.process, true)
   assert.equal(panel.editor().props.label, 'Resolución')
-  const stickyHeader = panel.nodes().find(node => node.props['data-resolution-header'])
-  assert.match(stickyHeader.props.className, /sticky top-0/)
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-header']), undefined)
+  const footer = panel.nodes().find(node => node.props['data-resolution-footer'])
+  assert.ok(footer)
+  assert.match(footer.props.className, /sticky bottom-0/)
+  assert.match(panel.editor().props.toolbarActions.props['aria-label'], /Asistencia para la resolución/)
   assert.match(panel.nodes().find(node => node.props['data-resolution-inline']).props.className, /overflow-visible/)
   assert.equal(panel.editor().props.layout, 'content')
   assert.equal(panel.editor().props.minHeight, 540)
@@ -265,24 +268,26 @@ test('coincidir con el responsable no habilita edición para roles ajenos al wor
     panel.select('A')
     assert.equal(panel.editor(), undefined)
     assert.equal(panel.button('Enviar a Revisión GC'), undefined)
-    assert.equal(panel.button('Análisis IA'), undefined)
+    assert.equal(panel.button('Asistencia para la resolución'), undefined)
     assert.equal(panel.calls.length, 0)
   }
 })
 
-test('asistencia secundaria conserva el único lienzo y su borrador durante la consulta', () => {
+test('un clic en Asistencia IA inicia análisis sin chat ni desplegables y conserva la resolución', () => {
   const panel = fixture()
   panel.select('A')
-  const assistance = () => panel.nodes().find(node => node.props['data-resolution-assistance'] !== undefined)
-  assert.equal(assistance().props.hidden, true)
-  panel.button('Asistencia para la resolución').props.onClick(); panel.render()
+  const button = panel.button('Asistencia para la resolución')
+  assert.ok(button)
+  assert.equal(button.props['data-resolution-assist'], true)
+  assert.equal(panel.nodes().find(node => node.props['data-resolution-assistance']), undefined)
+  assert.equal(panel.nodes().some(node => node.type === 'details' || node.type === 'summary'), false)
+  assert.equal(panel.button('Análisis IA'), undefined)
+  button.props.onClick(); panel.render()
+  assert.deepEqual(panel.assistCalls, ['auto'])
   panel.editor().props.onChange('Conclusión en curso', 'plain'); panel.render()
   panel.openAnalysis()
   panel.analysisModal().props.onClose(); panel.render()
-  assert.equal(assistance().props.hidden, false)
   assert.equal(panel.editor().props.value, 'Conclusión en curso')
-  panel.button('Asistencia para la resolución').props.onClick(); panel.render()
-  assert.equal(assistance().props.hidden, true)
   assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
 })
 
@@ -380,7 +385,7 @@ test('Guardar persiste sin enviar, deja el documento en lectura y vuelve a carga
   const panel = fixture()
   panel.select('A')
   assert.equal(panel.button('Guardar').props.disabled, true)
-  assert.equal(panel.button('Guardar').props.variant, 'secondary')
+  assert.equal(panel.button('Guardar').props.variant, 'primary')
   panel.editor().props.onChange('**Borrador guardado**', 'markdown'); panel.render()
   assert.equal(panel.button('Guardar').props.variant, 'primary')
   await panel.button('Guardar').props.onClick(); panel.render()
@@ -396,7 +401,7 @@ test('Guardar persiste sin enviar, deja el documento en lectura y vuelve a carga
   panel.button('Editar').props.onClick(); panel.render()
   assert.equal(panel.editor().props.readOnly, false)
   assert.equal(panel.button('Guardar').props.disabled, true)
-  assert.equal(panel.button('Guardar').props.variant, 'secondary')
+  assert.equal(panel.button('Guardar').props.variant, 'primary')
   panel.select(null); panel.select('A')
   assert.equal(panel.editor().props.value, '**Borrador guardado**')
   assert.equal(panel.editor().props.format, 'markdown')

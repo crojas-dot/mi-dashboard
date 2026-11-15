@@ -1,7 +1,11 @@
 # Mis Quejas: guardar resolución sin enviarla
 
-Guardar está junto a Asistencia. Conserva texto y formato del borrador en el
-expediente para retomarlo después; no cambia el estado, calendario, revisión de
+Guardar está en el pie del editor, junto a Cancelar, y usa siempre el estilo azul
+institucional cuando aparece. Asistencia IA está junto a los formatos de Tiptap,
+a la derecha; ejecuta directamente el análisis automático y muestra su resultado
+sin chat ni acordeones, sin modificar la resolución hasta confirmación explícita.
+Guardar conserva texto y formato del borrador en el expediente para retomarlo después;
+no cambia el estado, calendario, revisión de
 Queja ni propuesta enviada, y no encola avisos o correo. No hay autoguardado.
 Enviar a Revisión GC sigue siendo la acción independiente que entrega la propuesta.
 
@@ -35,18 +39,17 @@ escribir encima de un borrador desconocido; un fallo ofrece Reintentar borrador.
 Un refetch posterior no reemplaza texto ni versión capturados.
 
 Guardar y Enviar comparten el lock síncrono del workflow. Durante el guardado se
-bloquea el doble envío; el editor conserva su nodo. Guardar es azul solo con cambios;
-tras confirmación remota muestra check y el encabezado pasa a ofrecer Editar, con la
-fecha real en su título. Editar devuelve al modo de escritura: Guardar y Asistencia
-reaparecen y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
+bloquea el doble envío; el editor conserva su nodo. Guardar mantiene la variante azul incluso antes de editar;
+se deshabilita si no hay cambios. Tras confirmación remota, el pie pasa a ofrecer
+Editar, con la fecha real en su título. Editar devuelve al modo de escritura:
+Guardar y Asistencia IA reaparecen en sus respectivas ubicaciones y el lienzo deja de ser solo lectura. Reabrir carga el guardado en ese
 mismo modo de lectura.
 Una respuesta tardía actualiza la caché de origen solo si sigue vigente el ámbito,
 sin modificar otra visita o identidad. El borrador guardado permite navegar entre
 expedientes; los cambios nuevos sin guardar conservan el bloqueo previo.
 
 El botón Ver caso completo conserva fondo rojo ECA. Al pasar el puntero invierte
-a fondo blanco con texto, icono y borde rojos. Guardar y Asistencia permanecen juntos
-solo en modo de escritura, en escritorio y móvil. El scroll del editor sigue
+a fondo blanco con texto, icono y borde rojos. Guardar permanece en el pie y Asistencia IA en la barra Tiptap, solo durante edición, en escritorio y móvil. El scroll del editor sigue
 dependiendo del foco.
 
 Notas de investigación vive en una tarjeta compacta bajo el cliente: cantidad,
