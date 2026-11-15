@@ -282,9 +282,13 @@ permisos ni datos persistidos.
   La subida a Drive persiste el archivo inmediatamente: cancelar la decisión deja
   el adjunto como archivo ordinario sin asignarle oficio; solo confirmar Procede
   guarda su asociación. La tabla de asignación tiene SELECT autorizado y ninguna
-  escritura directa para authenticated. Calidad consulta solo metadatos del borrador
-  del responsable, nunca su contenido ni su editor. La documentación vigente está
-  en docs/quejas-asignacion-investigacion-2026-11-14.md.
+  escritura directa para authenticated. En la etapa 2 de `/quejas`, Calidad ve
+  primero «Justificación de Calidad» y debajo «Investigador asignado», seguidos
+  de los documentos vinculados. NO consultar ni mostrar aviso de borrador del
+  encargado en este panel (ni en el triaje 40vw); esa edición permanece en
+  `/mis-quejas`. En Procede, el botón visible es «Adjuntar documento», sin
+  modificar la asociación interna del archivo. Contrato:
+  docs/quejas-asignacion-investigacion-2026-11-14.md.
   Investigación prepara la propuesta;
   enviarla a Revisión GC no publica ni notifica al cliente. Aprobar y continuar pasa
   a Resuelto; Calidad prepara después la comunicación final. Publicar respuesta
