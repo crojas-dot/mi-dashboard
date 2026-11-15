@@ -1,5 +1,14 @@
 # Asignación y seguimiento de investigación — Calidad
 
+**Estado del backend (15-11-2026 UTC):** migración
+`20261115041345_quejas_investigacion_asignacion.sql` aplicada en Supabase
+antes de habilitar el nuevo cliente. Se verificó RLS activa, una política SELECT
+para authenticated, ausencia de INSERT/UPDATE para authenticated, denegación
+SELECT/EXECUTE a anon y rechazo del RPC sin sesión. La tabla nació vacía:
+no se modificaron expedientes existentes. Esto no demuestra por sí solo una
+transición autenticada de extremo a extremo; queda pendiente validarla en navegador
+con usuarios de prueba antes de uso institucional.
+
 Contrato vigente para `/quejas`, etapas **Recibido → En Investigación**, en el
 workspace ampliado nativo. No rediseña el resto del flujo, ni `/mis-quejas`,
 ni las tablas, permisos, plazos, correos o publicaciones.
