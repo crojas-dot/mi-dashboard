@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { prefetchDriveBlob, recordarDriveBlob } from '@/lib/services/driveClient'
 import { useQueryClient } from '@tanstack/react-query'
-import { Eye, FileText, Reply, Send, Upload, X, Pencil } from 'lucide-react'
+import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -15,7 +15,7 @@ import { useRespuestaCliente, respuestaClienteKey, type RespuestaClienteContext 
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaInforme } from '@/lib/queries/useQuejaInforme'
 import { informePdfFilename, type QuejaInforme } from '@/lib/utils/quejaInforme'
-import { crearCorreoAcompanamiento, validarCorreoQueja, CORREO_QUEJA_LIMITES, type CorreoQueja } from '@/lib/utils/quejaCorreo'
+import { crearCorreoAcompanamiento, validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
 import { esOficioPublicableQueja, guardarRespuestaClienteBorrador, publicarRespuestaAprobada, transicionarQueja, type RespuestaClienteDraftInput } from '@/lib/services/quejaWorkflowService'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import type { Queja } from '@/lib/types'
@@ -224,56 +224,23 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
   return <>
     <Modal open onClose={close} title="Respuesta al cliente" titleSuffix={snapshot.folio}
       headerLeading={<Reply aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />}
-      size="mail" variant="document" height="content" dialogClassName="h-[85vh] max-h-[85dvh]" emphasizeTitle dismissOnBackdrop={false}
-      footer={<div data-response-footer className="flex min-w-0 flex-col">
+      size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
+      footer={<div className="flex flex-wrap items-center justify-between gap-3">
         {initial.publicada
           ? <div className="flex w-full flex-wrap items-center justify-end gap-2">
               <Button variant="secondary" onClick={close} disabled={disabled}>Cerrar</Button>
               <Button disabled={disabled} loading={busy === 'finish'} onClick={() => { void write('finish') }}>Finalizar expediente</Button>
             </div>
           : <>
-        <section data-response-attachments aria-label="Adjuntos del correo" className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 pb-3">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
-              <Upload aria-hidden="true" className="size-4" />Subir archivo
-            </Button>
-            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-gray-50 px-3 py-1.5">
-              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
-              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
-                className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
-              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
-                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
-              <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
-                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
-                onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
-            </div>}
-          {noProcede && <div className="flex min-w-0 items-center">
-            <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
-              const visit = scope.capture(), context = scope.captureContext()
-              reportIsCurrent.current = () => visit() && context()
-              setEditingReport(true)
-            }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
-          </div>}
-              <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
-              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
-          </div>
-          <p className="min-w-0 text-right text-xs leading-relaxed text-gray-500">
-            {selectedFile ? 'El PDF seleccionado se enviará con el correo.'
-              : informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}
-          </p>
-
-          {props.archivosError && <p role="alert" className="w-full text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
-          {informeError && !report && <p role="alert" className="w-full text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}
-        </section>
-            <div data-response-footer-actions className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Button data-response-publish size="sm" disabled={disabled || props.archivosLoading || props.archivosError} loading={busy === 'publish'} onClick={requestPublish}>
                 <Send aria-hidden="true" className="size-4" />Publicar respuesta
               </Button>
-              <div className="flex min-w-0 flex-wrap items-center justify-end gap-1 sm:gap-2">
-                <span data-response-counter aria-label="Caracteres del mensaje" className="mr-2 whitespace-nowrap text-[12px] text-gray-400">{form.correo.cuerpo.length} / {CORREO_QUEJA_LIMITES.cuerpo.toLocaleString('es-CR')}</span>
-                <Button size="sm" variant="ghost" disabled={disabled} onClick={close}>Descartar</Button>
-                <Button size="sm" variant="secondary" disabled={disabled || !!saved && !dirty} loading={busy === 'save'} onClick={() => { void write('save') }}>Guardar borrador</Button>
-              </div>
+              
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center gap-1 sm:gap-2">
+              <Button size="sm" variant="ghost" disabled={disabled} onClick={close}><Trash2 aria-hidden="true" className="size-4" />Descartar</Button>
+              <Button size="sm" variant="secondary" disabled={disabled || !!saved && !dirty} loading={busy === 'save'} onClick={() => { void write('save') }}>Guardar borrador</Button>
             </div>
           </>}
       </div>}>
@@ -287,11 +254,42 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
         <p className="break-words text-sm">Oficio: {snapshot.numero_oficio_resolucion || 'Registrado en el expediente'} · {props.adjuntos.find(file => file.id === initial.publicada?.adjunto_id)?.nombre || 'Documento oficial publicado'}</p>
       </div> : <div data-response-compose className="flex h-full min-h-0 max-h-full flex-1 flex-col overflow-hidden bg-qms-surface">
         {error && <div role="alert" className="shrink-0 border-b border-qms-border bg-soft-red-bg px-5 py-3 text-sm text-qms-danger sm:px-8">{error}</div>}
-        <div data-response-scroll-shell className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
-            destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
-            onOficioChange={value => change({ numeroOficio: value })}
-            correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
+        <div data-response-scroll-shell className="grid min-h-0 flex-1 grid-rows-[minmax(0,1fr)_auto] overflow-hidden">
+        <div className="min-h-0 overflow-hidden">
+        <QuejaCorreoEditor id={'respuesta-correo-' + snapshot.id}
+          destinatario={snapshot.email_cliente ?? ''} oficio={form.numeroOficio}
+          onOficioChange={value => change({ numeroOficio: value })}
+          correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
+        </div>
+        <section data-response-attachments aria-label="Adjuntos del correo" className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8 sm:py-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
+              <Upload aria-hidden="true" className="size-4" />Subir archivo
+            </Button>
+            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
+              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
+                className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
+              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
+                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
+              <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
+                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
+                onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
+            </div>}
+            {!selectedFile && <p className="text-xs text-qms-muted">{informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}</p>}
+            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
+              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+          </div>
+          {noProcede && <div className="mt-4 border-t border-qms-border/60 pt-3">
+            <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
+              const visit = scope.capture(), context = scope.captureContext()
+              reportIsCurrent.current = () => visit() && context()
+              setEditingReport(true)
+            }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
+          </div>}
+          {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
+          {informeError && !report && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}
+        </section>
         </div>
       </div>}
     </Modal>

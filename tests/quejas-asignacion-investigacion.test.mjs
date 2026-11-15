@@ -30,14 +30,12 @@ test('etapa 2 presenta justificación antes del investigador y mantiene document
   const value = html({
     asignacion: { queja_id: 'q1', responsable_id: 'responsable', instrucciones: 'Entrevistar a las partes.',
       oficio_adjunto_id: oficio.id, asignado_por: 'calidad', updated_at: '2026-11-14T14:30:00Z' },
-    adjuntos: [oficio, evidence], responsableEmail: 'investigadora@example.test',
+    adjuntos: [oficio, evidence],
   })
   assert.match(value, /Detalles de asignación/)
-  assert.doesNotMatch(value, /Justificación de Calidad|Gestión de Calidad/)
+  assert.match(value, /Justificación de Calidad/)
   assert.match(value, /Investigadora Ejemplo/)
-  assert.match(value, /investigadora@example\.test/)
-  assert.ok(value.indexOf('data-investigation-instructions') < value.indexOf('data-investigation-assignee'), 'justificación antes del encargado')
-  assert.match(value, /bg-blue-50\/50/)
+  assert.ok(value.indexOf('Justificación de Calidad') < value.indexOf('Investigador asignado'), 'justificación antes del encargado')
   assert.match(value, /Entrevistar a las partes/)
   assert.match(value, /Oficio de apertura\.pdf/)
   assert.equal(value.split('Oficio de apertura.pdf').length - 1, 1, 'sin archivo duplicado')
@@ -162,7 +160,7 @@ test('el editor de Procede es el único campo de instrucciones y su ayuda gris e
 
 test('la investigación muestra la justificación principal en formato rico y conserva instrucciones históricas', () => {
   const fallback = html({ justificacionProcede: '**Verificar archivos**', justificacionFormato: 'markdown' })
-  assert.match(fallback, /Detalles de asignación/)
+  assert.match(fallback, /Justificación de Calidad/)
   assert.match(fallback, /data-test-richtext-format="markdown"/)
   assert.match(fallback, /\*\*Verificar archivos\*\*/)
   const old = html({ justificacionProcede: '**Nueva fuente**', justificacionFormato: 'markdown',

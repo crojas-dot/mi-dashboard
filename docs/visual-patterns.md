@@ -43,9 +43,9 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
   (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
 - En etapa 2 de Calidad (solo workspace ampliado), la columna central muestra
-  un único encabezado «Detalles de asignación», el texto original de Procede
-  dentro de un callout azul tenue y después «Investigador asignado» con iniciales,
-  nombre y correo real cuando esté disponible, seguido de los documentos vinculados.
+  «Detalles de asignación»: primero «Justificación de Calidad» con el texto
+  original de Procede y su formato, inmediatamente debajo el bloque
+  «Investigador asignado», y después los documentos vinculados.
   No renderizar tarjeta ni mensaje de borrador del responsable, haya o no
   borrador; tampoco consultarlo desde Calidad. Los borradores de `/mis-quejas`
   permanecen intactos. Los datos históricos de instrucciones siguen legibles
@@ -417,13 +417,12 @@ con acción azul suave. **Historial y observaciones** conserva el acceso compart
 `CaseSidebarShortcut` en todas las etapas sin duplicar acciones.
 
 En **Respuesta al cliente**, el compositor continúa al estilo Gmail, con
-`Modal size="mail"` (896px máx. y 85vh). El renglón inicial alinea el destinatario
+`Modal size="mail"` (896px máx. y 90dvh). El renglón inicial alinea el destinatario
 no editable a la izquierda y el **N.º de oficio editable** a la derecha (apilados
 en móvil); Asunto tiene solo la línea inferior. El cuerpo es un lienzo sin recuadro
-que ocupa el espacio disponible debajo del Asunto y hace **un solo scroll**
-en el cuerpo del mensaje. Hay más aire entre renglones y márgenes.
-El pie fijo se divide en dos filas: subir PDF y ayuda; publicar, contador,
-Descartar y Guardar borrador. El contador no flota sobre el textarea.
+que crece con el texto, de modo que la región de composición hace **un solo scroll**
+desde los destinatarios hasta los adjuntos. Hay más aire entre renglones y márgenes.
+El pie con Publicar respuesta, Descartar y Guardar borrador se mantiene fijo.
 
 La sección inferior permanece visible al redactar: ofrece **Subir archivo**
 y un chip del PDF seleccionado con acciones de previsualizar o quitar la selección.

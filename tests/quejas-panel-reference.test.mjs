@@ -130,13 +130,11 @@ test('el panel de referencia conserva el color configurado del estado sin añadi
   assert.match(assigned, /Administrador/)
 })
 
-test('el responsable se omite en Recibido y precede a las acciones en las demás etapas', () => {
+test('el responsable precede a las acciones en todas las etapas sin repetirse', () => {
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'Finalizado', 'No Procede']) {
     const result = html(CaseAction, { queja: { ...queja, estado }, runs: [], presentation: 'reference', responsable: 'Persona responsable', children: createElement('button', null, 'Acción disponible') })
-    const occurrences = (result.match(/Persona responsable/g) || []).length
-    assert.equal(occurrences, estado === 'Recibido' ? 0 : 1)
-    if (estado !== 'Recibido') assert.ok(result.indexOf('Persona responsable') < result.indexOf('Acción disponible'))
-    else assert.doesNotMatch(result, /Por asignar|Responsable/)
+    assert.equal((result.match(/Persona responsable/g) || []).length, 1)
+    assert.ok(result.indexOf('Persona responsable') < result.indexOf('Acción disponible'))
   }
 })
 
