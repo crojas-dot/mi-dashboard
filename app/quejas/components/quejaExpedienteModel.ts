@@ -43,7 +43,7 @@ export function getCaseTriageNextStep(
       description: responsable
         ? `El caso está siendo investigado por ${responsable}.`
         : 'El caso está en investigación, pendiente del trabajo de la persona responsable.',
-      ctaLabel: 'Ver avance del caso completo', icon: 'search', tone: 'blue',
+      ctaLabel: 'Ver estado de la investigación', icon: 'search', tone: 'blue',
     }
     case 'Pendiente de Revisión GC': return {
       title: 'Revisión de Calidad',
