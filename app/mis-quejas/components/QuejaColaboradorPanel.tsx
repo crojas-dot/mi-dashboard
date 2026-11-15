@@ -25,12 +25,12 @@ import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
 import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
-import { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
+import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
-import { caseDate, caseDeadline } from '@/app/quejas/components/quejaExpedienteModel'
+import { caseDate, caseDeadline, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
@@ -366,6 +366,37 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const action = investigando ? null : estado === 'Pendiente de Revisión GC' ? 'Gestión de Calidad revisará la propuesta. Si requiere ajustes, volverá a investigación.' : 'El expediente conserva el trabajo y las evidencias registradas.'
   const tieneDocumentoRegistrado = !!(queja.resolucion || queja.numero_oficio_resolucion)
   const documentoAprobado = ['Resuelto', 'Finalizado', 'No Procede'].includes(estado)
+  const triageStep: CaseTriageNextStepData = investigando
+    ? reenviarRevision && devolucion ? {
+        title: 'Corrección requerida',
+        description: 'Calidad devolvió tu propuesta. Debes corregirla antes de reenviar.',
+        ctaLabel: 'Corregir en editor', icon: 'warning', tone: 'amber',
+      } : resolutionDirty ? {
+        title: 'Cambios sin guardar',
+        description: 'Tienes cambios locales pendientes. Revísalos y guárdalos antes de enviar la propuesta.',
+        ctaLabel: 'Continuar editando', icon: 'edit', tone: 'amber',
+      } : borradorGuardado ? {
+        title: 'Borrador guardado',
+        description: `Tienes una propuesta guardada el ${caseDate(borradorGuardado.updated_at)}. Revísala o termínala.`,
+        ctaLabel: 'Abrir editor para modificar', icon: 'saved', tone: 'blue',
+      } : {
+        title: 'Redactar resolución',
+        description: 'Prepara la propuesta de resolución para enviar a Calidad.',
+        ctaLabel: 'Abrir editor para redactar', icon: 'edit', tone: 'blue',
+      }
+    : estado === 'Pendiente de Revisión GC' ? {
+        title: 'En revisión de Calidad',
+        description: 'La propuesta fue enviada. Consulta el expediente mientras Calidad revisa el caso.',
+        ctaLabel: 'Ver expediente completo', icon: 'review', tone: 'amber',
+      } : documentoAprobado ? {
+        title: 'Expediente cerrado',
+        description: 'Consulta el resultado, los documentos y el seguimiento de este caso.',
+        ctaLabel: 'Ver expediente de cierre completo', icon: 'archive', tone: 'green',
+      } : {
+        title: 'Consultar expediente',
+        description: 'Revisa el estado y los antecedentes de este caso antes de continuar.',
+        ctaLabel: 'Ver expediente completo', icon: 'file', tone: 'blue',
+      }
   // La ayuda se despliega fuera de la cabecera para no comprimir sus controles.
   const assistance = <div id={`queja-${queja.id}-asistencia`} data-resolution-assistance role="region" aria-label="Asistencia para la resolución" hidden={!assistanceOpen || !investigando || !editandoResolucion} className="min-w-0 shrink-0 border-b border-qms-border px-4 py-3"><div className="max-h-[30dvh] overflow-y-auto overscroll-contain">
                 <p className="text-xs text-qms-muted">La sugerencia no se guarda ni se envía. Revisala antes de usarla en la resolución.</p>
@@ -379,16 +410,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
 
   const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
     responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
+    primaryAction={<CaseTriageNextStep step={triageStep}
+      onOpen={investigando ? prepararResolucion : () => setIsExpanded(true)}
+      disabled={investigando && resolutionPending} />}
     footer={<CaseTriageFooter title="Mis notas" count={!actividadLoading && !actividadError ? notasInvestigacion.length : undefined}
       onOpen={abrirNotas} />}>
     <div className="space-y-4">
       {reenviarRevision && devolucion && <section data-case-triage-return
-        className="space-y-3 rounded-card border border-qms-warning/30 bg-soft-amber-bg p-3.5 text-soft-amber-text">
-        <h3 className="text-sm font-semibold">Devolución de Calidad</h3>
-        <p className="line-clamp-2 whitespace-pre-wrap break-words text-sm leading-relaxed">{devolucion.motivo}</p>
-        <Button size="sm" variant="secondary" className="w-full" disabled={resolutionPending} onClick={prepararResolucion}>
-          Corregir en editor →
-        </Button>
+        className="space-y-1.5 border-l-2 border-amber-300 bg-amber-50/40 py-2 pl-3 pr-2 text-amber-900">
+        <h3 className="text-xs font-semibold">Observación de Calidad</h3>
+        <p className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed">{devolucion.motivo}</p>
       </section>}
       {investigando ? <section data-case-triage-resolution className="space-y-3">
         <h3 className="text-sm font-semibold text-qms-dark">Estado de la resolución</h3>
@@ -402,18 +433,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         {errorBorrador && borradorVersion === null && <p role="alert" className="text-sm text-qms-danger">No se pudo cargar el borrador.
           <Button size="sm" variant="link" onClick={() => { void recargarBorrador() }}>Reintentar</Button>
         </p>}
-        <Button size="sm" className="w-full" disabled={resolutionPending || borradorVersion === null}
-          onClick={prepararResolucion}>
-          {resolutionDirty ? 'Continuar editando →'
-            : borradorGuardado ? 'Abrir editor para modificar →' : 'Redactar resolución →'}
-        </Button>
       </section> : <CaseTriageExcerpt title={tieneDocumentoRegistrado ? 'Resultado registrado' : 'Resumen del expediente'}
         text={queja.resolucion || queja.descripcion || 'Sin información registrada.'} />}
       <CaseTriageAttachments files={adjuntosAnalisis} onPreview={setPreviewAdjunto}
         loading={adjuntosLoading} error={!!adjuntosError} />
       <div className="space-y-2">
         <Button size="sm" variant="secondary" className="w-full" onClick={abrirAnalisis}>Ver caso completo</Button>
-        <Button data-case-triage-expand size="sm" variant="secondary" className="w-full" onClick={() => setIsExpanded(true)}>Ampliar expediente →</Button>
       </div>
     </div>
   </CaseTriageSummary>
