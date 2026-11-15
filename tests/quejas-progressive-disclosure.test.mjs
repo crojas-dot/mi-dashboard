@@ -6,8 +6,8 @@ import fs from 'node:fs'
 import { loadModule } from './load-module.mjs'
 
 const { CaseWorkspace, CaseCycle } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
-const { getCaseTriageCta } = loadModule('app/quejas/components/quejaExpedienteModel.ts')
-const { CaseTriageSummary, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } =
+const { getCaseTriageCta, getCaseTriageNextStep } = loadModule('app/quejas/components/quejaExpedienteModel.ts')
+const { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } =
   loadModule('app/quejas/components/CaseTriageSummary.tsx')
 const html = (component, props) => renderToStaticMarkup(createElement(component, props))
 const queja = {
@@ -90,16 +90,16 @@ test('las etapas de Calidad usan resúmenes y conservan tres tarjetas salvo No P
 
 test('la CTA segura depende de la etapa y no contiene instrucciones de mutación', () => {
   for (const [estado, expected] of [
-    ['Recibido', 'Revisar expediente completo'],
-    ['En Investigación', 'Ver expediente completo'],
+    ['Recibido', 'Revisar solicitud completa'],
+    ['En Investigación', 'Ver avance del caso completo'],
     ['Pendiente de Revisión GC', 'Revisar propuesta completa'],
-    ['Finalizado', 'Ver expediente completo'],
-    ['No Procede', 'Ver expediente completo'],
+    ['Finalizado', 'Ver expediente de cierre completo'],
+    ['No Procede', 'Ver expediente de cierre completo'],
   ]) {
     assert.equal(getCaseTriageCta(estado), expected)
     assert.equal(getCaseTriageCta(estado, true), expected)
   }
-  assert.equal(getCaseTriageCta('Resuelto', true), 'Revisar y Publicar respuesta')
+  assert.equal(getCaseTriageCta('Resuelto', true), 'Redactar y publicar respuesta')
   assert.equal(getCaseTriageCta('Resuelto', false), 'Ver expediente completo')
   assert.equal(getCaseTriageCta('Estado no registrado'), 'Ver expediente completo')
 })
@@ -107,7 +107,9 @@ test('la CTA segura depende de la etapa y no contiene instrucciones de mutación
 test('la CTA de revisión aparece arriba, antes del extracto, sin botones críticos', () => {
   const result = html(CaseTriageSummary, {
     queja: { ...queja, estado: 'Pendiente de Revisión GC' }, runs: [], responsable: 'Responsable',
-    primaryAction: createElement('button', { type: 'button', 'data-case-triage-expand': true }, 'Revisar propuesta completa →'),
+    primaryAction: createElement(CaseTriageNextStep, {
+      step: getCaseTriageNextStep('Pendiente de Revisión GC'), onOpen() {},
+    }),
     children: createElement(CaseTriageExcerpt, { title: 'Propuesta para revisión', text: 'Texto abreviado' }),
     footer: createElement(CaseTriageFooter, { count: 2, onOpen() {} }),
   })
@@ -117,12 +119,76 @@ test('la CTA de revisión aparece arriba, antes del extracto, sin botones críti
   assert.doesNotMatch(result, /Tomar decisión|Aprobar y continuar|Devolver a investigación|Derivar a SACP|Publicar respuesta|Enviar a Revisión GC/)
 })
 
+test('cada etapa de Calidad contiene título, contexto, icono, tono y CTA prominente', () => {
+  const cases = [
+    ['Recibido', 'Evaluar procedencia', 'Revisa la solicitud y evidencias', 'Revisar solicitud completa', 'clipboard', 'blue'],
+    ['En Investigación', 'Seguimiento de caso', 'por María Responsable', 'Ver avance del caso completo', 'search', 'blue'],
+    ['Pendiente de Revisión GC', 'Revisión de Calidad', 'Revisa la propuesta y evidencias', 'Revisar propuesta completa', 'review', 'amber'],
+    ['Resuelto', 'Preparar respuesta al cliente', 'El caso fue aprobado', 'Redactar y publicar respuesta', 'mail', 'blue'],
+    ['Finalizado', 'Expediente cerrado', 'Consulta el resumen de cierre', 'Ver expediente de cierre completo', 'archive', 'green'],
+    ['No Procede', 'Expediente cerrado', 'Consulta el resumen de cierre', 'Ver expediente de cierre completo', 'archive', 'green'],
+  ]
+  for (const [estado, title, description, ctaLabel, icon, tone] of cases) {
+    const step = getCaseTriageNextStep(estado, { responsable: 'María Responsable', canPublish: true })
+    assert.equal(step.title, title)
+    assert.match(step.description, new RegExp(description))
+    assert.equal(step.ctaLabel, ctaLabel)
+    assert.equal(step.icon, icon)
+    assert.equal(step.tone, tone)
+    const result = html(CaseTriageNextStep, { step, onOpen() {} })
+    assert.match(result, /data-case-triage-next-step/)
+    assert.match(result, /data-case-triage-expand/)
+    assert.match(result, /bg-qms-primary/)
+    assert.match(result, /text-white/)
+    assert.match(result, /hover:bg-blue-700/)
+    assert.match(result, /line-clamp-2/)
+    assert.match(result, /text-\[13px\]/)
+    assert.match(result, /<svg/)
+    assert.match(result, new RegExp(ctaLabel))
+    assert.match(result, new RegExp(title))
+  }
+  const noWrite = getCaseTriageNextStep('Resuelto', { canPublish: false })
+  assert.equal(noWrite.ctaLabel, 'Ver expediente completo')
+  assert.match(getCaseTriageNextStep('En Investigación').description, /persona responsable/)
+})
+
+test('el CTA de todas las etapas solo invoca la callback de expansión', () => {
+  let expanded = 0
+  const onOpen = () => { expanded++ }
+  const step = getCaseTriageNextStep('Pendiente de Revisión GC')
+  const tree = CaseTriageNextStep({ step, onOpen })
+  const action = tree.props.children[1]
+  assert.equal(action.props.onClick, onOpen)
+  assert.equal(expanded, 0, 'renderizar no ejecuta ningún cambio')
+  action.props.onClick()
+  assert.equal(expanded, 1, 'la única acción invocada es ampliar')
+})
+
+test('Mis Quejas también tiene siguiente paso para borrador, devolución y consulta', () => {
+  const source = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  const triage = source.split('  const triageStep: CaseTriageNextStepData = ')[1]?.split('  // La ayuda se despliega')[0]
+  assert.ok(triage)
+  for (const text of [
+    'Redactar resolución', 'Prepara la propuesta de resolución',
+    'Borrador guardado', 'Tienes una propuesta guardada el',
+    'Corrección requerida', 'Calidad devolvió tu propuesta',
+    'Cambios sin guardar', 'Continuar editando',
+    'En revisión de Calidad', 'Expediente cerrado', 'Consultar expediente',
+  ]) assert.ok(triage.includes(text), text)
+  assert.match(source, /primaryAction=\{<CaseTriageNextStep step=\{triageStep\}/)
+  assert.match(source, /onOpen=\{investigando \? prepararResolucion : \(\) => setIsExpanded\(true\)\}/)
+  const compact = source.split('  const compactTriage = ')[1]?.split('  return <>')[0]
+  assert.ok(compact)
+  assert.equal((compact.match(/data-case-triage-expand/g) || []).length, 0, 'el CTA es el único botón primario en CaseTriageNextStep')
+  assert.doesNotMatch(compact, /onClick=\{handleEnviarRevision\}|guardarResolucionBorrador\(/)
+})
+
 test('en Quejas las acciones reales existen solo en la columna del AMPLIADO', () => {
   const source = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
   const triage = source.split('  const compactTriage = ')[1]?.split('\n  return <>')[0]
   assert.ok(triage, 'se mantiene un triaje específico')
-  assert.match(triage, /primaryAction=\{<Button/)
-  assert.match(triage, /getCaseTriageCta\(estadoActual, esStaff\)/)
+  assert.match(triage, /primaryAction=\{<CaseTriageNextStep/)
+  assert.match(triage, /getCaseTriageNextStep\(estadoActual, \{ responsable: responsableActual\?\.nombre, canPublish: esStaff \}\)/)
   assert.doesNotMatch(triage, /workflowActions|handleAprobarResolucion|setReviewOpen\(true\)|pedirDesactivar|onClick=\{openAction\}|runCaseUpdate/)
   assert.equal((source.match(/\{workflowActions\}/g) || []).length, 1, 'una única instancia de las acciones originales')
   const actionColumn = source.split('action={<CaseAction ')[1]?.split('</CaseAction>')[0]
@@ -137,10 +203,10 @@ test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios l
   assert.match(source, /Borrador guardado/)
   assert.match(source, /Cambios sin guardar/)
   assert.match(source, /Redactar resolución/)
-  assert.match(source, /Corregir en editor →/)
-  assert.match(source, /Continuar editando →/)
-  assert.match(source, /Abrir editor para modificar →/)
-  assert.match(source, /Redactar resolución →/)
+  assert.match(source, /ctaLabel: 'Corregir en editor'/)
+  assert.match(source, /ctaLabel: 'Continuar editando'/)
+  assert.match(source, /ctaLabel: 'Abrir editor para modificar'/)
+  assert.match(source, /ctaLabel: 'Abrir editor para redactar'/)
   assert.match(source, /line-clamp-2/)
   assert.match(source, /CaseTriageAttachments files=\{adjuntosAnalisis\}/)
   assert.match(source, /const prepararResolucion = \(\) => \{[\s\S]*setIsExpanded\(true\)[\s\S]*setEditandoResolucion\(true\)/)
