@@ -263,14 +263,17 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
 
 export function CaseAction({ queja, runs, children, plazoError, condensed = false, variant = 'panel', heading, presentation = 'default', responsable, actionTitle, actionDetail }: { queja: Queja; runs: QuejaPlazoRun[]; children?: ReactNode; plazoError?: boolean; condensed?: boolean; variant?: CaseSectionVariant; heading?: string; presentation?: 'default' | 'reference'; responsable?: string; actionTitle?: string; actionDetail?: string }) {
   const action = CASE_ACTIONS[queja.estado], deadline = caseDeadline(queja, runs)
-  if (presentation === 'reference') return <CaseSection title="Siguiente paso" variant="plain"><Badge variant={queja.estado_color || varianteEstado('quejas', queja.estado)} className="max-w-full whitespace-normal! text-left">{queja.estado_nombre || queja.estado}</Badge>
+  if (presentation === 'reference') return <section data-case-action-reference className="flex min-h-0 flex-col @min-[1100px]:min-h-[calc(100dvh-14rem)]">
+    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-qms-muted">Siguiente paso</h3>
+    <Badge variant={queja.estado_color || varianteEstado('quejas', queja.estado)} className="max-w-full whitespace-normal! text-left">{queja.estado_nombre || queja.estado}</Badge>
     <CaseCompletionDate queja={queja} />
     {deadline.vence && <div className="mt-3"><p className="mb-1 text-sm text-qms-muted">{deadline.stageTitle}</p><QuejaPlazoIndicator deadline={deadline} /></div>}
     {plazoError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el detalle del calendario.</p>}
-    <h4 className="mt-5 text-base font-semibold">{actionTitle ?? action?.title ?? 'Consultar expediente'}</h4><p className="mt-2 text-sm leading-relaxed text-qms-muted">{actionDetail ?? action?.detail ?? 'Consultar la información registrada.'}</p>
-    <div className="mt-4"><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm">{responsable || 'Por asignar'}</p></div>
-    {children && <div className="mt-4 flex min-w-0 flex-col gap-2">{children}</div>}
-  </CaseSection>
+    <h4 className="mt-5 text-base font-semibold">{actionTitle ?? action?.title ?? 'Consultar expediente'}</h4>
+    <p className="mt-2 text-sm leading-relaxed text-qms-muted">{actionDetail ?? action?.detail ?? 'Consultar la información registrada.'}</p>
+    {queja.estado !== 'Recibido' && <div className="mt-4"><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm">{responsable || 'Por asignar'}</p></div>}
+    {children && <div className="mt-auto flex min-w-0 flex-col gap-2 pt-5">{children}</div>}
+  </section>
   if (condensed) return <CaseSection title="Acciones" variant={variant}>{children}</CaseSection>
   const badgeClassName = variant === 'plain' ? 'max-w-full whitespace-normal justify-start text-left' : undefined
   return <CaseSection title={heading ?? (action?.action ? 'Acción pendiente' : 'Estado del expediente')} variant={variant}><Badge variant={queja.estado_color || varianteEstado('quejas', queja.estado)} className={badgeClassName}>{queja.estado_nombre || queja.estado}</Badge><h4 className="mt-4 text-base font-semibold">{action?.title || 'Consultar expediente'}</h4><p className="mt-2 text-sm leading-relaxed text-qms-muted">{action?.detail || 'Este estado no tiene una acción disponible.'}</p>
