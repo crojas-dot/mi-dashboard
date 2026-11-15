@@ -48,7 +48,7 @@ import { Send, Upload, RotateCcw, History, FileText, Paperclip, Eye, Info } from
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
-import { CASE_ACTIONS, caseDate, getCaseProcessCycle } from '@/app/quejas/components/quejaExpedienteModel'
+import { CASE_ACTIONS, caseDate, getCaseProcessCycle, getCaseTriageCta } from '@/app/quejas/components/quejaExpedienteModel'
 import { CaseSection, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseSidebarShortcut, CaseAction, CaseMailStatus, CaseFinalMailStatus, CaseRequestHeader, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
@@ -616,10 +616,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
 
   const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
     responsable={responsableActual?.nombre}
+    primaryAction={<Button type="button" data-case-triage-expand size="sm" variant="secondary"
+      className="w-full" onClick={() => { setReadOnlyStage(null); setExpanded(true) }}>
+      {getCaseTriageCta(estadoActual, esStaff)} →
+    </Button>}
     footer={<CaseTriageFooter count={!actividadLoading && !actividadError ? actividad.length : undefined}
       onOpen={() => setActivityOpen(true)} />}>
     <div className="space-y-4">
-      {workflowActions && <div className="space-y-2">{workflowActions}</div>}
       {['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual)
         ? <QuejaCierreResumen key={queja.id + ':compact'} queja={queja}
             adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError}
@@ -639,9 +642,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
               <CaseTriageAttachments files={adjuntosCliente} onPreview={setPreviewAdjunto}
                 loading={adjuntosLoading} error={!!adjuntosError} />
             </>}
-      <Button type="button" data-case-triage-expand size="sm" variant="secondary" className="w-full" onClick={() => setExpanded(true)}>
-        {estadoActual === 'Recibido' ? 'Leer expediente completo' : 'Ver expediente completo'} →
-      </Button>
     </div>
   </CaseTriageSummary>
 
