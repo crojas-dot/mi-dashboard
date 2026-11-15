@@ -273,10 +273,12 @@ permisos ni datos persistidos.
   Migración 20261111155021 aplicada. No renumerar ni borrar las 153 quejas existentes;
   el generador salta números ya ocupados y conserva el crecimiento después de 999.
   El borrado para lanzamiento es un trabajo futuro, todavía no autorizado para ejecutar.
-- Procede requiere justificación y responsable; permite instrucciones opcionales (hasta
-  4.000 caracteres) y un oficio de apertura opcional. La transición y los metadatos
-  vinculados se guardan en una sola transacción DB, con la revisión esperada, sin
-  mezclar instrucciones con justificación de procedencia ni introducir autoguardado.
+- Procede requiere un único editor de justificación (que también constituye las
+  instrucciones al investigador), responsable obligatorio y un oficio de apertura
+  opcional. No crear un segundo textarea de instrucciones. La transición y el
+  vínculo del oficio se guardan en una sola transacción DB con revisión esperada,
+  sin autoguardado. Solo en este editor, ocultar la pista gris de formato sin
+  ocultar errores de límite de caracteres.
   La subida a Drive persiste el archivo inmediatamente: cancelar la decisión deja
   el adjunto como archivo ordinario sin asignarle oficio; solo confirmar Procede
   guarda su asociación. La tabla de asignación tiene SELECT autorizado y ninguna
