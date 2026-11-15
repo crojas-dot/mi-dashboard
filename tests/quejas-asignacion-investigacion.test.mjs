@@ -14,6 +14,9 @@ const { default: Assignment } = loadModule('app/quejas/components/QuejaInvestiga
     default: ({ adjuntos }) => createElement('ul', { 'data-test-files': true },
       adjuntos.map(file => createElement('li', { key: file.id }, file.nombre))),
   },
+  '@/components/ui/RichTextContent': {
+    default: ({ value, format }) => createElement('div', { 'data-test-richtext-format': format }, value),
+  },
 })
 const html = props => renderToStaticMarkup(createElement(Assignment, {
   responsable: 'Investigadora Ejemplo', asignacion: null, asignacionLoading: false, asignacionError: false,
@@ -45,11 +48,11 @@ test('etapa 2 presenta responsable, instrucciones, oficio y fecha real del borra
 
 test('sin instrucciones/oficio/borrador no inventa registros ni acciones', () => {
   const value = html()
-  assert.match(value, /Sin instrucciones adicionales/)
+  assert.match(value, /Sin instrucciones registradas/)
   assert.match(value, /Aún no hay un borrador guardado/)
   assert.doesNotMatch(value, /Oficio de apertura|Ver análisis|Ver borrador en curso|Publicar/)
   const failed = html({ borradorError: true, asignacionError: true })
-  assert.match(failed, /No se pudieron consultar las instrucciones/)
+  assert.match(failed, /No se pudieron consultar los archivos vinculados/)
   assert.match(failed, /No se pudo comprobar el estado del borrador/)
 })
 
@@ -63,7 +66,7 @@ test('Procede persiste justificación, responsable e instrucciones con una sola 
   const id = randomUUID(), responsible = randomUUID(), office = randomUUID()
   const result = await svc.iniciarInvestigacionQueja({ id, revision: 7 }, {
     justificacion: '  Procede por evidencia  ', formato: 'plain', responsableId: responsible,
-    instrucciones: '  Verificar 2 documentos. ', oficioAdjuntoId: office,
+    oficioAdjuntoId: office,
   })
   assert.equal(result.revision, 8)
   assert.equal(calls.length, 1)
@@ -71,7 +74,7 @@ test('Procede persiste justificación, responsable e instrucciones con una sola 
   assert.deepEqual(JSON.parse(JSON.stringify(calls[0].args)), {
     p_id: id, p_expected: 7, p_justification: 'Procede por evidencia',
     p_justification_format: 'plain', p_owner: responsible,
-    p_instructions: 'Verificar 2 documentos.', p_office_attachment: office,
+    p_instructions: null, p_office_attachment: office,
   })
   await svc.iniciarInvestigacionQueja({ id, revision: 8 }, {
     justificacion: 'Procede', formato: 'markdown', responsableId: responsible,
@@ -79,7 +82,7 @@ test('Procede persiste justificación, responsable e instrucciones con una sola 
   assert.equal(calls[1].args.p_instructions, null)
   assert.equal(calls[1].args.p_office_attachment, null)
   assert.equal(calls[1].args.p_expected, 8)
-  for (const input of [{ justificacion: ' ' }, { instrucciones: 'x'.repeat(4001) }, { formato: 'html' }, { responsableId: '' }]) {
+  for (const input of [{ justificacion: ' ' }, { formato: 'html' }, { responsableId: '' }]) {
     assert.throws(() => svc.iniciarInvestigacionQueja({ id, revision: 7 }, {
       justificacion: 'Procede', formato: 'plain', responsableId: responsible, ...input,
     }))
@@ -131,7 +134,38 @@ test('Calidad espera propuesta, no reabre evaluación: CTA compacto, plazo real 
   assert.match(modal, /estadoActual === 'En Investigación' \? <QuejaInvestigacionAsignacion/)
   assert.match(modal, /data-assignment-compose/)
   assert.match(modal, /Adjuntar oficio de apertura/)
-  assert.match(modal, /Instrucciones para el investigador/)
+  assert.match(modal, /Escribe la justificación de la decisión e instrucciones para el investigador/)
   assert.match(modal, /iniciarInvestigacionQueja\(workflowQueja/)
   assert.doesNotMatch(modal, /La investigación está a cargo de la persona asignada\./)
+})
+
+test('el editor de Procede es el único campo de instrucciones y su ayuda gris está oculta solo aquí', () => {
+  const modal = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const editor = fs.readFileSync('components/ui/RichTextEditorBody.tsx', 'utf8')
+  const service = fs.readFileSync('lib/services/quejaWorkflowService.ts', 'utf8')
+  const start = modal.indexOf("{decisionProcedencia === 'procede' && <section data-assignment-compose")
+  const end = modal.indexOf("{decisionProcedencia === 'no_procede' &&", start)
+  assert.ok(start >= 0 && end > start)
+  const attachmentArea = modal.slice(start, end)
+  assert.doesNotMatch(attachmentArea, /<textarea|Instrucciones para el investigador \(opcional\)|queja-instrucciones-asignacion/)
+  assert.match(attachmentArea, /Adjuntar oficio de apertura/)
+  assert.match(attachmentArea, /El archivo se almacena en el expediente al subirlo/)
+  assert.match(modal, /showFormattingHint=\{decisionProcedencia !== 'procede'\}/)
+  assert.match(modal, /placeholder=\{decisionProcedencia === 'procede' \? 'Escribe la justificación de la decisión e instrucciones para el investigador\.\.\.'/)
+  assert.doesNotMatch(modal, /instruccionesAsignacion|setInstruccionesAsignacion/)
+  assert.match(editor, /!showFormattingHint && !limitReached/)
+  assert.match(editor, /limitReached[\s\S]*El contenido admite hasta/)
+  assert.match(service, /p_instructions: null/)
+})
+
+test('la investigación muestra la justificación principal en formato rico y conserva instrucciones históricas', () => {
+  const fallback = html({ justificacionProcede: '**Verificar archivos**', justificacionFormato: 'markdown' })
+  assert.match(fallback, /Justificación e instrucciones de Calidad/)
+  assert.match(fallback, /data-test-richtext-format="markdown"/)
+  assert.match(fallback, /\*\*Verificar archivos\*\*/)
+  const old = html({ justificacionProcede: '**Nueva fuente**', justificacionFormato: 'markdown',
+    asignacion: { instrucciones: 'Indicaciones históricas', oficio_adjunto_id: null } })
+  assert.match(old, /Indicaciones históricas/)
+  assert.match(old, /data-test-richtext-format="plain"/)
+  assert.doesNotMatch(old, /\*\*Nueva fuente\*\*/)
 })
