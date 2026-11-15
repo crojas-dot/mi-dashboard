@@ -20,11 +20,20 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   primero; limita el resumen a tres líneas y las evidencias a dos chips con
   "+N más en ampliado". El contenido desplazable es corto; el pie de acceso
   auxiliar queda fijo, sin un segundo scroll de documentos.
-- En Calidad, las seis etapas usan triaje propio: Recibido (solicitud),
-  En Investigación (extracto), Revisión GC (propuesta y decisiones autorizadas),
-  Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede (solo
-  Solicitud/No procedencia). Los documentos íntegros, acciones ampliadas y
-  permisos se conservan; ninguna acción muta sin su handler anterior.
+- REGLA DE ORO: jamás habilitar decisiones de negocio sobre texto truncado.
+  En contraído, Calidad usa exclusivamente CTA superior de consulta según
+  etapa: Recibido «Revisar expediente completo →»; Investigación «Ver expediente
+  completo →»; Revisión GC «Revisar propuesta completa →»; Resuelto
+  «Revisar y Publicar respuesta →» (solo si existe permiso de Calidad);
+  Finalizado/No Procede «Ver expediente completo →». El CTA solo amplía,
+  nunca aprueba, devuelve, deriva, publica ni abre una transición destructiva.
+  Los botones reales «Tomar decisión», «Aprobar», «Devolver», «Derivar a SACP»
+  y «Redactar respuesta» permanecen únicamente en la columna derecha del
+  ampliado, con sus mismos handlers, permisos y validaciones.
+- Las seis etapas usan triaje propio: Recibido (solicitud),
+  En Investigación (extracto), Revisión GC (propuesta resumida y dos evidencias),
+  Resuelto/Finalizado (tarjetas de `QuejaCierreResumen`) y No Procede
+  (Solicitud/No procedencia). Los documentos íntegros y los permisos no cambian.
 - En Mis Quejas, la resolución muestra Sin borrador / Borrador guardado con fecha
   / Cambios sin guardar y acción de ampliar y enfocar el mismo Tiptap.
   Devoluciones pendientes aparecen en amarillo con dos líneas y "Corregir en
