@@ -15,7 +15,7 @@ import { useRespuestaCliente, respuestaClienteKey, type RespuestaClienteContext 
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaInforme } from '@/lib/queries/useQuejaInforme'
 import { informePdfFilename, type QuejaInforme } from '@/lib/utils/quejaInforme'
-import { crearCorreoAcompanamiento, validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
+import { CORREO_QUEJA_LIMITES, crearCorreoAcompanamiento, validarCorreoQueja, type CorreoQueja } from '@/lib/utils/quejaCorreo'
 import { esOficioPublicableQueja, guardarRespuestaClienteBorrador, publicarRespuestaAprobada, transicionarQueja, type RespuestaClienteDraftInput } from '@/lib/services/quejaWorkflowService'
 import { errorMsg, showError, showSuccess } from '@/lib/services/errorToast'
 import type { Queja } from '@/lib/types'
@@ -262,33 +262,44 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
           correo={form.correo} onChange={correo => change({ correo })} disabled={disabled} />
         </div>
         <section data-response-attachments aria-label="Adjuntos del correo" className="shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8 sm:py-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-3">
-            <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
-              <Upload aria-hidden="true" className="size-4" />Subir archivo
-            </Button>
-            {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
-              <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
-              <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
-                className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
-              <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
-                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
-              <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
-                className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
-                onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
-            </div>}
-            {!selectedFile && <p className="text-xs text-qms-muted">{informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}</p>}
-            <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
-              disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+          <div data-response-attachment-hint className="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <p className="min-w-0 flex-1 text-xs leading-relaxed text-qms-muted">
+              {selectedFile ? 'PDF oficial seleccionado para publicar.'
+                : informePendiente ? 'Comprobando el PDF oficial…' : 'Adjuntá el PDF oficial para poder publicar.'}
+            </p>
+            <span data-response-character-count aria-label="Caracteres del mensaje" className="shrink-0 text-xs tabular-nums text-qms-muted">
+              {form.correo.cuerpo.length} / {CORREO_QUEJA_LIMITES.cuerpo.toLocaleString('es-CR')}
+            </span>
           </div>
-          {noProcede && <div className="mt-4 border-t border-qms-border/60 pt-3">
-            <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
-              const visit = scope.capture(), context = scope.captureContext()
-              reportIsCurrent.current = () => visit() && context()
-              setEditingReport(true)
-            }}><Pencil aria-hidden="true" className="size-4" />Preparar documento de no procedencia</Button>
-          </div>}
+          <div data-response-upload-row className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+              <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
+                <Upload aria-hidden="true" className="size-4" />Subir archivo
+              </Button>
+              {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
+                <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
+                <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
+                  className="min-w-0 max-w-[220px] cursor-pointer truncate text-left text-sm font-medium text-qms-dark hover:text-qms-primary sm:max-w-[400px]">{selectedFile.nombre}</button>
+                <button type="button" aria-label="Previsualizar PDF" title="Previsualizar PDF" onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-primary"><Eye aria-hidden="true" className="size-4" /></button>
+                <button type="button" aria-label="Quitar PDF seleccionado" title="Quitar archivo seleccionado" disabled={disabled}
+                  className="inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-danger disabled:opacity-50"
+                  onClick={() => change({ adjuntoId: null })}><X aria-hidden="true" className="size-4" /></button>
+              </div>}
+              <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
+                disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
+            </div>
+            {noProcede && <div className="ml-auto shrink-0">
+              <Button size="sm" variant="ghost" disabled={disabled} title="Opcional: preparar el documento de no procedencia" onClick={() => {
+                const visit = scope.capture(), context = scope.captureContext()
+                reportIsCurrent.current = () => visit() && context()
+                setEditingReport(true)
+              }}><Pencil aria-hidden="true" className="size-4" />Preparar documento (opcional)</Button>
+            </div>}
+          </div>
           {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
           {informeError && !report && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}
+
         </section>
         </div>
       </div>}
