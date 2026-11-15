@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import Skeleton from '@/components/ui/Skeleton'
 import type { RichTextFormat } from '@/lib/utils/richText'
+import type { ReactNode } from 'react'
 
 export interface RichTextEditorProps {
   id: string
@@ -28,6 +29,8 @@ export interface RichTextEditorProps {
   minHeight?: number
   maxLength?: number
   className?: string
+  /** Control de contexto a la derecha de la barra, sin desplazar el editor. */
+  toolbarActions?: ReactNode
 }
 
 // Las bandejas no descargan ProseMirror: el paquete llega solo al montar el editor.
