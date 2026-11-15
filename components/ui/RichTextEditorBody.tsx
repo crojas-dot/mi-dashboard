@@ -298,6 +298,7 @@ export default function RichTextEditorBody({
   readOnly = false,
   autoFocus = false,
   placeholder,
+  showFormattingHint = true,
   required,
   minHeight = 240,
   maxLength = 10000,
@@ -760,7 +761,7 @@ export default function RichTextEditorBody({
               ? 'status'
               : undefined
           }
-          className={`${readOnly ? 'sr-only' : 'mt-1 shrink-0 text-xs'} ${
+          className={`${readOnly || (!showFormattingHint && !limitReached) ? 'sr-only' : 'mt-1 shrink-0 text-xs'} ${
             isDocument
               ? 'px-5 py-1 sm:px-8'
               : ''
@@ -772,7 +773,7 @@ export default function RichTextEditorBody({
         >
           {limitReached
             ? `El contenido admite hasta ${maxLength.toLocaleString('es-CR')} caracteres. Reducí el texto para continuar.`
-            : 'Títulos, listas, citas y separadores. Ctrl+Z para deshacer.'}
+            : showFormattingHint ? 'Títulos, listas, citas y separadores. Ctrl+Z para deshacer.' : 'Editor de texto enriquecido.'}
         </p>
       ) : (
         <p
