@@ -61,8 +61,9 @@ sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
   Cancelar/Guardar y la validación del responsable no cambian. La pista de formato
   del editor se oculta solo aquí, no los errores de límite.
   La columna derecha informa «Esperar propuesta del investigador» con duración real
-  del calendario QMS, sin el botón «Ver análisis» en esa etapa; dicho botón sigue
-  disponible cuando corresponda a Revisión GC. No inventar un visor ni una
+  del calendario QMS. En **Quejas**, ningún estado incluye el botón «Ver análisis»;
+  Revisión GC ya presenta la propuesta y sus adjuntos en el lienzo central.
+  Ese botón se reserva para **Mis Quejas**. No inventar un visor ni una
   propuesta enviada antes de tiempo.
 - En Mis Quejas, el «Siguiente paso» adapta título, contexto, icono y CTA:
   Sin borrador «Redactar resolución» / «Abrir editor para redactar →»;
