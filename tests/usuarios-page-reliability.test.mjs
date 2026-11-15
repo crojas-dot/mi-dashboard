@@ -38,7 +38,7 @@ function pageHarness({ user = actor, initialized = true, refresh = async () => {
     '@/components/ui/Table': { Table: 'Table', TableHead: 'TableHead', TableHeaderCell: 'TableHeaderCell', TableRow: 'TableRow', TableCell: 'TableCell' },
   }
   for (const name of ['LoadingSkeleton', 'PageHeader', 'Badge', 'EmptyState', 'Button', 'Select']) mocks['@/components/ui/' + name] = { default: name }
-  for (const name of ['UsuarioFormModal', 'PasswordModal', 'ResetPasswordModal', 'ConfirmDialog']) mocks['@/components/usuarios/' + name] = { default: name }
+  for (const name of ['UsuarioFormModal', 'ConfirmDialog']) mocks['@/components/usuarios/' + name] = { default: name }
   const { default: Page } = loadModule('app/usuarios/page.tsx', mocks)
   const visit = element => Array.isArray(element) ? element.flatMap(visit) : element?.props ? [element, ...visit(element.props.children)] : []
   const text = element => Array.isArray(element) ? element.map(text).join(' ') : element?.props ? text(element.props.children) : typeof element === 'string' ? element : ''
@@ -76,7 +76,7 @@ test('el guard real no presenta filas ni controles de administración sin un adm
     assert.equal(page.component('Table'), undefined)
     assert.equal(page.queryCalls.at(-1)[1], false)
     assert.equal(page.component('UsuarioFormModal'), undefined)
-    assert.equal(page.component('PasswordModal'), undefined)
+    assert.equal(page.component('ConfirmDialog'), undefined)
     assert.equal(page.component('LoadingSkeleton').props.label, 'Verificando acceso…')
     page.runEffects()
     assert.deepEqual(page.redirects, state.initialized === false ? [] : ['/'])
@@ -84,22 +84,23 @@ test('el guard real no presenta filas ni controles de administración sin un adm
   }
 })
 
-test('el alta conserva la contraseña y cierra el formulario antes de esperar un refresco fallido', async () => {
+test('el alta conserva el modal activo para copiar la contraseña y no crea una segunda ventana', async () => {
   const refresh = deferred()
   const page = pageHarness({ refresh: () => refresh.promise })
   page.button('Nuevo usuario').props.onClick(); page.render()
   const pending = page.component('UsuarioFormModal').props.onSuccess({ tempPassword: 'Synthetic-Password-123' })
   page.render()
-  assert.equal(page.component('UsuarioFormModal').props.open, false)
+  assert.equal(page.component('UsuarioFormModal').props.open, true)
   assert.equal(page.component('UsuarioFormModal').props.usuario, null)
-  assert.equal(page.component('PasswordModal').props.password, 'Synthetic-Password-123')
+  assert.equal(page.component('PasswordModal'), undefined)
+  assert.equal(page.component('ResetPasswordModal'), undefined)
   assertRefreshCall(page)
   const failure = new TypeError('Failed to fetch')
   refresh.reject(failure)
   await assert.rejects(pending, error => error === failure)
   page.render()
-  assert.equal(page.component('PasswordModal').props.password, 'Synthetic-Password-123')
-  assert.equal(page.requests.length, 0, 'el callback de refresco no vuelve a escribir el usuario')
+  assert.equal(page.component('UsuarioFormModal').props.open, true)
+  assert.equal(page.requests.length, 0, 'el refresco no vuelve a crear el usuario')
 })
 
 test('un borrado rechazado conserva la selección y propaga el error al modal sin fingir éxito', async () => {
@@ -137,6 +138,7 @@ test('un borrado escrito termina aunque falle el refresco y muestra el fallo del
 test('la propia cuenta no inicia borrado ni cambio de estado aunque se invoque el callback', async () => {
   const own = { ...other, ...actor }
   const page = pageHarness({ rows: [own] })
+  page.button('Gestionar', own.id).props.onClick(); page.render()
   await assert.rejects(page.component('UsuarioFormModal').props.onDelete(own), /propia cuenta/)
   const disable = page.button('Desactivar', own.id)
   assert.equal(disable.props.disabled, true)
@@ -202,31 +204,39 @@ test('activar o desactivar mantiene el bloqueo hasta el refresco y no repite una
   }
 })
 
-test('el callback de reset propaga el fallo de refresco sin escribir la contraseña otra vez', async () => {
+test('la opción Restablecer abre Seguridad y acceso en el mismo modal', async () => {
   const failure = new TypeError('Failed to fetch')
   const page = pageHarness({ refresh: async () => { throw failure } })
-  await assert.rejects(page.component('ResetPasswordModal').props.onSaved(), error => error === failure)
+  page.button('Resetear', other.id).props.onClick(); page.render()
+  const form = page.component('UsuarioFormModal')
+  assert.equal(form.props.mode, 'editar')
+  assert.equal(form.props.usuario.id, other.id)
+  assert.equal(form.props.initialTab, 'seguridad')
+  assert.equal(form.props.open, true)
+  assert.equal(page.component('ResetPasswordModal'), undefined)
+  await assert.rejects(form.props.onPasswordSaved(), error => error === failure)
   assertRefreshCall(page)
   assert.equal(page.requests.length, 0)
 })
 
-
-test('Gestión de accesos contiene Usuarios y Roles, sin perder los callbacks de usuario', () => {
+test('Gestión de accesos conserva Usuarios y Roles con reinicio de estado al abrir', () => {
   const page = pageHarness()
   const markup = page.render()
   const tabs = []
   const visit = value => Array.isArray(value) ? value.forEach(visit) : value?.props ? (value.props.role === 'tab' && tabs.push(value), visit(value.props.children)) : undefined
   visit(markup)
   assert.deepEqual(tabs.map(tab => tab.props.children), ['Usuarios', 'Roles y permisos'])
-  assert.ok(page.component('UsuarioFormModal').props.onResetPassword)
+  assert.equal(page.component('UsuarioFormModal'), undefined)
   page.button('Gestionar', other.id).props.onClick()
   page.render()
-  page.component('UsuarioFormModal').props.onResetPassword(other)
+  assert.equal(page.component('UsuarioFormModal').props.initialTab, 'detalles')
+  page.component('UsuarioFormModal').props.onClose()
   page.render()
-  assert.equal(page.component('UsuarioFormModal').props.open, false)
-  assert.equal(page.component('ResetPasswordModal').props.usuario.id, other.id)
+  assert.equal(page.component('UsuarioFormModal'), undefined)
+  page.button('Resetear', other.id).props.onClick()
+  page.render()
+  assert.equal(page.component('UsuarioFormModal').props.initialTab, 'seguridad')
 })
-
 
 test('paginación respeta filtros, evita páginas inexistentes y muestra el contador', () => {
   const rows = Array.from({length: 27}, (_, i) => ({ ...other, id: 'persona-' + i, nombre: 'Persona ' + i }))
