@@ -510,7 +510,21 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
               <Button size="sm" variant="secondary" data-resolution-assist
                 className="shrink-0 border-qms-primary/25 bg-qms-primary-soft text-qms-primary hover:bg-qms-hover-bg"
                 aria-label="Asistencia para la resolución" title="Generar análisis IA"
-                onClick={handleAnalisisAuto} loading={aiAutoLoading} loadingLabel="Analizando…"
+                onClick={() => {
+                   const version = draftVersions.current.resolucion
+                   void handleAnalisisAuto(result => {
+                     if (version !== draftVersions.current.resolucion) return
+                     const contenido = resolucion.trim() ? `${resolucion}\n\n${result}` : result
+                     if (contenido.length > DOCUMENT_LIMIT) {
+                       showError(null, 'El análisis supera el máximo de caracteres del editor.')
+                       return
+                     }
+                     draftVersions.current.resolucion++
+                     setResolucion(contenido)
+                     setResolucionFormato('markdown')
+                     if (resolucionRevision === null) setResolucionRevision(queja.revision)
+                   })
+                 }} loading={aiAutoLoading} loadingLabel="Analizando…"
                 disabled={resolutionPending}>
                 <WandSparkles aria-hidden="true" className="size-4" />Asistencia IA
               </Button>
@@ -524,27 +538,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 {resolutionOverlay ? <Minimize aria-hidden="true" className="size-5" /> : <Maximize aria-hidden="true" className="size-5" />}
               </Button>
             </div> : undefined}
-            className="mis-quejas-resolution-editor" /></div>
-          {aiResult && editandoResolucion && <section data-resolution-assistance role="region"
-            aria-label="Análisis sugerido" className="min-w-0 shrink-0 border-t border-qms-border bg-qms-hover-bg/30 px-5 py-3 sm:px-8">
-            <div className="flex min-w-0 items-center justify-between gap-3">
-              <p className="text-sm font-semibold text-qms-dark">Análisis sugerido</p>
-              <button type="button" aria-label="Cerrar sugerencia" onClick={() => setAiResult('')}
-                className="inline-flex size-7 shrink-0 items-center justify-center rounded-button text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark">
-                <X aria-hidden="true" className="size-4" />
-              </button>
-            </div>
-            <div className="mt-2 max-h-40 overflow-y-auto overscroll-contain rounded-card border border-qms-border bg-qms-surface p-3 text-sm leading-relaxed">
-              <RichTextContent value={aiResult} format="markdown" />
-            </div>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-qms-muted">Revisá la sugerencia: no se guarda ni se envía automáticamente.</p>
-              <Button size="sm" variant="secondary" disabled={aiResult.length > DOCUMENT_LIMIT || !!resolucion.trim() || !investigando}
-                onClick={() => { draftVersions.current.resolucion++; setResolucion(aiResult); setResolucionFormato('markdown'); if (resolucionRevision === null) setResolucionRevision(queja.revision); setAiResult('') }}>
-                Usar en resolución
-              </Button>
-            </div>
-          </section>}
+            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#f2f7fd]" /></div>
           <div data-resolution-footer className="sticky bottom-0 z-20 flex shrink-0 min-w-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>
