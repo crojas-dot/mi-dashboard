@@ -1,0 +1,54 @@
+name: Reapertura Quejas — validación aislada
+
+on:
+  pull_request:
+    paths:
+      - 'app/quejas/**'
+      - 'app/mis-quejas/**'
+      - 'components/quejas/**'
+      - 'components/header/NotificationDropdown.tsx'
+      - 'components/usuarios/UsuarioFormModal.tsx'
+      - 'lib/services/quejaWorkflowService.ts'
+      - 'supabase/migrations/*quejas_reapertura*.sql'
+      - 'scripts/test-quejas-reapertura-db.mjs'
+      - '.github/workflows/quejas-reapertura-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  reopening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.6
+        env:
+          POSTGRES_USER: qms_fixture
+          POSTGRES_PASSWORD: fixture
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U qms_fixture -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: node --test tests/queja-deadline.test.mjs tests/quejas-bandeja.test.mjs tests/queja-publicacion.test.mjs tests/mis-quejas-workspace.test.mjs
+      - run: npm install --no-save pg@8.16.3
+      - run: node scripts/test-quejas-reapertura-db.mjs
+        env:
+          QMS_PG_URL: postgresql://qms_fixture:fixture@127.0.0.1:5432/postgres
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-sin-credenciales-reales
