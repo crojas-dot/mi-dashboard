@@ -107,3 +107,17 @@ test('finalizados tienen prioridad sobre el plazo y siempre son grises', () => {
     assert.equal(result.variant, 'gray')
   }
 })
+
+test('reapertura presenta días hábiles capturados sin afectar expedientes normales', () => {
+  const fecha = '2026-11-30T23:59:59Z'
+  const reopened = getQuejaDeadline({
+    estado: 'En Investigación', reabierta: true,
+    bandeja_plazo_vence: fecha, reapertura_dias_habiles_restantes: 15,
+  }, now)
+  assert.equal(reopened.label, 'Vence en 15 días hábiles')
+  const normal = getQuejaDeadline({
+    estado: 'En Investigación', reabierta: false,
+    bandeja_plazo_vence: fecha, reapertura_dias_habiles_restantes: 15,
+  }, now)
+  assert.match(normal.label, /^Vence en \d+ días$/)
+})
