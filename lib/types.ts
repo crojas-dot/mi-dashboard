@@ -18,6 +18,10 @@ export interface Queja {
   fecha_sla?: string
   fecha_limite_investigacion?: string
   fecha_cierre?: string
+  ultima_actividad_at?: string | null
+  sin_procesar?: boolean
+  es_nuevo?: boolean
+  fecha_orden_actividad?: string
   resolucion?: string
   resolucion_formato?: 'plain' | 'markdown'
   notas?: string
