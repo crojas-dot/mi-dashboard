@@ -26,7 +26,7 @@ function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams
     prioridad: params.prioridad ?? '',
     responsableId: params.responsableId ?? '',
     plazo: params.plazo ?? '',
-    soloFolio: params.soloFolio ?? false,
+    query = soloFolio ? query.or(`folio.ilike.${pattern}`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
   }
 }
 
