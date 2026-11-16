@@ -46,9 +46,9 @@ test('Quejas y Mis Quejas comparten columnas y segunda línea sin modificar esta
     assert.match(source, /<QuejaFechaIngreso queja=\{q\} ahora=\{ahora\}/)
     assert.match(source, /estadoQuejaEnTabla\(q.estado, q.estado_nombre\)/)
     assert.match(source, />Fecha de ingreso<\/th>/)
-    assert.match(source, /table-fixed min-w-\[1200px\]/)
-    assert.match(source, /<col className="w-\[14%\]"\s*\/>/)
-    assert.match(source, /<col className="w-\[17%\]"\s*\/>/)
+    assert.match(source, /table-fixed min-w-\[1100px\]/)
+    assert.match(source, /<col className="w-\[16%\]"\s*\/>/)
+    assert.match(source, /<col className="w-\[18%\]"\s*\/>/)
     assert.doesNotMatch(source, /toLocaleDateString\('es-ES'\)/)
   }
 })
