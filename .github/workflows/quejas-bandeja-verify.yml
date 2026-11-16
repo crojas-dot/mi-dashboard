@@ -1,0 +1,41 @@
+name: Verificación de bandeja Quejas
+
+on:
+  pull_request:
+    paths:
+      - 'app/quejas/**'
+      - 'app/mis-quejas/**'
+      - 'components/quejas/**'
+      - 'components/Sidebar.tsx'
+      - 'hooks/useRealtimeSubscription.ts'
+      - 'lib/queries/useQuejas.ts'
+      - 'lib/utils/quejaDeadline.ts'
+      - 'lib/types.ts'
+      - 'supabase/migrations/*quejas_bandeja*.sql'
+      - 'tests/queja-deadline.test.mjs'
+      - 'tests/quejas-bandeja.test.mjs'
+      - 'tests/pagination-active.test.mjs'
+      - 'tests/data-reliability.test.mjs'
+      - '.github/workflows/quejas-bandeja-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  bandeja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: node --test tests/queja-deadline.test.mjs tests/quejas-bandeja.test.mjs tests/pagination-active.test.mjs tests/data-reliability.test.mjs
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-sin-credenciales-reales
