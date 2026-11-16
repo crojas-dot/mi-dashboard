@@ -10,7 +10,7 @@ const base = {
   fecha: '2026-11-10T18:00:00Z', estado: 'En Investigación',
   ultima_actividad_at: null, es_nuevo: false,
 }
-const detalle = overrides => detalleFechaIngreso({ ...base, ...overrides }, ahora)
+const detalle = overrides => JSON.parse(JSON.stringify(detalleFechaIngreso({ ...base, ...overrides }, ahora)))
 
 test('fecha de ingreso usa Costa Rica y omite subtítulo sin evidencia de actividad', () => {
   assert.equal(fechaIngresoCorta('2026-11-14T18:00:00Z'), '14 nov 2026')
@@ -47,8 +47,8 @@ test('Quejas y Mis Quejas comparten columnas y segunda línea sin modificar esta
     assert.match(source, /estadoQuejaEnTabla\(q.estado, q.estado_nombre\)/)
     assert.match(source, />Fecha de ingreso<\/th>/)
     assert.match(source, /table-fixed min-w-\[1200px\]/)
-    assert.match(source, /<col className="w-\[14%\]"\/>/)
-    assert.match(source, /<col className="w-\[17%\]"\/>/)
+    assert.match(source, /<col className="w-\[14%\]"\s*\/>/)
+    assert.match(source, /<col className="w-\[17%\]"\s*\/>/)
     assert.doesNotMatch(source, /toLocaleDateString\('es-ES'\)/)
   }
 })
