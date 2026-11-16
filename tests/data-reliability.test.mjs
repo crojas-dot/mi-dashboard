@@ -141,11 +141,11 @@ test('QueryProvider recupera caché invalidada al volver y conserva consultas fr
 })
 
 test('Quejas pagina sin repetir filas cuando varias tienen la misma fecha', async () => {
-  const db = fakeDatabase({ qms_quejas: ['q4', 'q2', 'q1', 'q3'].map((id) => ({ id, fecha: '2026-09-16' })) })
+  const db = fakeDatabase({ qms_quejas_bandeja: ['q4', 'q2', 'q1', 'q3'].map((id) => ({ id, fecha: '2026-09-16', ultima_actividad_relevante_at: '2026-09-16T12:00:00Z' })) })
   const { fetchQuejas } = loadModule('lib/queries/useQuejas.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
   const first = await fetchQuejas({ pageSize: 2 })
   const second = await fetchQuejas({ page: 1, pageSize: 2 })
-  assert.deepEqual([...first.data, ...second.data].map((row) => row.id), ['q1', 'q2', 'q3', 'q4'])
+  assert.deepEqual([...first.data, ...second.data].map((row) => row.id), ['q4', 'q3', 'q2', 'q1'])
   assert.equal(first.count, 4)
 })
 
