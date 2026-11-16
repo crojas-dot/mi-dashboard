@@ -345,7 +345,7 @@ permisos ni datos persistidos.
   el alto habitual. Guardar siempre mantiene
   el azul primary incluso deshabilitado; Editar se muestra arriba del borrador
   guardado y reabre el editor **sin expansión automática**. El tamaño base es
-  `h-[clamp(420px,58dvh,560px)]`; solo el botón Expandir aplica el overlay
+  `h-[clamp(360px,calc(100dvh-110px),700px)]`; solo el botón Expandir aplica el overlay
   vertical, sin ampliar todo el expediente.
   Guardar conserva borrador remoto/versionado, sin cambiar estado, revisión de Queja,
   propuesta enviada ni avisar a GC/cliente. Las ediciones
@@ -903,7 +903,7 @@ en repositorio no implica que se hayan ejecutado las pruebas ni que esté public
   autenticado, antes de afirmar entrega. No crear usuarios reales para QA.
 - **Mis Quejas (ajuste del 15-11):** pulsar «Editar» sobre el borrador guardado
   reabre el mismo Tiptap con `resolutionOverlay=null` y altura normal
-  `clamp(420px,58dvh,560px)`. La expansión vertical solo ocurre si se pulsa
+  `clamp(360px,calc(100dvh-110px),700px)`. La expansión vertical solo ocurre si se pulsa
   explícitamente Expandir. El workspace debe continuar ampliándose al elegir
   «Redactar/Corregir» desde el triaje compacto, porque el documento completo
   no se edita en esa vista, pero esto NO amplía automáticamente el editor vertical.
