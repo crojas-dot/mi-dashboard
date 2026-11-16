@@ -936,8 +936,8 @@ antes de afirmar que una modificación de `main` está disponible en producción
   Si hay actividad real: hoy → azul semibold; ayer / 2–30 → gris;
   más de 30 → fecha exacta CR. Fecha de ingreso es SIEMPRE la primera línea.
 - Las columnas son Folio / Cliente / Tipo / Estado / Plazo / Fecha de ingreso.
-  `table-fixed` con colgroup 14/24/12/17/16/17: Folio más ajustado aproxima
-  Cliente, liberando espacio para Fecha. Ancho mínimo 1200 px y scroll solo
+  `table-fixed` con colgroup 16/22/12/15/17/18: Folio más ajustado aproxima
+  Cliente, liberando espacio para Fecha. Ancho mínimo 1100 px y scroll solo
   cuando es necesario; la tabla mantiene su geometría al abrir el workspace.
   Recortar **solo** `Pendiente de Revisión GC` → «Revisión GC» en presentación,
   sin cambiar el estado guardado, el catálogo ni las transiciones.
