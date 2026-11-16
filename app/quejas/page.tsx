@@ -63,7 +63,7 @@ export default function QuejasPage() {
   const { data: estados = [] } = useCatalogoTipo('estado_queja', 'quejas')
 
   useRealtimeSubscription({
-    table: 'queja_bandeja_actividad',
+    table: data?.origen === 'legacy' ? 'quejas' : 'queja_bandeja_actividad',
     invalidateKeys: [
       [...queryKeys.quejas],
       quejasEstadisticasKey,
@@ -113,7 +113,7 @@ export default function QuejasPage() {
     <div className="flex h-full min-w-0 flex-col">
       <PageHeader title="Quejas" />
 
-      <QuejasToolbar search={search} estado={filtroEstado} plazo={filtroPlazo} estados={estadosDisponibles} noVistas={noVistasCount}
+      <QuejasToolbar search={search} estado={filtroEstado} plazo={filtroPlazo} plazoDisabled={data?.origen === 'legacy'} estados={estadosDisponibles} noVistas={noVistasCount}
         onSearch={value => { setSearch(value); setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }} onPlazo={value => { setFiltroPlazo(value); setPage(0) }}
         onMarcarVistas={() => marcarTodasVistas(quejaIds)} onNueva={() => setNuevaOpen(true)} />
 
