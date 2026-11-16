@@ -147,7 +147,7 @@ function panelFixture(options = {}) {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props || value.props.hidden || value.type === 'Modal' && !value.props.open) return []
     if (typeof value.type === 'function' && ['QuejaPublicacionPanel', 'Tabs'].includes(value.type.name)) return visit(value.type(value.props))
-    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)]
+    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.requestFooter)]
   }
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
@@ -253,7 +253,7 @@ test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
     const panel = panelFixture()
     panel.select({ estado })
-    const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+    const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
     assert.ok(shortcut, 'historial accesible para ' + estado)
     shortcut.props.onOpen()
     panel.render()
@@ -261,7 +261,7 @@ test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
   }
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
-  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
   assert.ok(shortcut)
   shortcut.props.onOpen()
   panel.render()
@@ -271,7 +271,7 @@ test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
 test('Reapertura exige motivo y no emite un segundo RPC durante el primer envío', async () => {
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
-  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
   assert.ok(shortcut)
   shortcut.props.onOpen()
   panel.render()
