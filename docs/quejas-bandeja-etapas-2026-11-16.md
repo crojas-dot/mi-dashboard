@@ -17,7 +17,7 @@ No se recuperó código de implementaciones anteriores.
 ## Etapas
 
 0. Base medida; fecha numérica normalizada. Ocho escenarios sin cambios de altura, filas visibles ni desbordamiento; fecha CR comprobada en cruce de medianoche UTC.
-1. Etiqueta abreviada de revisión GC: pendiente.
+1. «Revisión GC» solo en las dos tablas. Conserva ID, filtros y color. Ocho escenarios sin variación de altura/densidad/desbordamiento.
 2. Distribución horizontal: pendiente.
 3. Encabezado Fecha de ingreso: pendiente.
 4. Segunda línea sin aumentar altura: pendiente.

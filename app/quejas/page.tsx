@@ -26,7 +26,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { showError } from '@/lib/services/errorToast'
 import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA, tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
-import { formatFechaIngreso } from '@/lib/utils/quejaBandeja'
+import { estadoQuejaEnTabla, formatFechaIngreso } from '@/lib/utils/quejaBandeja'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -158,7 +158,7 @@ export default function QuejasPage() {
                         <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                         <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
                         <td>{tipoVisible(q)}</td>
-                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{q.estado_nombre || q.estado}</Badge></td>
+                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q)}</Badge></td>
                         <td className="whitespace-nowrap"><QuejaPlazoIndicator deadline={sla} /></td>
                         <td className="pr-6! whitespace-nowrap text-qms-muted">{formatFechaIngreso(q.fecha)}</td>
                       </tr>

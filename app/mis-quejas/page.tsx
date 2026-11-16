@@ -17,7 +17,7 @@ import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
-import { formatFechaIngreso } from '@/lib/utils/quejaBandeja'
+import { estadoQuejaEnTabla, formatFechaIngreso } from '@/lib/utils/quejaBandeja'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -94,7 +94,7 @@ export default function MisQuejasPage() {
                       <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                       <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
                       <td>{tipoVisible(q)}</td>
-                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{q.estado_nombre || q.estado}</Badge></td>
+                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q)}</Badge></td>
                       <td className="whitespace-nowrap text-qms-muted">
                         <QuejaPlazoIndicator deadline={deadline} />
                       </td>
