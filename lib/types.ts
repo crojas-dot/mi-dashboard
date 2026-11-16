@@ -34,6 +34,7 @@ export interface Queja {
   plazo_etapa?: string | null
   plazo_situacion?: string | null
   plazo_dias?: number | null
+  plazo_dias_operativos?: number | null
   responsable_id?: string
   derivado_sacp_id?: string
 }
