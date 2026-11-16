@@ -90,6 +90,9 @@ test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras r
     initialTab: 'seguridad',
     usuario: { id: 'otro', nombre: 'Otro', rol: 'colaborador', estado: 'activo' },
   })
+  assert.equal(modal.button('Guardar contraseña'), undefined, 'al abrir Seguridad, no se genera ni muestra una clave sin pedirla')
+  modal.button('Generar contraseña segura').props.onClick()
+  modal.render()
   const pending = modal.button('Guardar contraseña').props.onClick()
   assert.equal(modal.requests.length, 1)
   assert.equal(modal.requests[0].args[0], 'PATCH')
@@ -101,6 +104,7 @@ test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras r
   assert.equal(modal.requests.length, 1)
   modal.requests[0].resolve()
   await pending
+  await new Promise(resolve => setImmediate(resolve))
   modal.render()
   assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.button('Guardar contraseña'), undefined)
@@ -121,6 +125,7 @@ test('contraseña manual se escribe y guarda dentro del modal existente', async 
   assert.equal(modal.requests[0].args[1].newPassword, 'Manual-12345!')
   modal.requests[0].resolve()
   await pending
+  await new Promise(resolve => setImmediate(resolve))
   modal.render()
   assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.closes(), 0)

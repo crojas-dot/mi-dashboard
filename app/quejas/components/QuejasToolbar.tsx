@@ -7,18 +7,21 @@ import Select from '@/components/ui/Select'
 interface QuejasToolbarProps {
   search: string
   estado: string
+  plazo: string
+  plazoDisabled?: boolean
   estados: { valor: string; etiqueta?: string }[]
   noVistas: number
   onSearch: (value: string) => void
   onEstado: (value: string) => void
+  onPlazo: (value: string) => void
   onMarcarVistas: () => void
   onNueva: () => void
 }
 
 /** Distribución según el espacio disponible en el módulo, no el ancho de la ventana. */
-export default function QuejasToolbar({ search, estado, estados, noVistas, onSearch, onEstado, onMarcarVistas, onNueva }: QuejasToolbarProps) {
+export default function QuejasToolbar({ search, estado, plazo, plazoDisabled = false, estados, noVistas, onSearch, onEstado, onPlazo, onMarcarVistas, onNueva }: QuejasToolbarProps) {
   return <div className="@container mb-4 shrink-0">
-    <div role="group" aria-label="Buscar y filtrar quejas" className={`grid grid-cols-2 items-center gap-3 ${noVistas > 0 ? '@min-[720px]:grid-cols-[auto_minmax(180px,1fr)_180px_auto]' : '@min-[720px]:grid-cols-[minmax(180px,1fr)_180px_auto]'}`}>
+    <div role="group" aria-label="Buscar y filtrar quejas" className={`grid grid-cols-2 items-center gap-3 ${noVistas > 0 ? '@min-[720px]:grid-cols-[auto_minmax(150px,1fr)_140px_140px_auto]' : '@min-[720px]:grid-cols-[minmax(150px,1fr)_140px_140px_auto]'}`}>
       {noVistas > 0 && <Button variant="secondary" onClick={onMarcarVistas} title="Marcar todas las quejas visibles como vistas" className="order-last col-span-2 min-h-11 justify-self-start text-xs @min-[720px]:order-none @min-[720px]:col-span-1 @min-[720px]:min-h-10">
         <Eye className="h-3.5 w-3.5" aria-hidden="true" />{noVistas} sin ver
       </Button>}
@@ -28,6 +31,13 @@ export default function QuejasToolbar({ search, estado, estados, noVistas, onSea
       </div>
       <Select aria-label="Estado" className="h-11 @min-[720px]:h-10" value={estado} onChange={event => onEstado(event.target.value)}>
         <option value="">Estados</option>{estados.map(option => <option key={option.valor} value={option.valor}>{option.etiqueta ?? option.valor}</option>)}
+      </Select>
+      <Select aria-label="Plazo" title={plazoDisabled ? "Filtro disponible al activar la nueva vista en Supabase" : undefined} disabled={plazoDisabled} className="h-11 @min-[720px]:h-10" value={plazo} onChange={event => onPlazo(event.target.value)}>
+        <option value="">Plazos</option>
+        <option value="por_vencer">Por vencer</option>
+        <option value="vencidos">Vencidos</option>
+        <option value="sin_plazo">Sin plazo</option>
+        <option value="completados">Completados</option>
       </Select>
       <Button onClick={onNueva} className="col-span-1 min-h-11 w-full @min-[720px]:col-span-1 @min-[720px]:min-h-10 @min-[720px]:w-auto"><Plus className="h-4 w-4" aria-hidden="true" />Nueva queja</Button>
     </div>

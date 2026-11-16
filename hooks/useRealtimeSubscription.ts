@@ -7,6 +7,7 @@ import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 
 type TableName =
   | 'quejas'
+  | 'queja_bandeja_actividad'
   | 'notificaciones'
   | 'acciones'
   | 'auditorias'

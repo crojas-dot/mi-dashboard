@@ -33,6 +33,7 @@ export default function QuejasPage() {
   const [search, setSearch] = useState('')
   const deferredSearch = useDeferredValue(search)
   const [filtroEstado, setFiltroEstado] = useState('')
+  const [filtroPlazo, setFiltroPlazo] = useState('')
   const [nuevaOpen, setNuevaOpen] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState<Queja | null>(null)
   const [detalleNavigationLocked, setDetalleNavigationLocked] = useState(false)
@@ -48,6 +49,7 @@ export default function QuejasPage() {
     pageSize,
     search: deferredSearch,
     estado: filtroEstado,
+    plazo: filtroPlazo,
   })
   const quejas = useMemo(() => data?.data ?? [], [data?.data])
   const totalCount = data?.count ?? 0
@@ -61,7 +63,7 @@ export default function QuejasPage() {
   const { data: estados = [] } = useCatalogoTipo('estado_queja', 'quejas')
 
   useRealtimeSubscription({
-    table: 'quejas',
+    table: data?.origen === 'legacy' ? 'quejas' : 'queja_bandeja_actividad',
     invalidateKeys: [
       [...queryKeys.quejas],
       quejasEstadisticasKey,
@@ -111,8 +113,8 @@ export default function QuejasPage() {
     <div className="flex h-full min-w-0 flex-col">
       <PageHeader title="Quejas" />
 
-      <QuejasToolbar search={search} estado={filtroEstado} estados={estadosDisponibles} noVistas={noVistasCount}
-        onSearch={value => { setSearch(value); setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }}
+      <QuejasToolbar search={search} estado={filtroEstado} plazo={filtroPlazo} plazoDisabled={data?.origen === 'legacy'} estados={estadosDisponibles} noVistas={noVistasCount}
+        onSearch={value => { setSearch(value); setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }} onPlazo={value => { setFiltroPlazo(value); setPage(0) }}
         onMarcarVistas={() => marcarTodasVistas(quejaIds)} onNueva={() => setNuevaOpen(true)} />
 
       {/* Reservar solo la ventana de la tabla: sus columnas y la barra de filtros no se recomponen. */}

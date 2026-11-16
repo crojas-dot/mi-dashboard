@@ -170,7 +170,7 @@ test('IA de A no rellena B ni apaga su solicitud nueva; A → B → A sigue sien
   panel.requests[1].resolve('RESPUESTA VIGENTE')
   await current
   panel.render()
-  assert.match(panel.contents(), /RESPUESTA VIGENTE/)
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'RESPUESTA VIGENTE')
   assert.equal(panel.button('Asistencia IA').props.loading, false)
 })
 
@@ -200,9 +200,8 @@ test('la asistencia inicia análisis automático sin chat ni sobrescribir la res
   panel.requests[0].resolve('Sugerencia sintética')
   await pending
   panel.render()
-  assert.match(panel.contents(), /Sugerencia sintética/)
-  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Conclusión propia')
-  assert.equal(panel.button('Usar en resolución').props.disabled, true)
+  assert.equal(panel.nodes().find(node => node.type === 'RichTextEditor').props.value, 'Conclusión propia\n\nSugerencia sintética')
+  assert.equal(panel.button('Usar en resolución'), undefined, 'el texto ya está dentro del editor')
 })
 
 test('la transición confirmada actualiza A aunque se abra B, sin limpiar la resolución de B', async () => {

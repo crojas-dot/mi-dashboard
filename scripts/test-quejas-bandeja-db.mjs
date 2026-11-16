@@ -8,10 +8,10 @@ import assert from 'node:assert/strict'
 
 const root = process.cwd(), bin = process.env.QMS_PG_BIN ?? 'C:/Program Files/PostgreSQL/18/bin'
 const work = path.join(root, '.performance', 'quejas-bandeja-db-' + Date.now()), data = path.join(work, 'data')
-const { Pool } = createRequire(path.join(root, '.performance/load-tools/package.json'))('pg')
+const { Pool } = createRequire(import.meta.url)('pg')
 const password = randomBytes(32).toString('hex'), port = 55469
 const contextOnly = process.argv.includes('--context-only')
-const migrations = ['20261116161027_quejas_bandeja_actividad.sql', '20261116162000_quejas_bandeja_movimientos.sql']
+const migrations = ['20261116180852_quejas_bandeja_actividad.sql', '20261116180929_quejas_bandeja_movimientos.sql']
 let pool, started = false, checks = 0
 const check = (a, b) => { assert.deepEqual(a, b); checks++ }
 const run = (exe, args) => {
@@ -47,9 +47,15 @@ const unchanged = async (id, sql, args = []) => {
 }
 try {
   fs.mkdirSync(work, { recursive: true }); const pw = path.join(work, 'pw'); fs.writeFileSync(pw, password)
-  run('initdb.exe', ['-D', data, '-U', 'fixture', '-A', 'scram-sha-256', '--pwfile=' + pw, '--encoding=UTF8', '--locale=C']); fs.unlinkSync(pw)
-  run('pg_ctl.exe', ['-D', data, '-l', path.join(work, 'postgres.log'), '-o', '-h 127.0.0.1 -p ' + port, '-w', 'start']); started = true
-  pool = new Pool({ host: '127.0.0.1', port, user: 'fixture', password, database: 'postgres', max: 4 })
+  if (process.env.QMS_PG_URL) {
+    // Servicio PostgreSQL aislado del runner CI; no se conecta a Supabase.
+    fs.unlinkSync(pw)
+    pool = new Pool({ connectionString: process.env.QMS_PG_URL, max: 4 })
+  } else {
+    run('initdb.exe', ['-D', data, '-U', 'fixture', '-A', 'scram-sha-256', '--pwfile=' + pw, '--encoding=UTF8', '--locale=C']); fs.unlinkSync(pw)
+    run('pg_ctl.exe', ['-D', data, '-l', path.join(work, 'postgres.log'), '-o', '-h 127.0.0.1 -p ' + port, '-w', 'start']); started = true
+    pool = new Pool({ host: '127.0.0.1', port, user: 'fixture', password, database: 'postgres', max: 4 })
+  }
   await query(`create role authenticated; create role anon; create role service_role bypassrls;
     create schema auth; create schema qms_private;
     grant usage on schema auth,public,qms_private to authenticated,anon,service_role;
@@ -91,6 +97,7 @@ try {
     await record(own, actors.own.id); await record(other, actors.other.id); await record(untouched, null)
     await query("insert into quejas_actividad(id,queja_id,tipo,descripcion,created_at) values($1,$2,'nota','Nota histórica','2001-01-01T12:00Z')", [randomUUID(),own])
     await query(fs.readFileSync('supabase/migrations/' + migrations[1], 'utf8'))
+    await query(fs.readFileSync('supabase/migrations/20261116201129_quejas_reapertura_dias_habiles_bandeja.sql', 'utf8'))
     check((await marker(own)).marca, '2001-01-01 12:00:00+00')
     check((await marker(untouched)).gestionada, false)
     check((await marker(untouched)).marca, '2000-01-01 12:00:00+00')
@@ -131,6 +138,14 @@ try {
       await unchanged(own,`update ${table} set ${field}=${field} where queja_id=$1`,[own])
       await changed(own,`update ${table} set ${field}='Corregido' where queja_id=$1`,[own])
     }
+    // Sólo ciclos reabiertos muestran conteo hábil; los demás conservan el formato vigente.
+    check((await as(actors.admin,'select reapertura_dias_habiles_restantes from qms_quejas_bandeja where id=$1',[own]))[0].reapertura_dias_habiles_restantes,null)
+    await query("update quejas set reabierta=true where id=$1",[own])
+    const runDue=(await query("select now()+interval '30 days' as due"))[0].due
+    await query("insert into qms_stage_runs(id,case_id,stage_id,calendar_id,started_at,expires_at) values($1,$2,'quejas.investigation',1,now(),$3)",[randomUUID(),own,runDue])
+    const storedDays=(await as(actors.admin,'select reapertura_dias_habiles_restantes from qms_quejas_bandeja where id=$1',[own]))[0].reapertura_dias_habiles_restantes
+    const directDays=(await query("select count(*)::integer as n from generate_series((now() at time zone 'America/Costa_Rica')::date+1,($1::timestamptz at time zone 'America/Costa_Rica')::date,interval '1 day') d where qms_business_day(d::date,1)",[runDue]))[0].n
+    check(storedDays,directDays)
     // El orden completo precede a LIMIT/OFFSET y usa horas, no la etiqueta «hoy».
     const old = randomUUID(); await record(old,actors.own.id,'1999-01-01T12:00Z')
     for (let i=0;i<30;i++) await record(randomUUID(),actors.own.id,'2002-01-01T12:00Z')

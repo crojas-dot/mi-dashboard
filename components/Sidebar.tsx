@@ -71,7 +71,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   const prepareNavigation = (id: ModuloId) => {
     const config = id === 'mis_quejas' && user?.id
-      ? { queryKey: quejasKey({ responsableId: user.id }), queryFn: ({ signal }: QueryFunctionContext) => fetchQuejas({ responsableId: user.id }, signal) }
+      ? { queryKey: quejasKey({ responsableId: user.id, soloFolio: true }), queryFn: ({ signal }: QueryFunctionContext) => fetchQuejas({ responsableId: user.id, soloFolio: true }, signal) }
       : prefetchMap[id]
     if (config) prefetch(config)
   }
