@@ -152,7 +152,7 @@ try {
 
  // REAPERTURA. Datos totalmente ficticios; ninguna conexión a la DB real.
  await pool.query('CREATE TABLE public.quejas_actividad (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), queja_id uuid NOT NULL REFERENCES quejas(id), tipo text NOT NULL, descripcion text NOT NULL, usuario_id uuid REFERENCES usuarios(id), created_at timestamptz DEFAULT now())')
- await pool.query(fs.readFileSync('supabase/migrations/20261116194500_quejas_reapertura_ciclo_atomico.sql','utf8'))
+ await pool.query(fs.readFileSync('supabase/migrations/20261116201059_quejas_reapertura_ciclo_atomico.sql','utf8'))
  // Calendario versionado: un feriado futuro obliga a desplazar el vencimiento, sin tocar reglas globales.
  const firstBusiness=(await pool.query(`SELECT d::date AS dia
    FROM generate_series((now() AT TIME ZONE 'America/Costa_Rica')::date+1,
