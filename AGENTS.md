@@ -942,11 +942,16 @@ antes de afirmar que una modificación de `main` está disponible en producción
   Recortar **solo** `Pendiente de Revisión GC` → «Revisión GC» en presentación,
   sin cambiar el estado guardado, el catálogo ni las transiciones.
 - Migraciones aditivas aplicadas 15-11-2026:
-  `20261115190000_quejas_directorio_actividad_relevante.sql` y
-  `20261115194500_quejas_directorio_dias_operativos.sql`. Consulta SQL de
-  solo lectura verificó 156 expedientes, 9 triggers, vista invoker y 13 plazos
-  con conteo hábil. La vista reflejó 77 casos con actividad histórica; registros
-  sin movimientos verificables no deben recibir fechas inventadas.
+  `20261115190000_quejas_directorio_actividad_relevante.sql`,
+  `20261115194500_quejas_directorio_dias_operativos.sql` y
+  `20261115200000_quejas_directorio_orden_eficiente.sql`.
+  SQL de lectura verificó 156 expedientes, 9 triggers, vista invoker y 13
+  plazos hábiles. La vista reflejó 77 casos con actividad histórica; registros
+  sin movimientos verificables no deben recibir fechas inventadas. La tercera
+  migración calcula «Nuevo» una vez por consulta, agrega índice de eventos y
+  redujo un plan de 120,6 ms a 23,3 ms sobre 156 filas (medición aislada).
+  `useQuejaAttachmentActions` y `QuejaColaboradorPanel` invalidan las listas
+  tras escritura confirmada; leer/descargar nunca invalida por falsa actividad.
 - Las pruebas Node del cambio están en
   `tests/quejas-directorio-actividad.test.mjs`,
   `tests/queja-deadline.test.mjs`,
