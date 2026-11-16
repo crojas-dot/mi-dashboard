@@ -74,6 +74,22 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
   }
 }
 
+/**
+ * Solo en la columna Plazo: una ejecución QMS finalizada no equivale a
+ * «nunca tuvo fecha límite». Los expedientes legados conservan fechas reales
+ * en sus columnas originales; consultarlas aquí no reabre etapas ni muta DB.
+ * Los paneles operativos siguen utilizando getQuejaDeadline sin este fallback.
+ */
+export function getQuejaDeadlineTabla(queja: QuejaConPlazo, now: number | Date = Date.now()): QuejaDeadline {
+  const actual = getQuejaDeadline(queja, now)
+  if (actual.label !== 'Sin plazo') return actual
+  const historic = queja.estado === 'Recibido' ? queja.fecha_sla
+    : ['En Investigación', 'Pendiente de Revisión GC'].includes(queja.estado)
+      ? queja.fecha_limite_investigacion : null
+  if (!historic || !Number.isFinite(Date.parse(historic))) return actual
+  return getQuejaDeadline({ ...queja, plazo_vence: historic }, now)
+}
+
 /** Los timestamps se muestran siempre en la zona de los plazos, no en la del dispositivo. */
 export function formatQuejaDeadlineDate(vence?: string | null): string {
   return vence && Number.isFinite(Date.parse(vence)) ? dateFormatter.format(new Date(vence)) : '—'
