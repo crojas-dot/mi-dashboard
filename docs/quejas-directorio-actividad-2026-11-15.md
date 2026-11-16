@@ -44,7 +44,7 @@ Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, na
 
 `fetchQuejas` filtra primero y ordena en PostgreSQL: `es_nuevo DESC, fecha_orden_actividad DESC, fecha DESC, id ASC` y solo **después** pagina en bloques de 25. Se mantiene orden estable al cambiar páginas, buscar o filtrar; Mis Quejas conserva `responsableId`.
 
-`table-fixed` con `colgroup` 14/24/12/17/16/17, mínimo de 1200 px. Folio cede algo de anchura a Fecha de ingreso; Cliente se acerca a Folio. Estado único que se abrevia: «Pendiente de Revisión GC» → «Revisión GC». Es una transformación de presentación: valor persistido, color y flujo siguen siendo los mismos.
+`table-fixed` con `colgroup` 16/22/12/15/17/18, mínimo de 1100 px. Folio cede algo de anchura a Fecha de ingreso; Cliente se acerca a Folio. Estado único que se abrevia: «Pendiente de Revisión GC» → «Revisión GC». Es una transformación de presentación: valor persistido, color y flujo siguen siendo los mismos.
 
 ## Integración y verificación
 
