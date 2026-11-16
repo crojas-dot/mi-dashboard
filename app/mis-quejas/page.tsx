@@ -9,6 +9,7 @@ import { useQuejas } from '@/lib/queries/useQuejas'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useAuthStore } from '@/lib/store/auth-store'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
+import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
 import PageHeader from '@/components/ui/PageHeader'
@@ -17,6 +18,7 @@ import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { estadoQuejaEnTabla } from '@/lib/utils/quejasListado'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -24,6 +26,7 @@ export default function MisQuejasPage() {
   const { esVista, marcarVista } = useQuejasVistas(user?.id)
   const [page, setPage] = useState(0)
   const pageSize = 25
+  const [ahora] = useState(() => Date.now())
   const [panelOpen, setPanelOpen] = useState<Queja | null>(null)
   const [navigationLocked, setNavigationLocked] = useState(false)
   const tableRef = useRef<HTMLDivElement>(null)
@@ -70,7 +73,12 @@ export default function MisQuejasPage() {
               <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
             </div>
           ) : (
-            <table className={`w-full min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${panelOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
+            <table className={`w-full table-fixed min-w-[1200px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${panelOpen ? 'lg:min-w-[max(1200px,calc(100%+40vw-1rem))]' : ''}`}>
+              <colgroup>
+                <col className="w-[14%]" /><col className="w-[24%]" />
+                <col className="w-[12%]" /><col className="w-[17%]" />
+                <col className="w-[16%]" /><col className="w-[17%]" />
+              </colgroup>
               <thead>
                 <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
                   <th scope="col" className="pl-6!">Folio</th>
@@ -78,7 +86,7 @@ export default function MisQuejasPage() {
                   <th scope="col" className="min-w-[140px]">Tipo</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Plazo</th>
-                  <th scope="col" className="pr-6!">Fecha</th>
+                  <th scope="col" className="pr-6!">Fecha de ingreso</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,17 +95,17 @@ export default function MisQuejasPage() {
                 ) : (
                   quejas.map((q) => {
                     const vista = esVista(q.id)
-                    const deadline = getQuejaDeadline(q)
+                    const deadline = getQuejaDeadline(q, ahora)
                     return (
-                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
+                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-3.5 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
                       <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
-                      <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
+                      <td className={vista ? '' : 'font-medium'}><span className="block truncate" title={q.cliente_nombre}>{q.cliente_nombre}</span></td>
                       <td>{tipoVisible(q)}</td>
-                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{q.estado_nombre || q.estado}</Badge></td>
+                      <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q.estado, q.estado_nombre)}</Badge></td>
                       <td className="whitespace-nowrap text-qms-muted">
                         <QuejaPlazoIndicator deadline={deadline} />
                       </td>
-                      <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                      <td className="pr-6!"><QuejaFechaIngreso queja={q} ahora={ahora} /></td>
                     </tr>
                     )
                   })
