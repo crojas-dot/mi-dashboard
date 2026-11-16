@@ -37,9 +37,7 @@ export interface QuejasResult {
 
 export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSignal): Promise<QuejasResult> {
   const { page, pageSize, search, estado, prioridad, responsableId } = normalizeQuejasParams(params)
-  // La vista aditiva conserva el contrato QMS, añade actividad relevante y permite
-  // ordenar ANTES de paginar; ordenar solo las 25 filas locales sería incorrecto.
-  let query = supabase.from('qms_quejas_lista').select('*', { count: 'exact' })
+  let query = supabase.from('qms_quejas').select('*', { count: 'exact' })
   if (search) {
     const pattern = containsPattern(search)
     query = query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
@@ -48,8 +46,6 @@ export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSigna
   if (prioridad) query = query.eq('prioridad', prioridad)
   if (responsableId) query = query.eq('responsable_id', responsableId)
   query = query
-    .order('es_nuevo', { ascending: false })
-    .order('fecha_orden_actividad', { ascending: false })
     .order('fecha', { ascending: false })
     .order('id', { ascending: true })
     .range(page * pageSize, (page + 1) * pageSize - 1)
