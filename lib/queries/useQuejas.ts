@@ -13,6 +13,8 @@ export interface QuejasParams {
   estado?: string
   prioridad?: string
   responsableId?: string
+  plazo?: string
+  soloFolio?: boolean
 }
 
 function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams> {
@@ -23,6 +25,8 @@ function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams
     estado: params.estado ?? '',
     prioridad: params.prioridad ?? '',
     responsableId: params.responsableId ?? '',
+    plazo: params.plazo ?? '',
+    soloFolio: params.soloFolio ?? false,
   }
 }
 
@@ -36,18 +40,21 @@ export interface QuejasResult {
 }
 
 export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSignal): Promise<QuejasResult> {
-  const { page, pageSize, search, estado, prioridad, responsableId } = normalizeQuejasParams(params)
-  let query = supabase.from('qms_quejas').select('*', { count: 'exact' })
+  const { page, pageSize, search, estado, prioridad, responsableId, plazo, soloFolio } = normalizeQuejasParams(params)
+  // Vista invoker: conserva RLS, resume la actividad y ordena antes de paginar.
+  let query = supabase.from('qms_quejas_bandeja').select('*', { count: 'exact' })
   if (search) {
     const pattern = containsPattern(search)
-    query = query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+    query = soloFolio ? query.ilike('folio', `%${search.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
   }
   if (estado) query = query.eq('estado', estado)
   if (prioridad) query = query.eq('prioridad', prioridad)
+  if (plazo) query = query.eq('plazo_filtro', plazo)
   if (responsableId) query = query.eq('responsable_id', responsableId)
   query = query
+    .order('ultima_actividad_relevante_at', { ascending: false })
     .order('fecha', { ascending: false })
-    .order('id', { ascending: true })
+    .order('id', { ascending: false })
     .range(page * pageSize, (page + 1) * pageSize - 1)
   const { data, error, count } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
