@@ -935,6 +935,11 @@ antes de afirmar que una modificación de `main` está disponible en producción
   segunda línea; las finalizadas `Finalizado` y `No Procede` nunca la muestran.
   Si hay actividad real: hoy → azul semibold; ayer / 2–30 → gris;
   más de 30 → fecha exacta CR. Fecha de ingreso es SIEMPRE la primera línea.
+- Si un caso activo no tiene run QMS vigente pero conserva un **vencimiento
+  histórico real** (`fecha_limite_investigacion` o `fecha_sla`), el directorio
+  usa `getQuejaDeadlineTabla` para no llamarlo «Sin plazo». El panel interior
+  mantiene su cálculo de etapa actual y no reabre el plazo. Jamás inferir un
+  plazo desde fecha de creación o prioridad.
 - Las columnas son Folio / Cliente / Tipo / Estado / Plazo / Fecha de ingreso.
   `table-fixed` con colgroup 16/22/12/15/17/18: Folio más ajustado aproxima
   Cliente, liberando espacio para Fecha. Ancho mínimo 1100 px y scroll solo
@@ -944,10 +949,14 @@ antes de afirmar que una modificación de `main` está disponible en producción
 - Migraciones aditivas aplicadas 15-11-2026:
   `20261115190000_quejas_directorio_actividad_relevante.sql`,
   `20261115194500_quejas_directorio_dias_operativos.sql` y
-  `20261115200000_quejas_directorio_orden_eficiente.sql`.
+  `20261115200000_quejas_directorio_orden_eficiente.sql` y
+  `20261115201500_quejas_directorio_rls_informes.sql`.
   SQL de lectura verificó 156 expedientes, 9 triggers, vista invoker y 13
   plazos hábiles. La vista reflejó 77 casos con actividad histórica; registros
-  sin movimientos verificables no deben recibir fechas inventadas. La tercera
+  sin movimientos verificables no deben recibir fechas inventadas. La cuarta
+  migración conserva la RLS de `queja_informes` al retirar esa tabla de la vista:
+  nuevos informes se registran con trigger, sin conceder SELECT adicional.
+  La tercera
   migración calcula «Nuevo» una vez por consulta, agrega índice de eventos y
   redujo un plan de 120,6 ms a 23,3 ms sobre 156 filas (medición aislada).
   `useQuejaAttachmentActions` y `QuejaColaboradorPanel` invalidan las listas
