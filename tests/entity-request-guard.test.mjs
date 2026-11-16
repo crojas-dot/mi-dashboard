@@ -244,6 +244,7 @@ test('subida tardía invalida adjuntos de A sin finalizar la subida que está ac
   await new Promise((resolve) => setImmediate(resolve))
   panel.render()
   assert.deepEqual(Array.from(panel.invalidations[0]), ['attachments', 'A'])
+  assert.deepEqual(Array.from(panel.invalidations[1]), ['quejas'])
   assert.equal(upload().props.disabled, true)
   panel.requests[1].resolve()
   await new Promise((resolve) => setImmediate(resolve))
@@ -360,6 +361,7 @@ for (const kind of ['colaborador', 'detalle']) {
     panel.requests[0].resolve()
     await new Promise(resolve => setImmediate(resolve)); panel.render()
     assert.deepEqual(Array.from(panel.invalidations[0]), ['attachments', 'A'])
+  assert.deepEqual(Array.from(panel.invalidations[1]), ['quejas'])
     assert.equal(panel.nodes().find(node => node.type === 'input' && node.props.type === 'file').props.disabled, false)
   })
 
@@ -372,7 +374,7 @@ for (const kind of ['colaborador', 'detalle']) {
       if (endContext) panel.invalidateContext()
       panel.requests[0].resolve()
       await new Promise(resolve => setImmediate(resolve))
-      assert.equal(panel.invalidations.length, endContext ? 0 : 1)
+      assert.equal(panel.invalidations.length, endContext ? 0 : 2)
       assert.equal(panel.toasts.length, 0)
     }
   })
