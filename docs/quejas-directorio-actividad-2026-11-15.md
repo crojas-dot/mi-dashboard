@@ -38,7 +38,7 @@ La vista `qms_quejas_lista` es invoker y se apoya en `qms_quejas` original. La t
 
 Los registros anteriores a la activación se reconstruyen únicamente con timestamps existentes en tablas de auditoría/etapas/adjuntos. No hay reconstrucción perfecta de ediciones históricas sin su propio timestamp: en tales casos queda fecha de ingreso sin segunda línea.
 
-Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, navegación, sincronizaciones que no modifican campos, cambios solo de versión y operaciones en la cola de correos. El alta con su adjunto inicial próximo a `fecha` no se trata como actualización posterior.
+Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, navegación, sincronizaciones que no modifican campos, cambios solo de versión y operaciones en la cola de correos. La UI invalida las consultas de listado tras guardar borradores, editar/agregar/eliminar notas y subir/eliminar evidencias, siempre bajo el ámbito de sesión/visita vigente. El alta con su adjunto inicial próximo a `fecha` no se trata como actualización posterior.
 
 ## Orden y geometría
 
@@ -48,7 +48,7 @@ Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, na
 
 ## Integración y verificación
 
-Migraciones aplicadas en Supabase del proyecto: `20261115190000_quejas_directorio_actividad_relevante.sql` y `20261115194500_quejas_directorio_dias_operativos.sql`. SQL de solo lectura verificó 156 casos, vista security_invoker, 9 triggers y 13 plazos con conteo business_days. Un plan de consulta sobre 156 filas tuvo alrededor de 120 ms en el entorno remoto examinado: dato puntual, no benchmark multiusuario ni promesa de escalabilidad.
+Migraciones aplicadas en Supabase del proyecto: `20261115190000_quejas_directorio_actividad_relevante.sql`, `20261115194500_quejas_directorio_dias_operativos.sql` y `20261115200000_quejas_directorio_orden_eficiente.sql`. SQL de solo lectura verificó 156 casos, vista security_invoker, 9 triggers y 13 plazos con conteo business_days. El tercer cambio calcula el límite de «Nuevo» una vez por consulta y agrega un índice de eventos. El plan de consulta sobre 156 filas pasó de 120,6 ms a 23,3 ms en dos mediciones puntuales del entorno remoto: no es benchmark multiusuario ni promesa de escalabilidad.
 
 Archivos: `lib/utils/quejaDeadline.ts`, `lib/utils/quejasListado.ts`, `components/quejas/QuejaFechaIngreso.tsx`, `lib/queries/useQuejas.ts`, y páginas de `app/quejas` y `app/mis-quejas`.
 
