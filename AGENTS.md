@@ -941,9 +941,16 @@ antes de afirmar que una modificación de `main` está disponible en producción
   mantiene su cálculo de etapa actual y no reabre el plazo. Jamás inferir un
   plazo desde fecha de creación o prioridad.
 - Las columnas son Folio / Cliente / Tipo / Estado / Plazo / Fecha de ingreso.
-  `table-fixed` con colgroup 16/22/12/15/17/18: Folio más ajustado aproxima
+  `table-fixed` con colgroup 13/22/12/15/17/21: Folio más ajustado aproxima
   Cliente, liberando espacio para Fecha. Ancho mínimo 1100 px y scroll solo
   cuando es necesario; la tabla mantiene su geometría al abrir el workspace.
+  **Presentación de tablas 15-11:** conservar el alto previo a Fecha de ingreso
+  (57 px con base text-base/py-4/borde de 1 px, referencia commit 9db9eff).
+  Fijar filas a 57 px con `[&>td]:py-0` para acomodar ambas líneas sin
+  expandirlas; centrar verticalmente el bloque h-9. Fecha visible DD/MM/AAAA
+  con ceros iniciales; segunda línea menor, sin salto. En ambas tablas usar
+  proporciones 13/22/12/15/17/21 y conservar min-width 1100 px, sin tocar
+  query, RLS, flujos, estado de plazo ni paginación.
   Recortar **solo** `Pendiente de Revisión GC` → «Revisión GC» en presentación,
   sin cambiar el estado guardado, el catálogo ni las transiciones.
 - Migraciones aditivas aplicadas 15-11-2026:
