@@ -26,7 +26,7 @@ import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { showError } from '@/lib/services/errorToast'
 import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA, tipoVisible } from '@/lib/constants/quejas'
-import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { getQuejaDeadlineTabla } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejasListado'
 
 export default function QuejasPage() {
@@ -147,7 +147,7 @@ export default function QuejasPage() {
                   <EmptyState message="No se encontraron quejas" />
                 ) : (
                   quejas.map((q) => {
-                    const sla = getQuejaDeadline(q, ahora)
+                    const sla = getQuejaDeadlineTabla(q, ahora)
                     const vista = esVista(q.id)
                     return (
                       <tr
