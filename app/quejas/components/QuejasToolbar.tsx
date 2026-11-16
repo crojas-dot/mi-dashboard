@@ -33,7 +33,7 @@ export default function QuejasToolbar({ search, estado, plazo, plazoDisabled = f
         <option value="">Estados</option>{estados.map(option => <option key={option.valor} value={option.valor}>{option.etiqueta ?? option.valor}</option>)}
       </Select>
       <Select aria-label="Plazo" title={plazoDisabled ? "Filtro disponible al activar la nueva vista en Supabase" : undefined} disabled={plazoDisabled} className="h-11 @min-[720px]:h-10" value={plazo} onChange={event => onPlazo(event.target.value)}>
-        <option value="">Todos los plazos</option>
+        <option value="">Plazos</option>
         <option value="por_vencer">Por vencer</option>
         <option value="vencidos">Vencidos</option>
         <option value="sin_plazo">Sin plazo</option>
