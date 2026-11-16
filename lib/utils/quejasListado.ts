@@ -1,9 +1,6 @@
 import type { Queja } from '@/lib/types'
 
 const ZONA = 'America/Costa_Rica'
-const fechaCorta = new Intl.DateTimeFormat('es-CR', {
-  timeZone: ZONA, day: 'numeric', month: 'short', year: 'numeric',
-})
 const partesFecha = new Intl.DateTimeFormat('en-CA', {
   timeZone: ZONA, year: 'numeric', month: '2-digit', day: '2-digit',
 })
@@ -17,7 +14,9 @@ function diaCivil(value: string | number | Date): number | null {
 
 export function fechaIngresoCorta(value: string): string {
   const date = new Date(value)
-  return Number.isFinite(date.getTime()) ? fechaCorta.format(date).replace(/\./g, '') : '—'
+  if (!Number.isFinite(date.getTime())) return '—'
+  const partes = Object.fromEntries(partesFecha.formatToParts(date).map(p => [p.type, p.value]))
+  return `${partes.day}/${partes.month}/${partes.year}`
 }
 
 export interface SegundaLineaIngreso {
