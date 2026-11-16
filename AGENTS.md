@@ -49,6 +49,7 @@ No cargar todos los documentos para una modificación aislada.
 | Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
+| Tabla, fecha y actividad real | components/quejas/QuejaFechaIngreso.tsx; lib/utils/quejasListado.ts; lib/queries/useQuejas.ts; qms_quejas_lista; [contrato](docs/quejas-directorio-actividad-2026-11-15.md) |
 | Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
 | PDF oficial automático por versión | QuejaInformeModal.tsx; subirAdjuntoQueja; informePdfFilename en lib/utils/quejaInforme.ts; quejaAdjuntosKey |
 | Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
@@ -465,9 +466,12 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   original de Badge; mapa histórico de `estados.ts` como fallback. No imponer los
   colores de una maqueta ni cambiar los códigos guardados. Otros estados neutros
   conservan el fondo `qms-neutral-soft` (gris ECA aclarado) y texto oscuro.
-- Plazos en ambas tablas/paneles: punto verde vigente, ámbar en alerta, rojo vencido;
-  gris completado/sin plazo. Texto sin fondo y fecha en el título. El color no
-  sustituye el texto ni altera el cálculo de `getQuejaDeadline`/`caseDeadline`.
+- Plazos en ambas tablas/paneles: punto verde si falta más de un día o vence
+  mañana, rojo si vence hoy o está vencido y gris para Completado/Sin plazo.
+  Expirado 1 día → «Venció ayer», 2–30 → «Venció hace X días»,
+  más de 30 → «Vencido». Punto y texto sin fondo. El contador respeta
+  `plazo_dias_operativos` del snapshot de calendario (días hábiles) cuando
+  existe; en legados sin regla utiliza días civiles CR. No reiniciar plazos.
 - Fila seleccionada: `ui-case-row` + `aria-selected`, fondo `qms-row-selected`
   **#F0F4F7**, sin contorno añadido ni cambios de alto; persiste al retirar el puntero
   y desaparece al cerrar. Enter/Espacio abren la fila sin interceptar controles hijos.
@@ -912,6 +916,47 @@ en repositorio no implica que se hayan ejecutado las pruebas ni que esté public
 realmente ejecutadas y producción con SHA verificado son categorías distintas.
 El corte previo de Vercel permanece histórico. Consultar CI/despliegue actual
 antes de afirmar que una modificación de `main` está disponible en producción.
+
+## Contrato de directorios Quejas / Mis Quejas — 15 noviembre de 2026
+
+- Ambos listados usan `lib/queries/useQuejas.ts`, que consulta
+  `qms_quejas_lista` con filtro RLS/propietario y orden del **servidor**
+  `es_nuevo DESC, fecha_orden_actividad DESC, fecha DESC, id ASC`, ANTES de
+  `range`. Ordenar solo 25 filas en cliente rompe páginas y está prohibido.
+- `qms_quejas_lista` es una **vista aditiva invoker** que lee `qms_quejas`;
+  `qms_quejas` y la DB histórica no se reescriben. La última actividad usa
+  `qms_quejas_actividad_relevante` con 9 triggers de cambios reales y
+  agregados históricos de eventos, etapas, comentarios, notas, adjuntos,
+  borradores e informes. Lectura, hover, descargas, navegación, escrituras
+  sin diferencia material y tiempos de cola de correo NO cuentan.
+- El marcador `es_nuevo` exige Recibido sin actividad, dentro de los primeros
+  dos días hábiles desde el ingreso, según `qms_calendars` / `qms_business_day`,
+  incluyendo feriados publicados. En Recepción desde tercer día se omite la
+  segunda línea; las finalizadas `Finalizado` y `No Procede` nunca la muestran.
+  Si hay actividad real: hoy → azul semibold; ayer / 2–30 → gris;
+  más de 30 → fecha exacta CR. Fecha de ingreso es SIEMPRE la primera línea.
+- Las columnas son Folio / Cliente / Tipo / Estado / Plazo / Fecha de ingreso.
+  `table-fixed` con colgroup 14/24/12/17/16/17: Folio más ajustado aproxima
+  Cliente, liberando espacio para Fecha. Ancho mínimo 1200 px y scroll solo
+  cuando es necesario; la tabla mantiene su geometría al abrir el workspace.
+  Recortar **solo** `Pendiente de Revisión GC` → «Revisión GC» en presentación,
+  sin cambiar el estado guardado, el catálogo ni las transiciones.
+- Migraciones aditivas aplicadas 15-11-2026:
+  `20261115190000_quejas_directorio_actividad_relevante.sql` y
+  `20261115194500_quejas_directorio_dias_operativos.sql`. Consulta SQL de
+  solo lectura verificó 156 expedientes, 9 triggers, vista invoker y 13 plazos
+  con conteo hábil. La vista reflejó 77 casos con actividad histórica; registros
+  sin movimientos verificables no deben recibir fechas inventadas.
+- Las pruebas Node del cambio están en
+  `tests/quejas-directorio-actividad.test.mjs`,
+  `tests/queja-deadline.test.mjs`,
+  `tests/pagination-active.test.mjs` y
+  `tests/data-reliability.test.mjs`. Conservar QA de límites 0/1/2/30/31,
+  feriados, cambios de día CR y RLS entre administradores/responsables.
+  **No atribuir build, ejecución de tests Node o QA E2E** a la validación SQL.
+  Las reglas son reutilizables en otros módulos, pero no afirmar que sus tablas
+  ya usan este componente: alcance integrado actual = Quejas y Mis Quejas.
+  Referencia: [contrato del directorio](docs/quejas-directorio-actividad-2026-11-15.md).
 
 ## Verificar, entregar y mantener
 
