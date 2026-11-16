@@ -90,6 +90,9 @@ test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras r
     initialTab: 'seguridad',
     usuario: { id: 'otro', nombre: 'Otro', rol: 'colaborador', estado: 'activo' },
   })
+  assert.equal(modal.button('Guardar contraseña'), undefined, 'al abrir Seguridad, no se genera ni muestra una clave sin pedirla')
+  modal.button('Generar contraseña segura').props.onClick()
+  modal.render()
   const pending = modal.button('Guardar contraseña').props.onClick()
   assert.equal(modal.requests.length, 1)
   assert.equal(modal.requests[0].args[0], 'PATCH')
