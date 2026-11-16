@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 
 const root = process.cwd(), bin = process.env.QMS_PG_BIN ?? 'C:/Program Files/PostgreSQL/18/bin'
 const work = path.join(root, '.performance', 'quejas-bandeja-db-' + Date.now()), data = path.join(work, 'data')
-const { Pool } = createRequire(path.join(root, '.performance/load-tools/package.json'))('pg')
+const { Pool } = createRequire(import.meta.url)('pg')
 const password = randomBytes(32).toString('hex'), port = 55469
 const contextOnly = process.argv.includes('--context-only')
 const migrations = ['20261116161027_quejas_bandeja_actividad.sql', '20261116162000_quejas_bandeja_movimientos.sql']
@@ -47,9 +47,15 @@ const unchanged = async (id, sql, args = []) => {
 }
 try {
   fs.mkdirSync(work, { recursive: true }); const pw = path.join(work, 'pw'); fs.writeFileSync(pw, password)
-  run('initdb.exe', ['-D', data, '-U', 'fixture', '-A', 'scram-sha-256', '--pwfile=' + pw, '--encoding=UTF8', '--locale=C']); fs.unlinkSync(pw)
-  run('pg_ctl.exe', ['-D', data, '-l', path.join(work, 'postgres.log'), '-o', '-h 127.0.0.1 -p ' + port, '-w', 'start']); started = true
-  pool = new Pool({ host: '127.0.0.1', port, user: 'fixture', password, database: 'postgres', max: 4 })
+  if (process.env.QMS_PG_URL) {
+    // Servicio PostgreSQL aislado del runner CI; no se conecta a Supabase.
+    fs.unlinkSync(pw)
+    pool = new Pool({ connectionString: process.env.QMS_PG_URL, max: 4 })
+  } else {
+    run('initdb.exe', ['-D', data, '-U', 'fixture', '-A', 'scram-sha-256', '--pwfile=' + pw, '--encoding=UTF8', '--locale=C']); fs.unlinkSync(pw)
+    run('pg_ctl.exe', ['-D', data, '-l', path.join(work, 'postgres.log'), '-o', '-h 127.0.0.1 -p ' + port, '-w', 'start']); started = true
+    pool = new Pool({ host: '127.0.0.1', port, user: 'fixture', password, database: 'postgres', max: 4 })
+  }
   await query(`create role authenticated; create role anon; create role service_role bypassrls;
     create schema auth; create schema qms_private;
     grant usage on schema auth,public,qms_private to authenticated,anon,service_role;
