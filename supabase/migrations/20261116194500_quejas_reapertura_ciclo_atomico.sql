@@ -12,6 +12,7 @@ CREATE TABLE public.queja_reaperturas (
   anterior_responsable_id uuid,
   anterior_resolucion text,
   anterior_resolucion_formato text,
+  anterior_numero_oficio text,
   anterior_run_id uuid,
   reapertura_at timestamptz NOT NULL,
   nuevo_inicio timestamptz NOT NULL,
@@ -105,13 +106,13 @@ BEGIN
   INSERT INTO public.queja_reaperturas (
     queja_id, ciclo, actor_id, motivo, anterior_estado, anterior_fecha_cierre,
     anterior_fecha_limite, anterior_responsable_id, anterior_resolucion,
-    anterior_resolucion_formato, anterior_run_id, reapertura_at, nuevo_inicio,
+    anterior_resolucion_formato, anterior_numero_oficio, anterior_run_id, reapertura_at, nuevo_inicio,
     nueva_fecha_limite, nuevo_run_id, regla_dias, regla_tipo, calendario_id
   ) VALUES (
     p_id, cycle_no, actor, reason, old_case.estado, old_case.fecha_cierre,
     coalesce(old_case.fecha_limite_investigacion, previous_run.expires_at),
     old_case.responsable_id, old_case.resolucion,
-    old_case.resolucion_formato, previous_run.id, now(),
+    old_case.resolucion_formato, old_case.numero_oficio_resolucion, previous_run.id, now(),
     new_run.started_at, new_run.expires_at, new_run.id, 15, 'business_days', new_run.calendar_id
   );
 
