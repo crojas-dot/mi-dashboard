@@ -62,6 +62,10 @@ BEGIN
       ) THEN RETURN NEW; END IF;
     END IF;
   END IF;
+  -- Evitar reinserciones sobre una queja que se está eliminando en cascada.
+  IF NOT EXISTS (SELECT 1 FROM public.quejas q WHERE q.id = v_queja_id) THEN
+    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+  END IF;
   INSERT INTO public.qms_quejas_actividad_relevante (queja_id, ultima_actividad_at)
   VALUES (v_queja_id, clock_timestamp())
   ON CONFLICT (queja_id)
