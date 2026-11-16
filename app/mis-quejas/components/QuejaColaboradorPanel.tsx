@@ -487,7 +487,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         </section>{reenviarRevision && <QuejaInvestigacionResumen devolucion={devoluciones[0] ?? devolucion} devoluciones={devoluciones} folio={queja.folio}
           archivos={adjuntos} onPreview={setPreviewAdjunto} onEditor={prepararResolucion}
           open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
-        {investigando ? <div data-resolution-shell className="relative h-[clamp(420px,58dvh,560px)] min-w-0">
+        {investigando ? <div data-resolution-shell className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
           <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
             style={resolutionOverlay ?? undefined}
             className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
