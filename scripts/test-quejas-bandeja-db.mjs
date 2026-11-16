@@ -11,7 +11,7 @@ const work = path.join(root, '.performance', 'quejas-bandeja-db-' + Date.now()),
 const { Pool } = createRequire(import.meta.url)('pg')
 const password = randomBytes(32).toString('hex'), port = 55469
 const contextOnly = process.argv.includes('--context-only')
-const migrations = ['20261116161027_quejas_bandeja_actividad.sql', '20261116162000_quejas_bandeja_movimientos.sql']
+const migrations = ['20261116180852_quejas_bandeja_actividad.sql', '20261116180929_quejas_bandeja_movimientos.sql']
 let pool, started = false, checks = 0
 const check = (a, b) => { assert.deepEqual(a, b); checks++ }
 const run = (exe, args) => {
