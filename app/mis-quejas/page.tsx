@@ -75,15 +75,15 @@ export default function MisQuejasPage() {
           ) : (
             <table className={`w-full table-fixed min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${panelOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
               <colgroup>
-                <col className="w-[16%]" /><col className="w-[22%]" />
+                <col className="w-[13%]" /><col className="w-[22%]" />
                 <col className="w-[12%]" /><col className="w-[15%]" />
-                <col className="w-[17%]" /><col className="w-[18%]" />
+                <col className="w-[17%]" /><col className="w-[21%]" />
               </colgroup>
               <thead>
                 <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
                   <th scope="col" className="pl-6!">Folio</th>
                   <th scope="col" className="min-w-[160px]">Cliente</th>
-                  <th scope="col" className="min-w-[140px]">Tipo</th>
+                  <th scope="col">Tipo</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Plazo</th>
                   <th scope="col" className="pr-6!">Fecha de ingreso</th>
@@ -97,8 +97,8 @@ export default function MisQuejasPage() {
                     const vista = esVista(q.id)
                     const deadline = getQuejaDeadlineTabla(q, ahora)
                     return (
-                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-3.5 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
-                      <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`${q.folio.length > 12 ? 'text-sm' : 'text-base'} ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
+                    <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row h-[57px] cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-0 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
+                      <td className="relative pl-5! pr-2! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`${q.folio.length > 12 ? 'text-[13px]' : 'text-base'} ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                       <td className={vista ? '' : 'font-medium'}><span className="block truncate" title={q.cliente_nombre}>{q.cliente_nombre}</span></td>
                       <td>{tipoVisible(q)}</td>
                       <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q.estado, q.estado_nombre)}</Badge></td>
