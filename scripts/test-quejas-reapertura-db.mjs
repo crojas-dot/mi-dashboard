@@ -153,12 +153,24 @@ try {
  // REAPERTURA. Datos totalmente ficticios; ninguna conexión a la DB real.
  await pool.query('CREATE TABLE public.quejas_actividad (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), queja_id uuid NOT NULL REFERENCES quejas(id), tipo text NOT NULL, descripcion text NOT NULL, usuario_id uuid REFERENCES usuarios(id), created_at timestamptz DEFAULT now())')
  await pool.query(fs.readFileSync('supabase/migrations/20261116194500_quejas_reapertura_ciclo_atomico.sql','utf8'))
+ // Calendario versionado: un feriado futuro obliga a desplazar el vencimiento, sin tocar reglas globales.
+ const firstBusiness=(await pool.query(`SELECT d::date AS dia
+   FROM generate_series((now() AT TIME ZONE 'America/Costa_Rica')::date+1,
+     (now() AT TIME ZONE 'America/Costa_Rica')::date+12, interval '1 day') d
+   WHERE qms_business_day(d::date,1) ORDER BY dia LIMIT 1`)).rows[0].dia
+ const withoutHoliday=(await pool.query("SELECT qms_due(now(),15,'business_days',1) AS due")).rows[0].due
+ const holidayCalendar=(await pool.query(`INSERT INTO qms_calendars(weekdays,holidays)
+   VALUES(ARRAY[1,2,3,4,5],jsonb_build_array(jsonb_build_object('date',$1::date)))
+   RETURNING id`,[firstBusiness])).rows[0].id
+ const withHoliday=(await pool.query("SELECT qms_due(now(),15,'business_days',$1) AS due",[holidayCalendar])).rows[0].due
+ check(withHoliday.getTime()>withoutHoliday.getTime(),'Feriado configurado aplaza vencimiento del ciclo')
  let rc=await newCase()
  rc=await register(rc,null,'ECA-GC-REAPERTURA-001')
  rc=await transition(rc,'investigation',{justification:'Procede',owner:actors.owner.id})
  rc=await transition(rc,'resolved',{resolution:'Conclusión histórica'})
  rc=await transition(rc,'finished')
- const original=(await pool.query('SELECT * FROM quejas WHERE id=$1',[rc.id])).rows[0]
+ await rejects(()=>transition(rc,'investigation',{reopen:'Saltarse RPC nuevo'}),'22023','RPC heredado no permite saltarse la reapertura atómica')
+  const original=(await pool.query('SELECT * FROM quejas WHERE id=$1',[rc.id])).rows[0]
  const rowsBefore=(await pool.query('SELECT count(*)::int n FROM quejas')).rows[0].n
  const reopen=(item,reason,actor=actors.admin)=>as(actor,'SELECT public.qms_reopen_finalized_complaint($1,$2,$3) value',[item.id,item.revision,reason])
  await rejects(()=>reopen(rc,'  '),'22023','Motivo obligatorio')
@@ -180,6 +192,7 @@ try {
  check(cycles[0].anterior_responsable_id===original.responsable_id,'Responsable anterior preservado')
  const run=(await pool.query('SELECT * FROM qms_stage_runs WHERE id=$1',[cycles[0].nuevo_run_id])).rows[0]
  check(run.ended_at===null&&run.stage_id==='quejas.investigation','Nueva ejecución de investigación')
+ check(run.calendar_id===holidayCalendar&&run.expires_at.getTime()===withHoliday.getTime(),'Nuevo ciclo utiliza calendario con feriado configurado')
  check(run.expires_at.getTime()===new Date(reopened.fecha_limite_investigacion).getTime(),'Vencimiento nuevo activo')
  check(cycles[0].regla_dias===15&&cycles[0].regla_tipo==='business_days','Snapshot de 15 días hábiles')
  const countDays=(await pool.query("SELECT count(*)::int n FROM generate_series((($1::timestamptz at time zone 'America/Costa_Rica')::date+1),($2::timestamptz at time zone 'America/Costa_Rica')::date,interval '1 day') d WHERE public.qms_business_day(d::date,$3)",[run.started_at,run.expires_at,run.calendar_id])).rows[0].n
