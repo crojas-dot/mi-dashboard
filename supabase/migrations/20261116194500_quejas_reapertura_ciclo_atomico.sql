@@ -150,3 +150,57 @@ REVOKE ALL ON FUNCTION public.qms_reopen_finalized_complaint(uuid,bigint,text)
   FROM PUBLIC, anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.qms_reopen_finalized_complaint(uuid,bigint,text)
   TO authenticated, service_role;
+
+-- Protección del acceso heredado: conserva las otras transiciones, exige RPC atómico al reabrir.
+CREATE OR REPLACE FUNCTION public.qms_transition_complaint(p_id uuid, p_expected bigint, p_state text, p_resolution text DEFAULT NULL::text, p_justification text DEFAULT NULL::text, p_owner uuid DEFAULT NULL::uuid, p_reopen text DEFAULT NULL::text, p_office_number text DEFAULT NULL::text, p_resolution_format text DEFAULT NULL::text, p_justification_format text DEFAULT NULL::text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+DECLARE q public.quejas; own_revision bigint; office text; staff boolean;
+BEGIN
+  SELECT * INTO q FROM public.quejas WHERE id = p_id FOR UPDATE;
+  staff := coalesce(public.app_es_admin(), false)
+    OR (coalesce(public.app_es_staff(), false) AND coalesce(public.app_tiene_permiso('quejas', true), false));
+  IF auth.uid() IS NULL OR NOT (staff OR (coalesce(public.app_es_colaborador(), false)
+      AND coalesce(public.app_tiene_permiso('mis_quejas', true), false)
+      AND coalesce(q.responsable_id = public.app_usuario_actual_id(), false))) THEN
+    RAISE EXCEPTION 'No autorizado.' USING ERRCODE = '42501';
+  END IF;
+  IF q.id IS NULL THEN RAISE EXCEPTION 'Queja no encontrada.' USING ERRCODE = 'P0002'; END IF;
+  IF p_expected IS NULL OR q.revision IS DISTINCT FROM p_expected THEN
+    RAISE EXCEPTION 'Otra persona modificó la queja. Actualiza antes de guardar.' USING ERRCODE = '40001';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.catalogos WHERE modulo = 'quejas' AND tipo = 'estado_queja'
+      AND codigo = p_state AND coalesce(activo, true)) THEN
+    RAISE EXCEPTION 'Estado no reconocido.' USING ERRCODE = '22023';
+  END IF;
+  IF p_resolution_format IS NOT NULL AND (p_resolution IS NULL OR p_resolution_format NOT IN ('plain','markdown'))
+     OR p_justification_format IS NOT NULL AND (p_justification IS NULL OR p_justification_format NOT IN ('plain','markdown'))
+     OR length(coalesce(p_resolution, '')) > 10000 OR length(coalesce(p_justification, '')) > 10000
+     OR length(coalesce(p_reopen, '')) > 10000 THEN
+    RAISE EXCEPTION 'Texto o formato inválido.' USING ERRCODE = '22023';
+  END IF;
+  IF p_reopen IS NOT NULL AND btrim(p_reopen) <> '' THEN
+    RAISE EXCEPTION 'Utilizá la operación de reapertura autorizada para expedientes Finalizados.' USING ERRCODE = '22023';
+  END IF;
+  office := coalesce(nullif(btrim(p_office_number), ''), q.numero_oficio_resolucion);
+  IF length(office) > 120 OR (p_state IN ('rejected','resolved','finished') AND office IS NULL) THEN
+    RAISE EXCEPTION 'La respuesta final necesita un número de oficio válido.' USING ERRCODE = '22023';
+  END IF;
+  IF p_owner IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.usuarios WHERE id = p_owner AND estado = 'activo') THEN
+    RAISE EXCEPTION 'Seleccioná un responsable activo.' USING ERRCODE = '22023';
+  END IF;
+  -- Se valida la revisión original ANTES de nuestra escritura bajo el mismo lock.
+  -- La revisión enviada al motor es exclusivamente la producida por esta operación.
+  UPDATE public.quejas SET numero_oficio_resolucion = office,
+    resolucion_formato = CASE WHEN p_resolution IS NULL THEN resolucion_formato ELSE coalesce(p_resolution_format, 'plain') END,
+    justificacion_procede = CASE WHEN p_justification IS NULL THEN justificacion_procede ELSE nullif(btrim(p_justification), '') END,
+    justificacion_procede_formato = CASE WHEN p_justification IS NULL THEN justificacion_procede_formato ELSE coalesce(p_justification_format, 'plain') END
+    WHERE id = p_id RETURNING revision INTO own_revision;
+  PERFORM public.qms_transition(p_id, own_revision, p_state, p_resolution, p_justification, p_owner, p_reopen);
+  RETURN (SELECT to_jsonb(v) FROM public.qms_quejas v WHERE v.id = p_id);
+END;
+$function$
+
