@@ -110,6 +110,8 @@ function panelFixture(options = {}) {
   const { default: Panel } = loadModule('app/quejas/components/QuejaDetalleModal.tsx', {
     '@/app/quejas/components/QuejaInformeModal': { default: 'Informe' },
     '@/app/quejas/components/QuejaRespuestaClienteModal': { default: 'Response' },
+    '@/app/quejas/components/QuejaCierreResumen': { default: 'Cierre' },
+    '@/lib/queries/useQuejaInforme': { fetchQuejaInforme: async () => null, quejaInformeKey: id => ['informe', id] },
     react, '@tanstack/react-query': { useQueryClient: () => ({ prefetchQuery: async () => {} }) },
     '@/lib/services/driveClient': { prefetchDriveBlob() {} },
     '@/lib/queries/useQuejaRespuestaCliente': { respuestaClienteKey: id => ['respuesta', id], fetchRespuestaCliente: async () => ({ borrador: null, aprobacion: null, publicada: null }) },
@@ -179,7 +181,7 @@ test('revisión GC prioriza la propuesta y conserva antecedentes íntegros sin e
   assert.equal(panel.nodes().find(node => Object.hasOwn(node.props, 'data-case-review-context')), undefined)
 })
 
-test('aprobar solo registra la revisión original y continúa a respuesta sin campos públicos', async () => {
+test('aprobar solo registra la revisión original y muestra Cierre sin abrir respuesta automáticamente', async () => {
   const panel = panelFixture(); panel.select()
   assert.equal(panel.nodes().filter(node => node.type === 'Textarea').length, 0)
   assert.equal(panel.nodes().filter(node => node.type === 'Input').length, 0)
@@ -189,7 +191,8 @@ test('aprobar solo registra la revisión original y continúa a respuesta sin ca
   assert.equal(panel.requests[0].args[0].revision, 7)
   assert.equal(panel.requests[0].args[1], 'approved')
   panel.requests[0].resolve({ id: quejaId, folio: '2026-001', estado: 'Resuelto', revision: 8 }); await pending; panel.render()
-  assert.equal(panel.nodes().find(node => node.type === 'Response').props.queja.estado, 'Resuelto')
+  assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
+  assert.equal(panel.updates[0][0].estado, 'Resuelto')
   assert.equal(panel.requests.length, 1)
 })
 
