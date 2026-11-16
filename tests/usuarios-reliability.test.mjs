@@ -104,6 +104,7 @@ test('Seguridad aplica el cambio de contraseña en línea y bloquea escrituras r
   assert.equal(modal.requests.length, 1)
   modal.requests[0].resolve()
   await pending
+  await new Promise(resolve => setImmediate(resolve))
   modal.render()
   assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.button('Guardar contraseña'), undefined)
@@ -124,6 +125,7 @@ test('contraseña manual se escribe y guarda dentro del modal existente', async 
   assert.equal(modal.requests[0].args[1].newPassword, 'Manual-12345!')
   modal.requests[0].resolve()
   await pending
+  await new Promise(resolve => setImmediate(resolve))
   modal.render()
   assert.ok(modal.button('Generar otra contraseña'))
   assert.equal(modal.closes(), 0)
