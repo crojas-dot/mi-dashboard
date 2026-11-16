@@ -19,6 +19,8 @@ Fuente: `plazo_vence` persistido en el motor QMS y el calendario de la ejecució
 
 La fecha y el conteo exactos siguen accesibles para auditoría y lógica. El umbral de 30 días solo recorta el **texto**.
 
+En el directorio, si ya no hay una etapa QMS activa pero el expediente legado conserva `fecha_limite_investigacion` (o `fecha_sla` en Recibido), **sí tuvo plazo**: la tabla presenta el vencimiento histórico, generalmente «Vencido», en lugar de «Sin plazo». Esta lectura exclusiva del directorio no reabre etapas ni modifica el cálculo del panel de trabajo.
+
 ## Fecha de ingreso y segunda línea
 
 Primera línea obligatoria `fecha` (`es-CR` y `America/Costa_Rica`): «14 nov 2026».
@@ -48,8 +50,10 @@ Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, na
 
 ## Integración y verificación
 
-Migraciones aplicadas en Supabase del proyecto: `20261115190000_quejas_directorio_actividad_relevante.sql`, `20261115194500_quejas_directorio_dias_operativos.sql` y `20261115200000_quejas_directorio_orden_eficiente.sql`. SQL de solo lectura verificó 156 casos, vista security_invoker, 9 triggers y 13 plazos con conteo business_days. El tercer cambio calcula el límite de «Nuevo» una vez por consulta y agrega un índice de eventos. El plan de consulta sobre 156 filas pasó de 120,6 ms a 23,3 ms en dos mediciones puntuales del entorno remoto: no es benchmark multiusuario ni promesa de escalabilidad.
+Migraciones aplicadas en Supabase del proyecto: `20261115190000_quejas_directorio_actividad_relevante.sql`, `20261115194500_quejas_directorio_dias_operativos.sql` y `20261115200000_quejas_directorio_orden_eficiente.sql` y `20261115201500_quejas_directorio_rls_informes.sql`. SQL de solo lectura verificó 156 casos, vista security_invoker, 9 triggers y 13 plazos con conteo business_days. El tercer cambio calcula el límite de «Nuevo» una vez por consulta y agrega un índice de eventos. El plan de consulta sobre 156 filas pasó de 120,6 ms a 23,3 ms en dos mediciones puntuales del entorno remoto: no es benchmark multiusuario ni promesa de escalabilidad.
 
 Archivos: `lib/utils/quejaDeadline.ts`, `lib/utils/quejasListado.ts`, `components/quejas/QuejaFechaIngreso.tsx`, `lib/queries/useQuejas.ts`, y páginas de `app/quejas` y `app/mis-quejas`.
 
 Pruebas dirigidas: `tests/queja-deadline.test.mjs`, `tests/quejas-directorio-actividad.test.mjs`, `tests/data-reliability.test.mjs` y `tests/pagination-active.test.mjs`. Antes de producción se requiere compilar, ejecutar Node, verificar cada estado con cuenta de rol real y probar los límites de días/feriados en navegador. **Una lectura SQL correcta no es prueba E2E ni evidencia de despliegue web.**
+
+Seguridad de lectura: la cuarta migración retira del listado la consulta directa a `queja_informes`, tabla sin SELECT de `authenticated`. La escritura de informes nuevos sigue actualizando `qms_quejas_actividad_relevante` mediante trigger, sin conceder acceso a informes privados. Verificación SQL bajo `SET LOCAL ROLE authenticated` y sin JWT devolvió cero filas (RLS), sin errores de permisos; no reemplaza una prueba con usuarios autenticados reales.
