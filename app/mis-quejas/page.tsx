@@ -1,8 +1,16 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useDeferredValue, useRef, useState } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
+import { Plus, Search } from 'lucide-react'
+import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
+import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
+import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA } from '@/lib/constants/quejas'
+import { tienePermiso } from '@/lib/permisos'
+import NuevaQuejaModal from '@/app/quejas/components/NuevaQuejaModal'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import type { Queja } from '@/lib/types'
 import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
 import { useQuejas } from '@/lib/queries/useQuejas'
@@ -23,6 +31,15 @@ import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
   const user = useAuthStore((s) => s.user)
+  const permisos = useAuthStore((s) => s.permisos)
+  const puedeCrear = tienePermiso(permisos, 'quejas', false, user?.rol)
+  const [search, setSearch] = useState('')
+  const deferredSearch = useDeferredValue(search)
+  const [filtroEstado, setFiltroEstado] = useState('')
+  const [nuevaOpen, setNuevaOpen] = useState(false)
+  const { data: estados = [] } = useCatalogoTipo('estado_queja', 'quejas')
+  const estadosDisponibles = opcionesEstadoQueja(estados)
+  const categorias = TIPOS_REGISTRO_QUEJA.map(valor => ({ valor, color: '' }))
   const { esVista, marcarVista } = useQuejasVistas(user?.id)
   const [page, setPage] = useState(0)
   const pageSize = 25
@@ -36,9 +53,13 @@ export default function MisQuejasPage() {
       page,
       pageSize,
       responsableId: user?.id,
+      search: deferredSearch,
+      soloFolio: true,
+      estado: filtroEstado,
     },
     !!user?.id,
   )
+  useRealtimeSubscription({ table: 'queja_bandeja_actividad', invalidateKeys: [[...queryKeys.quejas], [...queryKeys.dashboard]] })
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
   const selectedIndex = panelOpen ? quejas.findIndex(q => q.id === panelOpen.id) : -1
@@ -60,6 +81,19 @@ export default function MisQuejasPage() {
   return (
     <div className="flex h-full min-w-0 flex-col">
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
+
+      <div className="@container mb-4 shrink-0">
+        <div role="group" aria-label="Buscar y filtrar mis quejas" className="grid grid-cols-2 items-center gap-3 @min-[720px]:grid-cols-[minmax(180px,1fr)_180px_auto]">
+          <div className="relative col-span-2 min-w-0 @min-[720px]:col-span-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-qms-muted" aria-hidden="true" />
+            <input aria-label="Buscar folio" placeholder="Buscar folio..." className="ui-field h-11 pl-10 pr-4 @min-[720px]:h-10" value={search} onChange={event => { setSearch(event.target.value); setPage(0) }} />
+          </div>
+          <Select aria-label="Estado" className="h-11 @min-[720px]:h-10" value={filtroEstado} onChange={event => { setFiltroEstado(event.target.value); setPage(0) }}>
+            <option value="">Estados</option>{estadosDisponibles.map(option => <option key={option.valor} value={option.valor}>{option.etiqueta}</option>)}
+          </Select>
+          {puedeCrear && <Button className="min-h-11 w-full @min-[720px]:min-h-10 @min-[720px]:w-auto" onClick={() => setNuevaOpen(true)}><Plus className="h-4 w-4" aria-hidden="true" />Nueva queja</Button>}
+        </div>
+      </div>
 
       {/* Recortar la ventana conserva el ancho de las columnas al abrir el workspace. */}
       <div className={`flex min-h-0 flex-1 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface ${panelOpen ? 'lg:mr-[calc(40vw-1rem)]' : ''}`}>
@@ -114,6 +148,7 @@ export default function MisQuejasPage() {
         </div>
         {!loading && !error && <div className="shrink-0 border-t border-qms-border bg-qms-surface px-3 py-3 sm:px-6 [&>nav]:py-0">{totalCount <= pageSize ? <p className="text-sm text-qms-muted">{totalCount} resultados</p> : <Pagination page={page} count={totalCount} busy={isFetching} onChange={next => { setPage(next); if (tableRef.current) tableRef.current.scrollTop = 0 }} />}</div>}
       </div>
+      <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidate() }} categorias={categorias} />
       <QuejaColaboradorPanel queja={panelOpen} onClose={() => { setPanelOpen(null); setNavigationLocked(false) }} onNavigationLockChange={setNavigationLocked} onPrevious={selectedIndex > 0 ? () => openPanel(quejas[selectedIndex - 1]) : undefined} onNext={selectedIndex >= 0 && selectedIndex < quejas.length - 1 ? () => openPanel(quejas[selectedIndex + 1]) : undefined} onUpdated={invalidate} />
     </div>
   )
