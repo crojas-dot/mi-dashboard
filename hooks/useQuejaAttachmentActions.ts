@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { quejaAdjuntosKey, type QuejaAdjunto } from '@/lib/queries/useQuejas'
-import { queryKeys } from '@/lib/queries/queryKeys'
 import { descargarAdjuntoQueja, eliminarAdjuntoQueja, subirAdjuntoQueja } from '@/lib/services/quejaWorkflowService'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import type { EntityRequestScope } from '@/hooks/useEntityRequestGuard'
@@ -33,11 +32,7 @@ export function useQuejaAttachmentActions(quejaId: string | null, scope: EntityR
     try {
       const adjunto = await subirAdjuntoQueja(quejaId, file)
       // La escritura pertenece al expediente capturado, aunque la vista ya esté en otro.
-      if (isContextCurrent()) {
-        void queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(quejaId) })
-        // El archivo también modifica la actividad operativa del directorio.
-        void queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
-      }
+      if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(quejaId) })
       if (operation.isCurrent()) showSuccess('Adjunto subido')
       if (operation.isCurrent()) return adjunto
     } catch (error) {
@@ -56,11 +51,7 @@ export function useQuejaAttachmentActions(quejaId: string | null, scope: EntityR
     setEliminandoAdjunto(adjuntoId)
     try {
       await eliminarAdjuntoQueja(adjuntoId)
-      if (isContextCurrent()) {
-        void queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(quejaId) })
-        // El archivo también modifica la actividad operativa del directorio.
-        void queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
-      }
+      if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: quejaAdjuntosKey(quejaId) })
       if (operation.isCurrent()) {
         showSuccess('Adjunto eliminado')
         setConfirmarEliminacion(current => current === adjuntoId ? null : current)
