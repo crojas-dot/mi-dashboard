@@ -26,7 +26,7 @@ function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams
     prioridad: params.prioridad ?? '',
     responsableId: params.responsableId ?? '',
     plazo: params.plazo ?? '',
-    query = soloFolio ? query.or(`folio.ilike.${pattern}`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+    soloFolio: params.soloFolio ?? false,
   }
 }
 
@@ -45,7 +45,7 @@ export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSigna
   let query = supabase.from('qms_quejas_bandeja').select('*', { count: 'exact' })
   if (search) {
     const pattern = containsPattern(search)
-    query = soloFolio ? query.ilike('folio', `%${search.replaceAll('%', '\\%').replaceAll('_', '\\_')}%`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+    query = soloFolio ? query.or(`folio.ilike.${pattern}`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
   }
   if (estado) query = query.eq('estado', estado)
   if (prioridad) query = query.eq('prioridad', prioridad)
