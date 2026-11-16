@@ -17,7 +17,8 @@ import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
-import { estadoQuejaEnTabla, formatFechaIngreso } from '@/lib/utils/quejaBandeja'
+import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
+import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -102,7 +103,7 @@ export default function MisQuejasPage() {
                       <td className="whitespace-nowrap text-qms-muted">
                         <QuejaPlazoIndicator deadline={deadline} />
                       </td>
-                      <td className="pr-6! whitespace-nowrap text-qms-muted">{formatFechaIngreso(q.fecha)}</td>
+                      <td className="pr-6! whitespace-nowrap text-qms-muted"><QuejaFechaIngreso fecha={q.fecha} contexto={q.actividad_contexto} reciente={q.actividad_reciente} /></td>
                     </tr>
                     )
                   })

@@ -20,7 +20,7 @@ No se recuperó código de implementaciones anteriores.
 1. «Revisión GC» solo en las dos tablas. Conserva ID, filtros y color. Ocho escenarios sin variación de altura/densidad/desbordamiento.
 2. Distribución horizontal 11/22/12/16/18/21, tabla fija con mínimo 1100 px original. Se ajustó la referencia 13 % de Folio porque aumentaba su ancho respecto de la base; 11 % acerca Cliente y deja 21 % a Fecha. Nombres habituales caben. Ocho escenarios mantienen altura, densidad y desbordamiento original.
 3. Encabezado «Fecha de ingreso», con fecha DD/MM/AAAA. Ocho escenarios sin regresión de medidas; TypeScript verificado.
-4. Segunda línea sin aumentar altura: pendiente.
+4. Componente compartido `QuejaFechaIngreso`: segunda línea de 14px/16px en el espacio interior original, sin padding ni altura nuevos. Ocho escenarios mantienen exactamente 58.390625px por fila; «Actualización: hace 30 días» permanece en una línea. La lógica real se conecta en la etapa siguiente.
 5–6. Nuevo y actividad relevante: pendiente.
 7. Orden antes de paginar: pendiente.
 8. Plazo estable y semáforo: pendiente.

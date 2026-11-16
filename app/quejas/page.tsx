@@ -26,7 +26,8 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { showError } from '@/lib/services/errorToast'
 import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA, tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
-import { estadoQuejaEnTabla, formatFechaIngreso } from '@/lib/utils/quejaBandeja'
+import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
+import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -164,7 +165,7 @@ export default function QuejasPage() {
                         <td>{tipoVisible(q)}</td>
                         <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q)}</Badge></td>
                         <td className="whitespace-nowrap"><QuejaPlazoIndicator deadline={sla} /></td>
-                        <td className="pr-6! whitespace-nowrap text-qms-muted">{formatFechaIngreso(q.fecha)}</td>
+                        <td className="pr-6! whitespace-nowrap text-qms-muted"><QuejaFechaIngreso fecha={q.fecha} contexto={q.actividad_contexto} reciente={q.actividad_reciente} /></td>
                       </tr>
                     )
                   })

@@ -15,6 +15,8 @@ export interface Queja {
   prioridad?: string | null
   estado: string
   fecha: string
+  actividad_contexto?: string | null
+  actividad_reciente?: boolean
   fecha_sla?: string
   fecha_limite_investigacion?: string
   fecha_cierre?: string
