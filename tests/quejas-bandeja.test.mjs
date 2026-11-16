@@ -59,3 +59,37 @@ test('Mis Quejas busca exclusivamente folio y conserva responsable y estado', as
   assert.equal(requested.searchParams.get('responsable_id'), 'eq.u1')
   assert.equal(requested.searchParams.get('estado'), 'eq.Recibido')
 })
+
+test('si la vista aún no existe en Supabase, recupera la lista legacy con permisos y paginación anteriores', async () => {
+  const error = { code: 'PGRST205', message: "Could not find the table 'public.qms_quejas_bandeja' in the schema cache" }
+  const db = fakeDatabase({
+    qms_quejas: [
+      { id: 'q1', fecha: '2026-11-16T14:00:00Z', responsable_id: 'u1', estado: 'Recibido' },
+      { id: 'q2', fecha: '2026-11-15T14:00:00Z', responsable_id: 'u2', estado: 'Recibido' },
+    ],
+  }, { qms_quejas_bandeja: error })
+  const { fetchQuejas } = loadQueries(db)
+  const result = await fetchQuejas({ responsableId: 'u1', pageSize: 25 })
+  assert.equal(result.origen, 'legacy')
+  assert.deepEqual(result.data.map(row => row.id), ['q1'])
+  assert.deepEqual(db.calls.map(call => call.table), ['qms_quejas_bandeja', 'qms_quejas'])
+  assert.deepEqual(db.calls.at(-1).orders.map(order => [order.key, order.ascending]), [
+    ['fecha', false], ['id', true],
+  ])
+})
+
+test('el fallback no presenta datos incorrectos al solicitar un filtro Plazo sin migración', async () => {
+  const error = { code: '42P01', message: 'relation "public.qms_quejas_bandeja" does not exist' }
+  const db = fakeDatabase({ qms_quejas: [{ id: 'q1' }] }, { qms_quejas_bandeja: error })
+  const { fetchQuejas } = loadQueries(db)
+  await assert.rejects(() => fetchQuejas({ plazo: 'vencidos' }), /requiere activar la nueva vista/)
+  assert.deepEqual(db.calls.map(call => call.table), ['qms_quejas_bandeja'])
+})
+
+test('el fallback nunca oculta errores RLS o de autenticación', async () => {
+  const error = { code: '42501', message: 'permission denied for view qms_quejas_bandeja' }
+  const db = fakeDatabase({ qms_quejas: [{ id: 'q1' }] }, { qms_quejas_bandeja: error })
+  const { fetchQuejas } = loadQueries(db)
+  await assert.rejects(() => fetchQuejas(), e => e.code === '42501')
+  assert.deepEqual(db.calls.map(call => call.table), ['qms_quejas_bandeja'])
+})
