@@ -41,6 +41,7 @@ import {
   esOficioPublicableQueja,
   resolverQuejaConDocumento,
   revisarResolucionQueja,
+  reabrirQuejaFinalizada,
   type RegistroQuejaInput,
   type PublicacionQuejaInput,
 } from '@/lib/services/quejaWorkflowService'
@@ -430,12 +431,13 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   }
 
   const handleReabrir = async () => {
+    if (workflowPending || estadoActual !== 'Finalizado' || !esStaff) return
     if (!motivoReapertura.trim()) {
       showError(null, 'Escribí el motivo antes de reabrir la queja')
       return
     }
     await runCaseUpdate(
-      () => transicionarQueja(workflowQueja, 'En Investigación', { motivoReapertura }),
+      () => reabrirQuejaFinalizada(workflowQueja, motivoReapertura),
       'Queja reabierta. Nuevo plazo: 15 días hábiles.', 'No se pudo reabrir la queja',
       () => { setReaperturaAbierta(false); setMotivoReapertura('') }, setReabriendo,
     )
@@ -452,7 +454,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     return runCaseUpdate(
       () => revisarResolucionQueja(workflowQueja, 'approved'),
       'Resolución aprobada. Prepará la respuesta al cliente.', 'No se pudo aprobar la resolución',
-      updated => { setReviewOpen(false); setRespuestaCase(updated) },
+      () => { setReviewOpen(false); setReadOnlyStage(null); setRespuestaCase(null) },
     )
   }
 
@@ -791,7 +793,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       {decisionOpen && decisionProcedencia && <Button variant={decisionProcedencia === 'no_procede' ? 'danger' : 'primary'} disabled={workflowPending || (decisionProcedencia === 'procede' ? usuariosLoading || !!usuariosError : !publicacionVerificada)} onClick={decisionProcedencia === 'procede' ? handleGuardarProcede : handleGuardarNoProcede} loading={loading}>{decisionProcedencia === 'no_procede' && publicacionDisponible ? 'Publicar no procedencia' : 'Guardar'}</Button>}
       {resolucionAbierta && <Button onClick={handleConfirmarResolucion} loading={loading} disabled={workflowPending || !publicacionVerificada}>{publicacionDisponible ? 'Publicar y resolver' : 'Confirmar resolución'}</Button>}
       {reviewOpen && <><Button variant="secondary" onClick={closeEditor} disabled={workflowPending}>Cancelar devolución</Button><Button onClick={handleDevolverInvestigacion} loading={loading} disabled={workflowPending || !motivoDevolucion.trim() || !!errorAdjuntoDevolucion}>Confirmar devolución</Button></>}
-      {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo}>Confirmar reapertura</Button>}
+      {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo} disabled={workflowPending || !motivoReapertura.trim()}>Reabrir queja</Button>}
     </div>}>
       <div className="flex min-h-0 flex-1 flex-col bg-qms-surface select-text">
         {terminalDocument && !publicacionVerificada && <div className="shrink-0 border-b border-qms-border px-4 py-2 text-sm text-qms-muted">
@@ -889,7 +891,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           </section>
         </div>}
         {reaperturaAbierta && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
-          <p className="text-sm text-qms-muted">La queja vuelve a investigación con un nuevo plazo. El motivo quedará registrado.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} placeholder="Motivo de la reapertura..." rows={5} className="ui-textarea w-full px-3 py-2 text-base" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
+          <p className="text-base leading-relaxed text-qms-muted">La queja volverá a <strong>En investigación</strong> y comenzará un nuevo plazo de <strong>15 días hábiles</strong>. El motivo y el ciclo anterior quedarán registrados en el historial.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} required maxLength={10000} placeholder="Explicá por qué debe reabrirse el expediente..." rows={6} className="ui-textarea w-full px-3 py-2 text-base leading-relaxed" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
         </div>}
         </div>
       </div>
@@ -906,7 +908,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           <div className="mt-4 space-y-3">{queja.observaciones && <article className="border-b border-qms-border pb-3"><p className="mb-2 text-xs text-qms-muted">Observación anterior</p><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.observaciones}</p></article>}{comentariosLoading ? <LoadingSkeleton variant="list" label="Cargando observaciones…" framed={false} /> : comentariosError ? <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las observaciones. <Button variant="link" size="sm" onClick={() => refetchComentarios()}>Reintentar</Button></p> : !comentarios.length && !queja.observaciones ? <p className="text-sm text-qms-muted">Sin observaciones todavía.</p> : comentarios.map(c => <article key={c.id} className="border-b border-qms-border pb-3"><div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant={c.tipo === 'cliente' ? 'blue' : 'gray'}>{c.tipo === 'cliente' ? 'Del cliente' : 'Interna'}</Badge>{c.visible_cliente && <Badge variant="green">Visible al quejoso</Badge>}<time className="text-xs text-qms-muted">{caseDate(c.fecha)}</time></div><p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{c.comentario}</p></article>)}</div>
         </CaseSection>
         {esStaff && (correosLoading ? <LoadingSkeleton variant="list" label="Cargando comunicaciones…" /> : correosError ? <CaseSection title="Comunicaciones"><p role="alert" className="text-sm text-qms-danger">No se pudieron cargar los estados. <Button size="sm" variant="link" onClick={() => refetchCorreos()}>Reintentar</Button></p></CaseSection> : <CaseMailStatus messages={correos} />)}
-        {esStaff && ['En Investigación', 'Resuelto', 'Finalizado'].includes(estadoActual) && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2">{['Resuelto', 'Finalizado'].includes(estadoActual) && <Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>}{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
+        {esStaff && estadoActual === 'Finalizado' && <CaseSection title="Otras acciones"><div className="flex flex-wrap gap-2"><Button variant="secondary" disabled={workflowPending || !!registroDraft} onClick={() => { setActivityOpen(false); beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw className="size-4" />Reabrir queja</Button>{queja.derivado_sacp_id && <Badge variant="neutral">Derivada a SACP</Badge>}</div></CaseSection>}
       </div>
       </div>
     </Modal>

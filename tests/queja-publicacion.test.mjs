@@ -110,6 +110,8 @@ function panelFixture(options = {}) {
   const { default: Panel } = loadModule('app/quejas/components/QuejaDetalleModal.tsx', {
     '@/app/quejas/components/QuejaInformeModal': { default: 'Informe' },
     '@/app/quejas/components/QuejaRespuestaClienteModal': { default: 'Response' },
+    '@/app/quejas/components/QuejaCierreResumen': { default: 'Cierre' },
+    '@/lib/queries/useQuejaInforme': { fetchQuejaInforme: async () => null, quejaInformeKey: id => ['informe', id] },
     react, '@tanstack/react-query': { useQueryClient: () => ({ prefetchQuery: async () => {} }) },
     '@/lib/services/driveClient': { prefetchDriveBlob() {} },
     '@/lib/queries/useQuejaRespuestaCliente': { respuestaClienteKey: id => ['respuesta', id], fetchRespuestaCliente: async () => ({ borrador: null, aprobacion: null, publicada: null }) },
@@ -136,6 +138,7 @@ function panelFixture(options = {}) {
       handleSubirAdjunto: file => { requests.push({ kind: 'upload', file }); uploading = true }, setPreviewAdjunto() {} }) },
     '@/lib/services/quejaWorkflowService': { esOficioPublicableQueja: service.esOficioPublicableQueja,
       revisarResolucionQueja: (...args) => mutation('review', ...args),
+      reabrirQuejaFinalizada: (...args) => mutation('reopen', ...args),
       transicionarQueja: (...args) => mutation('legacy', ...args), iniciarInvestigacionQueja: (...args) => mutation('assignment', ...args), resolverQuejaConDocumento: (...args) => mutation('publish', ...args) },
     '@/lib/services/errorToast': { showError: (_error, message) => toasts.push(message), showSuccess: message => toasts.push(message) },
   })
@@ -144,7 +147,7 @@ function panelFixture(options = {}) {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props || value.props.hidden || value.type === 'Modal' && !value.props.open) return []
     if (typeof value.type === 'function' && ['QuejaPublicacionPanel', 'Tabs'].includes(value.type.name)) return visit(value.type(value.props))
-    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action)]
+    return [value, ...visit(value.props.children), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.requestFooter)]
   }
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
@@ -179,7 +182,7 @@ test('revisión GC prioriza la propuesta y conserva antecedentes íntegros sin e
   assert.equal(panel.nodes().find(node => Object.hasOwn(node.props, 'data-case-review-context')), undefined)
 })
 
-test('aprobar solo registra la revisión original y continúa a respuesta sin campos públicos', async () => {
+test('aprobar solo registra la revisión original y muestra Cierre sin abrir respuesta automáticamente', async () => {
   const panel = panelFixture(); panel.select()
   assert.equal(panel.nodes().filter(node => node.type === 'Textarea').length, 0)
   assert.equal(panel.nodes().filter(node => node.type === 'Input').length, 0)
@@ -189,7 +192,8 @@ test('aprobar solo registra la revisión original y continúa a respuesta sin ca
   assert.equal(panel.requests[0].args[0].revision, 7)
   assert.equal(panel.requests[0].args[1], 'approved')
   panel.requests[0].resolve({ id: quejaId, folio: '2026-001', estado: 'Resuelto', revision: 8 }); await pending; panel.render()
-  assert.equal(panel.nodes().find(node => node.type === 'Response').props.queja.estado, 'Resuelto')
+  assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
+  assert.equal(panel.updates[0][0].estado, 'Resuelto')
   assert.equal(panel.requests.length, 1)
 })
 
@@ -207,7 +211,8 @@ test('rechazo abre la respuesta al cliente con revisión capturada; cancelar vue
   assert.equal(response.props.queja.revision, 7)
   panel.select({ revision: 99 })
   assert.equal(panel.nodes().find(node => node.type === 'Response').props.queja.revision, 7)
-  panel.nodes().find(node => node.type === 'Response').props.onClose(false); panel.render()
+  panel.nodes().find(node => node.type === 'Response').props.onClose(false)
+  panel.select({ estado: 'Recibido', revision: 99, numero_oficio_resolucion: '' })
   assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
   assert.ok(panel.button('No Procede')); assert.ok(panel.button('Procede'))
   assert.equal(panel.requests.length, 0)
@@ -242,6 +247,51 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   }
   const analyst = panelFixture({ role: 'colaborador' }); analyst.select({ estado: 'En Investigación', responsable_id: 'staff' })
   assert.equal(analyst.button('Resolver'), undefined)
+})
+
+test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
+  for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
+    const panel = panelFixture()
+    panel.select({ estado })
+    const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
+    assert.ok(shortcut, 'historial accesible para ' + estado)
+    shortcut.props.onClick()
+    panel.render()
+    assert.equal(panel.button('Reabrir queja'), undefined, 'sin acción de reapertura en ' + estado)
+  }
+  const panel = panelFixture()
+  panel.select({ estado: 'Finalizado' })
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
+  assert.ok(shortcut)
+  shortcut.props.onClick()
+  panel.render()
+  assert.ok(panel.button('Reabrir queja'), 'acción excepcional en historial de Finalizado')
+})
+
+test('Reapertura exige motivo y no emite un segundo RPC durante el primer envío', async () => {
+  const panel = panelFixture()
+  panel.select({ estado: 'Finalizado' })
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
+  assert.ok(shortcut)
+  shortcut.props.onClick()
+  panel.render()
+  panel.click('Reabrir queja')
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'motivo vacío bloquea la acción')
+  panel.field('-reapertura-' + quejaId, '   ')
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'espacios vacíos bloquean la acción')
+  panel.field('-reapertura-' + quejaId, 'Apareció información adicional que requiere investigación')
+  const operation = panel.click('Reabrir queja')
+  assert.equal(panel.requests.length, 1)
+  assert.equal(panel.requests[0].kind, 'reopen')
+  assert.equal(panel.requests[0].args[0].revision, 7)
+  assert.match(panel.requests[0].args[1], /información adicional/)
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'el botón se bloquea mientras se procesa')
+  await panel.button('Reabrir queja').props.onClick()
+  assert.equal(panel.requests.length, 1, 'no hay doble reapertura')
+  panel.requests[0].resolve({ id: quejaId, estado: 'En Investigación', revision: 8 })
+  await operation
+  panel.render()
+  assert.equal(panel.updates[0][0].estado, 'En Investigación')
 })
 
 test('cambiar de visita descarta la respuesta en curso y la nueva visita abre su propia decisión', () => {

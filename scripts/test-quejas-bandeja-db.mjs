@@ -97,6 +97,7 @@ try {
     await record(own, actors.own.id); await record(other, actors.other.id); await record(untouched, null)
     await query("insert into quejas_actividad(id,queja_id,tipo,descripcion,created_at) values($1,$2,'nota','Nota histórica','2001-01-01T12:00Z')", [randomUUID(),own])
     await query(fs.readFileSync('supabase/migrations/' + migrations[1], 'utf8'))
+    await query(fs.readFileSync('supabase/migrations/20261116194800_quejas_reapertura_dias_habiles_bandeja.sql', 'utf8'))
     check((await marker(own)).marca, '2001-01-01 12:00:00+00')
     check((await marker(untouched)).gestionada, false)
     check((await marker(untouched)).marca, '2000-01-01 12:00:00+00')
@@ -137,6 +138,14 @@ try {
       await unchanged(own,`update ${table} set ${field}=${field} where queja_id=$1`,[own])
       await changed(own,`update ${table} set ${field}='Corregido' where queja_id=$1`,[own])
     }
+    // Sólo ciclos reabiertos muestran conteo hábil; los demás conservan el formato vigente.
+    check((await as(actors.admin,'select reapertura_dias_habiles_restantes from qms_quejas_bandeja where id=$1',[own]))[0].reapertura_dias_habiles_restantes,null)
+    await query("update quejas set reabierta=true where id=$1",[own])
+    const runDue=(await query("select now()+interval '30 days' as due"))[0].due
+    await query("insert into qms_stage_runs(id,case_id,stage_id,calendar_id,started_at,expires_at) values($1,$2,'quejas.investigation',1,now(),$3)",[randomUUID(),own,runDue])
+    const storedDays=(await as(actors.admin,'select reapertura_dias_habiles_restantes from qms_quejas_bandeja where id=$1',[own]))[0].reapertura_dias_habiles_restantes
+    const directDays=(await query("select count(*)::integer as n from generate_series((now() at time zone 'America/Costa_Rica')::date+1,($1::timestamptz at time zone 'America/Costa_Rica')::date,interval '1 day') d where qms_business_day(d::date,1)",[runDue]))[0].n
+    check(storedDays,directDays)
     // El orden completo precede a LIMIT/OFFSET y usa horas, no la etiqueta «hoy».
     const old = randomUUID(); await record(old,actors.own.id,'1999-01-01T12:00Z')
     for (let i=0;i<30;i++) await record(randomUUID(),actors.own.id,'2002-01-01T12:00Z')

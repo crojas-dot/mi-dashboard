@@ -58,7 +58,6 @@ export default function NotificationDropdown({
             {notifications.length > 0 && <button type="button" onClick={onArchiveAll} className="min-h-8 cursor-pointer rounded-button border-0 bg-transparent px-1 text-xs text-qms-muted hover:text-qms-danger hover:underline">Vaciar</button>}
           </div>
         </div>
-        {onTestSound && <div className="flex shrink-0 items-center justify-between gap-3 border-b border-qms-border px-4 py-2 text-xs text-qms-muted"><span>Sonido de nuevos avisos</span><button type="button" onClick={onTestSound} className="min-h-8 cursor-pointer rounded-button border-0 bg-transparent px-1 text-xs text-qms-primary hover:underline">Activar y probar sonido</button></div>}
         <div className="min-h-0 max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center px-4 py-8 text-center"><Inbox aria-hidden="true" className="mb-2 h-6 w-6 text-qms-muted" /><p className="text-xs text-qms-muted">No hay notificaciones</p></div>

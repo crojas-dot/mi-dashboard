@@ -92,14 +92,14 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
             </span>
             <button type="button" data-case-close-step={item.id} aria-label={'Ver detalle de ' + item.title}
               onClick={() => setSelected(index)}
-              className={`group flex min-h-[118px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left transition-colors hover:border-qms-primary/40 hover:bg-qms-hover-bg/20 focus-visible:outline-2 focus-visible:outline-qms-primary ${expanded ? '@min-[580px]:h-[clamp(124px,21dvh,212px)]' : '@min-[580px]:h-[124px]'}`}>
+              className={`group flex min-h-[142px] w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface text-left transition-colors hover:border-qms-primary/40 hover:bg-qms-hover-bg/20 focus-visible:outline-2 focus-visible:outline-qms-primary ${expanded ? '@min-[580px]:h-[clamp(148px,22dvh,230px)]' : '@min-[580px]:h-[148px]'}`}>
               <div className={'flex min-w-0 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-qms-border/70 px-3 py-2 sm:px-4 ' + tinta}>
-                <h4 className="flex min-w-0 items-center gap-2 text-sm font-semibold text-qms-dark group-hover:text-qms-primary">{item.title}</h4>
+                <h4 className="flex min-w-0 items-center gap-2 text-base font-semibold text-qms-dark group-hover:text-qms-primary">{item.title}</h4>
                 {fechas[index] && <span className="text-xs text-qms-muted">{caseDate(fechas[index])}</span>}
               </div>
               <div className="flex min-h-0 min-w-0 flex-1 flex-col justify-between gap-1 px-3 py-2 sm:px-4">
                 <div className="min-h-0 min-w-0 overflow-hidden">
-                  <p className={`line-clamp-2 whitespace-pre-wrap break-words text-[14px] leading-normal text-qms-dark ${expanded ? '@min-[700px]:line-clamp-3' : ''}`}>{textos[index]}</p>
+                  <p className={`line-clamp-2 whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark ${expanded ? '@min-[700px]:line-clamp-3' : ''}`}>{textos[index]}</p>
                   {index === 1 && !noProcede && responsable && <p className="mt-0.5 truncate text-xs text-qms-muted" title={responsable}>Por: {responsable}</p>}
                   {index === 2 && nombreAprobador && <p className="mt-0.5 truncate text-xs text-qms-muted" title={nombreAprobador}>Aprobado por: {nombreAprobador}</p>}
                 </div>
@@ -109,7 +109,7 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
                     {index === 1 && !actividadLoading && !actividadError && devoluciones.length > 0 && <span className="text-xs font-medium text-soft-amber-text">{devoluciones.length} {devoluciones.length === 1 ? 'devolución' : 'devoluciones'}</span>}
                     <span className="text-xs text-qms-muted">{adjuntosLoading ? 'Consultando archivos…' : adjuntosError ? 'Archivos no disponibles' : cantidad ? cantidad + (cantidad === 1 ? ' archivo' : ' archivos') : 'Sin archivos'}</span>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-qms-primary group-hover:underline">Ver detalle <ArrowRight aria-hidden="true" className="size-3.5" /></span>
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold text-qms-primary group-hover:underline">Ver detalle <ArrowRight aria-hidden="true" className="size-3.5" /></span>
                 </div>
               </div>
             </button>

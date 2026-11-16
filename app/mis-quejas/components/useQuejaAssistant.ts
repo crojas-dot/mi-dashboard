@@ -28,7 +28,7 @@ export function useQuejaAssistant(quejaId: string | null, scope: EntityRequestSc
     resultVersion.current++; setAiResultValue(value); setModoEdicion(true)
   }
 
-  const handleAnalisisAuto = async () => {
+  const handleAnalisisAuto = async (onResult?: (analysis: string) => void) => {
     if (!quejaId) return
     const operation = scope.start('ai-analysis')
     if (!operation) return
@@ -37,7 +37,10 @@ export function useQuejaAssistant(quejaId: string | null, scope: EntityRequestSc
     try {
       const result = await analizarIA({ modulo: 'quejas', entidad_id: quejaId, tipo_consulta: 'auto' })
       // Una respuesta de IA no pisa una edición realizada durante la consulta.
-      if (operation.isCurrent() && resultVersion.current === version) { setAiResultValue(result); setModoEdicion(false) }
+      if (operation.isCurrent() && resultVersion.current === version) {
+        if (onResult) onResult(result)
+        else { setAiResultValue(result); setModoEdicion(false) }
+      }
     } catch (error) {
       if (operation.isCurrent()) showError(error, 'No se pudo generar el análisis IA')
     } finally {
