@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { loadModule } from './load-module.mjs'
 
-const { getQuejaDeadline, getQuejaDeadlineDate, formatQuejaDeadlineDate } = loadModule('lib/utils/quejaDeadline.ts')
+const { getQuejaDeadline, getQuejaDeadlineTabla, getQuejaDeadlineDate, formatQuejaDeadlineDate } = loadModule('lib/utils/quejaDeadline.ts')
 const now = Date.parse('2026-10-09T18:00:00Z')
 
 test('el plazo vigente viene del snapshot y no de prioridad o antigüedad', () => {
@@ -83,4 +83,16 @@ test('mañana, hoy, ayer y el límite global de 30 días son exactos en Costa Ri
   assert.equal(vence('2026-10-15').label, 'Vencido')
   const terminal = getQuejaDeadline({ estado: 'Finalizado', plazo_vence: '2026-10-15T18:00:00Z' }, referencia)
   assert.deepEqual([terminal.label, terminal.variant], ['Completado', 'gray'])
+})
+
+test('la tabla distingue plazo histórico ya vencido de una cuenta que nunca tuvo plazo', () => {
+  const at = Date.parse('2026-11-15T18:00:00Z')
+  const historica = { estado: 'Pendiente de Revisión GC', plazo_vence: null, fecha_limite_investigacion: '2026-09-22T18:00:00Z' }
+  assert.equal(getQuejaDeadline(historica, at).label, 'Sin plazo', 'el panel operativo no reabre su ejecución')
+  const tabla = getQuejaDeadlineTabla(historica, at)
+  assert.equal(tabla.label, 'Vencido')
+  assert.equal(tabla.variant, 'red')
+  assert.equal(tabla.vence, historica.fecha_limite_investigacion)
+  assert.equal(getQuejaDeadlineTabla({ estado: 'Recibido', plazo_vence: null }, at).label, 'Sin plazo')
+  assert.equal(getQuejaDeadlineTabla({ estado: 'Finalizado', fecha_limite_investigacion: historica.fecha_limite_investigacion }, at).label, 'Completado')
 })
