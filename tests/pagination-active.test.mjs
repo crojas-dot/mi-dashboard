@@ -29,7 +29,7 @@ test('anterior y siguiente cambian la página y respetan límites y carga', () =
 
 test('las seis páginas devuelven los 126 registros una sola vez, incluso con fechas idénticas', async () => {
   const rows = Array.from({ length: 126 }, (_, i) => ({ id: `q-${String(126 - i).padStart(3, '0')}`, fecha: '2026-10-06', responsable_id: 'usuario-demo', estado: 'Recibido' }))
-  const db = fakeDatabase({ qms_quejas: rows })
+  const db = fakeDatabase({ qms_quejas_bandeja: rows })
   const { fetchQuejas, quejasKey } = loadModule('lib/queries/useQuejas.ts', { '@/lib/supabase': db, '@tanstack/react-query': {} })
   const ids = []
   for (let page = 0; page < 6; page++) {
@@ -39,8 +39,8 @@ test('las seis páginas devuelven los 126 registros una sola vez, incluso con fe
     ids.push(...result.data.map(row => row.id))
   }
   assert.equal(new Set(ids).size, 126)
-  assert.equal(ids[0], 'q-001')
-  assert.equal(ids.at(-1), 'q-126')
+  assert.equal(ids[0], 'q-126')
+  assert.equal(ids.at(-1), 'q-001')
   assert.notDeepEqual(quejasKey({ page: 0 }), quejasKey({ page: 1 }))
   assert.equal((await fetchQuejas({ responsableId: 'otro-usuario' })).count, 0)
 })
