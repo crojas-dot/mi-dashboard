@@ -97,7 +97,7 @@ try {
     await record(own, actors.own.id); await record(other, actors.other.id); await record(untouched, null)
     await query("insert into quejas_actividad(id,queja_id,tipo,descripcion,created_at) values($1,$2,'nota','Nota histórica','2001-01-01T12:00Z')", [randomUUID(),own])
     await query(fs.readFileSync('supabase/migrations/' + migrations[1], 'utf8'))
-    await query(fs.readFileSync('supabase/migrations/20261116194800_quejas_reapertura_dias_habiles_bandeja.sql', 'utf8'))
+    await query(fs.readFileSync('supabase/migrations/20261116201129_quejas_reapertura_dias_habiles_bandeja.sql', 'utf8'))
     check((await marker(own)).marca, '2001-01-01 12:00:00+00')
     check((await marker(untouched)).gestionada, false)
     check((await marker(untouched)).marca, '2000-01-01 12:00:00+00')
