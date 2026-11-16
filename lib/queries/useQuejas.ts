@@ -37,28 +37,48 @@ export function quejasKey(params: QuejasParams = {}) {
 export interface QuejasResult {
   data: Queja[]
   count: number
+  /** La vista legacy mantiene la pantalla disponible hasta aplicar la migración de bandeja. */
+  origen: 'bandeja' | 'legacy'
+}
+
+function vistaBandejaAusente(error: { code?: string; message?: string }): boolean {
+  return ['PGRST205', '42P01'].includes(error.code ?? '')
+    && /qms_quejas_bandeja/i.test(error.message ?? '')
 }
 
 export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSignal): Promise<QuejasResult> {
   const { page, pageSize, search, estado, prioridad, responsableId, plazo, soloFolio } = normalizeQuejasParams(params)
-  // Vista invoker: conserva RLS, resume la actividad y ordena antes de paginar.
-  let query = supabase.from('qms_quejas_bandeja').select('*', { count: 'exact' })
-  if (search) {
-    const pattern = containsPattern(search)
-    query = soloFolio ? query.or(`folio.ilike.${pattern}`) : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+  const ejecutar = async (origen: 'bandeja' | 'legacy') => {
+    const avanzada = origen === 'bandeja'
+    const tabla = avanzada ? 'qms_quejas_bandeja' : 'qms_quejas'
+    let query = supabase.from(tabla).select('*', { count: 'exact' })
+    if (search) {
+      const pattern = containsPattern(search)
+      query = soloFolio
+        ? query.or(`folio.ilike.${pattern}`)
+        : query.or(`folio.ilike.${pattern},cliente_nombre.ilike.${pattern}`)
+    }
+    if (estado) query = query.eq('estado', estado)
+    if (prioridad) query = query.eq('prioridad', prioridad)
+    if (plazo && avanzada) query = query.eq('plazo_filtro', plazo)
+    if (responsableId) query = query.eq('responsable_id', responsableId)
+    if (avanzada) query = query.order('ultima_actividad_relevante_at', { ascending: false })
+    query = query
+      .order('fecha', { ascending: false })
+      .order('id', { ascending: !avanzada })
+      .range(page * pageSize, (page + 1) * pageSize - 1)
+    const { data, error, count } = await (signal ? query.abortSignal(signal) : query)
+    return { data, error, count, origen }
   }
-  if (estado) query = query.eq('estado', estado)
-  if (prioridad) query = query.eq('prioridad', prioridad)
-  if (plazo) query = query.eq('plazo_filtro', plazo)
-  if (responsableId) query = query.eq('responsable_id', responsableId)
-  query = query
-    .order('ultima_actividad_relevante_at', { ascending: false })
-    .order('fecha', { ascending: false })
-    .order('id', { ascending: false })
-    .range(page * pageSize, (page + 1) * pageSize - 1)
-  const { data, error, count } = await (signal ? query.abortSignal(signal) : query)
-  if (error) throw error
-  return { data: (data as Queja[]) ?? [], count: count ?? 0 }
+
+  let result = await ejecutar('bandeja')
+  if (result.error && vistaBandejaAusente(result.error)) {
+    if (plazo) throw new Error('El filtro Plazo requiere activar la nueva vista de bandeja en Supabase.')
+    // Compatibilidad temporal: conserva la búsqueda, el filtro de estado, RLS y la paginación previos.
+    result = await ejecutar('legacy')
+  }
+  if (result.error) throw result.error
+  return { data: (result.data as Queja[]) ?? [], count: result.count ?? 0, origen: result.origen }
 }
 
 export function useQuejas(params: QuejasParams = {}, enabled = true) {
