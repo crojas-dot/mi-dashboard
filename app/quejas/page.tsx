@@ -137,7 +137,7 @@ export default function QuejasPage() {
                   <th scope="col" className="min-w-[140px]">Tipo</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Plazo</th>
-                  <th scope="col" className="pr-6!">Fecha</th>
+                  <th scope="col" className="pr-6!">Fecha de ingreso</th>
                 </tr>
               </thead>
               <tbody>
