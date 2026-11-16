@@ -125,7 +125,11 @@ export default function QuejasPage() {
               <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
             </div>
           ) : (
-            <table className={`w-full min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
+            <table className={`w-full table-fixed min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
+              <colgroup>
+                <col className="w-[11%]" /><col className="w-[22%]" /><col className="w-[12%]" />
+                <col className="w-[16%]" /><col className="w-[18%]" /><col className="w-[21%]" />
+              </colgroup>
               <thead>
                 <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
                   <th scope="col" className="pl-6!">Folio</th>
@@ -156,7 +160,7 @@ export default function QuejasPage() {
                         onFocus={() => precargarFila(q)}
                       >
                         <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
-                        <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
+                        <td title={q.cliente_nombre} className={`truncate ${vista ? '' : 'font-medium'}` }>{q.cliente_nombre}</td>
                         <td>{tipoVisible(q)}</td>
                         <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q)}</Badge></td>
                         <td className="whitespace-nowrap"><QuejaPlazoIndicator deadline={sla} /></td>
