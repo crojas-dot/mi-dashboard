@@ -154,6 +154,7 @@ try {
  await pool.query('CREATE TABLE public.quejas_actividad (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), queja_id uuid NOT NULL REFERENCES quejas(id), tipo text NOT NULL, descripcion text NOT NULL, usuario_id uuid REFERENCES usuarios(id), created_at timestamptz DEFAULT now())')
  await pool.query(fs.readFileSync('supabase/migrations/20261116194500_quejas_reapertura_ciclo_atomico.sql','utf8'))
  let rc=await newCase()
+ rc=await register(rc,null,'ECA-GC-REAPERTURA-001')
  rc=await transition(rc,'investigation',{justification:'Procede',owner:actors.owner.id})
  rc=await transition(rc,'resolved',{resolution:'Conclusión histórica'})
  rc=await transition(rc,'finished')
@@ -175,6 +176,7 @@ try {
  check(cycles.length===1&&cycles[0].ciclo===1&&cycles[0].anterior_estado==='Finalizado','Ciclo original registrado')
  check(cycles[0].anterior_fecha_cierre.getTime()===original.fecha_cierre.getTime(),'Fecha de cierre anterior conservada')
  check(cycles[0].anterior_resolucion===original.resolucion,'Texto previo preservado')
+ check(cycles[0].anterior_numero_oficio===original.numero_oficio_resolucion,'Oficio anterior preservado')
  check(cycles[0].anterior_responsable_id===original.responsable_id,'Responsable anterior preservado')
  const run=(await pool.query('SELECT * FROM qms_stage_runs WHERE id=$1',[cycles[0].nuevo_run_id])).rows[0]
  check(run.ended_at===null&&run.stage_id==='quejas.investigation','Nueva ejecución de investigación')
