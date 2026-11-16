@@ -43,11 +43,11 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run lint
-      - run: node --test tests/queja-deadline.test.mjs tests/quejas-bandeja.test.mjs tests/queja-publicacion.test.mjs tests/mis-quejas-workspace.test.mjs
       - run: npm install --no-save pg@8.16.3
       - run: node scripts/test-quejas-reapertura-db.mjs
         env:
           QMS_PG_URL: postgresql://qms_fixture:fixture@127.0.0.1:5432/postgres
+      - run: node --test tests/queja-deadline.test.mjs tests/quejas-bandeja.test.mjs tests/queja-publicacion.test.mjs tests/mis-quejas-workspace.test.mjs
       - run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
