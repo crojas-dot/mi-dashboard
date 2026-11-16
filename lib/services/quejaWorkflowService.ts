@@ -65,6 +65,18 @@ export function actualizarDetallesQueja(input: {
   })
 }
 
+/** Reapertura excepcional: un único RPC valida rol, revisión, ciclo, plazo e historial. */
+export function reabrirQuejaFinalizada(queja: ExpedienteVersionado & Pick<Queja, 'estado'>, motivo: string): Promise<Queja> {
+  const reason = motivo.trim()
+  if (queja.estado !== 'Finalizado') throw new Error('Solo se pueden reabrir quejas finalizadas.')
+  if (!reason || reason.length > 10000) throw new Error('Ingresá un motivo de reapertura válido (máximo 10.000 caracteres).')
+  return callRpc<Queja>('qms_reopen_finalized_complaint', {
+    p_id: queja.id,
+    p_expected: revisionEsperada(queja),
+    p_reason: reason,
+  })
+}
+
 export interface TransicionQuejaParams {
   resolucion?: string | null
   justificacionProcede?: string | null
