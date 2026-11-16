@@ -23,12 +23,12 @@ En el directorio, si ya no hay una etapa QMS activa pero el expediente legado co
 
 ## Fecha de ingreso y segunda línea
 
-Primera línea obligatoria `fecha` (`es-CR` y `America/Costa_Rica`): «14 nov 2026».
+Primera línea obligatoria `fecha` (`es-CR` y `America/Costa_Rica`): «14/11/2026».
 
 Segunda línea opcional:
 
 - Si está Recibido, nunca fue procesado, no hay movimientos verificables y han transcurrido **0–2 días hábiles**: «Nuevo» azul semibold. El calendario usa días ISO configurados y feriados publicados de QMS. Desde el tercer día hábil no aparece.
-- Si está activo y existe actividad posterior: hoy «Actualización: hoy» azul semibold; ayer «Actualización: ayer» gris; 2–30 «Actualización: hace X días» gris; >30 «Actualización: 14 oct 2026» gris.
+- Si está activo y existe actividad posterior: hoy «Actualización: hoy» azul semibold; ayer «Actualización: ayer» gris; 2–30 «Actualización: hace X días» gris; >30 «Actualización: 14/10/2026» gris.
 - Si está Finalizado o No Procede: no se muestra segunda línea.
 - No convertir la creación en una actualización ni fabricar un timestamp cuando no hay registros operativos.
 
@@ -46,7 +46,7 @@ Se ignoran lecturas de página, abrir expedientes, descargar archivos, hover, na
 
 `fetchQuejas` filtra primero y ordena en PostgreSQL: `es_nuevo DESC, fecha_orden_actividad DESC, fecha DESC, id ASC` y solo **después** pagina en bloques de 25. Se mantiene orden estable al cambiar páginas, buscar o filtrar; Mis Quejas conserva `responsableId`.
 
-`table-fixed` con `colgroup` 16/22/12/15/17/18, mínimo de 1100 px. Folio cede algo de anchura a Fecha de ingreso; Cliente se acerca a Folio. Estado único que se abrevia: «Pendiente de Revisión GC» → «Revisión GC». Es una transformación de presentación: valor persistido, color y flujo siguen siendo los mismos.
+`table-fixed` con `colgroup` 13/22/12/15/17/21, mínimo de 1100 px. Folio cede algo de anchura a Fecha de ingreso; Cliente se acerca a Folio. Estado único que se abrevia: «Pendiente de Revisión GC» → «Revisión GC». Es una transformación de presentación: valor persistido, color y flujo siguen siendo los mismos.
 
 ## Integración y verificación
 
@@ -57,3 +57,12 @@ Archivos: `lib/utils/quejaDeadline.ts`, `lib/utils/quejasListado.ts`, `component
 Pruebas dirigidas: `tests/queja-deadline.test.mjs`, `tests/quejas-directorio-actividad.test.mjs`, `tests/data-reliability.test.mjs` y `tests/pagination-active.test.mjs`. Antes de producción se requiere compilar, ejecutar Node, verificar cada estado con cuenta de rol real y probar los límites de días/feriados en navegador. **Una lectura SQL correcta no es prueba E2E ni evidencia de despliegue web.**
 
 Seguridad de lectura: la cuarta migración retira del listado la consulta directa a `queja_informes`, tabla sin SELECT de `authenticated`. La escritura de informes nuevos sigue actualizando `qms_quejas_actividad_relevante` mediante trigger, sin conceder acceso a informes privados. Verificación SQL bajo `SET LOCAL ROLE authenticated` y sin JWT devolvió cero filas (RLS), sin errores de permisos; no reemplaza una prueba con usuarios autenticados reales.
+
+**Corrección exclusivamente visual (15-11):** Quejas y Mis Quejas usan el
+alto original de filas de 57 px (medido a partir de text-base 24 px de
+interlineado, py-4 de 16 px por lado y borde de 1 px en el corte GitHub
+`9db9eff`). El bloque de fecha ocupa 36 px y se centra en la celda;
+no modifica el alto si muestra o no la segunda línea. La fecha se presenta
+como DD/MM/AAAA con ceros iniciales, también en actualizaciones antiguas.
+Colgroup 13/22/12/15/17/21, con min-width 1100 px inalterado.
+Las consultas, orden, semántica, permisos, estado y plazos no se modificaron.
