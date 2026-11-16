@@ -20,6 +20,7 @@ export interface Queja {
   ultima_actividad_relevante_at?: string
   plazo_filtro?: 'por_vencer' | 'vencidos' | 'sin_plazo' | 'completados'
   bandeja_plazo_vence?: string | null
+  reapertura_dias_habiles_restantes?: number | null
   fecha_sla?: string
   fecha_limite_investigacion?: string
   fecha_cierre?: string
