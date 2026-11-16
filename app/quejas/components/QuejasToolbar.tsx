@@ -8,6 +8,7 @@ interface QuejasToolbarProps {
   search: string
   estado: string
   plazo: string
+  plazoDisabled?: boolean
   estados: { valor: string; etiqueta?: string }[]
   noVistas: number
   onSearch: (value: string) => void
@@ -18,7 +19,7 @@ interface QuejasToolbarProps {
 }
 
 /** Distribución según el espacio disponible en el módulo, no el ancho de la ventana. */
-export default function QuejasToolbar({ search, estado, plazo, estados, noVistas, onSearch, onEstado, onPlazo, onMarcarVistas, onNueva }: QuejasToolbarProps) {
+export default function QuejasToolbar({ search, estado, plazo, plazoDisabled = false, estados, noVistas, onSearch, onEstado, onPlazo, onMarcarVistas, onNueva }: QuejasToolbarProps) {
   return <div className="@container mb-4 shrink-0">
     <div role="group" aria-label="Buscar y filtrar quejas" className={`grid grid-cols-2 items-center gap-3 ${noVistas > 0 ? '@min-[720px]:grid-cols-[auto_minmax(150px,1fr)_140px_140px_auto]' : '@min-[720px]:grid-cols-[minmax(150px,1fr)_140px_140px_auto]'}`}>
       {noVistas > 0 && <Button variant="secondary" onClick={onMarcarVistas} title="Marcar todas las quejas visibles como vistas" className="order-last col-span-2 min-h-11 justify-self-start text-xs @min-[720px]:order-none @min-[720px]:col-span-1 @min-[720px]:min-h-10">
@@ -31,7 +32,7 @@ export default function QuejasToolbar({ search, estado, plazo, estados, noVistas
       <Select aria-label="Estado" className="h-11 @min-[720px]:h-10" value={estado} onChange={event => onEstado(event.target.value)}>
         <option value="">Estados</option>{estados.map(option => <option key={option.valor} value={option.valor}>{option.etiqueta ?? option.valor}</option>)}
       </Select>
-      <Select aria-label="Plazo" className="h-11 @min-[720px]:h-10" value={plazo} onChange={event => onPlazo(event.target.value)}>
+      <Select aria-label="Plazo" title={plazoDisabled ? "Filtro disponible al activar la nueva vista en Supabase" : undefined} disabled={plazoDisabled} className="h-11 @min-[720px]:h-10" value={plazo} onChange={event => onPlazo(event.target.value)}>
         <option value="">Todos los plazos</option>
         <option value="por_vencer">Por vencer</option>
         <option value="vencidos">Vencidos</option>
