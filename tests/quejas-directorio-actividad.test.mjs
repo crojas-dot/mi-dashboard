@@ -13,7 +13,7 @@ const base = {
 const detalle = overrides => JSON.parse(JSON.stringify(detalleFechaIngreso({ ...base, ...overrides }, ahora)))
 
 test('fecha de ingreso usa Costa Rica y omite subtítulo sin evidencia de actividad', () => {
-  assert.equal(fechaIngresoCorta('2026-11-14T18:00:00Z'), '14 nov 2026')
+  assert.equal(fechaIngresoCorta('2026-11-14T18:00:00Z'), '14/11/2026')
   assert.equal(detalle({}), null)
   assert.equal(detalle({ ultima_actividad_at: 'no-fecha' }), null)
 })
@@ -30,7 +30,7 @@ test('última actividad: hoy azul; ayer o hasta 30 días gris; después fecha ex
   assert.deepEqual(detalle(d('2026-11-14')), { texto: 'Actualización: ayer', destacada: false })
   assert.deepEqual(detalle(d('2026-11-13')), { texto: 'Actualización: hace 2 días', destacada: false })
   assert.deepEqual(detalle({ fecha: '2026-10-01T18:00:00Z', ...d('2026-10-16') }), { texto: 'Actualización: hace 30 días', destacada: false })
-  assert.deepEqual(detalle({ fecha: '2026-09-01T18:00:00Z', ...d('2026-10-15') }), { texto: 'Actualización: 15 oct 2026', destacada: false })
+  assert.deepEqual(detalle({ fecha: '2026-09-01T18:00:00Z', ...d('2026-10-15') }), { texto: 'Actualización: 15/10/2026', destacada: false })
   assert.equal(detalle({ estado: 'No Procede', ...d('2026-11-15') }), null)
   assert.equal(detalle({ estado: 'Finalizado', ...d('2026-11-15') }), null)
 })
@@ -47,9 +47,15 @@ test('Quejas y Mis Quejas comparten columnas y segunda línea sin modificar esta
     assert.match(source, /estadoQuejaEnTabla\(q.estado, q.estado_nombre\)/)
     assert.match(source, />Fecha de ingreso<\/th>/)
     assert.match(source, /table-fixed min-w-\[1100px\]/)
-    assert.match(source, /<col className="w-\[16%\]"\s*\/>/)
-    assert.match(source, /<col className="w-\[18%\]"\s*\/>/)
+    assert.match(source, /<col className="w-\[13%\]"\s*\/>/)
+    assert.match(source, /<col className="w-\[21%\]"\s*\/>/)
     assert.doesNotMatch(source, /toLocaleDateString\('es-ES'\)/)
+    assert.match(source, /ui-case-row h-\[57px\]/)
+    assert.match(source, /\[&>td\]:py-0/)
+    assert.match(source, /\[&>td\]:align-middle/)
+    assert.match(source, /min-w-\[1100px\]/)
+    assert.doesNotMatch(source, /\[&>td\]:py-3\.5/)
+
   }
 })
 
@@ -61,4 +67,22 @@ test('la consulta ordena globalmente por actividad antes del rango de paginació
   const fecha = source.indexOf(".order('fecha'", actividad)
   const pagina = source.indexOf('.range(page * pageSize', fecha)
   assert.ok(start !== -1 && nuevos > start && actividad > nuevos && fecha > actividad && pagina > fecha)
+})
+
+test('la fecha numérica incluye ceros iniciales y no altera la clasificación temporal', () => {
+  assert.equal(fechaIngresoCorta('2026-11-03T18:00:00Z'), '03/11/2026')
+  assert.equal(fechaIngresoCorta('2026-10-19T18:00:00Z'), '19/10/2026')
+  assert.equal(fechaIngresoCorta('2026-11-15T03:30:00Z'), '14/11/2026', 'zona local Costa Rica')
+  assert.deepEqual(detalle({ fecha: '2026-09-01T18:00:00Z', ultima_actividad_at: '2026-10-15T18:00:00Z' }), {
+    texto: 'Actualización: 15/10/2026',
+    destacada: false,
+  })
+})
+
+test('el componente de fecha admite una o dos líneas sin aumentar el tamaño de fila', () => {
+  const source = readFileSync('components/quejas/QuejaFechaIngreso.tsx','utf8')
+  assert.match(source, /h-9 min-w-0 flex-col justify-center gap-0\.5/)
+  assert.match(source, /whitespace-nowrap text-base/)
+  assert.match(source, /whitespace-nowrap text-xs leading-\[15px\]/)
+  assert.match(source, /data-queja-fecha-ingreso/)
 })
