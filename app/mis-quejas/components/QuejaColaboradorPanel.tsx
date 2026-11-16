@@ -17,6 +17,7 @@ import { quejaActividadKey, useQuejaActividad, useCrearQuejaActividad, type Quej
 import { actualizarNotaInvestigacion, eliminarNotaInvestigacion } from '@/lib/services/quejaInvestigacionService'
 import { esNotaInvestigacion, obtenerDevolucionPendiente, obtenerHistorialDevoluciones } from '@/lib/utils/quejaInvestigacionNotas'
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
+import { queryKeys } from '@/lib/queries/queryKeys'
 import { useQuejaPlazos } from '@/lib/queries/useQuejaSeguimiento'
 import { enviarResolucionBorradorRevision, guardarResolucionBorrador } from '@/lib/services/quejaWorkflowService'
 import { quejaResolucionDraftKey, useQuejaResolucionDraft, type QuejaResolucionDraft } from '@/lib/queries/useQuejaResolucionDraft'
@@ -179,7 +180,10 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setGuardandoResolucion(true)
     try {
       const saved = await guardarResolucionBorrador({ ...queja, revision: resolucionRevision ?? queja.revision }, borradorVersion, resolucion, resolucionFormato)
-      if (isContextCurrent()) queryClient.setQueryData(quejaResolucionDraftKey(queja.id), saved)
+      if (isContextCurrent()) {
+        queryClient.setQueryData(quejaResolucionDraftKey(queja.id), saved)
+        void queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
+      }
       if (operation.isCurrent()) {
         setBorradorVersion(saved.version); setBorradorGuardado(saved)
         setAiResult('')
@@ -215,7 +219,10 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     try {
       if (eliminar) await eliminarNotaInvestigacion(item)
       else await actualizarNotaInvestigacion(item, notaEdicion)
-      if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: quejaActividadKey(queja.id) })
+      if (isContextCurrent()) {
+        void queryClient.invalidateQueries({ queryKey: quejaActividadKey(queja.id) })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
+      }
       if (operation.isCurrent()) {
         if (!eliminar) { setNotaEditando(null); setNotaEdicion('') }
         setNotaEliminar(null); setNotaMenu(null)
@@ -292,6 +299,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setAgregandoNota(true)
     try {
       await crearActividad.mutateAsync({ quejaId: queja.id, descripcion: nota, usuarioId: user?.id ?? null, isContextCurrent })
+      if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: queryKeys.quejas })
       if (operation.isCurrent()) {
         showSuccess('Nota agregada a la actividad')
         if (draftVersions.current.nota === draftVersion) setNota('')
