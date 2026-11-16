@@ -55,15 +55,15 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
   // cuando se trata del mismo día. Los módulos con calendario propio pueden
   // suministrar el conteo operativo de días desde su motor de negocio.
   const diasNaturales = Math.round(civilDay(dueDate) - civilDay(time))
-  const remaining = typeof queja.plazo_dias_operativos === 'number' && Number.isFinite(queja.plazo_dias_operativos)
-    ? queja.plazo_dias_operativos
-    : diasNaturales
+  const cuentaOperativa = queja.plazo_dias_operativos
+  const remaining = typeof cuentaOperativa === 'number' && Number.isInteger(cuentaOperativa)
+    && cuentaOperativa !== 0 && Math.sign(cuentaOperativa) === Math.sign(diasNaturales)
+    ? cuentaOperativa : diasNaturales
   if (diasNaturales < 0) {
     const atrasados = Math.abs(remaining)
     const label = atrasados > 30 ? 'Vencido'
       : atrasados === 1 ? 'Venció ayer'
-        : atrasados === 0 ? 'Venció ayer'
-          : `Venció hace ${atrasados} días`
+        : `Venció hace ${atrasados} días`
     return { vence, etapa, label, variant: 'red', vencido: true }
   }
   if (diasNaturales === 0) return { vence, etapa, label: 'Vence hoy', variant: 'red', vencido: false }
