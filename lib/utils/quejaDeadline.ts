@@ -59,7 +59,8 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
   if (remaining < 0) return { vence, etapa, label: 'Vencido', variant: 'red', vencido: true }
   if (remaining === 0) return { vence, etapa, label: 'Vence hoy', variant: 'red', vencido: false }
   if (remaining === 1) return { vence, etapa, label: 'Vence mañana', variant: 'green', vencido: false }
-  const habil = queja.reabierta === true && Number.isInteger(queja.reapertura_dias_habiles_restantes)
+  const habil = queja.reabierta === true && typeof queja.reapertura_dias_habiles_restantes === 'number'
+    && Number.isInteger(queja.reapertura_dias_habiles_restantes)
     ? queja.reapertura_dias_habiles_restantes : null
   if (habil !== null && habil > 0)
     return { vence, etapa, label: habil === 1 ? 'Vence en 1 día hábil' : `Vence en ${habil} días hábiles`, variant: 'green', vencido: false }
