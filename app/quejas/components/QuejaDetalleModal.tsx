@@ -452,7 +452,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     return runCaseUpdate(
       () => revisarResolucionQueja(workflowQueja, 'approved'),
       'Resolución aprobada. Prepará la respuesta al cliente.', 'No se pudo aprobar la resolución',
-      updated => { setReviewOpen(false); setRespuestaCase(updated) },
+      () => { setReviewOpen(false); setReadOnlyStage(null); setRespuestaCase(null) },
     )
   }
 
