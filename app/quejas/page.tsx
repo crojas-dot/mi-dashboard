@@ -9,6 +9,7 @@ import { useQuejas, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey 
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
+import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
 import PageHeader from '@/components/ui/PageHeader'
@@ -26,6 +27,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { showError } from '@/lib/services/errorToast'
 import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA, tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { estadoQuejaEnTabla } from '@/lib/utils/quejasListado'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -124,7 +126,12 @@ export default function QuejasPage() {
               <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
             </div>
           ) : (
-            <table className={`w-full min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
+            <table className={`w-full table-fixed min-w-[1200px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1200px,calc(100%+40vw-1rem))]' : ''}`}>
+              <colgroup>
+                <col className="w-[14%]" /><col className="w-[24%]" />
+                <col className="w-[12%]" /><col className="w-[17%]" />
+                <col className="w-[16%]" /><col className="w-[17%]" />
+              </colgroup>
               <thead>
                 <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
                   <th scope="col" className="pl-6!">Folio</th>
@@ -132,7 +139,7 @@ export default function QuejasPage() {
                   <th scope="col" className="min-w-[140px]">Tipo</th>
                   <th scope="col">Estado</th>
                   <th scope="col">Plazo</th>
-                  <th scope="col" className="pr-6!">Fecha</th>
+                  <th scope="col" className="pr-6!">Fecha de ingreso</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,16 +157,16 @@ export default function QuejasPage() {
                         aria-selected={detalleOpen?.id === q.id}
                         onClick={() => handleAbrirDetalle(q)}
                         onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); handleAbrirDetalle(q) } }}
-                        className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-4 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}
+                        className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-3.5 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}
                         onMouseEnter={() => precargarFila(q)}
                         onFocus={() => precargarFila(q)}
                       >
                         <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
-                        <td className={vista ? '' : 'font-medium'}>{q.cliente_nombre}</td>
+                        <td className={vista ? '' : 'font-medium'}><span className="block truncate" title={q.cliente_nombre}>{q.cliente_nombre}</span></td>
                         <td>{tipoVisible(q)}</td>
-                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{q.estado_nombre || q.estado}</Badge></td>
+                        <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q.estado, q.estado_nombre)}</Badge></td>
                         <td className="whitespace-nowrap"><QuejaPlazoIndicator deadline={sla} /></td>
-                        <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                        <td className="pr-6!"><QuejaFechaIngreso queja={q} ahora={ahora} /></td>
                       </tr>
                     )
                   })
