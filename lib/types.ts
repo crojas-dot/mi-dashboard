@@ -17,6 +17,9 @@ export interface Queja {
   fecha: string
   actividad_contexto?: string | null
   actividad_reciente?: boolean
+  ultima_actividad_relevante_at?: string
+  plazo_filtro?: 'por_vencer' | 'vencidos' | 'sin_plazo' | 'completados'
+  bandeja_plazo_vence?: string | null
   fecha_sla?: string
   fecha_limite_investigacion?: string
   fecha_cierre?: string
