@@ -126,11 +126,11 @@ export default function QuejasPage() {
               <button onClick={() => refetch()} className="ui-button ui-button-primary ui-button-sm">Reintentar</button>
             </div>
           ) : (
-            <table className={`w-full table-fixed min-w-[1200px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1200px,calc(100%+40vw-1rem))]' : ''}`}>
+            <table className={`w-full table-fixed min-w-[1100px] select-text border-separate border-spacing-0 text-left text-base text-gray-700 ${detalleOpen ? 'lg:min-w-[max(1100px,calc(100%+40vw-1rem))]' : ''}`}>
               <colgroup>
-                <col className="w-[14%]" /><col className="w-[24%]" />
-                <col className="w-[12%]" /><col className="w-[17%]" />
-                <col className="w-[16%]" /><col className="w-[17%]" />
+                <col className="w-[16%]" /><col className="w-[22%]" />
+                <col className="w-[12%]" /><col className="w-[15%]" />
+                <col className="w-[17%]" /><col className="w-[18%]" />
               </colgroup>
               <thead>
                 <tr className="[&>th]:sticky [&>th]:top-0 [&>th]:z-10 [&>th]:border-b [&>th]:border-qms-border [&>th]:bg-qms-table-head [&>th]:px-4 [&>th]:py-3.5 [&>th]:text-left [&>th]:text-sm [&>th]:font-semibold [&>th]:whitespace-nowrap">
