@@ -59,7 +59,7 @@ export default function MisQuejasPage() {
     },
     !!user?.id,
   )
-  useRealtimeSubscription({ table: 'queja_bandeja_actividad', invalidateKeys: [[...queryKeys.quejas], [...queryKeys.dashboard]] })
+  useRealtimeSubscription({ table: data?.origen === 'legacy' ? 'quejas' : 'queja_bandeja_actividad', invalidateKeys: [[...queryKeys.quejas], [...queryKeys.dashboard]] })
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
   const selectedIndex = panelOpen ? quejas.findIndex(q => q.id === panelOpen.id) : -1
