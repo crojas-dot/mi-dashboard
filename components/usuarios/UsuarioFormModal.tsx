@@ -38,8 +38,9 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [tab, setTab] = useState<'detalles' | 'seguridad'>(initialTab)
   const [claveModo, setClaveModo] = useState<'generada' | 'manual'>('generada')
-  const [clave, setClave] = useState(() => initialTab === 'seguridad' && esEditar ? generatePassword(16) : '')
-  const [claveVisible, setClaveVisible] = useState(initialTab === 'seguridad')
+  const [clave, setClave] = useState('')
+  const [clavePanelAbierto, setClavePanelAbierto] = useState(false)
+  const [claveVisible, setClaveVisible] = useState(false)
   const [claveGuardada, setClaveGuardada] = useState(false)
   const [claveCopiada, setClaveCopiada] = useState(false)
   const [createdPassword, setCreatedPassword] = useState('')
@@ -58,6 +59,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setError(null)
     setTab('detalles')
     setClave('')
+    setClavePanelAbierto(false)
     setClaveModo('generada')
     setClaveVisible(false)
     setClaveGuardada(false)
@@ -134,14 +136,11 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
 
   function abrirSeguridad() {
     setTab('seguridad')
-    if (!clave && !claveGuardada && claveModo === 'generada') {
-      setClave(generatePassword(16))
-      setClaveVisible(true)
-    }
   }
 
   function generarClave() {
     if (lock.isLocked()) return
+    setClavePanelAbierto(true)
     setClaveModo('generada')
     setClave(generatePassword(16))
     setClaveVisible(true)
@@ -152,6 +151,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
 
   function definirClaveManual() {
     if (lock.isLocked()) return
+    setClavePanelAbierto(true)
     setClaveModo('manual')
     setClave('')
     setClaveVisible(false)
@@ -162,6 +162,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
 
   function cancelarClave() {
     if (lock.isLocked()) return
+    setClavePanelAbierto(false)
     setClave('')
     setClaveGuardada(false)
     setClaveCopiada(false)
@@ -403,16 +404,16 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                 <h3 className="text-base font-semibold text-qms-dark">Contraseña</h3>
                 <p className="mt-1 text-sm leading-relaxed text-qms-muted">Elegí cómo restablecer el acceso de {nombreVisible}. Todo se administra desde esta misma ventana.</p>
                 <div className="mt-5 flex flex-wrap gap-2.5" role="group" aria-label="Método de contraseña">
-                  <Button type="button" size="sm" variant={claveModo === 'generada' ? 'primary' : 'secondary'}
-                    aria-pressed={claveModo === 'generada'} disabled={busy} onClick={generarClave}>
+                  <Button type="button" size="sm" variant={clavePanelAbierto && claveModo === 'generada' ? 'primary' : 'secondary'}
+                    aria-pressed={clavePanelAbierto && claveModo === 'generada'} disabled={busy} onClick={generarClave}>
                     <KeyRound aria-hidden="true" className="size-4" />Generar contraseña segura
                   </Button>
-                  <Button type="button" size="sm" variant={claveModo === 'manual' ? 'primary' : 'secondary'}
-                    aria-pressed={claveModo === 'manual'} disabled={busy} onClick={definirClaveManual}>
+                  <Button type="button" size="sm" variant={clavePanelAbierto && claveModo === 'manual' ? 'primary' : 'secondary'}
+                    aria-pressed={clavePanelAbierto && claveModo === 'manual'} disabled={busy} onClick={definirClaveManual}>
                     <Pencil aria-hidden="true" className="size-4" />Definir contraseña manual
                   </Button>
                 </div>
-                <div data-user-password-panel className="mt-4 rounded-card border border-qms-border bg-qms-hover-bg/40 p-4 sm:p-5">
+                {clavePanelAbierto && <div data-user-password-panel className="mt-4 rounded-card border border-qms-border bg-qms-hover-bg/40 p-4 sm:p-5">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="flex items-center gap-2 text-sm font-semibold text-qms-dark">
                       {claveGuardada ? <Check aria-hidden="true" className="size-4 text-qms-success" /> : <LockKeyhole aria-hidden="true" className="size-4 text-qms-primary" />}
@@ -460,7 +461,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                       <RefreshCw aria-hidden="true" className="size-4" />Generar otra contraseña
                     </Button>
                   </div>}
-                </div>
+                </div>}
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 p-5 sm:px-6">
                 <div>
