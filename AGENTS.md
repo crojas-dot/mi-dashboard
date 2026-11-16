@@ -915,6 +915,12 @@ antes de afirmar que una modificación de `main` está disponible en producción
 
 ## Verificar, entregar y mantener
 
+Tablas de Quejas/Mis Quejas: la especificación del 16 noviembre conserva la
+altura original de cada fila, colores y densidad. El seguimiento por etapas y
+sus pruebas está en [tablas y bandeja](docs/quejas-bandeja-etapas-2026-11-16.md).
+Las fechas de ingreso se presentan con `formatFechaIngreso` en DD/MM/AAAA y
+zona Costa Rica; no modificar el instante almacenado por un cambio visual.
+
 Ejecutar comprobaciones acordes al cambio, sin instalar prototipos ni regenerar
 fixtures para esconder fallos. QA con datos ficticios y sin secretos; no crear
 expedientes, enviar correos ni cambiar roles reales solo para una prueba sin que

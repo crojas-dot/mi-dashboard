@@ -17,6 +17,7 @@ import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { formatFechaIngreso } from '@/lib/utils/quejaBandeja'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -97,7 +98,7 @@ export default function MisQuejasPage() {
                       <td className="whitespace-nowrap text-qms-muted">
                         <QuejaPlazoIndicator deadline={deadline} />
                       </td>
-                      <td className="pr-6! whitespace-nowrap text-qms-muted">{new Date(q.fecha).toLocaleDateString('es-ES')}</td>
+                      <td className="pr-6! whitespace-nowrap text-qms-muted">{formatFechaIngreso(q.fecha)}</td>
                     </tr>
                     )
                   })
