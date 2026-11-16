@@ -512,7 +512,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 aria-label="Asistencia para la resolución" title="Generar análisis IA"
                 onClick={() => {
                    const version = draftVersions.current.resolucion
-                   void handleAnalisisAuto(result => {
+                   return handleAnalisisAuto(result => {
                      if (version !== draftVersions.current.resolucion) return
                      const contenido = resolucion.trim() ? `${resolucion}\n\n${result}` : result
                      if (contenido.length > DOCUMENT_LIMIT) {
