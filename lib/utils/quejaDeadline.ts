@@ -6,6 +6,7 @@ export interface QuejaConPlazo {
   plazo_etapa?: string | null
   plazo_situacion?: string | null
   plazo_dias?: number | null
+  bandeja_plazo_vence?: string | null
 }
 
 export interface QuejaDeadline {
@@ -16,7 +17,7 @@ export interface QuejaDeadline {
   vencido: boolean
 }
 
-const estadosTerminados = new Set(['Resuelto', 'Finalizado', 'No Procede'])
+const estadosTerminados = new Set(['Resuelto', 'Finalizado', 'No Procede', 'Cerrado', 'Cerrada'])
 const dateFormatter = new Intl.DateTimeFormat('es-CR', {
   timeZone: 'America/Costa_Rica', day: '2-digit', month: '2-digit', year: 'numeric',
 })
@@ -33,13 +34,14 @@ export function getQuejaDeadlineDate(queja: QuejaConPlazo): string | null {
       ? queja.fecha_limite_investigacion
       : null
   // El null explícito de la vista significa que no hay ejecución vigente.
-  const vence = queja.plazo_vence !== undefined ? queja.plazo_vence : fallback
+  const vence = queja.bandeja_plazo_vence !== undefined ? queja.bandeja_plazo_vence
+    : queja.plazo_vence !== undefined ? queja.plazo_vence : fallback
   return vence && Number.isFinite(Date.parse(vence)) ? vence : null
 }
 
 export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date.now()): QuejaDeadline {
   if (estadosTerminados.has(queja.estado))
-    return { vence: null, etapa: null, label: 'Completado', variant: 'green', vencido: false }
+    return { vence: null, etapa: null, label: 'Completado', variant: 'gray', vencido: false }
   const vence = getQuejaDeadlineDate(queja)
   const etapa = queja.plazo_etapa ?? (queja.estado === 'Recibido' ? 'quejas.evaluation' : 'quejas.investigation')
   if (!vence) return { vence: null, etapa: null, label: 'Sin plazo', variant: 'gray', vencido: false }
@@ -51,14 +53,11 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
     return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / 86_400_000
   }
   const remaining = Math.round(civilDay(dueDate) - civilDay(time))
-  const vencido = dueDate.getTime() < time
-  if (vencido) return { vence, etapa, label: remaining === 0 ? 'Venció hoy' : `Venció hace ${Math.abs(remaining)} ${Math.abs(remaining) === 1 ? 'día' : 'días'}`, variant: 'red', vencido: true }
-  const hoy = remaining === 0
-  const alerta = hoy || ['soon', 'attention', 'alert', 'alerta', 'atencion', 'atención'].includes(queja.plazo_situacion ?? '')
-  return {
-    vence, etapa, label: hoy ? 'Vence hoy' : `Vence en ${remaining} ${remaining === 1 ? 'día' : 'días'}`,
-    variant: alerta ? 'amber' : 'green', vencido: false,
-  }
+  // Se compara la fecha civil de Costa Rica, no la hora: hoy nunca es Vencido.
+  if (remaining < 0) return { vence, etapa, label: 'Vencido', variant: 'red', vencido: true }
+  if (remaining === 0) return { vence, etapa, label: 'Vence hoy', variant: 'red', vencido: false }
+  if (remaining === 1) return { vence, etapa, label: 'Vence mañana', variant: 'green', vencido: false }
+  return { vence, etapa, label: `Vence en ${remaining} días`, variant: 'green', vencido: false }
 }
 
 /** Los timestamps se muestran siempre en la zona de los plazos, no en la del dispositivo. */
