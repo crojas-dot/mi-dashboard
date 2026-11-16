@@ -161,7 +161,7 @@ export default function QuejasPage() {
                         onMouseEnter={() => precargarFila(q)}
                         onFocus={() => precargarFila(q)}
                       >
-                        <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`text-base ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
+                        <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`${q.folio.length > 12 ? 'text-sm' : 'text-base'} ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
                         <td className={vista ? '' : 'font-medium'}><span className="block truncate" title={q.cliente_nombre}>{q.cliente_nombre}</span></td>
                         <td>{tipoVisible(q)}</td>
                         <td className="[&>span]:px-3 [&>span]:whitespace-nowrap"><Badge variant={q.estado_color || varianteEstado('quejas', q.estado)}>{estadoQuejaEnTabla(q.estado, q.estado_nombre)}</Badge></td>
