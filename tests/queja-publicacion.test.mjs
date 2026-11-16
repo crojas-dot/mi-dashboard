@@ -138,6 +138,7 @@ function panelFixture(options = {}) {
       handleSubirAdjunto: file => { requests.push({ kind: 'upload', file }); uploading = true }, setPreviewAdjunto() {} }) },
     '@/lib/services/quejaWorkflowService': { esOficioPublicableQueja: service.esOficioPublicableQueja,
       revisarResolucionQueja: (...args) => mutation('review', ...args),
+      reabrirQuejaFinalizada: (...args) => mutation('reopen', ...args),
       transicionarQueja: (...args) => mutation('legacy', ...args), iniciarInvestigacionQueja: (...args) => mutation('assignment', ...args), resolverQuejaConDocumento: (...args) => mutation('publish', ...args) },
     '@/lib/services/errorToast': { showError: (_error, message) => toasts.push(message), showSuccess: message => toasts.push(message) },
   })
@@ -246,6 +247,51 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   }
   const analyst = panelFixture({ role: 'colaborador' }); analyst.select({ estado: 'En Investigación', responsable_id: 'staff' })
   assert.equal(analyst.button('Resolver'), undefined)
+})
+
+test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
+  for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
+    const panel = panelFixture()
+    panel.select({ estado })
+    const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+    assert.ok(shortcut, 'historial accesible para ' + estado)
+    shortcut.props.onOpen()
+    panel.render()
+    assert.equal(panel.button('Reabrir queja'), undefined, 'sin acción de reapertura en ' + estado)
+  }
+  const panel = panelFixture()
+  panel.select({ estado: 'Finalizado' })
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+  assert.ok(shortcut)
+  shortcut.props.onOpen()
+  panel.render()
+  assert.ok(panel.button('Reabrir queja'), 'acción excepcional en historial de Finalizado')
+})
+
+test('Reapertura exige motivo y no emite un segundo RPC durante el primer envío', async () => {
+  const panel = panelFixture()
+  panel.select({ estado: 'Finalizado' })
+  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseTriageFooter')
+  assert.ok(shortcut)
+  shortcut.props.onOpen()
+  panel.render()
+  panel.click('Reabrir queja')
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'motivo vacío bloquea la acción')
+  panel.field('-reapertura-' + quejaId, '   ')
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'espacios vacíos bloquean la acción')
+  panel.field('-reapertura-' + quejaId, 'Apareció información adicional que requiere investigación')
+  const operation = panel.click('Reabrir queja')
+  assert.equal(panel.requests.length, 1)
+  assert.equal(panel.requests[0].kind, 'reopen')
+  assert.equal(panel.requests[0].args[0].revision, 7)
+  assert.match(panel.requests[0].args[1], /información adicional/)
+  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'el botón se bloquea mientras se procesa')
+  await panel.button('Reabrir queja').props.onClick()
+  assert.equal(panel.requests.length, 1, 'no hay doble reapertura')
+  panel.requests[0].resolve({ id: quejaId, estado: 'En Investigación', revision: 8 })
+  await operation
+  panel.render()
+  assert.equal(panel.updates[0][0].estado, 'En Investigación')
 })
 
 test('cambiar de visita descarta la respuesta en curso y la nueva visita abre su propia decisión', () => {
