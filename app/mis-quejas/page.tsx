@@ -17,7 +17,7 @@ import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
 import { tipoVisible } from '@/lib/constants/quejas'
-import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { getQuejaDeadlineTabla } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejasListado'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
@@ -95,7 +95,7 @@ export default function MisQuejasPage() {
                 ) : (
                   quejas.map((q) => {
                     const vista = esVista(q.id)
-                    const deadline = getQuejaDeadline(q, ahora)
+                    const deadline = getQuejaDeadlineTabla(q, ahora)
                     return (
                     <tr key={q.id} tabIndex={0} aria-label={`Abrir queja ${q.folio}`} aria-selected={panelOpen?.id === q.id} onClick={() => openPanel(q)} onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); openPanel(q) } }} className={`ui-case-row cursor-pointer transition-colors [&>td]:border-b [&>td]:border-qms-border [&>td]:px-4 [&>td]:py-3.5 [&>td]:align-middle [&>td>span]:rounded-card ${vista ? 'hover:bg-qms-hover-bg' : 'bg-qms-primary/6 hover:bg-qms-primary/10'}`}>
                       <td className="relative pl-6! whitespace-nowrap">{!vista && <><span aria-hidden="true" className="absolute left-2.5 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-qms-primary" /><span className="sr-only">Sin leer: </span></>}<span className={`${q.folio.length > 12 ? 'text-sm' : 'text-base'} ${vista ? 'font-medium' : 'font-semibold'}`}>{q.folio}</span></td>
