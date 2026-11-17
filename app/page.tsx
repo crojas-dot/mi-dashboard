@@ -33,16 +33,22 @@ const indicatorBg: Record<string, string> = {
 
 export default function DashboardPage() {
   return (
-    <div>
-      <PageHeader title="Dashboard" description="Panel de control general" compact={false} />
+    <div className="coreui-dashboard mx-auto w-full max-w-[1600px]">
+      <PageHeader title="Dashboard" description="Resumen general de la gestión y actividad reciente" compact={false} />
       <Suspense fallback={<DashboardLoading label="Cargando indicadores de Quejas…" variant="summary" className="mb-5" />}>
         <QuejasSummary />
       </Suspense>
-      <IndicadoresBlock />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <TareasPendientesBlock />
-        <ActividadRecienteBlock />
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+        <div className="min-w-0 xl:col-span-5"><IndicadoresBlock /></div>
+        <div className="flex min-w-0 flex-col gap-5 xl:col-span-7">
+          <TareasPendientesBlock />
+          <ActividadRecienteBlock />
+        </div>
       </div>
+      <footer className="mt-7 flex flex-wrap items-center justify-between gap-2 border-t border-qms-border pt-4 text-[12px] text-qms-muted">
+        <span>ECA-QMS · Sistema de Gestión de Calidad</span>
+        <span>Diseño experimental basado en CoreUI</span>
+      </footer>
     </div>
   )
 }
@@ -57,14 +63,17 @@ function IndicadoresBlock() {
   const maxIndicador = Math.max(1, ...indicadores.map((ind) => ind.valor))
 
   return (
-      <section aria-labelledby="dashboard-modulos-title" className="mb-5 rounded-card border border-qms-border bg-qms-surface p-5">
-        <h2 id="dashboard-modulos-title" className="mb-4 text-lg font-semibold text-qms-dark">Seguimiento por módulo</h2>
-        <div className="space-y-4">
+      <section aria-labelledby="dashboard-modulos-title" className="coreui-panel h-full">
+        <div className="coreui-panel-head">
+          <h2 id="dashboard-modulos-title">Seguimiento por módulo</h2>
+          <p className="mt-1 text-[12px] text-qms-muted">Volumen de registros por área</p>
+        </div>
+        <div className="space-y-5 p-5">
         {indicadores.map((ind) => (
-          <Link key={ind.label} href={ind.url} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-sm text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[190px_minmax(0,1fr)_48px]">
+          <Link key={ind.label} href={ind.url} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-[13px] text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[155px_minmax(0,1fr)_40px]">
             <span>{ind.label}</span>
-            <div aria-hidden="true" className="order-3 col-span-2 h-5 overflow-hidden rounded-sm bg-gray-100 sm:order-none sm:col-span-1">
-              <div className={`h-full ${indicatorBg[ind.color] || 'bg-qms-primary'}`} style={{ width: `${Math.max(0, ind.valor) / maxIndicador * 100}%` }} />
+            <div aria-hidden="true" className="coreui-progress order-3 col-span-2 sm:order-none sm:col-span-1">
+              <div className={`${indicatorBg[ind.color] || 'bg-qms-primary'}`} style={{ width: `${Math.max(0, ind.valor) / maxIndicador * 100}%` }} />
             </div>
             <strong className="text-right tabular-nums">{ind.valor}</strong>
           </Link>
@@ -78,8 +87,12 @@ function TareasPendientesBlock() {
   const { data: tareas = [], isPending, error, refetch } = useDashboardTareas()
   useDashboardError(error, 'tareas')
   return (
-        <div>
-          <h6 className="mb-2 text-base font-bold text-qms-dark">Expedientes Pendientes</h6>
+        <section aria-labelledby="dashboard-pendientes-title" className="coreui-panel">
+          <div className="coreui-panel-head">
+            <h2 id="dashboard-pendientes-title">Expedientes pendientes</h2>
+            <p className="mt-1 text-[12px] text-qms-muted">Registros que requieren seguimiento</p>
+          </div>
+          <div className="min-w-0 overflow-x-auto">
           {isPending ? <DashboardLoading label="Cargando expedientes…" variant="table" className="min-h-48" /> : error ? <p role="alert" className="p-3 text-sm">No se pudieron cargar los expedientes. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : <Table>
             <TableHead>
               <tr>
@@ -104,7 +117,8 @@ function TareasPendientesBlock() {
               )}
             </tbody>
           </Table>}
-        </div>
+          </div>
+        </section>
   )
 }
 
@@ -112,17 +126,23 @@ function ActividadRecienteBlock() {
   const actividad = useActividadReciente()
   useDashboardError(actividad.error, 'actividad')
   return (
-        <div>
-          <h6 className="mb-2 text-base font-bold text-qms-dark">Actividad Reciente</h6>
-          <div className="divide-y rounded-card border border-qms-border">
+        <section aria-labelledby="dashboard-actividad-title" className="coreui-panel">
+          <div className="coreui-panel-head">
+            <h2 id="dashboard-actividad-title">Actividad reciente</h2>
+            <p className="mt-1 text-[12px] text-qms-muted">Últimos movimientos registrados</p>
+          </div>
+          <div className="divide-y divide-qms-border">
             {actividad.isPending ? <DashboardLoading label="Cargando actividad…" variant="activity" framed={false} />
               : actividad.error ? <p role="alert" className="p-3 text-sm">No se pudo cargar la actividad. <button className="underline" onClick={() => void actividad.refetch()}>Reintentar</button></p>
               : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>
-              : actividad.data.map((item) => <div key={item.id} className="p-3 text-sm">
-                <p>{item.descripcion}</p>
-                <p className="text-gray-500">{new Date(item.created_at).toLocaleString('es-CR')}</p>
+              : actividad.data.map((item) => <div key={item.id} className="flex items-start gap-3 px-5 py-3.5 text-sm">
+                <span className="coreui-activity-dot mt-[7px] h-2 w-2 shrink-0 rounded-full bg-qms-primary" aria-hidden="true" />
+                <div className="min-w-0 flex-1">
+                  <p className="leading-relaxed text-qms-dark">{item.descripcion}</p>
+                  <time dateTime={item.created_at} className="mt-1 block text-[12px] text-qms-muted">{new Date(item.created_at).toLocaleString('es-CR')}</time>
+                </div>
               </div>)}
           </div>
-        </div>
+        </section>
   )
 }
