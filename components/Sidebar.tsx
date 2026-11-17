@@ -9,12 +9,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { QueryFunctionContext } from '@tanstack/react-query'
-import {
-  ChartPie, MessageSquareText, FolderOpen, ListChecks,
-  ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
-  UsersRound, Settings2, ChartNoAxesCombined, ChevronLeft, ChevronRight,
-  X, type LucideIcon,
-} from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import EmpresaLogo from '@/components/EmpresaLogo'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -32,12 +27,31 @@ import { fetchProcesos, procesosKey } from '@/lib/queries/useProcesos'
 import { fetchUsuarios, usuariosQueryKey } from '@/lib/queries/useUsuarios'
 import { dashboardPrefetchOptions } from '@/lib/queries/useDashboard'
 
-// Los iconos viven en UI: el registro compartido no incorpora Lucide al servidor.
-const ICONOS_MODULO: Record<ModuloIconKey, LucideIcon> = {
-  chartPie: ChartPie, messageSquareText: MessageSquareText, inbox: Inbox,
-  folderOpen: FolderOpen, listChecks: ListChecks, shieldAlert: ShieldAlert,
-  clipboardCheck: ClipboardCheck, presentation: Presentation, workflow: Workflow,
-  usersRound: UsersRound, settings2: Settings2, chartNoAxesCombined: ChartNoAxesCombined,
+// SVG originales de CoreUI; máscara monocromática para heredar el color del menú.
+const ICONOS_MODULO: Record<ModuloIconKey, string> = {
+  chartPie: 'cil-speedometer',
+  messageSquareText: 'cil-speech',
+  inbox: 'cil-inbox',
+  folderOpen: 'cil-folder-open',
+  listChecks: 'cil-task',
+  shieldAlert: 'cil-shield-alt',
+  clipboardCheck: 'cil-list',
+  presentation: 'cil-description',
+  workflow: 'cil-layers',
+  usersRound: 'cil-people',
+  settings2: 'cil-settings',
+  chartNoAxesCombined: 'cil-chart-line',
+}
+
+function CoreUIIcon({ name }: { name: string }) {
+  const mask = `url("/coreui-icons/${name}.svg")`
+  return (
+    <span
+      aria-hidden="true"
+      className="coreui-nav-icon h-5 w-5 shrink-0"
+      style={{ maskImage: mask, WebkitMaskImage: mask }}
+    />
+  )
 }
 const sections = GRUPOS_NAVEGACION.map(section => ({
   label: section.label,
@@ -78,14 +92,14 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-[250px]'} bg-qms-dark ${className}`}
+      className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-[68px]' : 'w-[258px]'} ${className} coreui-sidebar`}
     >
-      <div className={`flex h-14 shrink-0 items-center justify-between px-3 ${expanded ? 'border-b border-white/10' : ''}`}>
+      <div className={`flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-3.5 ${expanded ? 'border-b border-white/10' : ''}`}>
         {!collapsed ? (
           <>
-            <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
-              <EmpresaLogo className="h-10 w-10 text-sm" />
-              <div className="text-[17px] font-bold text-white">ECA-QMS</div>
+            <Link href="/" onClick={onNavigate} className="flex items-center gap-3 no-underline">
+              <EmpresaLogo className="h-10 w-10 shrink-0 text-sm" />
+              <div className="text-[17px] font-semibold tracking-[0.015em] text-white">ECA-QMS</div>
             </Link>
             <button
               type="button"
@@ -110,21 +124,20 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
       {!expanded && <hr className="mx-3 border-0 border-t border-white/10" />}
 
-       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pt-3 ${expanded ? 'pb-3' : ''}`}>
+       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 pt-5 ${expanded ? 'pb-3' : ''}`}>
          {sections.map((section) => {
            const linksVisibles = section.links.filter((link) => tienePermiso(permisos, link.id, false, user?.rol))
            if (linksVisibles.length === 0) return null
            return (
           <div key={section.label} className="mb-2">
             {!collapsed && (
-              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/50">
+              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.11em] text-[#8f9bb1]">
                 {section.label}
               </p>
             )}
             {linksVisibles.map((link) => {
               const isActive = pathname === link.href
-              const Icon = link.icon
-              return (
+                            return (
                 <Link
                   key={link.href}
                   href={link.href}
@@ -132,12 +145,12 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   aria-label={link.label}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={onNavigate}
-                  className={`my-0.5 flex items-center gap-2.5 rounded-button py-2.5 text-base leading-6 no-underline transition-colors ${collapsed ? 'justify-center px-0' : 'px-[15px]'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
+                  className={`coreui-nav-item my-0.5 flex items-center gap-3 rounded-md py-2.5 no-underline ${collapsed ? 'justify-center px-0' : 'px-3.5'} ${isActive ? 'coreui-nav-item--active' : ''}`}
                   onMouseEnter={() => prepareNavigation(link.id)}
                   onFocus={() => prepareNavigation(link.id)}
                   onTouchStart={() => prepareNavigation(link.id)}
                 >
-                  <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  <CoreUIIcon name={link.icon} />
                   {!collapsed && <span className="truncate">{link.label}</span>}
                 </Link>
               )

@@ -133,10 +133,10 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-3 sm:px-5">
+    <header className="coreui-topbar flex h-16 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 sm:px-6">
       <div className="flex min-w-0 items-center gap-2">
         {onOpenNavigation && <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="ui-button ui-button-ghost ui-button-icon lg:hidden"><Menu className="h-5 w-5" aria-hidden="true" /></button>}
-        <span className="truncate text-base font-semibold text-qms-dark">{title}</span>
+        <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-qms-dark">{title}</span>
       </div>
 
       <div ref={rootRef} className="flex shrink-0 items-center gap-2">

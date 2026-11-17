@@ -1,0 +1,53 @@
+/* Vista previa CoreUI: solo presentación, sin dependencias de Bootstrap. */
+.coreui-sidebar {
+  background: #212631;
+  color: #e9edf5;
+  border-right: 1px solid #353b49;
+}
+.coreui-sidebar nav {
+  scrollbar-width: thin;
+  scrollbar-color: #505b70 #212631;
+}
+.coreui-sidebar .coreui-nav-item {
+  min-height: 43px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.35rem;
+  color: #b7c1d1;
+  border: 1px solid transparent;
+  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+.coreui-sidebar .coreui-nav-item:hover {
+  background: #343c4c;
+  color: #fff;
+}
+.coreui-sidebar .coreui-nav-item--active,
+.coreui-sidebar .coreui-nav-item--active:hover {
+  background: #5856d6;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(46, 41, 138, .2);
+}
+.coreui-sidebar .coreui-nav-icon {
+  display: inline-block;
+  background-color: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+.coreui-topbar {
+  box-shadow: 0 1px 5px rgba(26, 34, 56, .035);
+}
+.coreui-topbar button:focus-visible,
+.coreui-sidebar a:focus-visible,
+.coreui-sidebar button:focus-visible {
+  outline-offset: 2px;
+}
+.ui-panel {
+  box-shadow: 0 2px 10px rgba(30, 41, 59, .025);
+}
+@media (prefers-reduced-motion: reduce) {
+  .coreui-sidebar .coreui-nav-item { transition: none; }
+}

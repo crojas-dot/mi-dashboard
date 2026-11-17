@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 @import "./styles/components.css";
+@import "./styles/coreui-preview.css";
 /* Los previews y experimentos no aportan clases al CSS del panel. */
 @source not "../.performance";
 @source not "../.experiments";
@@ -10,13 +11,13 @@
 body {
   background-color: var(--color-qms-background);
   color: var(--color-qms-dark);
-  font-family: inherit;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 1rem;
   line-height: 1.5;
 }
 
 ::selection {
-  background-color: rgba(2, 71, 150, 0.2);
+  background-color: rgba(88, 86, 214, 0.18);
 }
 
 /* Una sola utilidad para el foco de teclado; conserva el radio del elemento. */
