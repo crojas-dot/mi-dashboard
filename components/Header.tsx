@@ -21,13 +21,18 @@ import { useAgendaHoy } from '@/lib/queries/useAgendaHoy'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 import { queryKeys } from '@/lib/queries/queryKeys'
-import { Menu } from 'lucide-react'
+import { Menu, PanelLeftClose, PanelLeftOpen, ChevronRight, House } from 'lucide-react'
+import Link from 'next/link'
+import { useSidebarStore } from '@/lib/store/sidebar-store'
+import ModuleSearch from '@/components/header/ModuleSearch'
 import { tituloDeRuta } from '@/lib/constants/modulos'
 import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
 
 export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => void } = {}) {
   const pathname = usePathname()
   const router = useRouter()
+  const sidebarCollapsed = useSidebarStore(s => s.collapsed)
+  const toggleSidebar = useSidebarStore(s => s.toggle)
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const setPrefs = useAuthStore((s) => s.setPrefs)
@@ -133,47 +138,69 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   }
 
   return (
-    <header className="coreui-topbar flex h-16 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 sm:px-6">
-      <div className="flex min-w-0 items-center gap-2">
-        {onOpenNavigation && <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="ui-button ui-button-ghost ui-button-icon lg:hidden"><Menu className="h-5 w-5" aria-hidden="true" /></button>}
-        <span className="truncate text-[17px] font-semibold tracking-[-0.01em] text-qms-dark">{title}</span>
+    <header className="coreui-topbar relative z-20 flex shrink-0 flex-col border-b border-qms-border bg-qms-surface">
+      <div className="flex h-[66px] items-center justify-between gap-3 px-3 sm:px-5 lg:px-6">
+        <div className="flex min-w-0 items-center gap-3">
+          {onOpenNavigation && (
+            <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="coreui-header-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-md lg:hidden">
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            </button>
+          )}
+          <button type="button" aria-label={sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'} title={sidebarCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'} onClick={toggleSidebar} className="coreui-header-icon hidden h-10 w-10 shrink-0 items-center justify-center rounded-md lg:flex">
+            {sidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" aria-hidden="true" /> : <PanelLeftClose className="h-5 w-5" aria-hidden="true" />}
+          </button>
+          <span className="hidden h-7 w-px shrink-0 bg-qms-border sm:block" aria-hidden="true" />
+          <div className="min-w-0">
+            <p className="truncate text-[15px] font-semibold leading-5 text-qms-dark">Espacio de trabajo</p>
+            <p className="hidden truncate text-[12px] leading-4 text-qms-muted sm:block">Sistema de Gestión de Calidad</p>
+          </div>
+        </div>
+        <div ref={rootRef} className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
+          <ModuleSearch />
+          <span className="hidden h-7 w-px shrink-0 bg-qms-border sm:block" aria-hidden="true" />
+          <AgendaHoyWidget open={menuAbierto === 'agenda'} items={agenda.data ?? []} loading={agenda.isPending}
+            error={agenda.isError} onToggle={() => {
+              if (menuAbierto !== 'agenda' && agenda.isStale) void agenda.refetch({ cancelRefetch: false })
+              setMenuAbierto(menuAbierto === 'agenda' ? null : 'agenda')
+            }}
+            onClose={() => setMenuAbierto(null)} onRetry={() => { void agenda.refetch() }} />
+          <NotificationDropdown
+            open={menuAbierto === 'notif'}
+            onToggle={() => setMenuAbierto(menuAbierto === 'notif' ? null : 'notif')}
+            notifications={notificaciones}
+            unreadCount={countNoLeidas}
+            onMarkAll={() => { if (user) marcarTodas.mutate(user.id) }}
+            onArchiveAll={() => { if (user) archivarTodas.mutate(user.id) }}
+            onMarkRead={(notification) => { if (!notification.leida && user) marcarLeida.mutate({ id: notification.id, userId: user.id }) }}
+            onArchive={(notification) => { if (user) archivar.mutate({ id: notification.id, userId: user.id }) }}
+            onNavigate={(notification) => irA(notification.enlace || undefined, notification.origen_id || undefined)}
+            onTestSound={notifHabilitadas && notifSonido ? () => { void playNotificationSound(sonidoSeleccionado) } : undefined}
+          />
+          {user && <UserMenuDropdown
+            open={menuAbierto === 'user'}
+            user={user}
+            initials={initials}
+            saving={guardandoPrefs}
+            soundId={sonidoSeleccionado}
+            onToggle={() => setMenuAbierto(menuAbierto === 'user' ? null : 'user')}
+            onPassword={() => { setMenuAbierto(null); setCambiarPasswordOpen(true) }}
+            onPreferences={handlerPrefs}
+            onSound={handlerCambiarSonido}
+            onPreviewSound={() => playNotificationSound(sonidoSeleccionado)}
+            onLogout={logout}
+          />}
+        </div>
       </div>
-
-      <div ref={rootRef} className="flex shrink-0 items-center gap-2">
-        <AgendaHoyWidget open={menuAbierto === 'agenda'} items={agenda.data ?? []} loading={agenda.isPending}
-          error={agenda.isError} onToggle={() => {
-            if (menuAbierto !== 'agenda' && agenda.isStale) void agenda.refetch({ cancelRefetch: false })
-            setMenuAbierto(menuAbierto === 'agenda' ? null : 'agenda')
-          }}
-          onClose={() => setMenuAbierto(null)} onRetry={() => { void agenda.refetch() }} />
-        <NotificationDropdown
-          open={menuAbierto === 'notif'}
-          onToggle={() => setMenuAbierto(menuAbierto === 'notif' ? null : 'notif')}
-          notifications={notificaciones}
-          unreadCount={countNoLeidas}
-          onMarkAll={() => { if (user) marcarTodas.mutate(user.id) }}
-          onArchiveAll={() => { if (user) archivarTodas.mutate(user.id) }}
-          onMarkRead={(notification) => { if (!notification.leida && user) marcarLeida.mutate({ id: notification.id, userId: user.id }) }}
-          onArchive={(notification) => { if (user) archivar.mutate({ id: notification.id, userId: user.id }) }}
-          onNavigate={(notification) => irA(notification.enlace || undefined, notification.origen_id || undefined)}
-          onTestSound={notifHabilitadas && notifSonido ? () => { void playNotificationSound(sonidoSeleccionado) } : undefined}
-        />
-
-        {user && <UserMenuDropdown
-          open={menuAbierto === 'user'}
-          user={user}
-          initials={initials}
-          saving={guardandoPrefs}
-          soundId={sonidoSeleccionado}
-          onToggle={() => setMenuAbierto(menuAbierto === 'user' ? null : 'user')}
-          onPassword={() => { setMenuAbierto(null); setCambiarPasswordOpen(true) }}
-          onPreferences={handlerPrefs}
-          onSound={handlerCambiarSonido}
-          onPreviewSound={() => playNotificationSound(sonidoSeleccionado)}
-          onLogout={logout}
-        />}
+      <div className="coreui-breadcrumb flex h-[39px] items-center justify-between gap-4 border-t border-qms-border/70 px-4 sm:px-6">
+        <nav aria-label="Ruta de navegación" className="flex min-w-0 items-center gap-2 text-[12px] sm:text-[13px]">
+          <Link href="/" className="flex items-center gap-1.5 no-underline text-qms-muted hover:text-qms-primary"><House className="h-3.5 w-3.5" aria-hidden="true" /><span>Inicio</span></Link>
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#9da6b5]" aria-hidden="true" />
+          <span className="truncate font-semibold text-qms-dark" aria-current="page">{title}</span>
+        </nav>
+        <span className="hidden shrink-0 items-center gap-1.5 text-[11px] font-medium text-qms-muted md:inline-flex">
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#2eb85c]" /> Vista de prueba · CoreUI
+        </span>
       </div>
-
       <CambiarMiPasswordModal open={cambiarPasswordOpen} onClose={() => setCambiarPasswordOpen(false)} />
     </header>
   )

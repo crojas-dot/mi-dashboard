@@ -1,21 +1,24 @@
-/* Vista previa CoreUI: solo presentación, sin dependencias de Bootstrap. */
+/* Exploración visual CoreUI — aislada de los workflows de negocio. */
+.coreui-app-shell { color-scheme: light; }
 .coreui-sidebar {
   background: #212631;
-  color: #e9edf5;
-  border-right: 1px solid #353b49;
+  border-right: 1px solid #333a47;
+  color: #ecf0f7;
 }
-.coreui-sidebar nav {
+.coreui-sidebar-nav {
+  scrollbar-color: #4a5365 transparent;
   scrollbar-width: thin;
-  scrollbar-color: #505b70 #212631;
 }
+.coreui-sidebar-brand { background: #1d222c; }
+.coreui-sidebar-footer { background: #1c222c; }
 .coreui-sidebar .coreui-nav-item {
-  min-height: 43px;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  line-height: 1.35rem;
-  color: #b7c1d1;
+  min-height: 45px;
   border: 1px solid transparent;
-  transition: background-color .16s ease, color .16s ease, box-shadow .16s ease;
+  color: #b8c2d1;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: background-color .16s ease, color .16s ease;
 }
 .coreui-sidebar .coreui-nav-item:hover {
   background: #343c4c;
@@ -25,10 +28,12 @@
 .coreui-sidebar .coreui-nav-item--active:hover {
   background: #5856d6;
   color: #fff;
-  box-shadow: 0 4px 14px rgba(46, 41, 138, .2);
+  box-shadow: 0 3px 13px rgb(29 24 113 / 20%);
 }
-.coreui-sidebar .coreui-nav-icon {
+.coreui-sidebar .coreui-nav-icon,
+.coreui-dashboard .coreui-metric-icon {
   display: inline-block;
+  flex-shrink: 0;
   background-color: currentColor;
   mask-position: center;
   mask-repeat: no-repeat;
@@ -37,17 +42,67 @@
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-size: contain;
 }
-.coreui-topbar {
-  box-shadow: 0 1px 5px rgba(26, 34, 56, .035);
+.coreui-topbar { box-shadow: 0 1px 5px rgb(20 35 60 / 3%); }
+.coreui-header-icon { color: #657386; transition: background-color .15s,color .15s; }
+.coreui-header-icon:hover { background: #f2f3f8; color: #33394a; }
+.coreui-breadcrumb { background: #fff; }
+.coreui-main { background: #f3f4f8; }
+.coreui-dashboard .coreui-panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #dde2ea;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgb(25 35 56 / 3%);
 }
-.coreui-topbar button:focus-visible,
-.coreui-sidebar a:focus-visible,
-.coreui-sidebar button:focus-visible {
-  outline-offset: 2px;
+.coreui-dashboard .coreui-panel-head {
+  border-bottom: 1px solid #e6eaf0;
+  padding: 17px 20px;
 }
-.ui-panel {
-  box-shadow: 0 2px 10px rgba(30, 41, 59, .025);
+.coreui-dashboard .coreui-panel-head h2 {
+  color: #303746;
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -.015em;
+}
+.coreui-dashboard .coreui-metric-card {
+  position: relative;
+  min-height: 142px;
+  overflow: hidden;
+  border-radius: 9px;
+  padding: 19px 21px 18px;
+  color: #fff;
+  box-shadow: 0 4px 13px rgb(33 43 72 / 8%);
+}
+.coreui-dashboard .coreui-metric-card::after {
+  position: absolute;
+  top: -61px;
+  right: -70px;
+  width: 180px;
+  height: 180px;
+  border: 29px solid rgb(255 255 255 / 9%);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+.coreui-dashboard .coreui-metric-card--primary { background: linear-gradient(125deg, #5856d6, #746cdb); }
+.coreui-dashboard .coreui-metric-card--info { background: linear-gradient(125deg, #3399ff, #61b5ff); }
+.coreui-dashboard .coreui-metric-card--success { background: linear-gradient(125deg, #279b65, #35b984); }
+.coreui-dashboard .coreui-metric-card--warning { background: linear-gradient(125deg, #e6a000, #f1ba36); }
+.coreui-dashboard .coreui-metric-icon { width: 27px; height: 27px; opacity: .85; }
+.coreui-dashboard .coreui-progress { height: 9px; border-radius: 99px; background: #eef0f5; overflow: hidden; }
+.coreui-dashboard .coreui-progress > div { height: 100%; border-radius: 99px; min-width: 0; transition: width .2s; }
+.coreui-dashboard .coreui-progress > div[data-color="danger"] { background: #e55353; }
+.coreui-dashboard .coreui-progress > div[data-color="warning"] { background: #f1b44c; }
+.coreui-dashboard .coreui-progress > div[data-color="success"] { background: #2eb85c; }
+.coreui-dashboard .coreui-progress > div[data-color="primary"] { background: #5856d6; }
+.coreui-dashboard .coreui-analysis-figure + .coreui-analysis-figure { border-left: 1px solid #e6eaf0; }
+.coreui-dashboard .coreui-metric-title { color: rgb(255 255 255 / 88%); }
+.coreui-dashboard .coreui-activity-dot { box-shadow: 0 0 0 4px #f0effb; }
+.coreui-dashboard table tbody tr:hover { background: #fafbff; }
+@media (max-width: 1023px) {
+  .coreui-dashboard .coreui-analysis-figure + .coreui-analysis-figure { border-left: 0; border-top: 1px solid #e6eaf0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .coreui-sidebar .coreui-nav-item { transition: none; }
+  .coreui-sidebar .coreui-nav-item, .coreui-dashboard .coreui-progress > div { transition: none; }
 }

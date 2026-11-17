@@ -9,7 +9,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { QueryFunctionContext } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { X, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import EmpresaLogo from '@/components/EmpresaLogo'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -92,75 +92,78 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-[68px]' : 'w-[258px]'} ${className} coreui-sidebar`}
+      className={`coreui-sidebar flex h-full shrink-0 flex-col text-white transition-[width] duration-200 ${collapsed ? 'w-[72px]' : 'w-[270px]'} ${className}`}
     >
-      <div className={`flex h-16 shrink-0 items-center justify-between border-b border-white/10 px-3.5 ${expanded ? 'border-b border-white/10' : ''}`}>
+      <div className="coreui-sidebar-brand flex h-[68px] shrink-0 items-center gap-3 border-b border-white/10 px-4">
         {!collapsed ? (
           <>
-            <Link href="/" onClick={onNavigate} className="flex items-center gap-3 no-underline">
-              <EmpresaLogo className="h-10 w-10 shrink-0 text-sm" />
-              <div className="text-[17px] font-semibold tracking-[0.015em] text-white">ECA-QMS</div>
+            <Link href="/" onClick={onNavigate} className="flex min-w-0 flex-1 items-center gap-3 no-underline">
+              <EmpresaLogo className="h-10 w-10 shrink-0" />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[17px] font-bold tracking-[0.025em] text-white">ECA-QMS</span>
+                <span className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-[#a6b4ca]">Gestión de calidad</span>
+              </span>
             </Link>
-            <button
-              type="button"
-              onClick={onNavigate ?? toggle}
-              aria-label={onNavigate ? 'Cerrar menú de navegación' : 'Colapsar menú'}
-              title={onNavigate ? 'Cerrar menú' : 'Colapsar menú'}
-              className={`flex shrink-0 items-center justify-center rounded-card bg-transparent transition-colors hover:bg-white/[0.08] hover:text-white ${expanded ? 'h-11 w-11 text-white/70' : 'h-7 w-7 border border-white/10 text-white/35 hover:border-white/25'}`}
-            >
-              {expanded ? <X className="h-5 w-5" aria-hidden="true" /> : <ChevronLeft className="h-4 w-4" aria-hidden="true" />}
-            </button>
+            {expanded && <button type="button" aria-label="Cerrar menú" title="Cerrar menú" onClick={onNavigate} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-[#bbc5d5] hover:bg-white/10 hover:text-white"><X className="h-5 w-5" aria-hidden="true" /></button>}
           </>
         ) : (
-          <button
-            onClick={toggle}
-            title="Expandir menú"
-            className="mx-auto flex h-7 w-7 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          <Link href="/" aria-label="Inicio de ECA-QMS" title="Inicio" className="mx-auto flex items-center justify-center" onClick={onNavigate}><EmpresaLogo className="h-10 w-10" /></Link>
         )}
       </div>
 
-      {!expanded && <hr className="mx-3 border-0 border-t border-white/10" />}
-
-       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 pt-5 ${expanded ? 'pb-3' : ''}`}>
-         {sections.map((section) => {
-           const linksVisibles = section.links.filter((link) => tienePermiso(permisos, link.id, false, user?.rol))
-           if (linksVisibles.length === 0) return null
-           return (
-          <div key={section.label} className="mb-2">
-            {!collapsed && (
-              <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.11em] text-[#8f9bb1]">
-                {section.label}
-              </p>
-            )}
-            {linksVisibles.map((link) => {
-              const isActive = pathname === link.href
-                            return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  title={link.label}
-                  aria-label={link.label}
-                  aria-current={isActive ? 'page' : undefined}
-                  onClick={onNavigate}
-                  className={`coreui-nav-item my-0.5 flex items-center gap-3 rounded-md py-2.5 no-underline ${collapsed ? 'justify-center px-0' : 'px-3.5'} ${isActive ? 'coreui-nav-item--active' : ''}`}
-                  onMouseEnter={() => prepareNavigation(link.id)}
-                  onFocus={() => prepareNavigation(link.id)}
-                  onTouchStart={() => prepareNavigation(link.id)}
-                >
-                  <CoreUIIcon name={link.icon} />
-                  {!collapsed && <span className="truncate">{link.label}</span>}
-                </Link>
-              )
-            })}
-          </div>
-           )
-         })}
+      <nav aria-label="Navegación principal" className="coreui-sidebar-nav min-h-0 flex-1 overflow-y-auto overscroll-contain px-2.5 py-5">
+        {sections.map((section, index) => {
+          const linksVisibles = section.links.filter(link => tienePermiso(permisos, link.id, false, user?.rol))
+          if (linksVisibles.length === 0) return null
+          return (
+            <div key={section.label} className={`coreui-sidebar-group ${index > 0 ? 'mt-4 border-t border-white/[0.07] pt-4' : ''}`}>
+              {!collapsed && (
+                <p className="mb-2 px-3.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8997aa]">{section.label}</p>
+              )}
+              {linksVisibles.map(link => {
+                const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'))
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    title={link.label}
+                    aria-label={link.label}
+                    aria-current={isActive ? 'page' : undefined}
+                    onClick={onNavigate}
+                    className={`coreui-nav-item relative my-1 flex items-center gap-3 rounded-md py-[11px] no-underline ${collapsed ? 'justify-center px-0' : 'px-3.5'} ${isActive ? 'coreui-nav-item--active' : ''}`}
+                    onMouseEnter={() => prepareNavigation(link.id)}
+                    onFocus={() => prepareNavigation(link.id)}
+                    onTouchStart={() => prepareNavigation(link.id)}
+                  >
+                    <CoreUIIcon name={link.icon} />
+                    {!collapsed && <span className="min-w-0 flex-1 truncate">{link.label}</span>}
+                    {!collapsed && isActive && <span aria-hidden="true" className="coreui-active-indicator h-1.5 w-1.5 shrink-0 rounded-full bg-white/90" />}
+                  </Link>
+                )
+              })}
+            </div>
+          )
+        })}
       </nav>
 
-      {!expanded && <hr className="mx-3 my-1.5 border-0 border-t border-white/10" />}
+      <div className="coreui-sidebar-footer shrink-0 border-t border-white/10">
+        {!collapsed && (
+          <div className="flex items-center gap-3 border-b border-white/[0.07] px-4 py-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[12px] font-bold tracking-wide text-white">ECA</span>
+            <div className="min-w-0">
+              <p className="truncate text-[12px] font-semibold text-[#ecf1f8]">Sistema institucional</p>
+              <p className="truncate text-[11px] text-[#99a8be]">Panel de administración</p>
+            </div>
+          </div>
+        )}
+        {!expanded && (
+          <button type="button" onClick={toggle} aria-label={collapsed ? 'Expandir menú' : 'Contraer menú'} title={collapsed ? 'Expandir menú' : 'Contraer menú'}
+            className={`flex h-[46px] w-full items-center gap-3 text-[12px] font-medium text-[#a8b4c8] transition-colors hover:bg-white/[0.065] hover:text-white ${collapsed ? 'justify-center px-0' : 'justify-end px-5'}`}>
+            {!collapsed && <span>Contraer menú</span>}
+            {collapsed ? <ChevronsRight className="h-5 w-5" aria-hidden="true" /> : <ChevronsLeft className="h-5 w-5" aria-hidden="true" />}
+          </button>
+        )}
+      </div>
     </aside>
   )
 }
