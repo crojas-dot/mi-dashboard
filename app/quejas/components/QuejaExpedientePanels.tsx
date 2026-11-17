@@ -8,7 +8,7 @@ import { varianteEstado } from '@/lib/constants/estados'
 import Button from '@/components/ui/Button'
 import type { Queja } from '@/lib/types'
 import type { QuejaPlazoRun, QuejaCorreoEstado } from '@/lib/queries/useQuejaSeguimiento'
-import { CASE_ACTIONS, caseDate, caseDeadline, getCaseRoleCycle, getCaseProcessCycle, type CaseAudience } from '@/app/quejas/components/quejaExpedienteModel'
+import { CASE_ACTIONS, caseDate, caseDeadline, getCaseRoleCycle, getCaseProcessCycle, type CaseAudience, type CaseRoleCycle } from '@/app/quejas/components/quejaExpedienteModel'
 import { tipoVisible } from '@/lib/constants/quejas'
 
 export type CaseSectionVariant = 'panel' | 'document' | 'plain'
@@ -174,15 +174,16 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
 }
 
 /** El progreso de lectura se reutiliza en los encabezados de Quejas y Mis Quejas. */
-export function CaseProcessHeader({ queja, selectedStage, onStageChange, disabled = false }: {
+export function CaseProcessHeader({ queja, steps, selectedStage, onStageChange, disabled = false }: {
   queja: Queja
+  steps?: CaseRoleCycle['steps']
   selectedStage?: string | null
   onStageChange?: (stage: string) => void
   disabled?: boolean
 }) {
   return <div data-case-process-header className="w-full min-w-0">
     <div className="hidden @min-[1100px]/workspace:block">
-      <CaseCycle queja={queja} process selectedStage={selectedStage} onStageChange={onStageChange} disabled={disabled} />
+      <CaseCycle queja={queja} process steps={steps} selectedStage={selectedStage} onStageChange={onStageChange} disabled={disabled} />
     </div>
   </div>
 }
@@ -211,12 +212,12 @@ export function CaseSidebarShortcut({ title, description, actionLabel, icon, onC
   </button>
 }
 
-export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false, selectedStage, onStageChange, disabled = false }: {
+export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false, steps, selectedStage, onStageChange, disabled = false }: {
   queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; currentOnly?: boolean
-  selectedStage?: string | null; onStageChange?: (stage: string) => void; disabled?: boolean
+  steps?: CaseRoleCycle['steps']; selectedStage?: string | null; onStageChange?: (stage: string) => void; disabled?: boolean
 }) {
   if (process) {
-    const flow = getCaseProcessCycle(queja)
+    const flow = getCaseProcessCycle(queja, steps ? { steps } : undefined)
     const current = flow.steps.findIndex(step => step.current)
     const completed = flow.steps.every(step => step.completed)
     const index = current >= 0 ? current : completed ? flow.steps.length - 1 : -1
