@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **15 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **17 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
@@ -55,6 +55,8 @@ No cargar todos los documentos para una modificación aislada.
 | Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
 | Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) |
 | Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar, contraseña integrada y pestañas), app/usuarios/page.tsx (callbacks); PasswordModal.tsx y ResetPasswordModal.tsx solo legacy, sin montaje en Usuarios |
+| Invitaciones y verificación de cuentas nuevas (backend activo, web local) | components/usuarios/UsuarioAccesoInicial.tsx, UsuarioSeguridadAcceso.tsx y UsuarioAccessBadges.tsx; app/acceso/page.tsx; lib/server/accessIdentity.ts y accessService.ts; migración 20261117214855; [contrato](docs/usuarios-acceso-inicial-mfa-2026-11-17.md) |
+| Eliminar cuenta conservando expedientes | DELETE app/api/usuarios/route.ts; lib/server/usuarioDeletion.ts; RPC service-only qms_delete_user_account; migración aplicada 20261117212024 y [contrato](docs/usuarios-eliminacion-2026-11-17.md) |
 | Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts |
 | Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts |
 | Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts |
@@ -101,7 +103,7 @@ archivos, migraciones o documentación.
 | Informe y comunicación | Tiptap A4 en modal, versionado, exportación Word/PDF, PDF oficial en Drive por folio/versión, correo editable con borrador/publicación y archivo físico adjunto | Considerar la paginación visual como paginación del PDF; enviar sin documento autorizado |
 | Formulario ciudadano `/q/[token]` | Registro con capacidad privada, validación cliente/API, evidencias limitadas, reintento idempotente, finalización y acceso al seguimiento según estado | Portal de usuario externo con login, ver notas internas o recuperar una capacidad vencida |
 | Seguimiento ciudadano | Enlace de capacidad y consulta del estado, plazos de caducidad y etapas permitidas | Identidad verificada del portador o lectura pública del expediente completo |
-| Usuarios `/usuarios` | CRUD/estado, roles/permisos, restablecimiento de contraseña por API, tabla adaptable y dos experiencias de modal: crear en una sola vista y editar por pestañas | Alta pública, invitaciones/recuperación por email, contraseña manual, 2FA, sesiones administrables o bloqueo distribuido del último admin |
+| Usuarios `/usuarios` | CRUD/estado, roles/permisos, contraseña generada/manual por API, tabla adaptable; invitación, acceso inicial y TOTP/correo propio para altas nuevas con backend activo y cliente/API local | Web de acceso sin publicar; aceptación real del flujo pendiente; sin alta pública, recuperación genérica por correo ni gestor general de sesiones |
 | Configuración `/configuracion` | Organización, acceso, servicios, marca, catálogos, IA administrada y calendario QMS versionado | Editor SLA legacy como publicador del motor QMS, secretos en el navegador |
 | Documentos `/documentos` | Listado/estados, alta y cambio de versión visible | Control documental completo, historial real y gestión de Drive |
 | SACP `/sacp` | Listado, alta, seguimiento/cierre y vínculo autorizado desde Quejas | Motor completo de eficacia o validaciones administrativas no implementadas |
@@ -243,7 +245,7 @@ Detalle: [datos y rendimiento](docs/arquitectura/datos-y-rendimiento.md),
 - Evidencias nuevas usan Drive, máximo 4 MiB; paths legacy siguen Storage. Borrar Drive primero y después la fila; no borrar metadatos si falla el archivo.
 - Seguimiento añade reserva de borrado antes de Drive y publicación atómica de respuesta/oficio. No borrar un oficio publicado ni liberar una reserva incierta. Migración 20261015223440 y cortes de publicación/workflow aplicados el 19 octubre tras verificar cliente compatible; ver [contrato y activación](docs/quejas-seguimiento-y-publicacion-2026-10-16.md).
 - Motor QMS y auditoría están en DB; Quejas/Mis Quejas/Dashboard/informes consumen sus plazos persistidos. DB encola y Apps Script envía/confirma a través de Edge HMAC, sin Vercel. El despertador pg_net por evento está activo desde el 10 noviembre; el poll de cinco minutos conserva recuperación y avisos internos. No requiere pg_cron.
-- No están integrados Seguridad y Estado, MFA/2FA, telemetría persistida/retención anual, fondo personalizado ni selector completo de tema. Formularios públicos: gateway/BotID Basic publicado, variables cifradas y cortes legacy aplicados; Storage histórico restringido por expediente/perfil activo. Ver estado y límites en [su guía](docs/seguridad-formularios-publicos.md).
+- Seguridad y Estado, telemetría persistida/retención anual, fondo personalizado y selector completo de tema siguen pendientes. Invitación/MFA de altas nuevas tiene backend activo desde el 17 noviembre y cliente/API local sin publicar; no modifica cuentas anteriores. Formularios públicos: gateway/BotID Basic publicado, variables cifradas y cortes legacy aplicados; Storage histórico restringido por expediente/perfil activo. Ver estado y límites en [su guía](docs/seguridad-formularios-publicos.md).
 - Logout inmediato de UI no revoca universalmente todos los JWT emitidos. APIs privadas conservan rate limit por instancia; formulario público usa cuotas transaccionales PostgreSQL y tiene WAF Vercel publicado. No protegen el login Supabase externo.
 
 Historial de activación: la entrega del 19 de octubre (`dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF`) incorporó seguimiento, cortes de Storage RLS/Drive y cierre del RPC interno `qms_transition` legacy; es evidencia fechada, **no** el último despliegue actual. Para conocer el código web activo, consultar el alias de producción y su SHA en Vercel. Metadata anónima y escritura directa de adjuntos permanecen cerradas; el visor Drive usa API privada Bearer y URL local revocable. No reabrir accesos legacy ni restaurar clientes antiguos sin coordinar DB.
@@ -801,9 +803,12 @@ permisos distintos de esos dos booleanos ni simular guardado al hacer clic.
 Usuarios administra cuentas por API con guards; no asumir cierre transaccional
 distribuido del último admin. Crear/editar/activar/desactivar/eliminar y
 restablecer o definir contraseña **desde el propio panel** utilizan el API existente.
-Invitaciones/recuperación por correo, 2FA, cambio obligatorio al entrar y cierre
-remoto de sesiones siguen pendientes, visibles pero deshabilitados: nunca mostrar
-éxito, aplicar cambios falsos ni inventar estado 2FA. Usuarios evita
+Invitaciones, cambio obligatorio y segundo factor de altas nuevas tienen DB/Edge/
+Apps Script activos desde el 17 noviembre; cliente/API se prueban en localhost, sin
+publicación web. Solo desarrollo permite enlaces a localhost:3000/127.0.0.1:3000,
+con marca firmada de entorno local y aviso explícito en el correo.
+La recuperación genérica y el gestor general de sesiones siguen pendientes.
+Nunca mostrar éxito ficticio ni inventar estado 2FA. Usuarios evita
 repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» existente
 y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
 filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
@@ -812,7 +817,8 @@ scroll vertical interno y tarjetas móviles sin scroll horizontal. Ambos modales
 `Modal` `variant="document" size="mail" height="fill"` (896 px / 90dvh),
 con cabecera, scroll único y pie fijo. Crear mantiene una vista con «Información
 del usuario» y «Configuración de acceso»; tras el alta muestra y permite copiar
-la contraseña temporal **dentro del mismo modal** hasta pulsar Listo.
+la contraseña temporal **dentro del mismo modal** hasta pulsar Listo cuando se
+desactiva la invitación. Con invitación muestra resultado y permite reenviar si falla.
 Editar conserva pestañas «Detalles del perfil» y «Seguridad y acceso», avatar,
 y zona de peligro con confirmación. FormData permanece montado al cambiar de tab.
 La pestaña Seguridad preselecciona contraseña generada, ofrece regenerar, mostrar,
@@ -821,12 +827,13 @@ validado sin abrir una segunda ventana. El botón «Restablecer contraseña» de
 menú abre directamente esa pestaña. No renderizar `PasswordModal` ni
 `ResetPasswordModal` desde `/usuarios`; ambos componentes legacy permanecen
 en el repositorio solo por compatibilidad hasta su eventual retiro.
-Invitación, recuperación por correo, cambio forzado al iniciar, 2FA y sesiones
-son controles pendientes y **deshabilitados** sin estados ficticios.
+La invitación y el requerimiento 2FA son interruptores independientes del alta,
+activos por defecto, sin efectos hasta Crear. La recuperación genérica y la gestión
+general de sesiones permanecen deshabilitadas; reset 2FA sí revoca sesiones.
 La tabla sigue el orden Usuario, Rol, Estado,
 Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
-factores 2FA reales expuestos por API/DB, Seguridad muestra «No disponible»:
-no inventar «Sí/No» por usuario ni habilitar filtros ficticios.
+política de acceso nueva, Seguridad muestra «Sin cambios». Para cuentas con política,
+muestra su método o pendiente; no inventar factores ni habilitar filtros ficticios.
 Estado usa punto y fondo discretos semánticos; Rol conserva el badge existente.
 La tabla de Usuarios aprovecha el espacio: Usuario 24 %, Rol 14 %, Estado 13 %,
 Seguridad (2FA) 19 %, Último acceso 18 % y Acciones 12 % en escritorio.
@@ -888,11 +895,11 @@ en repositorio no implica que se hayan ejecutado las pruebas ni que esté public
   no repetirlo porque falle invalidación de lista; conservar el estado de éxito.
   «Restablecer contraseña» del menú abre `Gestionar usuario` en la pestaña
   Seguridad; nunca montar otro modal de reseteo sobre él.
-- **Controles futuros:** invitación/recuperación por correo, forzar cambio en
-  siguiente inicio, 2FA, restablecer 2FA y cerrar sesiones permanecen visibles
-  pero deshabilitados y marcados «Pendiente». Ningún interruptor premarcado
-  debe representar configuración real inexistente. La tabla continúa mostrando
-  «No disponible» para el 2FA hasta que API/DB proporcionen datos verdaderos.
+- **Acceso de nuevas altas:** invitación, cambio obligatorio inicial y verificación
+  App/correo propio están conectados al backend local del 17 noviembre. Requieren
+  activar su migración y emisores antes de publicar. Recuperación genérica y gestor
+  de sesiones siguen pendientes. La tabla usa política real o «Sin cambios» para
+  cuentas anteriores; ningún interruptor representa una configuración ficticia.
 - **Permisos y verificaciones:** backend Bearer/rol/admin, RLS y operaciones
   autorizadas siguen siendo fuente de verdad; no reemplazarlos por UI.
   Validar con `tests/usuarios-accesos-layout.test.mjs`,
@@ -914,6 +921,54 @@ El corte previo de Vercel permanece histórico. Consultar CI/despliegue actual
 antes de afirmar que una modificación de `main` está disponible en producción.
 
 ## Verificar, entregar y mantener
+
+### Acceso inicial — contrato local del 17 noviembre
+
+**Borrado de Usuarios (corrección aplicada en DB, cliente/API local):** nunca borrar
+físicamente `usuarios` ni sus referencias de expedientes después de eliminar Auth.
+Usar `usuarioDeletion.ts` y el intento durable `qms_delete_user_account`: suspender,
+eliminar/confirmar ausencia de Auth por ID, finalizar con `eliminado_en` y retiro
+del directorio. Conservar nombre/ID histórico; liberar email con dirección interna.
+No llamar `deleteUser(null)`, no borrar relaciones ni recrear Auth como compensación.
+GET/PATCH excluyen retirados; inactivos normales siguen administrables. RPC cerrado
+a clientes, cuenta propia prohibida y último admin protegido. La migración
+20261117212024 está aplicada; esta corrección no activa invitaciones/MFA.
+[Contrato y evidencia](docs/usuarios-eliminacion-2026-11-17.md).
+
+Consultar [usuarios-acceso-inicial-mfa-2026-11-17.md](docs/usuarios-acceso-inicial-mfa-2026-11-17.md).
+Invitación personal de 24h y un uso; error de envío conserva Auth/perfil y reenvío
+invalida enlaces previos. Sin invitación, contraseña temporal generada en servidor,
+mostrada una sola vez, con cambio obligatorio antes de verificar. Políticas solo
+para nuevas altas; ninguna migración masiva de usuarios actuales.
+
+App autenticadora usa TOTP nativo y AAL2 real. Correo alternativo usa verificación
+propia autorizada por el usuario: **no elevar ni presentar su JWT como AAL2**.
+Ambos requieren prueba propia por sesión/generación (12h); TOTP exige además AAL2.
+OTP: diez minutos, HMAC privado, cinco errores → diez minutos de bloqueo en DB.
+API/guard, RLS restrictiva y pre-request cubren acceso incompleto; nunca autorizar
+con estado local, user_metadata o claims enviados en el body. Nuevas tablas
+protegidas deben incorporar `qms_access_allowed()` además de su autorización propia.
+
+Reset 2FA de otra persona requiere admin activo y confirmación; revoca sesiones
+y pruebas antes de borrar factores, conserva obligatoriedad y queda protegido si
+falla parcialmente. El emisor de acceso es independiente del outbox de Quejas.
+Backend de acceso **activado con autorización expresa**: migración 20261117214855,
+Edge `qms-access-mailer` v2 y Apps Script v7, preservando el emisor anterior v6 y
+añadiendo solo el archivo/despacho de acceso. Se verificaron seis tablas privadas,
+52 policies restrictivas, ACL de RPC y acceso intacto de cuentas anteriores.
+El propietario confirmó recepción y canje real de la invitación hasta crear su
+contraseña, incluso con admin conectado. En `/acceso`, capturar el fragmento en
+memoria antes de retirarlo de la URL: el replay de efectos de StrictMode no debe
+perderlo ni redirigir al dashboard del usuario anterior. No consumirlo al abrir;
+«Configurar acceso» confirma el cambio explícito a la cuenta invitada.
+Cliente/API siguen locales, sin publicar en Vercel. La entrega previa de Agenda/
+Notificaciones permanece en su rama; no activarla como efecto lateral.
+
+Pruebas de referencia: `tests/usuarios-acceso-seguro.test.mjs`,
+`tests/usuarios-acceso-mail.test.mjs`, `tests/usuarios-acceso-link.test.mjs`,
+`tests/auth-visibility.test.mjs`, suites de
+Usuarios y `scripts/test-usuarios-acceso-db.mjs`. QA sintética no demuestra
+recepción de correo ni autenticación real de producción.
 
 Tablas de Quejas/Mis Quejas: la especificación del 16 noviembre conserva la
 altura original de cada fila, colores y densidad. El seguimiento por etapas y
@@ -965,7 +1020,7 @@ benchmark autenticado con miles de filas ni garantía universal de servicios ext
 - **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
   feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
   o subidas inciertos; contraste de las barras internas de Google Drive.
-- **Límites de seguridad:** sin MFA/2FA integrado, antivirus, portal ciudadano completo,
+- **Límites de seguridad:** backend MFA de altas nuevas activo, web local y aceptación real pendiente; sin antivirus, portal ciudadano completo,
   telemetría persistida/retención anual ni Seguridad y Estado terminados. La auditoría
   npm documentada tras fijar Next 16.4.6 registró cero críticas/altas y seis moderadas
   indirectas pendientes; no presentarla como una auditoría nueva ni seguridad total.

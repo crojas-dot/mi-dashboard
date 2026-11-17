@@ -72,6 +72,15 @@
 | RPC versionados de quejas | Staff/responsable real, revisión esperada, bloqueo/transición en DB | No conceder EXECUTE legacy ni reintentar con una revisión nueva para forzar un cambio |
 | RLS/ACL | Reglas por fila, columnas protegidas, vistas invoker y RPC internos cerrados | 33/33 con RLS no demuestra políticas estrictas en todas las áreas |
 | Rate limit propio | Por IP y scope en API seleccionadas, limpieza cada 30 s y máximo 10 000 entradas en memoria | No es distribuido entre instancias Vercel; no cubre el endpoint de login externo de Supabase |
-| Sesión/contraseña | Email/password, rechazo de inactivos, autoservicio de contraseña y administración Auth en servidor | No hay flujo 2FA/MFA, captchaToken/reCAPTCHA/Turnstile ni bloqueo persistente propio por intentos de login en este checkout |
+| Sesión/contraseña | Email/password, rechazo de inactivos, autoservicio y administración Auth; acceso inicial y MFA de altas nuevas con backend activo y cliente/API local | Web sin publicar y aceptación real pendiente; correo propio no equivale a AAL2; sin CAPTCHA ni bloqueo persistente propio del login Supabase |
+
+El contrato local de [invitación y verificación de altas nuevas](../usuarios-acceso-inicial-mfa-2026-11-17.md)
+añade prueba por sesión, contraseña obligatoria, TOTP nativo/correo propio y reset
+administrativo. No aplica políticas a cuentas anteriores. El guard cliente bloquea
+perfil/permisos hasta completar el acceso; servidor, RLS y pre-request lo imponen
+independientemente. Los RPC de bootstrap son service-only con identidad validada,
+perfil activo y rol real para operaciones administrativas. `/acceso` es una ruta
+de sesión sin entrada de menú ni ID de módulo; no concede permisos operativos.
+Su única API pública es el canje POST de invitación con origen y token de un uso.
 
 No se ha auditado aquí la configuración completa del servicio Auth (cuotas de login, expiraciones, restricciones de sesión o CAPTCHA del proyecto). La integración del cliente no prueba esos ajustes. Mantener cualquier configuración futura de seguridad fuera de componentes puramente visuales y verificar su enforcement en servidor/proveedor.

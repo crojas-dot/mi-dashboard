@@ -5,10 +5,11 @@ import { loadModule } from './load-module.mjs'
 const target='00000000-0000-4000-8000-000000000002'
 function fixture({current={id:'actor',auth_id:'auth-actor',rol:'admin'},failure=null}={}){
   const calls=[]
+  const identityMock={'@/lib/server/accessIdentity':{getAccessIdentity:async()=>({id:'actor',sessionId:'s',aal:'aal1'})},'@/lib/server/accessService':{accessCommand:async()=>({})}}
   const admin={auth:{admin:{createUser:async input=>{calls.push(['create',input]);return {data:{user:{id:'auth-new'}},error:null}},updateUserById:async(id,values)=>{calls.push(['auth-update',id,values]);return {error:null}},deleteUser:async()=>({error:null})}},from(table){
-    calls.push(['from',table]);const q={select:()=>q,order:()=>q,eq:()=>q,or:value=>{calls.push(['or',value]);return q},abortSignal:()=>q,insert:payload=>{calls.push(['insert',payload]);return q},update:payload=>{calls.push(['profile-update',payload]);return q},maybeSingle:async()=>({data:{auth_id:'auth-target'},error:null}),then:resolve=>Promise.resolve({data:[],error:failure,count:2}).then(resolve)};return q
+    calls.push(['from',table]);const q={select:()=>q,order:()=>q,is:()=>q,eq:()=>q,or:value=>{calls.push(['or',value]);return q},abortSignal:()=>q,insert:payload=>{calls.push(['insert',payload]);return q},update:payload=>{calls.push(['profile-update',payload]);return q},maybeSingle:async()=>({data:{auth_id:'auth-target'},error:null}),then:resolve=>Promise.resolve({data:[],error:failure,count:2}).then(resolve)};return q
   }}
-  const route=loadModule('app/api/usuarios/route.ts',{'next/server':{NextResponse:{json:(data,options={})=>new Response(JSON.stringify(data),options)}},'@/lib/server/auth':{getCurrentUser:async()=>current},'@/lib/server/supabase-admin':{createServiceClient:()=>admin},'@/lib/server/rateLimit':{rateLimit:()=>true,getClientIp:()=> 'fixture'},'@/lib/server/ultimoAcceso':{completarUltimoAcceso:async(_,rows)=>rows},'@/lib/utils/logger':{logger:{error(){}}}},{crypto:webcrypto})
+  const route=loadModule('app/api/usuarios/route.ts',{...identityMock,'next/server':{NextResponse:{json:(data,options={})=>new Response(JSON.stringify(data),options)}},'@/lib/server/auth':{getCurrentUser:async()=>current},'@/lib/server/supabase-admin':{createServiceClient:()=>admin},'@/lib/server/rateLimit':{rateLimit:()=>true,getClientIp:()=> 'fixture'},'@/lib/server/ultimoAcceso':{completarUltimoAcceso:async(_,rows)=>rows},'@/lib/utils/logger':{logger:{error(){}}}},{crypto:webcrypto})
   return {route,calls}
 }
 function request(method,body){return new Request('https://example.test/api/usuarios',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})}

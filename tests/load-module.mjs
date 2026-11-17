@@ -47,6 +47,7 @@ export function fakeDatabase(tables, failures = {}) {
     const query = {
       select(_columns, options = {}) { call.columns = _columns; call.head = options.head; return query },
       eq(key, value) { call.filters.push((row) => row[key] === value); return query },
+      is(key, value) { call.filters.push((row) => value===null?row[key]==null:row[key]===value); return query },
       neq(key, value) { call.filters.push((row) => row[key] !== value); return query },
       not(key, _operator, value) { const excluded = value.slice(1, -1).replaceAll('"', '').split(','); call.filters.push((row) => !excluded.includes(row[key])); return query },
       order(key, options = {}) { call.orders.push({ key, ascending: options.ascending !== false, nullsFirst: options.nullsFirst }); return query },

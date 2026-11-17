@@ -1,6 +1,7 @@
 import { esRolGestionable } from '@/lib/constants/roles'
+import type { UserAccessSetup } from '@/lib/types/access'
 
-type UsuarioInput = Partial<Record<'id' | 'nombre' | 'email' | 'rol' | 'estado' | 'password' | 'newPassword', string>>
+type UsuarioInput = Partial<Record<'id' | 'nombre' | 'email' | 'rol' | 'estado' | 'password' | 'newPassword', string>> & { access?: UserAccessSetup }
 type Resultado = { data: UsuarioInput; error?: never } | { data?: never; error: string }
 
 // Validar todo antes de Auth/perfil: el JSON externo no tiene garantías de TypeScript.
@@ -8,6 +9,13 @@ export function validarUsuarioInput(input: unknown, method: 'POST' | 'PATCH'): R
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { error: 'Body inválido' }
   const body = input as Record<string, unknown>
   const data: UsuarioInput = {}
+  if(method==='POST' && body.access!==undefined) {
+    const access=body.access as Record<string,unknown>
+    if(!access||typeof access!=='object'||Array.isArray(access)||Object.keys(access).sort().join(',')!=='id,invite,requireMfa'
+      ||typeof access.id!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(access.id)
+      ||typeof access.invite!=='boolean'||typeof access.requireMfa!=='boolean'||body.password!==undefined) return {error:'Configuración de acceso inválida'}
+    data.access=access as unknown as UserAccessSetup
+  }
   const fields = method === 'POST'
     ? ['nombre', 'email', 'rol', 'estado', 'password'] as const
     : ['id', 'nombre', 'email', 'rol', 'estado', 'newPassword'] as const

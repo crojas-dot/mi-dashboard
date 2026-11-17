@@ -145,11 +145,11 @@
   },
   "components/header/UserMenuDropdown.tsx": {
     "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "events": "d847e175011068b34780db586c502e6e0d6800e1f9073922e090bf352893a5e9"
+    "events": "0fa534e2fd045fcba670d7df4afad2ef065afdafefc0e71d1d0f89afa58c7478"
   },
   "components/Header.tsx": {
-    "hooks": "9c024194a3fd4f4b14b10724725250f2d7c70dac046facc9255b0c786f9b700c",
-    "events": "1aae7c34e83bc2f671e851375a798d143834571c19b1abc620bcfa9457a89b91"
+    "hooks": "5c10b24842dc171c028e13e1f0fff0ebdc890c10b141bcad0277c0aff8a6e9c7",
+    "events": "1862c0b7e7153f8c5c118407c76a6b47a4e256c17aefd2a9a7fd4cf902f8f2af"
   },
   "components/quejas/AdjuntoPreviewModal.tsx": {
     "hooks": "daca591386425346a88b46401cbf20d0e79e64ba31bd4f355e251fd75435d51e",
@@ -162,10 +162,6 @@
   "components/Sidebar.tsx": {
     "hooks": "c167ed9bafd9f31ee4e420b0fda3bba3dc9029e028ca1bc3638c50e543130f78",
     "events": "0d679a3de3ed44f004f6150d9aa210652deb526ecb8c8303f109996d01ae51b5"
-  },
-  "components/usuarios/CambiarMiPasswordModal.tsx": {
-    "hooks": "caca83c0d6514f468be67d3ed742f57ed6ba8ad5bda43f73601884bf9d9f2ec3",
-    "events": "e51c677e85bde740efc9de101f3f5c0553ad13098a7504f032bf472ce31e8094"
   },
   "components/usuarios/ConfirmDialog.tsx": {
     "hooks": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",

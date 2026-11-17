@@ -1,5 +1,15 @@
 # Verificación, despliegue y pendientes
 
+17 noviembre, acceso inicial: backend activado con autorización expresa para
+localhost, migración 20261117214855, Edge `qms-access-mailer` v2 y Apps Script v7.
+Seis tablas privadas, 52 policies restrictivas, ACL service-only y acceso de cuentas
+anteriores verificados. 21 pruebas focalizadas de acceso/correo y TypeScript Edge
+correctos. Cuenta real solicitada creada una sola vez; recepción y canje hasta crear
+contraseña confirmados por el propietario. Cinco regresiones del enlace y 38 checks
+Chrome con StrictMode/AuthShell/QueryProvider, Auth sintético, correctos; 55 regresiones
+Usuarios/Auth, TypeScript y lint focalizado correctos. Sin publicación Vercel ni activación de la entrega previa
+de Agenda/Notificaciones. [Contrato](../usuarios-acceso-inicial-mfa-2026-11-17.md).
+
 Agenda de hoy, 11 noviembre: 17 checks PostgreSQL aislado, 19 Node y 15 de navegador
 sintético a 320/390/1440 px; TypeScript, lint, build, estructura y capa visual correctos.
 RPC aplicado, cabecera local sin publicar. [Contrato](../agenda-hoy-2026-11-11.md).
@@ -249,6 +259,7 @@ borrados automáticos ni demuestra permisos o referencias calculadas en runtime.
 | Precarga y permisos de Sidebar | tests/navigation-prefetch.test.mjs |
 | Formularios y guardados duplicados | tests/operational-mutations.test.mjs |
 | Inputs y efectos privilegiados de Usuarios | tests/usuarios-input-security.test.mjs, usuarios-acceso-workflow.test.mjs |
+| Acceso inicial / invitación / verificación propia y TOTP (local, 17 noviembre) | 104 focalizadas; 68 PostgreSQL temporal; 14 navegador sintético en 1440/390/320; build/TS/estructura/visual correctos; global 1041/1076 con los mismos 35 fallos previos. Sin cuentas/correos reales ni activación remota. [Contrato](../usuarios-acceso-inicial-mfa-2026-11-17.md) |
 | Gestor/API IA y errores seguros | tests/ai-settings-security.test.mjs, ai-settings-ui.test.mjs, markdown-security.test.mjs |
 | Kit, layout responsive, foco y modales | tests/visual-contracts.test.mjs, header-menu-focus.test.mjs, scripts/check-visual-layer.mjs |
 | Gateway público, archivos y reintentos | tests/public-form-primitives.test.mjs, public-gateway.test.mjs, public-quejas-client.test.mjs, public-flow-review.test.mjs |
@@ -295,7 +306,7 @@ transacción distribuida; reservas de resultado incierto requieren reconciliaci�
 | Formularios públicos | Gateway/BotID Basic/cuotas DB/idempotencia/capacidad desplegados; DB/WAF/variables y cortes legacy aplicados. POST sin prueba rechazado en producción. Pendientes: antivirus, reconciliación automática y prueba ciudadana positiva de extremo a extremo en producción. [Estado de activación](../seguridad-formularios-publicos.md) |
 | Datos legacy | Migrar consultas directas de componentes según necesidad; la cancelación aplicada a hooks no los reemplaza automáticamente |
 | Usuarios | Último admin y cambios entre Auth/perfil sin transacción distribuida; revisar concurrencia real y coherencia de roles |
-| Seguridad futura | Sin MFA/2FA ni bloqueo distribuido propio del login Supabase; BotID/cuotas del gateway público no protegen por sí solos el login ni revocan JWT |
+| Seguridad futura | Acceso inicial/MFA de altas nuevas con backend activo el 17 noviembre, cliente/API local y aceptación real pendiente; sin bloqueo distribuido propio del login Supabase. BotID/cuotas del gateway no protegen ese login |
 | Rendimiento | Perfilar navegación autenticada/red/memoria con volumen y distinguir dev de build de producción |
 | Producto | CRUD/derivación de hallazgos, eficacia/validación SACP, versionado/Drive documental y actas/acuerdos completos |
 | Producto | Sin persistencia UI completa de informes_config, tareas o solicitudes documentales |

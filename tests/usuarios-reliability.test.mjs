@@ -49,19 +49,21 @@ test('guardar usuario bloquea duplicados y recupera el formulario después de fa
   modal.close()
   assert.equal(modal.closes(), 0)
   modal.render()
-  assert.equal(modal.button('Crear usuario').props.loading, true)
+  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, true)
   modal.requests[0].reject(new TypeError('Failed to fetch'))
   await pending
   modal.render()
   assert.equal(modal.errors.length, 1)
   assert.match(modal.alert(), /conectar/ )
-  assert.equal(modal.button('Crear usuario').props.loading, false)
+  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, false)
   const retry = modal.submit()
   modal.requests[1].resolve()
   await retry
   modal.render()
   assert.ok(modal.button('Listo'), 'el usuario copia su clave sin abrir otro modal')
-  assert.equal(modal.successes[0].tempPassword, modal.requests[1].args[1].password)
+  assert.equal(modal.successes[0].tempPassword, undefined)
+  assert.deepEqual({...modal.requests[1].args[1].access},{id:modal.requests[0].args[1].access.id,invite:true,requireMfa:true})
+  assert.equal(modal.requests[1].args[1].password,undefined,'el servidor genera la contraseña, no el formulario')
 })
 
 test('editar la propia cuenta omite rol y estado deshabilitados', async () => {
@@ -209,7 +211,7 @@ test('reset solo escribe Auth y cambiar correo/contraseña usa una única petici
       auth: { admin: { updateUserById: async (id, changes) => { authUpdates.push({ id, ...changes }); return { error: null } } } },
       from() {
         const query = {
-          select() { return query }, eq() { return query },
+          select() { return query }, eq() { return query }, is() { return query },
           maybeSingle: async () => ({ data: { auth_id: 'auth-otro' }, error: null }),
           update(changes) { profileUpdates.push(changes); return query },
           then(resolve) { return Promise.resolve({ error: null }).then(resolve) },
@@ -218,6 +220,8 @@ test('reset solo escribe Auth y cambiar correo/contraseña usa una única petici
       },
     }
     const { PATCH } = loadModule('app/api/usuarios/route.ts', {
+      '@/lib/server/accessIdentity': {getAccessIdentity:async()=>({id:'actor',sessionId:'s',aal:'aal1'})},
+      '@/lib/server/accessService': {accessCommand:async()=>({})},
       '@/lib/server/supabase-admin': { createServiceClient: () => client },
       '@/lib/server/auth': { getCurrentUser: async () => ({ rol: 'admin', auth_id: '00000000-0000-4000-8000-000000000001' }) },
       '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'test' },
@@ -241,7 +245,7 @@ test('un formulario incompleto no genera contraseña ni inicia una escritura', a
   await modal.submit({ nombre: '   ', email: 'persona@example.test', rol: 'colaborador', estado: 'activo' })
   assert.equal(modal.requests.length, 0)
   modal.render()
-  assert.equal(modal.button('Crear usuario').props.loading, false)
+  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, false)
   assert.match(modal.alert(), /campos obligatorios/)
 })
 
@@ -354,7 +358,7 @@ test('apiFetch conserva signal, headers y opciones al moverlo fuera de useUsuari
 test('Usuario conserva nombres FormData y asocia etiquetas al usar controles compartidos', () => {
   for (const [esAuto, operation] of [[false, null], [true, null], [false, 'guardar']]) {
     const { default: Form } = loadModule('components/usuarios/UsuarioFormModal.tsx', {
-      react: { ...React, useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] },
+      react: { ...React, useEffect(){},useRef:current=>({current}),useState: initial => [typeof initial === 'function' ? initial() : initial, () => {}] },
       '@/components/Modal': { default: ({ children }) => children },
       '@/lib/hooks/useOperationLock': { useOperationLock: () => ({
         operation, isLocked: () => operation !== null, begin: () => false, finish() {},

@@ -44,6 +44,8 @@ test('la API conserva autorización admin/calidad y no consulta Auth ante solici
     const api = loadModule('app/api/usuarios/route.ts', {
       'next/server': { NextResponse: { json: (body, options = {}) => ({ body, status: options.status ?? 200 }) } },
       '@/lib/server/auth': { getCurrentUser: async () => user },
+      '@/lib/server/accessIdentity': {getAccessIdentity:async()=>({id:'a',sessionId:'s',aal:'aal1'})},
+      '@/lib/server/accessService': {accessCommand:async()=>[]},
       '@/lib/server/supabase-admin': { createServiceClient: () => db.supabase },
       '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'local' },
       '@/lib/server/ultimoAcceso': { completarUltimoAcceso: async (_admin, profiles) => { called++; return profiles.map(profile => ({ ...profile, ultimo_acceso: '2026-10-06' })) } },

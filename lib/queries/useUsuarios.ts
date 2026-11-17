@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/services/apiClient'
 import { queryKeys } from './queryKeys'
+import type { UserAccessDirectory } from '@/lib/types/access'
 
 export interface Usuario {
   id: string
@@ -12,6 +13,7 @@ export interface Usuario {
   estado: string
   auth_id?: string
   ultimo_acceso?: string | null
+  access?: UserAccessDirectory
 }
 
 export const usuariosKey = queryKeys.usuarios

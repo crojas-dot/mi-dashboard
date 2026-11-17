@@ -131,7 +131,7 @@ function deferred() {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve))
 
-function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async () => user, getSession, getUser, storage, login = async () => ({ user, authId: 'auth-a' }), rpc = async () => ({ data: permissions, error: null }) } = {}) {
+function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async () => user, getSession, getUser, storage, login = async () => ({ user, authId: 'auth-a' }), access=async()=>({managed:false,phase:'ready'}),rpc = async () => ({ data: permissions, error: null }) } = {}) {
   let listener
   let activeSession = session
   const signOutPending = deferred()
@@ -147,11 +147,50 @@ function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async ()
       rpc,
     } },
     '@/lib/auth': { getAppUser: profile, signOut: () => signOutPending.promise, signIn: login },
+    '@/lib/services/accessClient': {fetchAccessStatus:access},
     '@/lib/queries/usePermisos': { fetchPermisosByRol: async () => permissions },
     '@/lib/utils/logger': { logger: { error() {} } },
   }, { setTimeout: task => { scheduled.push(task); return scheduled.length }, ...(storage ? { window: { sessionStorage: storage } } : {}) }).useAuthStore
   return { store, signOutPending, event: (event, value) => { activeSession = value; listener(event, value) }, runScheduled: () => { scheduled.splice(0).forEach(task => task()) } }
 }
+
+test('acceso inicial no carga perfil ni permisos hasta completar contraseña y segundo factor',async()=>{
+ let phase='password',profiles=0,permissionsRead=0
+ const fixture=storeFixture({access:async()=>({managed:true,phase,method:'email',generation:1}),profile:async()=>{profiles++;return user},rpc:async()=>{permissionsRead++;return {data:permissions,error:null}}})
+ await fixture.store.getState().init()
+ assert.equal(fixture.store.getState().access.phase,'password');assert.equal(fixture.store.getState().user,null)
+ assert.equal(profiles,0);assert.equal(permissionsRead,0)
+ assert.equal(authRoute('/usuarios',fixture.store.getState()).redirect,'/acceso')
+ phase='enroll';await fixture.store.getState().refreshAccess()
+ assert.equal(fixture.store.getState().access.phase,'enroll');assert.equal(profiles,0)
+ phase='ready';await fixture.store.getState().refreshAccess()
+ assert.equal(fixture.store.getState().access,null);assert.equal(fixture.store.getState().user.id,user.id)
+ assert.equal(profiles,1);assert.equal(permissionsRead,1)
+ phase='verify';fixture.event('TOKEN_REFRESHED',{user:{id:'auth-a'}});fixture.runScheduled();await flush()
+ assert.equal(fixture.store.getState().user,null);assert.equal(fixture.store.getState().permisos.length,0)
+ assert.equal(fixture.store.getState().access.phase,'verify')
+})
+
+test('respuesta de verificación pendiente no restaura identidad después del cierre',async()=>{
+ const pending=deferred(),fixture=storeFixture({access:()=>pending.promise})
+ const init=fixture.store.getState().init();await flush()
+ const closing=fixture.store.getState().logout()
+ pending.resolve({managed:true,phase:'enroll'});await init
+ assert.equal(fixture.store.getState().access,null);assert.equal(fixture.store.getState().accessIdentity,null)
+ fixture.signOutPending.resolve();await closing
+ assert.equal(fixture.store.getState().access,null)
+})
+
+test('un login rechazado conserva montado el formulario para mostrar el error',async()=>{
+ const pending=deferred(),fixture=storeFixture({session:null,login:()=>pending.promise})
+ await fixture.store.getState().init()
+ const attempt=fixture.store.getState().login('synthetic@example.test','incorrect-password')
+ assert.equal(authRoute('/login',fixture.store.getState()).view,'public')
+ pending.resolve({error:'Credenciales incorrectas'})
+ assert.equal((await attempt).error,'Credenciales incorrectas')
+ assert.equal(authRoute('/login',fixture.store.getState()).view,'public')
+ assert.equal(fixture.store.getState().user,null)
+})
 
 test('llamadas repetidas a init durante restauración no duplican lecturas de sesión ni permisos', async () => {
   const identity=deferred()

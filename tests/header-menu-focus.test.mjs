@@ -10,7 +10,7 @@ function fixture() {
   let stateIndex = 0
   const { default: Header } = loadModule('components/Header.tsx', {
     react: { ...React,
-      useState: () => [[false, false, 'user'][stateIndex++], value => updates.push(value)],
+      useState: () => [['user', null][stateIndex++], value => updates.push(value)],
       useRef: current => { const ref = { current }; refs.push(ref); return ref },
       useEffect: effect => effects.push(effect),
     },
@@ -22,10 +22,12 @@ function fixture() {
       useArchivarNotificacion: () => ({}), useArchivarTodas: () => ({}),
     },
     '@/lib/queries/useAgendaHoy': { useAgendaHoy: () => ({ data: [], isPending: false, isError: false, refetch() {} }) },
+    '@/lib/queries/useFotoPerfil': { useFotoPerfil: () => undefined },
+    '@/lib/hooks/useNotificationSound': { useNotificationSound() {} },
     '@/lib/supabase': { supabase: {} },
     '@/lib/services/errorToast': { showError() {}, showSuccess() {} },
     '@/lib/services/sonidosNotificacion': { SONIDO_DEFAULT: 'test', SONIDOS_NOTIFICACION: [], playNotificationSound() {} },
-    '@/components/usuarios/CambiarMiPasswordModal': { default: 'PasswordModal' },
+    '@/components/perfil/MiPerfilModal': { default: () => null },
     '@/hooks/useRealtimeSubscription': { useRealtimeSubscription(options) { subscriptions.push(options) } },
   }, { document })
   Header()
@@ -60,6 +62,7 @@ test('la misma suscripción de avisos invalida agenda sin crear otro canal', () 
   const menu = fixture()
   assert.equal(menu.subscriptions.length,1)
   assert.equal(menu.subscriptions[0].table,'notificaciones')
-  assert.deepEqual(Array.from(menu.subscriptions[0].invalidateKeys[1]),['dashboard','agenda_hoy'])
+  assert.equal(menu.subscriptions[0].invalidateKeys.length, 1)
+  assert.deepEqual(Array.from(menu.subscriptions[0].invalidateOnInsert[0]),['dashboard','agenda_hoy'])
   menu.cleanup()
 })

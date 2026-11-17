@@ -32,7 +32,7 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
   useEffect(() => { if (open) accionVista.current?.focus() }, [open, vista])
   useEffect(() => { if (mostrarTodos) primerExtra.current?.focus() }, [mostrarTodos])
   return <div className="relative">
-    <button type="button" className="ui-button ui-button-ghost ui-button-icon relative" aria-label="Agenda de hoy"
+    <button type="button" className="ui-button ui-button-ghost ui-button-icon relative size-10! min-h-10! rounded-full!" aria-label="Agenda de hoy"
       aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => {
         if (!open) { setVista('calendario'); setOffsetMes(0); setSeleccion(null); setMostrarTodos(false) }
         onToggle()

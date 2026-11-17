@@ -181,9 +181,22 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   El nombre completo aparece en su tooltip/nombre accesible y dentro del menú,
   junto al correo y rol. Nombre y correo pueden ocupar varias líneas; no recortar
   ni abreviar nombres guardados para resolver el espacio del encabezado.
-- Menú de cuenta: 320px en escritorio. Notificaciones: 400px, mensajes de 14px
-  y fechas de 12px sin segundos. El contador visual llega a `99+`, conservando
-  la cantidad exacta en el nombre accesible de la campana.
+- Menú de cuenta: 320px en escritorio, con identidad (avatar, nombre completo,
+  correo y rol) y dos acciones: «Mi perfil» y «Cerrar sesión». La contraseña y las
+  preferencias de notificación no se listan en el menú; se administran en el modal
+  personal del usuario autenticado.
+- «Mi perfil» abre el modal personal (`components/perfil/MiPerfilModal`) con tres
+  pestañas: «Detalles del perfil», «Seguridad» y «Notificaciones». El nombre se
+  guarda con la autoedición autorizada por RLS (`auth.uid() = auth_id` y grant por
+  columna); el correo y el rol siguen administrados desde Usuarios. La contraseña
+  se actualiza con Supabase Auth y las preferencias con el RPC
+  `actualizar_mis_preferencias_notificacion`, con restauración del valor vigente
+  si el guardado falla. La carga de foto de perfil permanece deshabilitada hasta
+  existir el almacenamiento de avatares.
+- Menú de notificaciones: 400px, mensajes de 14px y fechas de 12px sin segundos.
+  El contador visual llega a `99+`, conservando la cantidad exacta en el nombre
+  accesible de la campana. Las preferencias de activación, sonido y tono se
+  configuran desde «Mi perfil», no desde el menú de cuenta.
 - En móvil los paneles se posicionan bajo el encabezado con 12px de margen a
   cada lado y altura limitada al viewport. Sus listas hacen scroll interno.
 - Las notificaciones usan botones separados para abrir/marcar y para archivar;
@@ -322,6 +335,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   y configuración de acceso (contraseña temporal real, invitación/2FA pendientes).
   «Gestionar usuario» es más estrecho (lg), con pestañas Detalles del perfil
   y Seguridad y acceso, avatar con inicial, campos persistidos y zona de peligro.
+  En Detalles, el bloque del perfil agrupa avatar y rol sobre `bg-qms-panel-soft`
+  (`#edf2f7`), con el lienzo del modal en `bg-qms-hover-bg`; el avatar muestra
+  una insignia de cámara y la acción «Subir foto de perfil»
+  permanece deshabilitada mientras no exista API/almacenamiento de avatar. Los
+  campos del perfil usan la receta `ui-field` con `shadow-sm`; el marco elevado
+  de los diálogos proviene del token `--shadow-modal` de `theme.css`.
   Restablecer contraseña invoca el modal funcional existente, y Eliminar exige
   la confirmación actual. Las funciones sin API (invitación, manual, recuperación,
   2FA, sesiones) se muestran como pendientes o deshabilitadas: sin estados fingidos,
@@ -450,7 +469,9 @@ con acción azul suave. **Historial y observaciones** conserva el acceso compart
 `CaseSidebarShortcut` en todas las etapas sin duplicar acciones.
 
 En **Respuesta al cliente**, el compositor continúa al estilo Gmail, con
-`Modal size="mail"` (896px máx. y 90dvh). El renglón inicial alinea el destinatario
+`Modal size="xl"` (1040px máx. y 90dvh), la misma medida de la decisión de
+procedencia: Procede y No Procede comparten ventana para no cambiar de escala al
+pasar de elegir a redactar. El renglón inicial alinea el destinatario
 no editable a la izquierda y el **N.º de oficio editable** a la derecha (apilados
 en móvil); Asunto tiene solo la línea inferior. El cuerpo es un lienzo sin recuadro
 que crece con el texto, de modo que la región de composición hace **un solo scroll**

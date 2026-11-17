@@ -54,7 +54,20 @@ function fixture(options = {}) {
   }
   const mocks = {
     'next/server': { NextResponse: Response },
-    '@/lib/server/auth': { getCurrentUser: async () => options.user === null ? null : options.user ?? current },
+    '@/lib/server/auth': {
+      getCurrentUser: async () => options.user === null ? null : options.user ?? current,
+      createAuthenticatedClient: () => ({ from(table) {
+        const lookup = { select(columns) { calls.push(['scoped-select', table, columns]); return lookup },
+          eq() { return lookup }, limit() { return lookup },
+          maybeSingle: async () => ({
+            error: options.lookupError ? new Error(PRIVATE) : null,
+            data: options.moduleDenied || options.lookupError ? null
+              : { ...attachment, ...options.attachment, queja: { folio: FOLIO, responsable_id: options.responsible ?? ACTOR } },
+          }),
+        }
+        return lookup
+      } }),
+    },
     '@/lib/server/supabase-admin': { createServiceClient: () => { calls.push(['backend']); return admin } },
     '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'synthetic-ip' },
     '@/lib/server/drive': {
@@ -74,7 +87,7 @@ function fixture(options = {}) {
     upload: loadModule('app/api/drive/upload/route.ts', mocks, globals).POST,
   }
 }
-function downloadRequest() { const request = new Request('https://synthetic.test/api/drive/download?id=' + FILE); request.nextUrl = new URL(request.url); return request }
+function downloadRequest(preview) { const request = new Request('https://synthetic.test/api/drive/download?id=' + FILE + (preview ? '&vista=drive' : '')); request.nextUrl = new URL(request.url); return request }
 const deleteRequest = input => new Request('https://synthetic.test/api/drive/delete', { method: 'DELETE', body: JSON.stringify(input ?? { adjuntoId: ADJUNTO }) })
 function uploadRequest(extra = {}) {
   const form = new FormData(); form.set('file', new File(['evidencia'], 'nota.txt', { type: 'text/plain' })); form.set('queja_id', QID)
@@ -118,6 +131,25 @@ test('otro responsable no puede subir, descargar ni borrar aunque conozca el ID'
     const f = fixture({ responsible: 'otro-usuario' }); assert.equal((await f[method](request())).status, 403)
     assert.equal(f.calls.some(call => ['drive','upload','media','delete-drive'].includes(call[0])), false)
   }
+})
+
+test('descarga y vista Google respetan el permiso de la queja, incluso para Calidad', async () => {
+  for (const preview of [false, true]) {
+    const f = fixture({ user: { ...current, rol: 'calidad' }, moduleDenied: true })
+    assert.equal((await f.download(downloadRequest(preview))).status, 404)
+    assert.match(f.calls[0][2], /quejas!inner/)
+    assert.equal(f.calls.some(call => ['backend', 'drive', 'media'].includes(call[0])), false)
+  }
+})
+
+test('la vista privada valida pertenencia y permisos de Drive sin transferir los bytes', async () => {
+  const f = fixture(), response = await f.download(downloadRequest(true))
+  assert.deepEqual(await response.json(), { previewUrl: `https://drive.google.com/file/d/${FILE}/preview` })
+  assert.equal(response.headers.get('Cache-Control'), 'private, no-store')
+  assert.ok(f.calls.some(call => call[0] === 'acl' && call[1] === FILE))
+  assert.equal(f.calls.some(call => call[0] === 'media'), false)
+  const shared = fixture({ publicFile: FILE })
+  assert.equal((await shared.download(downloadRequest(true))).status, 502)
 })
 test('los adjuntos de cliente solo pueden eliminarlos administradores', async () => {
   for (const rol of ['colaborador', 'calidad']) {

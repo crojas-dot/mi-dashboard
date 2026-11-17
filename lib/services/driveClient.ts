@@ -57,10 +57,11 @@ export async function fetchDriveBlob(fileId: string, signal?: AbortSignal): Prom
   if (!entry || entry.expires <= Date.now() || entry.controller.signal.aborted) {
     if (entry) entry.controller.abort()
     const controller = new AbortController()
+    const authId = useAuthStore.getState().accessIdentity ?? undefined
     const promise = (async () => {
       const response = await apiFetch(`/api/drive/download?id=${encodeURIComponent(fileId)}`, {
         signal: controller.signal, cache: 'no-store',
-      })
+      }, authId)
       sameActor(actor, controller.signal)
       if (!response.ok) throw Object.assign(new Error('No se pudo acceder al archivo'), { status: response.status })
       const blob = await response.blob()
@@ -81,6 +82,20 @@ export async function fetchDriveBlob(fileId: string, signal?: AbortSignal): Prom
   const blob = await awaitVisit(entry.promise, signal)
   sameActor(actor, signal)
   return blob
+}
+
+/** Drive conserva sus propias ACL. La API QMS acredita primero la pertenencia. */
+export async function fetchDrivePreviewUrl(fileId: string, signal?: AbortSignal): Promise<string> {
+  const actor = currentActor()
+  sameActor(actor, signal)
+  if (!/^[A-Za-z0-9_-]{10,200}$/.test(fileId)) throw new Error('Archivo no disponible')
+  const response = await apiFetch(`/api/drive/download?id=${encodeURIComponent(fileId)}&vista=drive`, { signal, cache: 'no-store' },
+    useAuthStore.getState().accessIdentity ?? undefined)
+  if (!response.ok) throw new Error('Archivo no disponible')
+  const { previewUrl } = await response.json()
+  sameActor(actor, signal)
+  if (previewUrl !== `https://drive.google.com/file/d/${fileId}/preview`) throw new Error('Vista no disponible')
+  return previewUrl
 }
 
 /** Reutiliza la copia local SOLO después de que la API confirmara la subida
@@ -105,7 +120,9 @@ export function recordarDriveBlob(fileId: string, blob: Blob): void {
 }
 
 /** Precarga por intención o por documento elegido, únicamente con la sesión QMS. */
+let preloads = 0
 export function prefetchDriveBlob(fileId: string): void {
-  if (!fileId || fileId.includes('/')) return
-  try { void fetchDriveBlob(fileId).catch(() => {}) } catch { /* sesión no disponible */ }
+  if (!fileId || fileId.includes('/') || preloads >= 2) return
+  preloads++
+  void fetchDriveBlob(fileId).catch(() => {}).finally(() => { preloads-- })
 }

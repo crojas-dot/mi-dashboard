@@ -120,6 +120,7 @@ test('cada método que omite la autenticación duplicada valida la sesión en su
           json: (_body, options = {}) => ({ status: options.status ?? 200 }),
         } },
         '@/lib/server/auth': auth,
+        '@/lib/server/accessIdentity': {getAccessIdentity:async()=>{checks++;return null}},
         '@/lib/server/supabase-admin': { createServiceClient: () => { throw new Error('No debe leer datos sin sesión') } },
         '@/lib/server/drive': {},
         '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'local' },

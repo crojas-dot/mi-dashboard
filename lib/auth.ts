@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase'
+import { fetchAccessStatus } from '@/lib/services/accessClient'
+import type { AccessStatus } from '@/lib/types/access'
 
 export interface PerfilUsuario {
   id: string
@@ -6,6 +8,7 @@ export interface PerfilUsuario {
   nombre: string
   rol: string
   estado: string
+  avatar_url?: string | null
   notif_habilitadas?: boolean
   notif_sonido?: boolean
   notif_sonido_id?: string
@@ -15,6 +18,8 @@ export interface LoginResult {
   error?: string
   user?: PerfilUsuario
   authId?: string
+  access?: AccessStatus
+  accessManaged?: boolean
 }
 
 export async function signIn(email: string, password: string): Promise<LoginResult> {
@@ -25,13 +30,17 @@ export async function signIn(email: string, password: string): Promise<LoginResu
 
   if (error) return { error: `Error de conexión (${error.message})` }
 
+  const access=await fetchAccessStatus()
+  if(access.phase==='blocked')return {error:'Tu cuenta está inactiva. Contactá al administrador.'}
+  if(access.phase!=='ready')return {access,authId:data.user.id}
+
   const user = await getAppUser(data.user.id)
   if (!user) return { error: 'No se encontró tu perfil en el sistema. Contacta al administrador.' }
   if (user.estado !== 'activo') {
     return { error: 'Tu cuenta está inactiva. Contacta al administrador.' }
   }
 
-  return { user, authId: data.user.id }
+  return { user, authId: data.user.id,accessManaged:access.managed }
 }
 
 export async function signOut(): Promise<void> {
@@ -41,7 +50,7 @@ export async function signOut(): Promise<void> {
 export async function getAppUser(authId: string): Promise<PerfilUsuario | null> {
   const { data, error } = await supabase
     .from('usuarios')
-    .select('id, email, nombre, rol, estado, notif_habilitadas, notif_sonido, notif_sonido_id')
+    .select('id, email, nombre, rol, estado, avatar_url, notif_habilitadas, notif_sonido, notif_sonido_id')
     .eq('auth_id', authId)
     .maybeSingle()
   if (error || !data) return null

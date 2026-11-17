@@ -41,7 +41,7 @@ ni prototipos con prefijo tw: como base de una vista del runtime.
 
 ## Contratos que no se deben romper
 
-- Avatar de Header: 40px, iniciales con leading de 1 y ajuste óptico vertical de 1px; nombre/correo completos dentro del menú, sin recortar datos guardados.
+- Avatar de Header: 40px, iniciales con leading de 1 y ajuste óptico vertical de 1px; nombre/correo completos dentro del menú, sin recortar datos guardados. El menú de cuenta solo ofrece «Mi perfil» y «Cerrar sesión»; «Mi perfil» abre el modal personal (nombre, contraseña y preferencias) con pestañas Detalles/Seguridad/Notificaciones.
 - Login: conservar username/current-password y desbloqueo de readonly por foco/pointerdown; arregla la vista previa Chromium sin desactivar autocompletado.
 - Antes de verificar una URL privada, solo fondo neutral; no presentar barra, login ni shell de dashboard. Login/logout usa skeleton de login cuando corresponde; datos pendientes del módulo usan solo su carga propia.
 - Skeletons fijos CSS y movimiento reducido; Spinner solo en operaciones. Sin espera mínima ni círculo permanente por registro o Acta Pendiente.

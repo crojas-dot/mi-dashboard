@@ -38,6 +38,8 @@
   /* Gris Claro de la guía ECA, aclarado con blanco para las etiquetas de estado. */
   --color-qms-neutral-soft: color-mix(in srgb, #e6e5e5 60%, var(--color-qms-surface));
   --color-qms-row-selected: #f0f4f7;
+  /* Superficie azul grisácea muy pálida para paneles laterales agrupados. */
+  --color-qms-panel-soft: #edf2f7;
   --color-qms-background: #f4f7f6;
   --color-qms-danger: #dc3545;
   --color-qms-success: #198754;
@@ -78,4 +80,6 @@
   --shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
   --shadow-md: 0 0.5rem 1rem rgba(0,0,0,0.15);
   --shadow-lg: 0 1rem 3rem rgba(0,0,0,0.175);
+  /* Elevación de diálogos: capa difusa amplia que despega el modal del velo. */
+  --shadow-modal: 0 1.5rem 4rem -1rem rgb(15 23 42 / 0.35);
 }

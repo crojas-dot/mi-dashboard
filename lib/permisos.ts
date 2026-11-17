@@ -9,7 +9,7 @@ export interface Permiso {
 
 export function moduloDeRuta(pathname: string): string {
   const seg = pathname.split('/')[1] ?? ''
-  return MODULOS_DE_RUTA[seg] ?? ''
+  return Object.hasOwn(MODULOS_DE_RUTA, seg) ? MODULOS_DE_RUTA[seg] : ''
 }
 
 export function tienePermiso(

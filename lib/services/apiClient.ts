@@ -1,10 +1,11 @@
 import { supabase } from '@/lib/supabase'
 
 /** Transportar el token local; la API sigue verificando identidad y permisos. */
-export async function apiFetch(url: string, options: RequestInit = {}) {
+export async function apiFetch(url: string, options: RequestInit = {}, expectedAuthId?: string) {
   options.signal?.throwIfAborted()
   const { data } = await supabase.auth.getSession()
   options.signal?.throwIfAborted()
+  if (expectedAuthId && data.session?.user?.id !== expectedAuthId) throw new DOMException('La sesión cambió', 'AbortError')
   const token = data.session?.access_token
   return fetch(url, {
     ...options,

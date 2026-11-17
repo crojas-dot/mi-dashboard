@@ -47,6 +47,8 @@ export function useCrearQuejaActividad() {
           queja_id: input.quejaId,
           tipo: 'nota',
           descripcion: input.descripcion.trim(),
+          // Compatibilidad con el backend anterior. La DB asigna el actor real
+          // por sesión una vez aplicada la migración, incluso en clientes viejos.
           usuario_id: input.usuarioId ?? null,
         },
       ])

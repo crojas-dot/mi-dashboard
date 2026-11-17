@@ -1,7 +1,7 @@
 'use client'
 
 import { useDeferredValue, useEffect, useState } from 'react'
-import { Plus, Search, ShieldOff } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import RolesAccesos from './components/RolesAccesos'
 import UsuarioAccionesMenu from './components/UsuarioAccionesMenu'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
@@ -18,6 +18,8 @@ import EmptyState from '@/components/ui/EmptyState'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
 import UsuarioFormModal from '@/components/usuarios/UsuarioFormModal'
+import {UsuarioEstadoAcceso,UsuarioSegundoFactor} from '@/components/usuarios/UsuarioAccessBadges'
+import type { UserMutationResult } from '@/lib/types/access'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import {
   getDirectoryRoleAvatarClass,
@@ -85,10 +87,10 @@ export default function UsuariosPage() {
     setFormOpen(true)
   }
 
-  async function handleFormSuccess(result: { tempPassword?: string }) {
+  async function handleFormSuccess(result: UserMutationResult) {
     // El alta conserva el modal abierto para copiar la clave temporal una sola vez.
     // La edición se cierra; ninguna operación abre un segundo modal.
-    if (!result.tempPassword) {
+    if (!result.created && !result.tempPassword) {
       setFormOpen(false)
       setUsuarioSel(null)
     }
@@ -206,16 +208,8 @@ export default function UsuariosPage() {
                   </div>
                 </TableCell>
                 <TableCell><Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge></TableCell>
-                <TableCell><span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
-                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
-                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                </span></TableCell>
-                <TableCell>
-                  <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
-                    className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2.5 py-1 text-xs font-medium text-qms-muted">
-                    <ShieldOff aria-hidden="true" className="size-3.5" />No disponible
-                  </span>
-                </TableCell>
+<TableCell><UsuarioEstadoAcceso usuario={u}/></TableCell>
+                <TableCell><UsuarioSegundoFactor usuario={u}/></TableCell>
                 <TableCell className="whitespace-nowrap text-sm text-qms-muted">
                   {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}
                 </TableCell>
@@ -242,14 +236,8 @@ export default function UsuariosPage() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={getDirectoryRoleVariant(u.rol)}>{getRoleLabel(u.rol)}</Badge>
-                <span className={`inline-flex items-center gap-1.5 rounded-button border px-2.5 py-1 text-xs font-semibold ${u.estado === 'activo' ? 'border-qms-success/15 bg-soft-green-bg text-soft-green-text' : 'border-qms-border bg-qms-hover-bg text-qms-muted'}`}>
-                  <span aria-hidden="true" className={`size-1.5 rounded-full ${u.estado === 'activo' ? 'bg-qms-success' : 'bg-qms-muted'}`} />
-                  {u.estado === 'activo' ? 'Activo' : 'Inactivo'}
-                </span>
-                <span data-users-security title="La autenticación 2FA aún no está disponible en ECA-QMS"
-                  className="inline-flex items-center gap-1.5 rounded-button border border-qms-border bg-qms-hover-bg px-2 py-0.5 text-xs text-qms-muted">
-                  <ShieldOff aria-hidden="true" className="size-3.5" />2FA no disponible
-                </span>
+<UsuarioEstadoAcceso usuario={u}/>
+                <UsuarioSegundoFactor usuario={u}/>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-qms-border pt-2">
                 <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}</p>
@@ -288,7 +276,7 @@ export default function UsuariosPage() {
         open
         mode={formMode}
         initialTab={formTab}
-        usuario={usuarioSel}
+        usuario={usuarios.find(item=>item.id===usuarioSel?.id)??usuarioSel}
         esAuto={usuarioSel ? esAuto(usuarioSel) : false}
         onClose={() => { setFormOpen(false); setUsuarioSel(null) }}
         onSuccess={handleFormSuccess}

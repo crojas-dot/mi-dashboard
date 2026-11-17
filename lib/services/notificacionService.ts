@@ -12,16 +12,35 @@ export interface Notificacion {
   origen_id?: string
 }
 
-export async function listarNotificaciones(userId: string, signal?: AbortSignal): Promise<Notificacion[]> {
+export const NOTIFICACIONES_VISIBLES = 15
+
+export interface BandejaNotificaciones {
+  items: Notificacion[]
+  total: number
+  sinLeer: number
+}
+
+export async function listarNotificaciones(userId: string, signal?: AbortSignal): Promise<BandejaNotificaciones> {
   const query = supabase
     .from('notificaciones')
-    .select('*')
+    .select('id, usuario_id, fecha, tipo, mensaje, leida, enlace, origen_id', { count: 'exact' })
     .eq('usuario_id', userId)
     .eq('archivada', false)
     .order('fecha', { ascending: false })
-  const { data, error } = await (signal ? query.abortSignal(signal) : query)
+    .order('id', { ascending: false }).limit(NOTIFICACIONES_VISIBLES)
+  const { data, error, count } = await (signal ? query.abortSignal(signal) : query)
   if (error) throw error
-  return (data as Notificacion[]) ?? []
+  const items = (data as Notificacion[]) ?? []
+  const total = count ?? items.length
+  if (total <= items.length) return { items, total, sinLeer: items.filter(item => !item.leida).length }
+
+  // La segunda lectura solo se necesita si hay avisos fuera del menú. Trae
+  // el conteo, sin descargar mensajes ni limitar la campana a las primeras filas.
+  const unread = supabase.from('notificaciones').select('id', { count: 'exact', head: true })
+    .eq('usuario_id', userId).eq('archivada', false).eq('leida', false)
+  const result = await (signal ? unread.abortSignal(signal) : unread)
+  if (result.error) throw result.error
+  return { items, total, sinLeer: result.count ?? 0 }
 }
 
 export async function marcarLeida(id: string) {

@@ -123,7 +123,7 @@ test('notificaciones conserva callbacks separados de lectura, navegación y arch
   const actions = []
   const { default: Notifications } = loadModule('components/header/NotificationDropdown.tsx')
   const item = { id: 'q1', leida: false, mensaje: 'Queja recibida', fecha: '2026-10-05T12:00:00Z' }
-  const element = Notifications({ open: true, notifications: [item], unreadCount: 1, onToggle() {},
+  const element = Notifications({ open: true, enabled: true, notifications: [item], total: 1, unreadCount: 1, onToggle() {}, onSettings() {},
     onMarkAll() {}, onArchiveAll() {}, onMarkRead: n => actions.push(['leer', n.id]),
     onNavigate: n => actions.push(['abrir', n.id]), onArchive: n => actions.push(['archivar', n.id]) })
   const nodes = elements(element)

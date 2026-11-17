@@ -24,9 +24,10 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
   const loading = useAuthStore((s) => s.loading)
   const initialized = useAuthStore((s) => s.initialized)
   const signingOut = useAuthStore((s) => s.signingOut)
+  const access = useAuthStore((s) => s.access)
   const init = useAuthStore((s) => s.init)
   const logout = useAuthStore((s) => s.logout)
-  const route = authRoute(pathname, { user, permisos, loading, initialized })
+  const route = authRoute(pathname, { user, permisos, loading, initialized,access })
 
   useEffect(() => { init() }, [init])
 

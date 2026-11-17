@@ -1,0 +1,29 @@
+{
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "date": "2026-11-17",
+  "authorization": "access_backend_only_for_localhost",
+  "migration": "20261117214855_usuarios_acceso_inicial_mfa",
+  "applied": true,
+  "edge": { "name": "qms-access-mailer", "version": 2, "status": "ACTIVE", "verify_jwt": false, "authorization": "provider_validated_service_only_rpc" },
+  "apps_script": { "before_version": 6, "after_version": 7, "only_dispatch_changed": true, "new_access_file": true, "other_files_preserved": true, "head_matches_published": true },
+  "existing_complaints_queue_edge_version": 19,
+  "verified": {
+    "private_tables_with_rls": 6,
+    "public_restrictive_policies": 52,
+    "administrative_rpc_client_execute": false,
+    "administrative_rpc_service_execute": true,
+    "private_direct_client_read": false,
+    "storage_helpers_gated_with_acl_preserved": true,
+    "pre_request_configured": true,
+    "legacy_active_accounts_unchanged": true,
+    "existing_accounts_backfilled": false,
+    "unauthenticated_edge_request_status": 401,
+    "server_credential_provider_status": 200,
+    "forged_service_role_rejected_status": 401
+  },
+  "synthetic": { "access_mail_node_tests_passed": 21, "postgres_checks_passed": 71, "link_regressions_passed": 5, "strictmode_browser_checks_passed": 38, "users_auth_regressions_passed": 55, "edge_typecheck_passed": true, "typescript_passed": true, "focused_lint_passed": true, "remote_accounts_created_for_qa": 0, "fake_invitations_sent": 0 },
+  "requested_invitation": { "single_auth_and_profile_confirmed": true, "initial_delivery_failed": true, "failure": "edge_v1_rejected_valid_server_credential", "fixed_in_edge_version": 2, "receipt_and_redemption_confirmed": true, "password_screen_confirmed_by_owner": true, "password_set_by_agent": false },
+  "final_checks": { "next_build": true, "structure": true, "visual_layer": true },
+  "web_published": false,
+  "previous_agenda_notifications_delivery_activated": false
+}

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Trash2, KeyRound, Mail, UserPlus, UserRound, Info, ShieldAlert, ShieldCheck, MonitorSmartphone, RefreshCw, Pencil, LockKeyhole, Copy, Check, Eye, EyeOff, RotateCcw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Trash2, KeyRound, Mail, UserPlus, UserRound, Info, ShieldAlert, MonitorSmartphone, RefreshCw, Pencil, LockKeyhole, Copy, Check, Eye, EyeOff, Camera } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -9,11 +9,14 @@ import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { generatePassword } from '@/lib/services/passwordGenerator'
-import { mutateUsuario } from '@/lib/services/usuariosService'
+import { mutateUsuario,gestionarAccesoUsuario } from '@/lib/services/usuariosService'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
 import { getUserError } from '@/lib/errors/userError'
 import { getRoleLabel, ROLES_GESTIONABLES } from '@/lib/constants/roles'
 import type { Usuario } from '@/lib/queries/useUsuarios'
+import type { UserMutationResult } from '@/lib/types/access'
+import UsuarioAccesoInicial from '@/components/usuarios/UsuarioAccesoInicial'
+import UsuarioSeguridadAcceso from '@/components/usuarios/UsuarioSeguridadAcceso'
 
 interface UsuarioFormModalProps {
   open: boolean
@@ -21,7 +24,7 @@ interface UsuarioFormModalProps {
   usuario?: Usuario | null
   esAuto?: boolean
   onClose: () => void
-  onSuccess: (result: { tempPassword?: string }) => void | Promise<void>
+  onSuccess: (result: UserMutationResult) => void | Promise<void>
   onDelete: (usuario: Usuario) => Promise<void>
   initialTab?: 'detalles' | 'seguridad'
   onPasswordSaved?: () => void | Promise<void>
@@ -29,7 +32,7 @@ interface UsuarioFormModalProps {
 
 export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose, onSuccess, onDelete, initialTab = 'detalles', onPasswordSaved }: UsuarioFormModalProps) {
   const esEditar = mode === 'editar' && !!usuario
-  const lock = useOperationLock<'guardar' | 'eliminar' | 'contrasena'>()
+  const lock = useOperationLock<'guardar' | 'eliminar' | 'contrasena' | 'acceso'>()
   const saving = lock.operation === 'guardar'
   const eliminando = lock.operation === 'eliminar'
   const guardandoClave = lock.operation === 'contrasena'
@@ -44,9 +47,24 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [claveGuardada, setClaveGuardada] = useState(false)
   const [claveCopiada, setClaveCopiada] = useState(false)
   const [createdPassword, setCreatedPassword] = useState('')
+  const [createdResult,setCreatedResult]=useState<UserMutationResult|null>(null)
+  const [invite,setInvite]=useState(true)
+  const [requireMfa,setRequireMfa]=useState(true)
+  const creation=useRef<{payload:string;id:string}|null>(null)
   const [createdVisible, setCreatedVisible] = useState(true)
   const [createdCopied, setCreatedCopied] = useState(false)
   const [claveError, setClaveError] = useState<string | null>(null)
+  const filaConfirmacionEliminar = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!confirmarEliminar) return
+    // La confirmación agrega una fila dentro del área con scroll propio. Sin este
+    // ajuste queda bajo el pie fijo y sus botones aparecen recortados, sin acceso.
+    const frame = requestAnimationFrame(() => {
+      filaConfirmacionEliminar.current?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [confirmarEliminar])
 
   function reportarError(cause: unknown, fallback: string) {
     setError(getUserError(cause, fallback).message)
@@ -66,6 +84,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setClaveCopiada(false)
     setClaveError(null)
     setCreatedPassword('')
+    setCreatedResult(null);setInvite(true);setRequireMfa(true);creation.current=null
     setCreatedVisible(true)
     setCreatedCopied(false)
     onClose()
@@ -73,7 +92,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (lock.isLocked() || createdPassword) return
+    if (lock.isLocked() || createdResult) return
     const form = new FormData(e.currentTarget as HTMLFormElement)
     const nombre = String(form.get('nombre') ?? '').trim()
     const email = String(form.get('email') ?? '').trim()
@@ -87,16 +106,17 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setError(null)
     const fallback = esEditar ? 'No se pudo actualizar el usuario' : 'No se pudo crear el usuario'
     try {
-      let result: { tempPassword?: string } = {}
+      let result: UserMutationResult = {}
       // FormData omite controles disabled: la propia cuenta no envía rol/estado nulos.
       const perfil = { nombre, email, ...(!esAuto ? { rol, estado } : {}) }
       if (esEditar && usuario) {
         await mutateUsuario('PATCH', { id: usuario.id, ...perfil }, fallback)
       } else {
-        const password = generatePassword(16)
-        await mutateUsuario('POST', { ...perfil, password }, fallback)
-        result = { tempPassword: password }
-        setCreatedPassword(password)
+        const payload=JSON.stringify({...perfil,invite,requireMfa})
+        if(!creation.current||creation.current.payload!==payload)creation.current={payload,id:crypto.randomUUID()}
+        result=await mutateUsuario('POST',{...perfil,access:{id:creation.current.id,invite,requireMfa}},fallback)
+        setCreatedResult(result)
+        setCreatedPassword(result.tempPassword??'')
         // Llevar al resultado dentro del scroll del modal, sin mover la página exterior.
         if (typeof requestAnimationFrame === 'function') {
           requestAnimationFrame(() => {
@@ -130,6 +150,18 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     } finally {
       lock.finish()
     }
+  }
+
+  async function reenviarCreada() {
+    if(!createdResult?.userId||!lock.begin('acceso'))return
+    setError(null)
+    try {
+      await gestionarAccesoUsuario(createdResult.userId,'resend')
+      setCreatedResult({...createdResult,invitation:'sent'})
+      showSuccess('Invitación enviada')
+      try{await onPasswordSaved?.()}catch{showError(null,'La invitación se envió, pero el listado no pudo refrescarse')}
+    }catch(cause){reportarError(cause,'No se pudo reenviar la invitación')}
+    finally{lock.finish()}
   }
 
 
@@ -215,29 +247,29 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const mensajePendiente = 'Función pendiente de integración'
 
   // Los campos reutilizados preservan los nombres del contrato POST/PATCH.
-  // No se activa ningún método de acceso adicional sin backend real.
+  // Las políticas de acceso se aplican exclusivamente al alta nueva.
   const camposPerfil = <>
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field id="usuario-nombre" label="Nombre completo">
         <Input id="usuario-nombre" name="nombre" required defaultValue={usuario?.nombre}
-          disabled={busy || !!createdPassword} placeholder="Ej: María Fernández" />
+          disabled={busy || !!createdResult} placeholder="Ej: María Fernández" className="shadow border-qms-muted/40" />
       </Field>
       <Field id="usuario-email" label="Correo electrónico">
         <Input id="usuario-email" name="email" type="email" required defaultValue={usuario?.email}
-          disabled={busy || !!createdPassword} placeholder="usuario@eca.or.cr" />
+          disabled={busy || !!createdResult} placeholder="usuario@eca.or.cr" className="shadow border-qms-muted/40" />
       </Field>
     </div>
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <Field id="usuario-rol" label={esEditar ? 'Rol' : 'Rol del sistema'}>
         <Select id="usuario-rol" name="rol" required defaultValue={usuario?.rol || ''}
-          disabled={esAuto || busy || !!createdPassword} className="w-full">
+          disabled={esAuto || busy || !!createdResult} className="w-full shadow border-qms-muted/40">
           <option value="" disabled>Seleccionar rol</option>
           {ROLES_GESTIONABLES.map(rol => <option key={rol} value={rol}>{getRoleLabel(rol)}</option>)}
         </Select>
       </Field>
       <Field id="usuario-estado" label={esEditar ? 'Estado' : 'Estado inicial'}>
         <Select id="usuario-estado" name="estado" required defaultValue={usuario?.estado || 'activo'}
-          disabled={esAuto || busy || !!createdPassword} className="w-full">
+          disabled={esAuto || busy || !!createdResult} className="w-full shadow border-qms-muted/40">
           <option value="activo">Activo</option>
           <option value="inactivo">Inactivo</option>
         </Select>
@@ -250,14 +282,14 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
       <div className="min-w-0 flex-1">
         <h3 className="text-sm font-semibold text-qms-danger">Zona de peligro</h3>
         <p className="mt-2 text-sm font-medium text-qms-dark">Eliminar cuenta permanentemente</p>
-        <p className="mt-1 text-xs leading-relaxed text-qms-muted">A diferencia de desactivar, elimina la cuenta. Esta acción requiere confirmación.</p>
+        <p className="mt-1 text-xs leading-relaxed text-qms-muted">Elimina el acceso y retira la cuenta del directorio. Los expedientes y su historial se conservan.</p>
       </div>
       {!confirmarEliminar && <Button type="button" size="sm" variant="danger" disabled={busy}
         onClick={() => setConfirmarEliminar(true)}>
         <Trash2 aria-hidden="true" className="size-4" />Eliminar
       </Button>}
     </div>
-    {confirmarEliminar && <div className="flex flex-wrap items-center justify-between gap-3 border-t border-qms-danger/20 px-4 py-3 sm:px-5">
+    {confirmarEliminar && <div ref={filaConfirmacionEliminar} className="flex scroll-mb-4 flex-wrap items-center justify-between gap-3 border-t border-qms-danger/20 px-4 py-3 sm:px-5">
       <span className="text-xs font-medium text-qms-danger">¿Eliminar a {usuario.nombre}?</span>
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" size="sm" variant="secondary" disabled={busy}
@@ -293,7 +325,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
             Seguridad y acceso
           </button>
         </div>}
-        <div data-user-editor-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg/40 px-4 py-5 sm:px-7 sm:py-6">
+        <div data-user-editor-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg px-4 py-5 sm:px-7 sm:py-6">
           <form key={usuario?.id ?? 'nuevo'} id={formId} role={esEditar ? 'tabpanel' : undefined}
             aria-label={esEditar ? 'Detalles del perfil' : 'Crear nuevo usuario'}
             aria-labelledby={esEditar ? 'usuario-tab-detalles' : undefined}
@@ -301,17 +333,28 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
             className={esEditar ? 'mx-auto max-w-4xl' : 'mx-auto max-w-4xl space-y-7'}>
             {error && <div role="alert" className="mb-4 rounded-card border border-qms-danger/30 bg-qms-danger/5 p-3 text-sm text-qms-danger">{error}</div>}
             {esEditar ? <div data-user-profile-layout className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
-              <aside className="flex w-full shrink-0 flex-col items-center gap-3 pt-2 sm:w-36">
-                <div aria-label={'Avatar de ' + nombreVisible} className="flex size-24 items-center justify-center rounded-full border-4 border-qms-surface bg-qms-primary-soft text-3xl font-semibold text-qms-primary shadow-sm">
-                  {inicial}
+              <aside className="flex w-full shrink-0 flex-col items-center gap-3 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-44">
+                <div className="relative">
+                  <div aria-label={'Avatar de ' + nombreVisible} className="flex size-24 items-center justify-center rounded-full border-4 border-qms-surface bg-qms-primary/15 text-3xl font-semibold text-qms-primary shadow-sm">
+                    {inicial}
+                  </div>
+                  <span aria-hidden="true" className="absolute -bottom-1 -right-1 inline-flex size-8 items-center justify-center rounded-full border border-qms-border bg-qms-surface text-qms-primary shadow-sm">
+                    <Camera className="size-4" />
+                  </span>
                 </div>
-                <p className="text-center text-xs text-qms-muted">Foto de perfil · próximamente</p>
+                {/* La carga real de avatar aún no tiene API/almacenamiento: la acción
+                    queda visible pero deshabilitada, sin simular una subida. */}
+                <button type="button" disabled title={mensajePendiente}
+                  aria-label={'Subir foto de perfil. ' + mensajePendiente}
+                  className="text-center text-xs font-medium text-qms-primary disabled:cursor-not-allowed">
+                  Subir foto de perfil
+                </button>
                 <div className="text-center">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-qms-muted">Rol actual</p>
                   <p className="mt-1 text-sm font-semibold text-qms-dark">{usuario?.rol ? getRoleLabel(usuario.rol) : 'Sin asignar'}</p>
                 </div>
               </aside>
-              <div className="min-w-0 flex-1 space-y-5 rounded-card border border-qms-border bg-qms-surface p-4 sm:p-6">
+              <div className="min-w-0 flex-1 space-y-4 rounded-card border border-qms-border bg-qms-surface p-4 shadow sm:p-5">
                 {camposPerfil}
                 {esAuto && <div className="flex items-start gap-2 rounded-card border border-qms-primary/20 bg-qms-primary-soft p-3">
                   <ShieldAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-primary" />
@@ -334,51 +377,8 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                   <div className="min-w-0 flex-1 space-y-5">{camposPerfil}</div>
                 </div>
               </section>
-              <section data-user-create-access>
-                <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-qms-dark">
-                  <span className="inline-flex size-6 items-center justify-center rounded-full bg-qms-primary-soft text-xs font-semibold text-qms-primary">2</span>
-                  Configuración de acceso
-                </h3>
-                <div className="overflow-hidden rounded-card border border-qms-border bg-qms-surface">
-                  <div className="flex items-start gap-3 border-b border-qms-border bg-qms-primary-soft/40 p-4 sm:p-5">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-qms-primary-soft text-qms-primary">
-                      <Mail aria-hidden="true" className="size-5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <h4 className="text-sm font-semibold text-qms-dark">Enviar invitación por correo</h4>
-                        <label className="flex shrink-0 items-center gap-2 text-xs text-qms-muted">
-                          <input type="checkbox" disabled aria-label="Enviar invitación (pendiente)" title={mensajePendiente} className="size-4 accent-qms-primary" />Pendiente
-                        </label>
-                      </div>
-                      <p className="mt-1 text-xs leading-relaxed text-qms-muted">La invitación con enlace de activación se integrará en una próxima etapa. Todavía no se envía automáticamente.</p>
-                    </div>
-                  </div>
-                  <div className="border-b border-qms-border p-4 sm:p-5">
-                    <h4 className="text-sm font-semibold text-qms-dark">Acceso con contraseña temporal</h4>
-                    <p className="mt-1 text-xs leading-relaxed text-qms-muted">Al crear la cuenta se genera una contraseña segura. El sistema la mostrará una sola vez para que se la entregués al usuario.</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-button border border-qms-primary/20 bg-qms-primary-soft px-3 py-2 text-xs font-medium text-qms-primary">
-                        <KeyRound aria-hidden="true" className="size-4" /> Generación automática habilitada
-                      </span>
-                      <Button type="button" size="sm" variant="secondary" disabled title={mensajePendiente}>
-                        <Pencil aria-hidden="true" className="size-4" />Definir manualmente · próximamente
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex items-start justify-between gap-3 p-4 sm:p-5">
-                    <div className="min-w-0 flex-1">
-                      <h4 className="flex flex-wrap items-center gap-2 text-sm font-semibold text-qms-dark">
-                        <ShieldCheck aria-hidden="true" className="size-4 text-qms-muted" />
-                        Requerir verificación en dos pasos (2FA)
-                        <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-0.5 text-[11px] font-medium text-qms-muted">Pendiente</span>
-                      </h4>
-                      <p className="mt-1 text-xs leading-relaxed text-qms-muted">La configuración de factores todavía no está disponible en el sistema.</p>
-                    </div>
-                    <input type="checkbox" disabled aria-label="Requerir 2FA al crear (pendiente)" title={mensajePendiente} className="mt-0.5 size-4 shrink-0 accent-qms-primary" />
-                  </div>
-                </div>
-              </section>
+              <UsuarioAccesoInicial invite={invite} requireMfa={requireMfa} disabled={busy||!!createdResult} onInvite={setInvite} onMfa={setRequireMfa}/>
+              {createdResult&&!createdPassword&&<section className="rounded-card border border-qms-border bg-qms-surface p-4" aria-live="polite"><p className="text-sm font-semibold">Usuario creado</p><p className="mt-2 text-sm text-qms-muted">{createdResult.invitation==='sent'?'La invitación fue enviada para configurar el acceso.':invite?'El usuario fue creado, pero no se pudo enviar la invitación.':'La cuenta ya fue creada. Si no recibiste la contraseña temporal, restablecela desde Seguridad y acceso.'}</p>{invite&&createdResult.invitation!=='sent'&&<Button type="button" variant="secondary" size="sm" className="mt-3" disabled={busy} loading={lock.operation==='acceso'} onClick={()=>void reenviarCreada()}><Mail aria-hidden="true" className="size-4"/>Reenviar invitación</Button>}</section>}
               {createdPassword && <section data-user-created-password className="rounded-card border border-qms-success/30 bg-qms-surface p-4 sm:p-5" aria-live="polite">
                 <p className="flex items-center gap-2 text-sm font-semibold text-qms-success"><Check aria-hidden="true" className="size-4" />Usuario creado correctamente</p>
                 <p className="mt-1 text-xs text-qms-muted">Copiá la contraseña temporal ahora. Solo se mostrará durante esta sesión del formulario.</p>
@@ -480,26 +480,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                 <Button type="button" size="sm" variant="secondary" disabled title={mensajePendiente}>Enviar enlace</Button>
               </div>
             </section>
-            <section className="rounded-card border border-qms-border bg-qms-surface p-5 sm:p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-dark"><ShieldCheck aria-hidden="true" className="size-4 text-qms-muted" />Verificación en dos pasos (2FA)
-                    <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-0.5 text-[11px] font-medium text-qms-muted">Pendiente</span>
-                  </h3>
-                  <p className="mt-1 text-xs text-qms-muted">Todavía no hay factores 2FA consultables ni configurables por API.</p>
-                </div>
-                <input type="checkbox" aria-label="Requerir 2FA (pendiente)" disabled className="mt-0.5 size-4 accent-qms-primary" />
-              </div>
-              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-border bg-qms-hover-bg/40 p-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-qms-muted">Métodos configurados</p>
-                  <p className="mt-1 text-xs text-qms-muted">Sin factores disponibles por API</p>
-                </div>
-                <Button type="button" size="sm" variant="secondary" disabled title={mensajePendiente}>
-                  <RotateCcw aria-hidden="true" className="size-4" />Restablecer 2FA
-                </Button>
-              </div>
-            </section>
+            <UsuarioSeguridadAcceso usuario={usuario!} esAuto={esAuto} disabled={busy} onBegin={()=>lock.begin('acceso')} onEnd={()=>lock.finish()} onChanged={()=>onPasswordSaved?.()}/>
             <section className="rounded-card border border-qms-border bg-qms-surface p-5 sm:p-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
@@ -519,13 +500,13 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
         <div data-user-editor-footer className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-4 py-3 sm:px-7">
           <p className="flex items-center gap-1.5 text-xs text-qms-muted">
             <Info aria-hidden="true" className="size-4 shrink-0" />
-            {esEditar ? (tab === 'seguridad' ? 'Las funciones pendientes todavía no modifican el acceso.' : 'Los cambios se aplican al guardar.') : 'La contraseña temporal se muestra al terminar el alta.'}
+            {esEditar ? (tab === 'seguridad' ? 'Las acciones de seguridad requieren confirmación.' : 'Los cambios se aplican al guardar.') : 'La configuración se aplica únicamente al crear este usuario.'}
           </p>
           <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Button type="button" variant="secondary" disabled={busy} onClick={cerrar}>{createdPassword || esEditar && tab === 'seguridad' ? 'Cerrar' : 'Cancelar'}</Button>
-            {createdPassword ? <Button type="button" onClick={cerrar} disabled={busy}><Check aria-hidden="true" className="size-4" />Listo</Button> : (!esEditar || tab === 'detalles') && <Button type="submit" form={formId} loading={saving} disabled={busy}>
+            <Button type="button" variant="secondary" disabled={busy} onClick={cerrar}>{createdResult || esEditar && tab === 'seguridad' ? 'Cerrar' : 'Cancelar'}</Button>
+            {createdResult ? <Button type="button" onClick={cerrar} disabled={busy}><Check aria-hidden="true" className="size-4" />Listo</Button> : (!esEditar || tab === 'detalles') && <Button type="submit" form={formId} loading={saving} disabled={busy}>
               {!saving && (esEditar ? <Pencil aria-hidden="true" className="size-4" /> : <UserPlus aria-hidden="true" className="size-4" />)}
-              {esEditar ? 'Guardar cambios' : 'Crear usuario'}
+              {esEditar ? 'Guardar cambios' : invite?'Crear usuario y enviar invitación':'Crear usuario'}
             </Button>}
           </div>
         </div>

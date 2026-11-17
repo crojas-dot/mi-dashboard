@@ -86,13 +86,14 @@ export interface CaseRoleCycle {
 }
 
 /** Recorrido de lectura del expediente; no cambia estados, plazos ni permisos. */
-export function getCaseProcessCycle(queja: Pick<Queja, 'estado'>): CaseRoleCycle {
-  const steps = [
+export function getCaseProcessCycle(queja: Pick<Queja, 'estado'>, options?: { steps?: CaseRoleCycle['steps'] }): CaseRoleCycle {
+  const generated: { id: string; label: string }[] = [
     { id: 'evaluation', label: 'Evaluación' },
     { id: 'investigation', label: 'Investigación' },
     { id: 'quality_review', label: 'Revisión de Calidad' },
     { id: 'finished', label: 'Cierre' },
   ]
+  const steps: CaseRoleCycle['steps'] = options?.steps ?? generated.map((step) => ({ ...step, current: false, completed: false }))
   // No Procede cierra tras la evaluación; no atribuirle investigación o revisión.
   const visibleSteps = queja.estado === 'No Procede' ? [steps[0], steps[3]] : steps
   const positions: Record<string, number> = { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 4, 'No Procede': 2 }

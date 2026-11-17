@@ -620,7 +620,11 @@ test('Respuesta al cliente solo selecciona PDF oficial y conserva un único scro
   assert.ok(response.includes('data-response-selected-file'))
   assert.ok(response.includes('aria-label="Quitar PDF seleccionado"'))
   assert.ok(response.includes('setPreviewFile(selectedFile)'))
-  assert.ok(response.includes('size="mail"'))
+  assert.ok(response.includes('size="xl"'))
+  // Procede y No Procede comparten la medida document XL: la decisión de
+  // procedencia abre en xl y la respuesta al cliente conserva esa misma ventana.
+  assert.match(fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8'),
+    /size=\{reviewOpen \? 'mail' : 'xl'\} variant="document" height="fill"/)
   assert.ok(response.includes('onOficioChange={value => change({ numeroOficio: value })}'))
   assert.ok(!response.includes('Seleccionar PDF oficial'))
   assert.ok(!response.includes('Sin documento oficial seleccionado.'))

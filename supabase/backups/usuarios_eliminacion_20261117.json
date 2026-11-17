@@ -1,0 +1,18 @@
+{
+  "project_ref": "fykhrrpeoehwqznccmfp",
+  "migration": "20261117212024",
+  "name": "usuarios_eliminacion_con_trazabilidad",
+  "applied": true,
+  "verified": {
+    "marker_exists": true,
+    "private_rls": true,
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "service_execute": true,
+    "client_update_marker": false,
+    "mfa_not_activated": true
+  },
+  "synthetic_postgres_checks": 33,
+  "real_accounts_deleted_for_qa": 0,
+  "web_published": false
+}

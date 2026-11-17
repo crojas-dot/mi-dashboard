@@ -19,6 +19,7 @@ function isPublicPath(pathname: string) {
     || pathname === '/api/public/quejas/finalizar'
     || pathname === '/api/public/seguimiento'
     || pathname === '/api/public/seguimiento/documento'
+    || pathname === '/api/public/acceso/invitacion'
     || /^\/api\/public\/formularios\/[^/]+$/.test(pathname)
 }
 

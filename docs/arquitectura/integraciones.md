@@ -95,6 +95,22 @@ el seguimiento y sus cortes internos se activaron el 19. Consultar
 `lib/services/apiClient.ts` comparte transporte HTTP con Usuarios e IA. Lee el token
 local para enviarlo; la API verifica identidad activa/rol de nuevo. Las lecturas usan
 `lib/queries/useUsuarios.ts`; las escrituras del directorio usan `usuariosService.ts`.
+
+DELETE delega en `lib/server/usuarioDeletion.ts` y el RPC service-only
+`qms_delete_user_account`. [Borrado recuperable](../usuarios-eliminacion-2026-11-17.md):
+desactiva antes de Auth, omite Auth null, confirma ausencia por ID y retira el perfil
+con `eliminado_en`, sin romper FK ni borrar historial. GET/PATCH excluyen retirados.
+DB 20261117212024 aplicada; no confundir con activar invitaciones/MFA.
+
+El [acceso inicial del 17 noviembre](../usuarios-acceso-inicial-mfa-2026-11-17.md)
+añade `/api/auth/acceso`, `/api/usuarios/acceso` y el canje público exacto
+`/api/public/acceso/invitacion`. Edge `qms-access-mailer` y Apps Script `Acceso.gs`
+usan HMAC de propósito exclusivo y recibo firmado; no sustituyen ni activan la cola
+de Quejas. Backend activado con autorización el 17 noviembre: migración
+20261117214855, Edge v2 y Apps Script v7. El emisor parte de v6 y conserva los demás
+archivos/funciones. La credencial de máquina se valida por RPC service-only contra
+Supabase; no basta un claim sin firma. Cliente/API locales, invitaciones loopback
+solo en desarrollo y con marca firmada. No se publicó Vercel.
 Los modales y confirmación de estado comparten `useOperationLock` para impedir
 doble envío antes del siguiente render. No cerrar ni regenerar el borrador durante
 una escritura. Un fallo de red conserva datos/contraseña; un fallo del listado tras

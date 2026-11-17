@@ -8,6 +8,10 @@ import { validarUsuarioInput } from '@/lib/server/usuarioInput'
 import { containsPattern } from '@/lib/utils/postgrest'
 import { generatePassword } from '@/lib/services/passwordGenerator'
 import { getUserError } from '@/lib/errors/userError'
+import { getAccessIdentity } from '@/lib/server/accessIdentity'
+import { accessCommand, createUserWithAccess, AccessError } from '@/lib/server/accessService'
+import type { UserAccessDirectory } from '@/lib/types/access'
+import {eliminarCuentaUsuario,UsuarioDeletionError} from '@/lib/server/usuarioDeletion'
 
 export const runtime = 'nodejs'
 const json = (value: unknown, options: {status?: number; headers?: Record<string,string>} = {}) => NextResponse.json(value, {
@@ -47,7 +51,7 @@ export async function GET(request: NextRequest) {
     return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
-  let query = admin.from('usuarios').select('id, email, nombre, rol, estado, auth_id, ultimo_acceso').order('nombre')
+  let query = admin.from('usuarios').select('id, email, nombre, rol, estado, auth_id, ultimo_acceso').is('eliminado_en',null).order('nombre')
 
   if (search.trim()) {
     const pattern = containsPattern(search.trim())
@@ -66,7 +70,16 @@ export async function GET(request: NextRequest) {
     return falloSeguro(error, 'list', 'No se pudo listar usuarios.', 500)
   }
   try {
-    return json(await completarUltimoAcceso(admin, data ?? []), { headers: { 'Cache-Control': 'no-store' } })
+    const rows=await completarUltimoAcceso(admin,data??[])
+    if(current.rol==='admin'&&rows.length) {
+      const identity=await getAccessIdentity(request)
+      if(!identity)return json({error:'No autorizado'},{status:401})
+      try {
+        const access=await accessCommand<UserAccessDirectory[]>(admin,identity,'directory',{ids:rows.map(row=>row.auth_id).filter(Boolean)})
+        return json(rows.map(row=>({...row,access:access.find(item=>item.authId===row.auth_id)})))
+      }catch(error){if(!(error instanceof AccessError)||!['PGRST202','42883'].includes(error.code))throw error}
+    }
+    return json(rows, { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
     logger.error('No se pudo consultar el último acceso', { module: 'usuarios', action: 'list_access' }, error)
     return json({ error: 'No se pudo consultar el último acceso de los usuarios.' }, { status: 502 })
@@ -95,6 +108,17 @@ export async function POST(request: NextRequest) {
   const admin = createServiceClient()
   if (!admin) {
     return json({ error: 'Servidor mal configurado' }, { status: 500 })
+  }
+
+  if(validation.data!.access) {
+    const identity=await getAccessIdentity(request)
+    if(!identity)return json({error:'No autorizado'},{status:401})
+    try {
+      return json(await createUserWithAccess(admin,identity,{nombre:nombre!,email:email!,rol:rol!,estado},validation.data!.access,new URL(request.url).origin),{status:201})
+    }catch(error){
+      const status=error instanceof AccessError?error.status:503
+      return json({error:status===409?'Ya existe una cuenta con ese correo o el alta sigue en curso. Reintentá con la misma solicitud.':'No se pudo completar el alta. Se conserva la misma solicitud para reintentar.'},{status})
+    }
   }
 
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
@@ -151,7 +175,7 @@ export async function PATCH(request: NextRequest) {
     return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
-  const { data: userRow, error: fetchError } = await admin.from('usuarios').select('auth_id').eq('id', id).maybeSingle()
+  const { data: userRow, error: fetchError } = await admin.from('usuarios').select('auth_id').eq('id', id).is('eliminado_en',null).maybeSingle()
   if (fetchError || !userRow) {
     return json({ error: 'Usuario no encontrado' }, { status: 404 })
   }
@@ -193,7 +217,15 @@ export async function PATCH(request: NextRequest) {
     updates.estado = estado
   }
   const authUpdates: { email?: string; password?: string } = {}
-  if (email !== undefined) { authUpdates.email = email; updates.email = email }
+  if (email !== undefined) {
+    const identity=await getAccessIdentity(request)
+    if(!identity)return json({error:'No autorizado'},{status:401})
+    try{await accessCommand(admin,identity,'email_check',{authId,email})}
+    catch(error){
+      if(!(error instanceof AccessError&&['PGRST202','42883'].includes(error.code)))return json({error:'El correo principal debe ser distinto al alternativo o la cuenta no está disponible.'},{status:400})
+    }
+    authUpdates.email = email; updates.email = email
+  }
   if (newPassword !== undefined) authUpdates.password = newPassword
   if (Object.keys(authUpdates).length) {
     const { error: authError } = await admin.auth.admin.updateUserById(authId, authUpdates)
@@ -234,33 +266,11 @@ export async function DELETE(request: NextRequest) {
     return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
-  const { data: userRow, error: fetchError } = await admin.from('usuarios').select('auth_id').eq('id', id).maybeSingle()
-  if (fetchError || !userRow) {
-    return json({ error: 'Usuario no encontrado' }, { status: 404 })
+  try {
+    await eliminarCuentaUsuario(admin,current.auth_id,id)
+    return json({ok:true})
+  }catch(error){
+    if(error instanceof UsuarioDeletionError)return json({error:error.message},{status:error.status})
+    return falloSeguro(error,'delete_account','No se pudo completar la eliminación de la cuenta.',503)
   }
-
-  if (current.auth_id === userRow.auth_id) {
-    return json({ error: 'No puedes eliminar tu propia cuenta' }, { status: 400 })
-  }
-
-  // Verificar que no sea el último admin activo
-  const { data: userToDelete } = await admin.from('usuarios').select('rol').eq('id', id).maybeSingle()
-  if (userToDelete?.rol === 'admin') {
-    const { count } = await admin.from('usuarios').select('id', { count: 'exact', head: true }).eq('rol', 'admin').eq('estado', 'activo')
-    if ((count ?? 0) <= 1) {
-      return json({ error: 'No se puede eliminar el último administrador activo del sistema' }, { status: 409 })
-    }
-  }
-
-  const { error: authDeleteError } = await admin.auth.admin.deleteUser(userRow.auth_id)
-  if (authDeleteError) {
-    return falloSeguro(authDeleteError, 'delete_auth', 'No se pudo eliminar la cuenta.', 400)
-  }
-
-  const { error: deleteError } = await admin.from('usuarios').delete().eq('id', id)
-  if (deleteError) {
-    return falloSeguro(deleteError, 'delete_profile', 'No se pudo eliminar el perfil.', 500)
-  }
-
-  return json({ ok: true })
 }

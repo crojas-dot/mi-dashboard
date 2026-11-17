@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Readable } from 'node:stream'
 import { createServiceClient } from '@/lib/server/supabase-admin'
-import { getCurrentUser } from '@/lib/server/auth'
+import { createAuthenticatedClient, getCurrentUser } from '@/lib/server/auth'
 import { getDriveClient, assertDriveCaseFile } from '@/lib/server/drive'
 import { logger } from '@/lib/utils/logger'
 
@@ -13,30 +13,46 @@ function contentDisposition(nombre: string): string {
 }
 
 export async function GET(request: NextRequest) {
-  const current = await getCurrentUser(request)
+  const current = await getCurrentUser(request, request.signal)
   if (!current) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-  const admin = createServiceClient()
-  if (!admin) return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
   const fileId = request.nextUrl.searchParams.get('id')?.trim() ?? ''
   if (!/^[A-Za-z0-9_-]{10,200}$/.test(fileId)) return NextResponse.json({ error: 'ID de archivo inválido' }, { status: 400 })
+  if (!['admin', 'calidad', 'colaborador'].includes(current.rol)) {
+    return NextResponse.json({ error: 'Sin permisos para descargar este adjunto' }, { status: 403 })
+  }
+  const client = createAuthenticatedClient(request, request.signal)
+  if (!client) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   try {
-    const { data: adjunto, error: adjuntoError } = await admin.from('queja_adjuntos').select('queja_id, nombre, tipo_mime').eq('storage_path', fileId).limit(1).maybeSingle()
-    if (adjuntoError) throw adjuntoError
-    if (!adjunto) return NextResponse.json({ error: 'Adjunto no encontrado' }, { status: 404 })
-    const { data: queja, error: caseError } = await admin.from('quejas').select('folio, responsable_id').eq('id', adjunto.queja_id).maybeSingle()
-    if (caseError) throw caseError
-    if (!queja) return NextResponse.json({ error: 'Expediente no encontrado' }, { status: 404 })
-    if (!['admin', 'calidad'].includes(current.rol) && !(current.rol === 'colaborador' && queja.responsable_id === current.id)) {
+    // El INNER aplica la misma RLS de Quejas que protege la bandeja. Una fila de
+    // adjunto visible por sí sola no prueba acceso vigente al expediente.
+    const { data: adjunto, error: lookupError } = await client.from('queja_adjuntos')
+      .select('nombre, tipo_mime, queja:quejas!inner(folio, responsable_id)')
+      .eq('storage_path', fileId).limit(1).maybeSingle<{
+        nombre: string; tipo_mime: string | null; queja: { folio: string; responsable_id: string | null }
+      }>()
+    if (lookupError) throw lookupError
+    if (!adjunto?.queja) return NextResponse.json({ error: 'Adjunto no disponible' }, { status: 404 })
+    if (current.rol === 'colaborador' && adjunto.queja.responsable_id !== current.id) {
       return NextResponse.json({ error: 'Sin permisos para descargar este adjunto' }, { status: 403 })
     }
+    const admin = createServiceClient(request.signal)
+    if (!admin) return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
     const { data: config, error: configError } = await admin.from('configuraciones_sistema').select('valor').eq('clave', 'drive_folder_id_quejas').maybeSingle()
     if (configError) throw configError
     const root = typeof config?.valor === 'string' ? config.valor.trim() : ''
     const drive = getDriveClient()
     if (!root || !drive) return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
-    await assertDriveCaseFile(drive, root, fileId, queja.folio)
-    const result = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream' })
+    const signal = AbortSignal.any([request.signal, AbortSignal.timeout(25_000)])
+    await assertDriveCaseFile(drive, root, fileId, adjunto.queja.folio, { signal })
+    if (request.nextUrl.searchParams.get('vista') === 'drive') {
+      // Solo devuelve la vista privada del archivo confirmado. Drive aplica además
+      // los permisos de la cuenta de Google; nunca se crea un permiso compartido.
+      return NextResponse.json({ previewUrl: `https://drive.google.com/file/d/${fileId}/preview` }, {
+        headers: { 'Cache-Control': 'private, no-store' },
+      })
+    }
+    const result = await drive.files.get({ fileId, alt: 'media', supportsAllDrives: true }, { responseType: 'stream', signal })
     const stream = Readable.toWeb(result.data as Readable) as ReadableStream<Uint8Array>
     // Gaxios actual usa Headers; fixtures/transportes antiguos pueden devolver un mapa.
     const transportHeaders = result.headers as unknown as { get?: (name: string) => string | null } & Record<string, unknown>

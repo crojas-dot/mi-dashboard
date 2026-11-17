@@ -11,11 +11,11 @@ export function getAuthToken(request: NextRequest): string | null {
   return header.slice('Bearer '.length)
 }
 
-export async function getCurrentUser(request: NextRequest, signal?: AbortSignal): Promise<{ id: string; auth_id: string; rol: string; email: string } | null> {
+export function createAuthenticatedClient(request: NextRequest, signal?: AbortSignal) {
   const token = getAuthToken(request)
   if (!token) return null
 
-  const client = createClient(url!, anonKey!, {
+  return createClient(url!, anonKey!, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -28,7 +28,12 @@ export async function getCurrentUser(request: NextRequest, signal?: AbortSignal)
       headers: { Authorization: `Bearer ${token}` },
     },
   })
+}
 
+export async function getCurrentUser(request: NextRequest, signal?: AbortSignal): Promise<{ id: string; auth_id: string; rol: string; email: string } | null> {
+  const token = getAuthToken(request)
+  const client = createAuthenticatedClient(request, signal)
+  if (!token || !client) return null
   const { data, error } = await client.auth.getUser(token)
   if (error || !data.user) return null
 

@@ -19,7 +19,9 @@ type TableName =
 interface SubscriptionConfig {
   table: TableName
   filter?: string
+  enabled?: boolean
   invalidateKeys: readonly (readonly unknown[])[]
+  invalidateOnInsert?: readonly (readonly unknown[])[]
   /** Solo estos eventos. Default: INSERT, UPDATE y DELETE. */
   events?: ('INSERT' | 'UPDATE' | 'DELETE')[]
 }
@@ -42,6 +44,7 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
   useEffect(() => { configRef.current = config }, [config])
 
   useEffect(() => {
+    if (config.enabled === false) return
     let active = true
     let subscribed = false
     let needsResync = false
@@ -53,9 +56,10 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
       pendingKeys = []
       for (const key of keys) void queryClient.invalidateQueries({ queryKey: key, refetchType })
     }
-    const queueInvalidation = () => {
+    const queueInvalidation = (includeInsertKeys: boolean) => {
       if (!active) return
-      pendingKeys = compactKeys([...pendingKeys, ...configRef.current.invalidateKeys])
+      const { invalidateKeys, invalidateOnInsert } = configRef.current
+      pendingKeys = compactKeys([...pendingKeys, ...invalidateKeys, ...(includeInsertKeys ? invalidateOnInsert ?? [] : [])])
       if (timer !== null) return
       timer = setTimeout(() => {
         timer = null
@@ -77,7 +81,7 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
           if (!active) return
           const eventType = payload.eventType.toUpperCase() as 'INSERT' | 'UPDATE' | 'DELETE'
           if (!(configRef.current.events ?? ['INSERT', 'UPDATE', 'DELETE']).includes(eventType)) return
-          queueInvalidation()
+          queueInvalidation(eventType === 'INSERT')
         },
       )
       .subscribe((status) => {
@@ -85,7 +89,7 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
         if (status === 'SUBSCRIBED') {
           // La conexión inicial ya coincide con el fetch de la vista. Solo una
           // reconexión puede haber perdido eventos y necesita resincronización.
-          if (needsResync) queueInvalidation()
+          if (needsResync) queueInvalidation(true)
           subscribed = true
           needsResync = false
         } else if (subscribed && ['CHANNEL_ERROR', 'TIMED_OUT', 'CLOSED'].includes(status)) {
@@ -102,5 +106,5 @@ export function useRealtimeSubscription(config: SubscriptionConfig) {
       flush('none')
       void supabase.removeChannel(channel)
     }
-  }, [queryClient, config.table, config.filter])
+  }, [queryClient, config.table, config.filter, config.enabled])
 }

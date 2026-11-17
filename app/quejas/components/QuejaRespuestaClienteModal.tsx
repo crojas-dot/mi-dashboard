@@ -49,7 +49,7 @@ export default function QuejaRespuestaClienteModal(props: Props) {
   // Si aún falta la consulta, no mostrar formularios provisionales editables.
   return <Modal open onClose={props.onClose} title="Respuesta al cliente" titleSuffix={props.queja.folio}
     headerLeading={<Reply aria-hidden="true" className="size-4 text-qms-muted" />}
-    size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
+    size="xl" variant="document" emphasizeTitle dismissOnBackdrop={false}
     footer={<div className="flex justify-end"><Button size="sm" variant="secondary" onClick={() => props.onClose()}>Cerrar</Button></div>}>
     {query.isLoading ? (
       <div data-response-prefill role="status" aria-live="polite"
@@ -221,10 +221,13 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
     setConfirmPublish(true)
   }
   const close = () => { if (disabled) return; if (dirty) setConfirmClose(true); else props.onClose() }
+  // Mismo tamaño que la ventana de decisión de procedencia (document XL) para
+  // que Procede y No Procede se perciban como el mismo paso del flujo. Las dos
+  // variantes de esta ventana (carga y editor) deben conservar esa medida.
   return <>
     <Modal open onClose={close} title="Respuesta al cliente" titleSuffix={snapshot.folio}
       headerLeading={<Reply aria-hidden="true" className="size-4 shrink-0 text-qms-muted" />}
-      size="mail" variant="document" emphasizeTitle dismissOnBackdrop={false}
+      size="xl" variant="document" emphasizeTitle dismissOnBackdrop={false}
       footer={<div className="flex flex-wrap items-center justify-between gap-3">
         {initial.publicada
           ? <div className="flex w-full flex-wrap items-center justify-end gap-2">

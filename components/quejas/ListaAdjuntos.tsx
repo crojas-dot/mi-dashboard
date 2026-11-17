@@ -1,11 +1,13 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { File, FileImage, FileSpreadsheet, FileText, Eye, Download, Trash2 } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
 import Button from '@/components/ui/Button'
 import { formatBytes } from '@/lib/utils/format'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { prefetchDriveBlob } from '@/lib/services/driveClient'
+import { tipoVistaLocal } from '@/lib/utils/adjuntoPreview'
 
 interface ListaAdjuntosProps {
   adjuntos: QuejaAdjunto[]
@@ -45,10 +47,21 @@ export default function ListaAdjuntos({
   layout = 'list',
   hideGroupTitle = false,
 }: ListaAdjuntosProps) {
-  const previewIntent = (path: string) => ({
-    onPointerEnter: () => prefetchDriveBlob(path),
-    onFocus: () => prefetchDriveBlob(path),
-  })
+  const preloadTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const cancelPreload = () => {
+    if (preloadTimer.current !== null) clearTimeout(preloadTimer.current)
+    preloadTimer.current = null
+  }
+  useEffect(() => () => { if (preloadTimer.current !== null) clearTimeout(preloadTimer.current) }, [])
+
+  const previewIntent = (file: QuejaAdjunto) => {
+    const prepare = () => {
+      cancelPreload()
+      if (file.storage_path.includes('/') || !tipoVistaLocal(file.tipo_mime, file.nombre)) return
+      preloadTimer.current = setTimeout(() => prefetchDriveBlob(file.storage_path), 80)
+    }
+    return { onPointerEnter: prepare, onFocus: prepare, onPointerLeave: cancelPreload, onBlur: cancelPreload }
+  }
   const cliente = adjuntos.filter((a) => !a.usuario_id)
   const analisis = adjuntos.filter((a) => a.usuario_id)
 
@@ -67,7 +80,7 @@ export default function ListaAdjuntos({
                 <button
                  
                   type="button"
-                  {...previewIntent(a.storage_path)} onClick={() => onPreview(a)}
+                  {...previewIntent(a)} onClick={() => onPreview(a)}
                   className="flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-card px-3 pt-3 pb-1 text-left"
                   title={a.nombre}
                   aria-label={`Vista previa de ${a.nombre}`}
@@ -81,7 +94,7 @@ export default function ListaAdjuntos({
                   </span>
                 </button>
                 <div className="flex items-center justify-end gap-0.5 px-2 pb-1">
-                  <Button size="icon" variant="ghost" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}>
+                  <Button size="icon" variant="ghost" {...previewIntent(a)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}>
                     <Eye className="h-4 w-4" aria-hidden="true" />
                   </Button>
                   <Button size="icon" variant="ghost" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}>
@@ -100,7 +113,7 @@ export default function ListaAdjuntos({
                   <Icon className="size-5" strokeWidth={1.75} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <button type="button" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)}
+                  <button type="button" {...previewIntent(a)} onClick={() => onPreview(a)}
                     title={a.nombre} aria-label={`Vista previa de ${a.nombre}`}
                     className="block w-full min-w-0 cursor-pointer truncate text-left text-sm font-semibold text-qms-dark hover:text-qms-primary">
                     {a.nombre}
@@ -108,7 +121,7 @@ export default function ListaAdjuntos({
                   <p className="mt-1 truncate text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-                  <Button size="icon" variant="ghost" className="size-8! min-h-8!" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
+                  <Button size="icon" variant="ghost" className="size-8! min-h-8!" {...previewIntent(a)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
                   <Button size="icon" variant="ghost" className="size-8! min-h-8!" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}><Download className="size-4" aria-hidden="true" /></Button>
                   {onEliminar && puedeEliminar?.(a) && <>
                     <span aria-hidden="true" className="mx-1 h-4 w-px bg-qms-border" />
@@ -122,7 +135,7 @@ export default function ListaAdjuntos({
                   <Icon className="size-5" strokeWidth={1.5} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <button type="button" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)}
+                  <button type="button" {...previewIntent(a)} onClick={() => onPreview(a)}
                     title={a.nombre} aria-label={`Vista previa de ${a.nombre}`}
                     className="block w-full cursor-pointer text-left text-sm font-medium leading-relaxed text-qms-dark hover:text-qms-primary hover:underline break-words [overflow-wrap:anywhere]">
                     {a.nombre}
@@ -130,7 +143,7 @@ export default function ListaAdjuntos({
                   <p className="mt-1 text-xs text-qms-muted">{label} · {formatBytes(a.tamano)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-0.5">
-                  <Button size="icon" variant="ghost" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
+                  <Button size="icon" variant="ghost" {...previewIntent(a)} onClick={() => onPreview(a)} title="Vista previa" aria-label={`Vista previa de ${a.nombre}`}><Eye className="size-4" aria-hidden="true" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => onDownload(a)} title="Descargar" aria-label={`Descargar ${a.nombre}`}><Download className="size-4" aria-hidden="true" /></Button>
                   {onEliminar && puedeEliminar?.(a) && <Button size="icon" variant="ghost" onClick={() => onEliminar(a)} title="Eliminar adjunto" aria-label={`Eliminar ${a.nombre}`} className="text-qms-danger"><Trash2 className="size-4" aria-hidden="true" /></Button>}
                 </div>
@@ -141,7 +154,7 @@ export default function ListaAdjuntos({
               <button
                
                 type="button"
-                {...previewIntent(a.storage_path)} onClick={() => onPreview(a)}
+                {...previewIntent(a)} onClick={() => onPreview(a)}
                 className="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-gray-700 hover:text-qms-primary-hover hover:underline"
                 title="Vista previa"
               >
@@ -149,7 +162,7 @@ export default function ListaAdjuntos({
               </button>
               {esAnalisis && <Badge variant="blue">Análisis</Badge>}
               <span className="shrink-0 whitespace-nowrap text-xs text-gray-400">{formatBytes(a.tamano)}</span>
-              <button type="button" {...previewIntent(a.storage_path)} onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Vista previa">
+              <button type="button" {...previewIntent(a)} onClick={() => onPreview(a)} className="shrink-0 cursor-pointer text-gray-500 hover:text-qms-primary" title="Vista previa">
                 <Eye className="h-4 w-4" />
               </button>
               <span className="hidden whitespace-nowrap text-xs text-gray-400 sm:inline">

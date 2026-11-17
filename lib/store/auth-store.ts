@@ -14,18 +14,26 @@ import type { Permiso } from '@/lib/permisos'
 import { fetchPermisosByRol } from '@/lib/queries/usePermisos'
 import { logger } from '@/lib/utils/logger'
 import { clearLogoutPending, isLogoutPending, markLogoutPending } from '@/lib/authLogoutIntent'
+import { fetchAccessStatus } from '@/lib/services/accessClient'
+import type { AccessStatus } from '@/lib/types/access'
+import { rutaAvatar } from '@/lib/constants/avatar'
 
 export interface AppUser {
   id: string
   email: string
   nombre: string
   rol: string
+  avatarUrl?: string | null
   notif_habilitadas?: boolean
   notif_sonido?: boolean
   notif_sonido_id?: string
 }
 
 interface AuthState {
+  access: AccessStatus | null
+  accessIdentity: string | null
+  accessManaged: boolean
+  refreshAccess: () => Promise<void>
   user: AppUser | null
   permisos: Permiso[]
   vistaActiva: string | null
@@ -35,6 +43,8 @@ interface AuthState {
   login: (email: string, password: string) => Promise<{ error?: string }>
   logout: () => Promise<void>
   setPrefs: (prefs: { notif_habilitadas?: boolean; notif_sonido?: boolean; notif_sonido_id?: string }) => void
+  setNombre: (nombre: string) => void
+  setAvatar: (avatarUrl: string | null) => void
   setNotifSonidoId: (sonidoId: string) => void
   setVistaActiva: (rol: string | null) => Promise<void>
   init: () => void
@@ -51,12 +61,13 @@ async function fetchMisPermisos(): Promise<Permiso[]> {
   return (data as Permiso[]) ?? []
 }
 
-function toAppUser(appUser: { id: string; email: string; nombre: string; rol: string; notif_habilitadas?: boolean; notif_sonido?: boolean; notif_sonido_id?: string }) {
+function toAppUser(appUser: { id: string; email: string; nombre: string; rol: string; avatar_url?: string | null; notif_habilitadas?: boolean; notif_sonido?: boolean; notif_sonido_id?: string }) {
   return {
     id: appUser.id,
     email: appUser.email,
     nombre: appUser.nombre,
     rol: appUser.rol,
+    avatarUrl: rutaAvatar(appUser.avatar_url, appUser.id),
     notif_habilitadas: appUser.notif_habilitadas !== false,
     notif_sonido: appUser.notif_sonido !== false,
     notif_sonido_id: appUser.notif_sonido_id || 'notification/info',
@@ -66,7 +77,7 @@ function toAppUser(appUser: { id: string; email: string; nombre: string; rol: st
 export const useAuthStore = create<AuthState>((set, get) => {
   const clearSession = (loading = false) => {
     currentAuthId = null
-    set({ user: null, permisos: [], vistaActiva: null, loading, initialized: true, signingOut: authAction === 'logout' })
+    set({ user: null, permisos: [], vistaActiva: null, access:null,accessIdentity:null,accessManaged:false,loading, initialized: true, signingOut: authAction === 'logout' })
   }
 
   const resolveSession = async (authId: string, revision: number) => {
@@ -79,6 +90,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
         clearSession()
         return
       }
+      const access=await fetchAccessStatus()
+      if(revision!==authRevision||isLogoutPending())return
+      if(access.phase==='blocked'){clearSession();await supabase.auth.signOut();return}
+      if(access.phase!=='ready') {
+        clearSession();currentAuthId=authId
+        set({access,accessIdentity:authId,accessManaged:access.managed,loading:false,initialized:true});return
+      }
+      if(currentAuthId===authId&&get().user) {
+        set({access:null,accessIdentity:authId,accessManaged:access.managed,loading:false,initialized:true});return
+      }
       // Lecturas independientes, ambas con autorización en DB; publicar solo al terminar las dos.
       const [appUser, permisos] = await Promise.all([getAppUser(authId), fetchMisPermisos()])
       if (revision !== authRevision || isLogoutPending()) return
@@ -88,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         return
       }
       currentAuthId = authId
-      set({ user: toAppUser(appUser), permisos, vistaActiva: null, loading: false, initialized: true, signingOut: false })
+      set({ user: toAppUser(appUser), permisos, vistaActiva: null, access:null,accessIdentity:authId,accessManaged:access.managed,loading: false, initialized: true, signingOut: false })
     } catch (error) {
       if (revision !== authRevision || isLogoutPending()) return
       logger.error('No se pudo comprobar la sesión', { module: 'auth', action: 'resolve_session' }, error)
@@ -97,6 +118,12 @@ export const useAuthStore = create<AuthState>((set, get) => {
   }
 
   return {
+    access:null,accessIdentity:null,accessManaged:false,
+    refreshAccess:async()=>{
+      const {data}=await supabase.auth.getSession()
+      if(!data.session?.user||isLogoutPending())return
+      await resolveSession(data.session.user.id,++authRevision)
+    },
     user: null,
     permisos: [],
     vistaActiva: null,
@@ -119,7 +146,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         if (authAction || isLogoutPending()) return
         const authId = session.user.id
         // Refresh y foco no deben reiniciar permisos, caché ni simulaciones vigentes.
-        if (currentAuthId === authId && get().user && (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN')) return
+        if (currentAuthId === authId && get().user && !get().accessManaged && (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN')) return
         const eventRevision = ++authRevision
         if (currentAuthId !== authId) clearSession(true)
         currentAuthId = authId
@@ -151,10 +178,19 @@ export const useAuthStore = create<AuthState>((set, get) => {
       if (authAction === 'logout') return { error: 'Espera a que termine el cierre de sesión.' }
       const revision = ++authRevision
       authAction = 'login'
+      // Retira cualquier identidad anterior sin desmontar el formulario de login:
+      // sus campos y su error deben sobrevivir a un rechazo de credenciales.
+      clearSession()
       try {
         const result = await signIn(email, password)
         if (revision !== authRevision) return { error: 'La sesión cambió. Vuelve a iniciar sesión.' }
         if (result.error) return { error: result.error }
+        if(result.access&&result.authId) {
+          const verified=await supabase.auth.getUser()
+          if(revision!==authRevision||verified.error||verified.data.user?.id!==result.authId)return {error:'La sesión cambió. Volvé a iniciar sesión.'}
+          clearLogoutPending();clearSession();currentAuthId=result.authId
+          set({access:result.access,accessIdentity:result.authId,accessManaged:true,loading:false,initialized:true});return {}
+        }
         if (!result.user) return { error: 'No se pudo iniciar sesión.' }
         // Confirmar la identidad actual antes de publicar perfil y permisos.
         const [permisos, { data, error }] = await Promise.all([fetchMisPermisos(), supabase.auth.getUser()])
@@ -164,13 +200,16 @@ export const useAuthStore = create<AuthState>((set, get) => {
         // Solo un login explícito y confirmado puede abandonar un cierre pendiente.
         clearLogoutPending()
         currentAuthId = data.user.id
-        set({ user: toAppUser(result.user), permisos, vistaActiva: null, loading: false, initialized: true, signingOut: false })
+        set({ user: toAppUser(result.user), permisos, vistaActiva: null, access:null,accessIdentity:data.user.id,accessManaged:result.accessManaged??false,loading: false, initialized: true, signingOut: false })
         return {}
       } catch (error) {
         logger.error('No se pudo iniciar sesión', { module: 'auth', action: 'login' }, error)
         return { error: 'No se pudo iniciar sesión. Inténtalo de nuevo.' }
       } finally {
-        if (authAction === 'login') authAction = null
+        if (authAction === 'login') {
+          authAction = null
+          if(revision===authRevision&&!get().user&&!get().access)clearSession()
+        }
       }
     },
 
@@ -208,6 +247,18 @@ export const useAuthStore = create<AuthState>((set, get) => {
     setPrefs: (prefs) => {
       set((state) => ({
         user: state.user ? { ...state.user, ...prefs } : null,
+      }))
+    },
+    // El nombre guardado por el propio usuario se publica igual que las
+    // preferencias para que encabezado e iniciales no esperen otra lectura.
+    setNombre: (nombre) => {
+      set((state) => ({
+        user: state.user ? { ...state.user, nombre } : null,
+      }))
+    },
+    setAvatar: (avatarUrl) => {
+      set((state) => ({
+        user: state.user ? { ...state.user, avatarUrl: rutaAvatar(avatarUrl, state.user.id) } : null,
       }))
     },
     setNotifSonidoId: (sonidoId) => {

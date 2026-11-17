@@ -14,6 +14,25 @@ const operations = [
   ['archivarTodasVisibles', ['perfil-demo']],
 ]
 
+test('la campana trae 15 mensajes y cuenta todos los no leídos sin descargar los restantes', async () => {
+  const requests = []
+  const supabase = sdk(async (url, options) => {
+    requests.push({ url: new URL(url), method: options.method })
+    return options.method === 'HEAD'
+      ? new Response(null, { headers: { 'Content-Range': '*/768' } })
+      : Response.json(Array.from({ length: 15 }, (_, index) => ({ id: String(index), leida: false })),
+        { headers: { 'Content-Range': '0-14/1500' } })
+  })
+  const { listarNotificaciones } = loadModule('lib/services/notificacionService.ts', { '@/lib/supabase': { supabase } })
+  const result = await listarNotificaciones('perfil-demo', new AbortController().signal)
+  assert.equal(result.items.length, 15)
+  assert.equal(result.total, 1500)
+  assert.equal(result.sinLeer, 768)
+  assert.equal(requests[0].url.searchParams.get('limit'), '15')
+  assert.equal(requests[1].method, 'HEAD')
+  assert.equal(requests[1].url.searchParams.get('leida'), 'eq.false')
+})
+
 for (const [operation, args] of operations) {
   test(operation + ': un rechazo real del transporte llega al consumidor sin fingir éxito', async () => {
     let requests = 0

@@ -7,8 +7,9 @@ const visor = fs.readFileSync('components/quejas/AdjuntoPreviewModal.tsx', 'utf8
 const listado = fs.readFileSync('components/quejas/ListaAdjuntos.tsx', 'utf8')
 const flujo = fs.readFileSync('lib/services/quejaWorkflowService.ts', 'utf8')
 
-test('el visor no envía al navegador a la cuenta Google ni crea enlaces externos', () => {
-  assert.doesNotMatch(visor, /drive\.google\.com|\/preview'|Abrir en Google Drive|createSignedUrl/)
+test('el visor conserva la lectura local privada y solo obtiene la vista Google de la API QMS', () => {
+  assert.doesNotMatch(visor, /createSignedUrl|getPublicUrl/)
+  assert.match(visor, /fetchDrivePreviewUrl\(storagePath, controller\.signal\)/)
   assert.doesNotMatch(listado, /drive\.google\.com|preconnect/)
   assert.doesNotMatch(flujo.slice(flujo.indexOf('export async function descargarAdjuntoQueja')), /window\.open|createSignedUrl/)
   assert.match(visor, /fetchDriveBlob\(storagePath, controller\.signal\)/)
@@ -39,12 +40,12 @@ function makeVisit({ drive = true, user = true } = {}) {
     '@/lib/supabase': { supabase: { storage: { from: bucket => ({
       download: async path => {
         calls.push(['storage', bucket, path])
-        return { data: new Blob(['synthetic bytes'], { type: 'application/pdf' }), error: null }
+        return { data: new Blob(['%PDF-1.4 synthetic bytes'], { type: 'application/pdf' }), error: null }
       },
     }) } } },
     '@/lib/services/driveClient': { fetchDriveBlob: async (file, signal) => {
       calls.push(['drive', file, signal])
-      return new Blob(['synthetic bytes'], { type: 'application/pdf' })
+      return new Blob(['%PDF-1.4 synthetic bytes'], { type: 'application/pdf' })
     } },
     '@/lib/store/auth-store': { useAuthStore },
     '@/lib/services/quejaWorkflowService': { descargarAdjuntoQueja: async () => {} },
@@ -63,7 +64,7 @@ function makeVisit({ drive = true, user = true } = {}) {
   const root = AdjuntoPreviewModal({ adjunto, onClose() {} })
   assert.ok(root?.type && typeof root.type === 'function')
   root.type(root.props)
-  assert.equal(effects.length, 2)
+  assert.equal(effects.length, 4)
   const cleanup = effects[1]()
   const flush = () => new Promise(setImmediate)
   return { state, changes, calls, revocations, cleanup, flush,
@@ -85,7 +86,7 @@ test('cambiar de usuario interno invalida inmediatamente la vista, no el login G
   const visit = makeVisit()
   await visit.flush()
   visit.changeSession({ user: { id: 'otro-usuario' }, signingOut: false })
-  assert.equal(visit.state[0].error, true)
+  assert.equal(visit.state[0].kind, 'error')
   assert.deepEqual(visit.revocations, ['blob:qms-synthetic'])
   visit.cleanup()
   assert.equal(visit.revocations.length, 1)
@@ -101,7 +102,7 @@ test('los archivos Storage históricos se leen con la sesión QMS', async () => 
 test('sin usuario QMS no inicia lectura de archivos', async () => {
   const visit = makeVisit({ user: false })
   await visit.flush()
-  assert.equal(visit.state[0].error, true)
+  assert.equal(visit.state[0].kind, 'error')
   assert.equal(visit.calls.length, 0)
   visit.cleanup()
 })

@@ -8,6 +8,8 @@ function qmsMailEnableOfficialAttachments() {
 function doPost(e) {
   try {
     if (e && e.postData && e.postData.contents.length <= 4096
+      && JSON.parse(e.postData.contents).purpose === 'access_delivery_request') return qmsAccessMailPost_(e);
+    if (e && e.postData && e.postData.contents.length <= 4096
       && JSON.parse(e.postData.contents).purpose === 'queue_wake_setup_request') return qmsMailWakeSetup_(e);
     if (e && e.postData && e.postData.contents.length <= 4096
       && JSON.parse(e.postData.contents).purpose === 'queue_wake_request') return qmsMailWake_(e);

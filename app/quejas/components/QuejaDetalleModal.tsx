@@ -4,7 +4,6 @@ import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { prefetchDriveBlob } from '@/lib/services/driveClient'
 import { fetchRespuestaCliente, respuestaClienteKey } from '@/lib/queries/useQuejaRespuestaCliente'
 import { fetchQuejaInforme, quejaInformeKey } from '@/lib/queries/useQuejaInforme'
 import Modal from '@/components/Modal'
@@ -128,17 +127,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const investigationActive = queja?.estado === 'En Investigación'
   const { data: asignacion, isLoading: asignacionLoading, error: asignacionError } = useQuejaInvestigationAssignment(quejaId, investigationActive)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
-  useEffect(() => {
-    if (!quejaId || adjuntosLoading || adjuntosError) return
-    // El PDF oficial suele quedar al final del listado. Precargarlo antes
-    // que evidencias históricas para acelerar la respuesta al cliente.
-    const oficiales = adjuntos.filter(file => file.tipo_mime.toLowerCase() === 'application/pdf'
-      && !!file.usuario_id && /^Expediente-.*-v\d+\.pdf$/i.test(file.nombre))
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    const destacados = [...oficiales, ...adjuntos].filter((file, index, all) =>
-      all.findIndex(item => item.id === file.id) === index).slice(0, 2)
-    for (const file of destacados) prefetchDriveBlob(file.storage_path)
-  }, [quejaId, adjuntos, adjuntosLoading, adjuntosError])
   const crearComentario = useCrearQuejaComentario()
   const { data: usuarios = [], isLoading: usuariosLoading, error: usuariosError } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)

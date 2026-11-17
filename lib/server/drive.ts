@@ -40,10 +40,10 @@ export function getDriveClient(): drive_v3.Drive | null {
 }
 
 /** Rechaza permisos anónimos incluso cuando aparecen en otra página o se heredan. */
-export async function assertPrivateDriveFolder(drive: drive_v3.Drive, fileId: string): Promise<void> {
+export async function assertPrivateDriveFolder(drive: drive_v3.Drive, fileId: string, signal?: AbortSignal): Promise<void> {
   let pageToken: string | undefined
   for (let page = 0; page < 20; page++) {
-    const access = await drive.permissions.list({ fileId, fields: 'nextPageToken,permissions(type)', pageSize: 100, pageToken, supportsAllDrives: true })
+    const access = await drive.permissions.list({ fileId, fields: 'nextPageToken,permissions(type)', pageSize: 100, pageToken, supportsAllDrives: true }, { signal })
     if (!Array.isArray(access.data.permissions)) throw new Error('No se pudo verificar la privacidad de las evidencias')
     if (access.data.permissions.some(permission => permission.type === 'anyone')) throw new Error('La carpeta de evidencias debe tener acceso restringido')
     if (!access.data.nextPageToken) return
@@ -53,11 +53,11 @@ export async function assertPrivateDriveFolder(drive: drive_v3.Drive, fileId: st
 }
 
 /** No aceptar la fila DB como prueba de pertenencia: una fila legacy pudo forjar su ID. */
-export async function assertDriveCaseFile(drive: drive_v3.Drive, rootId: string, fileId: string, folio: string, options: { allowTrashedFile?: boolean } = {}): Promise<'public' | 'internal'> {
+export async function assertDriveCaseFile(drive: drive_v3.Drive, rootId: string, fileId: string, folio: string, options: { allowTrashedFile?: boolean; signal?: AbortSignal } = {}): Promise<'public' | 'internal'> {
   const denied = () => Object.assign(new Error('El archivo no pertenece al expediente solicitado'), { code: 'DRIVE_EVIDENCE_SCOPE' })
   const metadata = async (id: string) => {
     let data: drive_v3.Schema$File
-    try { data = (await drive.files.get({ fileId: id, fields: 'id,name,mimeType,parents,trashed', supportsAllDrives: true })).data }
+    try { data = (await drive.files.get({ fileId: id, fields: 'id,name,mimeType,parents,trashed', supportsAllDrives: true }, { signal: options.signal })).data }
     catch (error) {
       const source = error as { code?: number; response?: { status?: number } }
       if (id === fileId && (source.code === 404 || source.response?.status === 404)) throw Object.assign(new Error('El archivo ya no existe'), { code: 'DRIVE_FILE_MISSING' })
@@ -70,7 +70,7 @@ export async function assertDriveCaseFile(drive: drive_v3.Drive, rootId: string,
     // Lecturas independientes en paralelo; el resultado incompleto nunca autoriza.
     const [file, privacy] = await Promise.allSettled([
       metadata(id),
-      assertPrivateDriveFolder(drive, id),
+      assertPrivateDriveFolder(drive, id, options.signal),
     ])
     if (file.status === 'rejected') throw file.reason
     if (privacy.status === 'rejected') throw privacy.reason

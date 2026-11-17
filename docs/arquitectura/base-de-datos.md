@@ -1,5 +1,19 @@
 # Base de datos: esquema, políticas y motor QMS
 
+17 noviembre, aplicada: `20261117212024_usuarios_eliminacion_con_trazabilidad`
+añade `usuarios.eliminado_en`, intento privado de baja y RPC service-only.
+Conserva las FK de responsables/autores, historial y datos de expediente; no ejecuta
+DELETE de perfiles. 33 comprobaciones PG aisladas y grants/RLS remotos verificados.
+Este borrado es independiente de acceso inicial/MFA. [Contrato](../usuarios-eliminacion-2026-11-17.md).
+
+17 noviembre, aplicada con autorización: `20261117214855_usuarios_acceso_inicial_mfa`.
+Seis tablas privadas sin grants directos, RPC exclusivamente service role,
+52 policies restrictivas públicas y pre-request de acceso incompleto. Storage
+conserva su policy efectiva, incorporando el guard en los helpers existentes.
+Sin backfill: las dos cuentas activas anteriores conservan su acceso. Backend
+integrado con Edge v2/Apps Script v7; cliente/API local, sin publicación Vercel.
+[Contrato y evidencia](../usuarios-acceso-inicial-mfa-2026-11-17.md).
+
 12 noviembre, **sin aplicar**: `20261112054513_quejas_notas_investigacion` añade
 `qms_update_investigation_note` y `qms_delete_investigation_note` (invoker) que
 delegan en `qms_private`, con guard de identidad activa, acceso al expediente,

@@ -36,6 +36,7 @@ export function agendaHoyOptions(userId: string) {
     queryKey: [...queryKeys.agendaHoy, 'v3', userId] as const,
     queryFn: ({ signal }: { signal: AbortSignal }) => fetchAgendaHoy(signal),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     enabled: !!userId,
   }

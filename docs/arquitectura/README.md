@@ -6,6 +6,15 @@ Las rutas de código de estas tablas parten de la raíz del proyecto.
 
 ## Ruta rápida
 
+[Borrado recuperable de Usuarios — 17 noviembre](../usuarios-eliminacion-2026-11-17.md):
+retira Auth y directorio sin borrar responsables/autores históricos. RPC service-only,
+intento durable y marca `eliminado_en`; DB aplicada, cliente/API local.
+
+[Acceso inicial de Usuarios — 17 noviembre](../usuarios-acceso-inicial-mfa-2026-11-17.md):
+invitación, contraseña temporal, TOTP nativo y verificación propia por correo,
+API/guard/RLS y restablecimiento. Código integrado localmente; DB/Edge/Apps Script
+y publicación web pendientes, sin forzar políticas a usuarios anteriores.
+
 [Agenda de hoy](../agenda-hoy-2026-11-11.md): qms_get_agenda_hoy y puente privado
 de eventos autorizados; useAgendaHoy con caché de cinco minutos y widget controlado
 por Header. Quejas/Auditorías, sin nueva suscripción Realtime. Alias /dashboard → /.
@@ -140,6 +149,7 @@ adáptalas explícitamente en la frontera.
 | Secciones y editores de Configuración | [app/configuracion/page.tsx](../../app/configuracion/page.tsx) | [app/configuracion/components/](../../app/configuracion/components/); [lib/services/configuracionService.ts](../../lib/services/configuracionService.ts) |
 | Días laborables y feriados del motor QMS | [app/configuracion/components/CalendarioSettings.tsx](../../app/configuracion/components/CalendarioSettings.tsx) | useQmsCalendar.ts, qmsCalendarService.ts, lib/utils/qmsCalendar.ts; RPC qms_publish_calendar con CAS/auditoría, sin recalcular etapas abiertas |
 | CRUD/reset/último acceso de Usuarios | [app/api/usuarios/route.ts](../../app/api/usuarios/route.ts) | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts), ultimoAcceso.ts, [components/usuarios/](../../components/usuarios/) y [lib/services/usuariosService.ts](../../lib/services/usuariosService.ts), [lib/services/apiClient.ts](../../lib/services/apiClient.ts), useUsuarios.ts |
+| Alta con invitación / verificación / reset 2FA (backend activo, web local) | app/acceso/page.tsx; app/api/auth/acceso/route.ts; app/api/public/acceso/invitacion/route.ts; app/api/usuarios/acceso/route.ts | lib/server/accessIdentity.ts, accessService.ts; lib/services/accessClient.ts; lib/types/access.ts; migración 20261117214855; Edge qms-access-mailer y Acceso.gs |
 | Proveedores/modelos/routing de IA | [components/configuracion/AIProvidersManager.tsx](../../components/configuracion/AIProvidersManager.tsx) y [sus editores](../../components/configuracion/ia/) | [lib/services/aiConfigService.ts](../../lib/services/aiConfigService.ts), [app/api/configuracion/ia/route.ts](../../app/api/configuracion/ia/route.ts), [lib/server/aiSettings.ts](../../lib/server/aiSettings.ts) |
 | Ejecución/fallback/memoria de análisis IA | [app/api/ai/analizar/route.ts](../../app/api/ai/analizar/route.ts) | [lib/ai/](../../lib/ai/) y [lib/server/deadline.ts](../../lib/server/deadline.ts); conservar presupuesto y límites |
 | Formulario público, contrato API o protección de bots | [app/q/[token]/page.tsx](../../app/q/[token]/page.tsx) y [lib/services/publicQuejasClient.ts](../../lib/services/publicQuejasClient.ts) | [presentación del 14 octubre](../formulario-publico-visual-2026-10-14.md), [validador cliente/API](../../lib/utils/publicQuejaValidation.ts), [app/q/components/usePublicQuejaForm.ts](../../app/q/components/usePublicQuejaForm.ts), [lib/server/publicForms/](../../lib/server/publicForms/), [app/api/public/](../../app/api/public/), instrumentation-client.ts y next.config.ts |
