@@ -6,10 +6,10 @@ import { ImagePlus, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
-import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad } from '@/lib/queries/useIdentidadImagenes'
+import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad, type ImagenesIdentidad } from '@/lib/queries/useIdentidadImagenes'
 import LogoRecorteModal, { type BorradorLogo } from './LogoRecorteModal'
 
-export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdentidad; url: string }) {
+export default function ImagenIdentidadEditor({ slot, url, loading = false }: { slot: ImagenIdentidad; url: string; loading?: boolean }) {
   const meta = IDENTIDAD_IMAGENES[slot]
   const client = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -17,6 +17,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
   const [guardando, setGuardando] = useState(false)
   const [quitando, setQuitando] = useState(false)
   const [error, setError] = useState('')
+  const [imagenFallida, setImagenFallida] = useState('')
 
   useEffect(() => {
     const temporal = borrador?.url
@@ -43,7 +44,14 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
     if (imagen.size > IDENTIDAD_MAX_BYTES) { setError('No se pudo comprimir la imagen antes de subirla.'); return }
     setGuardando(true)
     try {
-      await guardarImagenIdentidad(slot, imagen)
+      const nuevaUrl = await guardarImagenIdentidad(slot, imagen)
+      // Mostrar la imagen recién subida inmediatamente, sin depender de una lectura
+      // adicional que puede estar en curso o haber quedado en caché.
+      client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
+        correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
+        ...prev, [slot]: nuevaUrl,
+      }))
+      setImagenFallida('')
       setBorrador(null)
       await client.invalidateQueries({ queryKey: identidadImagenesKey })
       showSuccess('Imagen institucional actualizada')
@@ -56,6 +64,10 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
     setQuitando(true)
     try {
       await quitarImagenIdentidad(slot)
+      client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
+        correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
+        ...prev, [slot]: '',
+      }))
       await client.invalidateQueries({ queryKey: identidadImagenesKey })
       showSuccess('Imagen quitada')
     } catch (reason) { showError(reason, 'No se pudo quitar la imagen') }
@@ -69,10 +81,16 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
     <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:gap-6">
       <div className="flex w-full shrink-0 items-center justify-center overflow-hidden rounded-card border border-qms-border bg-qms-panel-soft sm:w-52"
         style={{ aspectRatio: String(meta.proporcion) }}>
-        {url ? (
+        {url && imagenFallida !== url ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={url} alt={meta.titulo} className="h-full w-full object-contain" />
-        ) : <ImagePlus className="h-7 w-7 text-qms-muted" aria-hidden="true" />}
+          <img src={url} alt={meta.titulo} className="h-full w-full object-contain"
+            onError={() => setImagenFallida(url)} />
+        ) : <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-qms-panel-soft text-qms-muted">
+          <ImagePlus className="h-7 w-7" aria-hidden="true" />
+          <span className="px-2 text-center text-xs">
+            {loading ? 'Cargando vista previa…' : url ? 'No se pudo mostrar la imagen' : 'Sin imagen configurada'}
+          </span>
+        </div>}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-relaxed text-qms-muted">{meta.descripcion}</p>
