@@ -223,7 +223,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
     const index = current >= 0 ? current : completed ? flow.steps.length - 1 : -1
     if (currentOnly) return <div data-case-cycle-compact><p className="text-sm text-qms-muted sm:text-base">{index >= 0 ? `${flow.steps[index].label} · paso ${index + 1} de ${flow.steps.length}` : 'Etapa por verificar'}</p><div aria-hidden="true" className="mt-2 flex gap-1">{flow.steps.map(step => <span key={step.id} className={`h-1 flex-1 ${step.completed ? 'bg-qms-success' : step.current ? 'bg-qms-primary' : 'bg-qms-border'}`} />)}</div></div>
     return <div data-case-process-lines className="w-full min-w-0">
-      <ol aria-label={flow.label} className={`grid w-full min-w-0 gap-1.5 sm:gap-2 ${flow.steps.length === 2 ? 'grid-cols-2' : 'grid-cols-4'}`}>
+      <ol aria-label={flow.label} className={`grid w-full min-w-0 gap-1.5 sm:gap-2 ${flow.steps.length === 2 ? 'grid-cols-2' : flow.steps.length === 3 ? 'grid-cols-3' : 'grid-cols-4'}`}>
         {flow.steps.map((step, position) => {
           const selected = selectedStage === step.id
           const current = step.current && !selectedStage

@@ -81,6 +81,16 @@ export async function fetchQuejas(params: QuejasParams = {}, signal?: AbortSigna
   return { data: (result.data as Queja[]) ?? [], count: result.count ?? 0, origen: result.origen }
 }
 
+/** Abre expedientes desde Agenda aunque no estén presentes en la página actual de la bandeja. La RLS sigue aplicando. */
+export async function fetchQuejaById(id: string, responsableId?: string, signal?: AbortSignal): Promise<Queja | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return null
+  let query = supabase.from('qms_quejas').select('*').eq('id', id)
+  if (responsableId) query = query.eq('responsable_id', responsableId)
+  const { data, error } = await (signal ? query.abortSignal(signal) : query).maybeSingle()
+  if (error) throw error
+  return (data as Queja) ?? null
+}
+
 export function useQuejas(params: QuejasParams = {}, enabled = true) {
   return useQuery({
     queryKey: quejasKey(params),

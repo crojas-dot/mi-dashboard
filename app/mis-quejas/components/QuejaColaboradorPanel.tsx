@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, ClipboardCheck, Eye, FilePenLine, History, Maximize, Minimize, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, Eye, FilePenLine, History, Maximize, Minimize, Pencil, Save, Send, WandSparkles } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -46,15 +46,14 @@ interface Props {
   onNext?: () => void
 }
 const DOCUMENT_LIMIT = 10000
-type CaseViewStage = 'analysis' | 'investigation' | 'quality_review' | 'finished'
+type CaseViewStage = 'analysis' | 'investigation' | 'quality_review'
 
 function currentStageFromStatus(status?: string): CaseViewStage {
   switch (status) {
     case 'En Investigación': return 'investigation'
-    case 'Pendiente de Revisión GC': return 'quality_review'
+    case 'Pendiente de Revisión GC':
     case 'Resuelto':
-    case 'Finalizado':
-    case 'No Procede': return 'finished'
+    case 'Finalizado': return 'quality_review'
     default: return 'analysis'
   }
 }
@@ -208,7 +207,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       { id: 'analysis', label: 'Análisis', current: false, completed: false },
       { id: 'investigation', label: 'Investigación', current: false, completed: false },
       { id: 'quality_review', label: 'Revisión de GC', current: false, completed: false },
-      { id: 'finished', label: 'Cierre', current: false, completed: false },
     ],
   })
 
@@ -535,7 +533,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
+      headerCenter={<div className="w-full min-w-0"><CaseProcessHeader queja={queja} steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setStageView(currentStageFromStatus(estado)); setEditorAbierto(false); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + stageView} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
@@ -565,15 +563,22 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           archivos={adjuntos} onPreview={setPreviewAdjunto} onEditor={prepararResolucion}
           open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
         {stageView === 'analysis' ? <div data-case-stage-readonly data-case-stage="analysis" className="min-w-0 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-primary/20 bg-qms-primary-soft px-5 py-3">
-            <span className="flex items-center gap-2 text-sm font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />Solo lectura · Análisis</span>
-            {investigando && <Button size="sm" variant="secondary" onClick={prepararResolucion} disabled={resolutionPending}>Ir a investigación</Button>}
-          </div>
-          <CaseSection variant="panel" source="Gestión de Calidad" title="Evaluación de Calidad">
+          <section data-quality-review className="min-w-0 rounded-card border border-qms-warning/50 bg-soft-amber-bg p-4 shadow-sm sm:p-5">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button border border-qms-warning/50 bg-soft-amber-bg text-sm font-semibold text-soft-amber-text">GC</span>
+                <div className="min-w-0">
+                  <h3 className="text-base font-semibold text-qms-dark">Procedencia de Calidad</h3>
+                  <p className="mt-1 text-xs text-qms-muted">Evaluación registrada · Solo lectura</p>
+                </div>
+              </div>
+              {investigando && <Button size="sm" variant="secondary" onClick={prepararResolucion} disabled={resolutionPending}>Ir a investigación</Button>}
+            </div>
             {queja.justificacion_procede ? <RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} />
               : <p className="text-sm text-qms-muted">No hay justificación registrada de Calidad.</p>}
-          </CaseSection>
-          <CaseSection variant="panel" source="Cliente" title="Descripción de la queja">
+          </section>
+          <CaseSection variant="panel" source="Cliente" title="Descripción de la queja"
+            headerActions={<Button size="sm" variant="secondary" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4" />Ver análisis completo</Button>}>
             <div className="mb-4"><AreaAfectada area={queja.area_afectada} /></div>
             <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
           </CaseSection>
@@ -592,24 +597,25 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           </CaseSection>}
         </div>
         : stageView === 'quality_review' ? <div data-case-stage-readonly data-case-stage="quality_review" className="min-w-0 space-y-4">
-          <div className="flex items-center gap-2 rounded-card border border-qms-primary/20 bg-qms-primary-soft px-5 py-3 text-sm font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />Solo lectura · Revisión de GC</div>
-          <CaseSection variant="panel" title="Propuesta enviada a Gestión de Calidad">
-            {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Todavía no hay una propuesta enviada a Calidad.</p>}
+          <CaseSection variant="panel" title={<span className="flex flex-wrap items-center gap-2">Revisión de GC <span className="rounded-button bg-qms-neutral-soft px-2 py-0.5 text-xs font-medium text-qms-muted">Solo lectura</span></span>}>
+            {estado === 'Pendiente de Revisión GC'
+              ? <p className="text-base leading-relaxed text-qms-muted">Tu propuesta fue enviada a Gestión de Calidad. Está pendiente de revisión; por ahora no tenés acciones por realizar.</p>
+              : ['Resuelto', 'Finalizado'].includes(estado)
+                ? <p className="text-base leading-relaxed text-qms-dark">Gestión de Calidad aprobó tu resolución. Tu participación en esta queja ha concluido.</p>
+                : devolucion
+                  ? <div className="space-y-3">
+                    <p className="text-base font-medium text-soft-amber-text">Calidad solicitó correcciones a la propuesta.</p>
+                    <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{devolucion.motivo}</p>
+                    <Button size="sm" variant="primary" onClick={() => cambiarEtapa('investigation')}>Volver a Investigación</Button>
+                  </div>
+                  : <p className="text-base leading-relaxed text-qms-muted">La revisión de GC comenzará después de que enviés tu propuesta.</p>}
           </CaseSection>
-        </div>
-        : stageView === 'finished' ? <div data-case-stage-readonly data-case-stage="finished" className="min-w-0 space-y-4">
-          <div className="flex items-center gap-2 rounded-card border border-qms-primary/20 bg-qms-primary-soft px-5 py-3 text-sm font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />Solo lectura · Cierre</div>
-          <CaseSection variant="panel" title="Resultado del expediente">
-            {documentoAprobado && queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Esta etapa aún no tiene una resolución aprobada para consultar.</p>}
-            {documentoAprobado && queja.numero_oficio_resolucion && <p className="mt-3 text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}
-          </CaseSection>
+          {queja.resolucion && <CaseSection variant="panel" title={['Resuelto', 'Finalizado'].includes(estado) ? 'Propuesta aprobada' : 'Propuesta enviada'}>
+            <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />
+          </CaseSection>}
         </div>
         : stageView === 'investigation' && (!investigando || !editorAbierto) ? <div data-case-stage-overview data-case-stage="investigation" className="min-w-0 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-primary/20 bg-qms-primary-soft px-5 py-3 text-sm">
-            <span className="flex items-center gap-2 font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />{investigando ? 'Investigación · Etapa actual' : 'Investigación · Solo lectura'}</span>
-            {investigando && <Button size="sm" variant="secondary" onClick={prepararResolucion} disabled={resolutionPending}>Preparar resolución</Button>}
-          </div>
-          <CaseSection variant="panel" source="Responsable" title="Estado de la resolución">
+          <CaseSection variant="panel" source="Responsable" title={<span className="flex flex-wrap items-center gap-2">Estado de la resolución <span className="rounded-button bg-qms-neutral-soft px-2 py-0.5 text-xs font-medium text-qms-muted">{investigando ? 'Etapa actual' : 'Solo lectura'}</span></span>} headerActions={investigando ? <Button size="sm" variant="secondary" onClick={prepararResolucion} disabled={resolutionPending}>Preparar resolución</Button> : undefined}>
             {borradorGuardado && investigando
               ? <><p className="mb-3 text-sm text-qms-muted">Borrador guardado el {caseDate(borradorGuardado.updated_at)}</p><RichTextContent value={resolucion} format={resolucionFormato} /></>
               : queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />
@@ -619,10 +625,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             <p className="mb-2 text-xs text-qms-muted">{caseDate(devolucion.fecha)}</p>
             <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{devolucion.motivo}</p>
           </CaseSection>}
-          <CaseSection variant="panel" source="Gestión de Calidad" title="Justificación de procedencia">
+          <section data-quality-review className="rounded-card border border-qms-warning/50 bg-soft-amber-bg p-4 shadow-sm sm:p-5">
+            <h3 className="mb-3 text-base font-semibold text-qms-dark">Procedencia de Calidad</h3>
             {queja.justificacion_procede ? <RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} />
               : <p className="text-sm text-qms-muted">No hay justificación registrada.</p>}
-          </CaseSection>
+          </section>
           <CaseSection variant="panel" source="Cliente" title="Antecedentes de la queja">
             <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
             <Button size="sm" variant="secondary" className="mt-4" onClick={abrirVistaAnalisis}>Consultar análisis completo</Button>

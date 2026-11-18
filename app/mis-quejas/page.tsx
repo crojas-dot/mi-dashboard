@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useRef, useState } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Search } from 'lucide-react'
@@ -27,6 +27,7 @@ import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
 import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
+import AgendaQuejaOpener from '@/components/quejas/AgendaQuejaOpener'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
@@ -148,6 +149,7 @@ export default function MisQuejasPage() {
         </div>
         {!loading && !error && <div className="shrink-0 border-t border-qms-border bg-qms-surface px-3 py-3 sm:px-6 [&>nav]:py-0">{totalCount <= pageSize ? <p className="text-sm text-qms-muted">{totalCount} resultados</p> : <Pagination page={page} count={totalCount} busy={isFetching} onChange={next => { setPage(next); if (tableRef.current) tableRef.current.scrollTop = 0 }} />}</div>}
       </div>
+      <Suspense fallback={null}><AgendaQuejaOpener responsableId={user?.id ?? null} onOpen={openPanel} /></Suspense>
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidate() }} categorias={categorias} />
       <QuejaColaboradorPanel queja={panelOpen} onClose={() => { setPanelOpen(null); setNavigationLocked(false) }} onNavigationLockChange={setNavigationLocked} onPrevious={selectedIndex > 0 ? () => openPanel(quejas[selectedIndex - 1]) : undefined} onNext={selectedIndex >= 0 && selectedIndex < quejas.length - 1 ? () => openPanel(quejas[selectedIndex + 1]) : undefined} onUpdated={invalidate} />
     </div>
