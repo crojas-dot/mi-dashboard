@@ -9,11 +9,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { QueryFunctionContext } from '@tanstack/react-query'
-import {
-  ChartPie, MessageSquareText, FolderOpen, ListChecks,
-  ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
-  UsersRound, Settings2, ChartNoAxesCombined, X, type LucideIcon,
-} from 'lucide-react'
+import { X } from 'lucide-react'
 import EmpresaLogo from '@/components/EmpresaLogo'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -31,12 +27,13 @@ import { fetchProcesos, procesosKey } from '@/lib/queries/useProcesos'
 import { fetchUsuarios, usuariosQueryKey } from '@/lib/queries/useUsuarios'
 import { dashboardPrefetchOptions } from '@/lib/queries/useDashboard'
 
-// Los iconos viven en UI: el registro compartido no incorpora Lucide al servidor.
-const ICONOS_MODULO: Record<ModuloIconKey, LucideIcon> = {
-  chartPie: ChartPie, messageSquareText: MessageSquareText, inbox: Inbox,
-  folderOpen: FolderOpen, listChecks: ListChecks, shieldAlert: ShieldAlert,
-  clipboardCheck: ClipboardCheck, presentation: Presentation, workflow: Workflow,
-  usersRound: UsersRound, settings2: Settings2, chartNoAxesCombined: ChartNoAxesCombined,
+// CoreUI Icons Free v3.1.0 (CC BY 4.0). Formas y atribución en public/icons/coreui-nav.svg.
+// El registro de módulos conserva sus claves; únicamente cambia la iconografía del menú.
+const ICONOS_MODULO: Record<ModuloIconKey, string> = {
+  chartPie: 'cil-speedometer', messageSquareText: 'cil-comment-square', inbox: 'cil-inbox',
+  folderOpen: 'cil-folder-open', listChecks: 'cil-task', shieldAlert: 'cil-warning',
+  clipboardCheck: 'cil-clipboard', presentation: 'cil-speech', workflow: 'cil-sitemap',
+  usersRound: 'cil-people', settings2: 'cil-settings', chartNoAxesCombined: 'cil-chart-line',
 }
 const sections = GRUPOS_NAVEGACION.map(section => ({
   label: section.label,
@@ -112,7 +109,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
             </p>
             {linksVisibles.map((link) => {
               const isActive = pathname === link.href
-              const Icon = link.icon
+              const iconId = link.icon
               return (
                 <Link
                   key={link.href}
@@ -126,7 +123,9 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   onFocus={() => prepareNavigation(link.id)}
                   onTouchStart={() => prepareNavigation(link.id)}
                 >
-                  <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                  <svg className="h-5 w-5 shrink-0" viewBox="0 0 512 512" fill="currentColor" data-coreui-icon={iconId} aria-hidden="true" focusable="false">
+                    <use href={`/icons/coreui-nav.svg#${iconId}`} />
+                  </svg>
                   <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[165px] opacity-100'}`}>{link.label}</span>
                 </Link>
               )
