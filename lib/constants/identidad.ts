@@ -50,24 +50,33 @@ export function esImagenIdentidad(value: unknown): value is ImagenIdentidad {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(IDENTIDAD_IMAGENES, value)
 }
 
-/** Nunca renderizar una URL externa o una ruta ajena al slot en un fondo o correo. */
-export function urlIdentidadValida(slot: ImagenIdentidad, value: unknown, origin: string | undefined = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPABASE_URL : undefined): string {
-  if (typeof value !== 'string' || !origin) return ''
+/** Devuelve solo una ruta validada dentro del bucket institucional, nunca una URL externa.
+ * La URL que se guardó puede proceder de un dominio anterior de Storage.
+ * El servidor reconstruye siempre la dirección pública con su cliente Supabase vigente.
+ */
+export function rutaImagenIdentidad(slot: ImagenIdentidad, value: unknown, origin?: string): string | null {
+  if (typeof value !== 'string') return null
   try {
-    const expected = new URL(origin)
     const url = new URL(value)
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) return null
+    if (origin && url.origin !== new URL(origin).origin) return null
     const prefix = `/storage/v1/object/public/${LOGO_BUCKET}/identidad/${slot}/`
-    const name = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : ''
+    if (!url.pathname.startsWith(prefix)) return null
+    const name = url.pathname.slice(prefix.length)
     const ext = IDENTIDAD_IMAGENES[slot].formato
     const suffix = `.${ext}`
-    if (expected.protocol !== 'https:' || url.origin !== expected.origin || url.search || url.hash
-      || !name.endsWith(suffix)
-      || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(name.slice(0, -suffix.length))) return ''
-    return url.toString()
-  } catch { return '' }
+    if (!name.endsWith(suffix) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(name.slice(0, -suffix.length))) return null
+    return `identidad/${slot}/${name}`
+  } catch { return null }
 }
 
-export function rutaImagenIdentidad(slot: ImagenIdentidad, url: unknown, origin?: string) {
-  const safe = urlIdentidadValida(slot, url, origin)
-  return safe ? `identidad/${slot}/${safe.split('/').at(-1)}` : null
+/** Validación estricta cuando se necesita confirmar que una URL ya pertenece al servidor. */
+export function urlIdentidadValida(
+  slot: ImagenIdentidad,
+  value: unknown,
+  origin: string | undefined = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPABASE_URL : undefined,
+): string {
+  if (!origin || !rutaImagenIdentidad(slot, value, origin)) return ''
+  return value as string
 }
