@@ -73,7 +73,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-relaxed text-qms-muted">{meta.descripcion}</p>
-        <p className="mt-1 text-xs text-qms-muted">Formato PNG, JPG o WebP. Recortá y centrà la imagen antes de guardar; máximo 4 MB de origen.</p>
+        <p className="mt-1 text-xs text-qms-muted">Formato PNG, JPG o WebP. Recortá y centrá la imagen antes de guardar; máximo 4 MB de origen.</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" disabled={guardando || quitando} onClick={() => inputRef.current?.click()}>
             <ImagePlus className="h-4 w-4" aria-hidden="true" /> {url ? 'Cambiar imagen' : 'Subir imagen'}
