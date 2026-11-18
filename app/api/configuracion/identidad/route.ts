@@ -98,7 +98,7 @@ export async function PUT(request: NextRequest) {
     return fail('No se pudo publicar la imagen', 503)
   }
   const vieja = rutaImagenIdentidad(slot, anterior)
-  if (vieja && vieja !== ruta) void context.admin.storage.from(LOGO_BUCKET).remove([vieja])
+  if (vieja && vieja !== ruta) await context.admin.storage.from(LOGO_BUCKET).remove([vieja]).catch(() => undefined)
   return json({ slot, imagen: url })
 }
 
@@ -114,6 +114,6 @@ export async function DELETE(request: NextRequest) {
   const resultado = await publicar(context.admin, slot, '')
   if (resultado.error || !resultado.data) return fail('No se pudo quitar la imagen', 503)
   const ruta = rutaImagenIdentidad(slot, anterior)
-  if (ruta) void context.admin.storage.from(LOGO_BUCKET).remove([ruta])
+  if (ruta) await context.admin.storage.from(LOGO_BUCKET).remove([ruta]).catch(() => undefined)
   return json({ slot, imagen: '' })
 }
