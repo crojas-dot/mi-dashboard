@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
 
@@ -55,3 +56,31 @@ function requireSource() {
     '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: () => ({ data: { login_fondo: '' } }) },
   }).default.toString()
 }
+
+test('login muestra el logo y el nombre dentro de la tarjeta, sin cabecera flotante', () => {
+  const page = readFileSync('app/login/page.tsx', 'utf8')
+  const section = page.indexOf('<section aria-labelledby="login-title"')
+  const header = page.indexOf('<header className=', section)
+  const form = page.indexOf('<form', header)
+  assert.ok(section >= 0 && header > section && form > header)
+  assert.match(page, /useLogoLogin/)
+  assert.match(page, /Gestión de Calidad/)
+  assert.match(page, /text-qms-dark">QMS/)
+  assert.doesNotMatch(page, /ECA-QMS<\/span>/)
+})
+
+test('el fondo login se mantiene durante la comprobación de sesión', () => {
+  const source = readFileSync('components/SessionScreen.tsx', 'utf8')
+  assert.match(source, /layout === 'login' \? 'bg-transparent'/)
+  const fondo = readFileSync('components/identidad/FondoIdentidad.tsx', 'utf8')
+  assert.match(fondo, /fetchPriority="high"/)
+  assert.match(fondo, /initialUrl \|\| data\?\.\[slot\]/)
+})
+
+test('el editor de marca mantiene proporciones y contraste con logos blancos', () => {
+  const editor = readFileSync('app/configuracion/components/LogoEmpresaEditor.tsx', 'utf8')
+  assert.match(editor, /data-logo-preview/)
+  assert.match(editor, /sm:w-52/)
+  assert.match(editor, /bg-\[#273342\]/)
+  assert.match(editor, /Logo configurado/)
+})
