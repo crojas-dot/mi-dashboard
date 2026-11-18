@@ -29,6 +29,20 @@ test('si el usuario no tiene foto, sus iniciales aparecen sin estado de carga', 
   assert.doesNotMatch(withoutPhoto, /data-avatar-loading/)
 })
 
+
+test('fondo login se precarga sin esperar el fetch de TanStack Query', () => {
+  const origen = 'https://qms.test/storage/v1/object/public/branding/identidad/login_fondo/ejemplo.webp'
+  const Fondo = loadModule('components/identidad/FondoIdentidad.tsx', {
+    '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: () => ({ data: undefined }) },
+  }).default
+  const html = renderToStaticMarkup(React.createElement(Fondo, {
+    slot: 'login_fondo', initialUrl: origen, children: React.createElement('main', null, 'Iniciar sesión'),
+  }))
+  assert.match(html, /data-login-fondo/)
+  assert.ok(html.includes(origen))
+  assert.ok(html.includes('Iniciar sesión'))
+})
+
 test('el fondo login no tapa la imagen con una capa blanca intensa', () => {
   const fs = requireSource()
   assert.match(fs, /data-login-fondo/)
