@@ -650,3 +650,27 @@ test('endpoint legacy rechaza todos los tipos internos aunque tengan firma corre
     assert.equal(value.rows.length, 1)
   }
 })
+
+test('branding de correo usa solo imágenes públicas firmadas del mismo Supabase', () => {
+  const uuid='11111111-1111-4111-8111-111111111111'
+  const image = slot => `https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_${slot}/${uuid}.webp`
+  const identidadCorreo = { encabezado: image('encabezado'), pie: image('pie') }
+  const value = fixture({ response(request, { defaultResponse }) {
+    const payload = defaultResponse(request)
+    return request.purpose === 'claim_request' ? { ...payload, identidadCorreo } : payload
+  } })
+  value.poll()
+  assert.equal(value.sent.length, 1)
+  assert.ok(value.sent[0].htmlBody.includes('<img src="' + identidadCorreo.encabezado))
+  assert.ok(value.sent[0].htmlBody.includes('<img src="' + identidadCorreo.pie))
+  assert.equal(value.rows[1][2], 'sent')
+
+  const forged = fixture({ response(request, { defaultResponse }) {
+    const payload = defaultResponse(request)
+    return request.purpose === 'claim_request'
+      ? { ...payload, identidadCorreo: { encabezado: 'https://otro.example.test/image.webp' } } : payload
+  } })
+  forged.poll()
+  assert.equal(forged.sent.length, 0, 'una URL arbitraria no puede incorporarse al HTML')
+})
+
