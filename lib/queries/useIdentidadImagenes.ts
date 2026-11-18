@@ -5,15 +5,25 @@ import { supabase } from '@/lib/supabase'
 import { IDENTIDAD_IMAGENES, IDENTIDAD_SLOTS, type ImagenIdentidad } from '@/lib/constants/identidad'
 
 export const identidadImagenesKey = ['identidad', 'imagenes'] as const
-export type ImagenesIdentidad = Record<ImagenIdentidad, string>
+export type ImagenesIdentidad = Record<ImagenIdentidad, string> & {
+  configuradas?: Partial<Record<ImagenIdentidad, boolean>>
+}
 
 export async function fetchImagenesIdentidad(signal?: AbortSignal): Promise<ImagenesIdentidad> {
   const response = await fetch('/api/configuracion/identidad', { cache: 'no-store', signal })
   if (!response.ok) throw new Error('No se pudieron cargar las imágenes institucionales')
-  const body = await response.json() as { imagenes?: Record<string, unknown> }
-  return Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
-    slot, typeof body.imagenes?.[slot] === 'string' ? body.imagenes[slot] : '',
-  ])) as ImagenesIdentidad
+  const body = await response.json() as {
+    imagenes?: Record<string, unknown>
+    configuradas?: Record<string, unknown>
+  }
+  return {
+    ...Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
+      slot, typeof body.imagenes?.[slot] === 'string' ? body.imagenes[slot] : '',
+    ])),
+    configuradas: Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
+      slot, body.configuradas?.[slot] === true,
+    ])),
+  } as ImagenesIdentidad
 }
 
 export function useIdentidadImagenes(active = true) {
