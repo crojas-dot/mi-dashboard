@@ -25,12 +25,17 @@ export interface BorradorLogo { archivo: File; url: string }
  * no lleva esquinas redondeadas para que la vista previa coincida con el
  * resultado guardado.
  */
-export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar }: {
+export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, outputWidth = LOGO_LADO, nombre = 'logo' }: {
   borrador: BorradorLogo
   guardando: boolean
   onCerrar: () => void
   onGuardar: (cuadrado: Blob) => void
+  aspectRatio?: number
+  outputWidth?: number
+  nombre?: string
 }) {
+  const vistaAncho = aspectRatio === 1 ? VISTA : 320
+  const vistaAlto = Math.round(vistaAncho / aspectRatio)
   const imagen = useRef<HTMLImageElement>(null)
   const arrastre = useRef<{ id: number; x: number; y: number } | null>(null)
   const [medidas, setMedidas] = useState<{ ancho: number; alto: number } | null>(null)
@@ -40,20 +45,20 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
   const [error, setError] = useState('')
 
   // Escala que hace que la imagen cubra el círculo sin dejar bordes libres.
-  const base = useMemo(() => medidas ? Math.max(VISTA / medidas.ancho, VISTA / medidas.alto) : 1, [medidas])
+  const base = useMemo(() => medidas ? Math.max(vistaAncho / medidas.ancho, vistaAlto / medidas.alto) : 1, [medidas, vistaAncho, vistaAlto])
   const escala = base * zoom
   const anchoPx = (medidas?.ancho ?? 0) * escala
   const altoPx = (medidas?.alto ?? 0) * escala
-  const izquierda = (VISTA - anchoPx) / 2 + posicion.x
-  const arriba = (VISTA - altoPx) / 2 + posicion.y
+  const izquierda = (vistaAncho - anchoPx) / 2 + posicion.x
+  const arriba = (vistaAlto - altoPx) / 2 + posicion.y
   const listo = !!medidas && !guardando && !fallo
 
   /** El desplazamiento no puede exponer el fondo: se acota a la propia imagen. */
   const ajustar = (valorZoom: number, x: number, y: number) => {
     if (!medidas) return { x, y }
     const escalaNueva = base * valorZoom
-    const topeX = Math.max(0, (medidas.ancho * escalaNueva - VISTA) / 2)
-    const topeY = Math.max(0, (medidas.alto * escalaNueva - VISTA) / 2)
+    const topeX = Math.max(0, (medidas.ancho * escalaNueva - vistaAncho) / 2)
+    const topeY = Math.max(0, (medidas.alto * escalaNueva - vistaAlto) / 2)
     return { x: Math.min(topeX, Math.max(-topeX, x)), y: Math.min(topeY, Math.max(-topeY, y)) }
   }
 
@@ -97,12 +102,13 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
     if (!origen || !medidas) return
     setError('')
     const lienzo = document.createElement('canvas')
-    lienzo.width = LOGO_LADO
-    lienzo.height = LOGO_LADO
+    lienzo.width = outputWidth
+    lienzo.height = Math.round(outputWidth / aspectRatio)
     const contexto = lienzo.getContext('2d')
     if (!contexto) { setError('Este navegador no pudo procesar la imagen.'); return }
-    const factor = LOGO_LADO / VISTA
-    contexto.drawImage(origen, izquierda * factor, arriba * factor, anchoPx * factor, altoPx * factor)
+    const factorX = lienzo.width / vistaAncho
+    const factorY = lienzo.height / vistaAlto
+    contexto.drawImage(origen, izquierda * factorX, arriba * factorY, anchoPx * factorX, altoPx * factorY)
     const codificar = (tipo: string) => new Promise<Blob | null>(resolver => lienzo.toBlob(resolver, tipo, 0.92))
     // WebP ofrece mejor peso con transparencia; PNG solo como respaldo si el
     // navegador no puede codificarlo (no se sube nada que la API rechace).
@@ -116,15 +122,15 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
     onClose={guardando ? () => {} : onCerrar}
     dismissOnEscape={!guardando}
     dismissOnBackdrop={!guardando}
-    title="Centrar el logo"
+    title={`Encuadrar ${nombre}`}
     size="sm"
     footer={<div className="flex justify-end gap-2">
       <Button variant="secondary" disabled={guardando} onClick={onCerrar}>Cancelar</Button>
-      <Button loading={guardando} disabled={!listo} onClick={() => void confirmar()}>Guardar logo</Button>
+      <Button loading={guardando} disabled={!listo} onClick={() => void confirmar()}>Guardar imagen</Button>
     </div>}
   >
     <div className="space-y-4">
-      <p className="text-sm text-qms-muted">Arrastrá la imagen para centrarla. Se guarda tal como se ve en el recuadro, sin fondo.</p>
+      <p className="text-sm text-qms-muted">Arrastrá la imagen para centrarla y ajustar el encuadre. Se guarda tal como se ve en el recuadro.</p>
       <div
         role="application"
         tabIndex={0}
@@ -135,7 +141,7 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
         onPointerCancel={alSoltar}
         onKeyDown={alTeclear}
         className={`relative mx-auto touch-none overflow-hidden border border-qms-border bg-qms-hover-bg outline-none focus-visible:ring-2 focus-visible:ring-qms-primary ${listo ? 'cursor-move' : 'cursor-default'}`}
-        style={{ width: VISTA, height: VISTA }}
+        style={{ width: vistaAncho, height: vistaAlto }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
