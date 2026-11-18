@@ -2,19 +2,21 @@
 
 ## Alcance
 
-La sección **Configuración → Identidad** concentra la marca visual. Mantiene el editor original del logo ECA-QMS y agrega cuatro recursos:
+La sección **Configuración → Identidad** concentra los recursos visuales y conserva el editor existente del logo lateral.
 
-| Recurso | Clave | Recorte |
-| --- | --- | --- |
-| Logo lateral | `org.logo_url` | Cuadrado (editor previo) |
-| Encabezado del correo | `org.identidad.correo_encabezado` | 3:1 |
-| Pie del correo | `org.identidad.correo_pie` | 3:1 |
-| Fondo de login | `org.identidad.login_fondo` | 16:9 |
-| Fondo de formulario externo | `org.identidad.formulario_fondo` | 16:9 |
+| Recurso | Clave | Recorte | Calidad recomendada |
+| --- | --- | --- | --- |
+| Logo del menú lateral | `org.logo_url` | 512 × 512 (1:1) | PNG transparente, idealmente menos de 300 KB |
+| Logo del encabezado del correo | `org.identidad.correo_encabezado` | 512 × 512 (1:1), PNG de salida | PNG transparente de buena calidad, idealmente menos de 300 KB |
+| Fondo de inicio de sesión | `org.identidad.login_fondo` | 1600 × 900 (16:9), WebP de salida | JPG/WebP nítido, sin texto importante, idealmente 300 KB–1 MB |
+| Logo del formulario externo | `org.identidad.formulario_encabezado` | 900 × 300 (3:1), WebP de salida | PNG transparente o WebP, idealmente menos de 400 KB |
+| Foto de perfil | `usuarios.avatar_url`, bucket privado | 320 × 320 (1:1), WebP de salida | JPG/WebP de buena calidad, máximo 2 MB de origen |
 
-El área de recorte permite arrastrar y ampliar la imagen antes de guardar. Las cuatro nuevas imágenes se optimizan a WebP por la API del servidor y se guardan como objetos versionados en el bucket público existente `branding`, prefijo `identidad/{slot}/{uuid}.webp`. Las claves solo contienen URL del mismo bucket/slot y dominio configurado. Para evitar inyección de recursos externos la API acepta exclusivamente JPG, PNG y WebP y comprueba bytes reales, dimensiones, peso y formato en el servidor. Solo el rol real de administrador permite alta o eliminación. La lectura pública retorna únicamente las cuatro URLs institucionales, nunca credenciales o preferencias.
+El área de recorte permite arrastrar y ampliar la imagen. Cada editor presenta tamaño, proporción, formato recomendado y calidad aproximada. Los recursos institucionales admiten PNG/JPG/WebP de hasta 4 MB de origen y quedan guardados optimizados en objetos versionados del bucket público `branding`. El logo del menú conserva su editor y límites previos. Para el correo se genera PNG cuadrado para que el pequeño icono situado a la izquierda de **QMS ECA** se vea nítido en clientes de correo; no se inserta una imagen horizontal de cabecera ni imagen de pie.
 
-La pantalla de login y el formulario público muestran el fondo configurado con una capa clara para mantener legibles los campos. Sin imagen, conservan el fondo original. Los fondos no modifican la validación de sesión, el token del formulario ni las evidencias.
+El fondo de login permanece opcional y su capa clara conserva la legibilidad de las credenciales. El formulario público **no usa fondo institucional**: muestra un logo horizontal dentro del encabezado, a la **derecha** de «Registro de queja», con `object-contain`, máximo 220 × 72 px en pantalla. También se muestra en el encabezado de la confirmación. Sin logo, el formulario permanece igual. No cambia la validación de sesión, la captura de datos, los tokens del formulario ni la carga de evidencias.
+
+La API valida el tipo, tamaño, dimensiones y contenido de las imágenes en el servidor y permite a un administrador real escribir/borrar. La lectura pública expone solo las tres URL actuales (correo, fondo de login y encabezado del formulario), sin configuraciones privadas. Las URL se limitan al origen esperado de Supabase, al slot exacto y a archivos versionados con la extensión correspondiente. Se retira del editor el antiguo `correo_pie` y la opción `formulario_fondo`. Cualquier antigua clave persistida queda ignorada; no se hace eliminación masiva de archivos desde esta revisión.
 
 ## Fotos personales
 
@@ -28,13 +30,13 @@ La creación del bucket y consulta de permisos fueron verificadas directamente. 
 
 ## Correos: despliegue separado y seguro
 
-El envío de correos ocurre mediante Supabase Edge `quejas-mail-queue` y **otro proyecto Google Apps Script**. El código de esta rama incluye las imágenes de correo de forma opcional, pero **no está activo en el transportador remoto** solo por desplegar Next.js.
+El envío de correos ocurre mediante Supabase Edge `quejas-mail-queue` y **otro proyecto Google Apps Script**. El código de esta rama incluye el logo cuadrado del encabezado de correo de forma opcional, pero **no está activo en el transportador remoto** solo por desplegar Next.js.
 
 1. Mantener `QMS_MAIL_BRANDING_ENABLED` ausente/apagado hasta validar el circuito de correo.
 2. Publicar y probar la versión revisada de `integration/apps-script/quejas-mail/Codigo.gs` en su proyecto de Apps Script independiente, sin modificar el conversor de Drive ni sus credenciales.
 3. Publicar la versión correspondiente de `supabase/functions/quejas-mail-queue/index.ts` en el proyecto correcto.
-4. Solo tras validar los sobres firmados, encender `QMS_MAIL_BRANDING_ENABLED=true` en la función Edge para que lea las imágenes públicas. No se añaden URLs libres al cuerpo de un correo y la entrega del documento oficial no cambia.
-5. Comprobar con mensajes sintéticos que las imágenes opcionales se muestran y que los correos siguen saliendo sin imagen en ausencia de configuración o si la consulta falla. Mantener los controles de diario/idempotencia y la autorización para adjuntos.
+4. Solo tras validar los sobres firmados, encender `QMS_MAIL_BRANDING_ENABLED=true` en la función Edge para que lea el logo público del encabezado. No se añaden URLs libres al cuerpo de un correo y la entrega del documento oficial no cambia.
+5. Comprobar con mensajes sintéticos que el logo cuadrado reemplaza la «E» y que no existe banner ni pie y que los correos siguen saliendo sin imagen en ausencia de configuración o si la consulta falla. Mantener los controles de diario/idempotencia y la autorización para adjuntos.
 
 Los clientes de correo pueden bloquear imágenes remotas: el texto, enlace y adjunto oficial siempre deben seguir siendo utilizables sin descargarlas. No reenviar correspondencia real para probar un cambio visual.
 
@@ -43,5 +45,5 @@ Los clientes de correo pueden bloquear imágenes remotas: el texto, enlace y adj
 - Vercel: build/TypeScript en preview.
 - Pruebas locales: `node --test tests/identidad-imagenes.test.mjs tests/foto-perfil.test.mjs tests/mi-perfil.test.mjs tests/branding-logo-api.test.mjs tests/queja-mail-direct.test.mjs`.
 - Supabase: confirmar `branding` público y `qms-avatars` privado con MIME/size, UPDATE de avatar restringido y sin policies para objetos privados.
-- UI: vista de Configuración → Identidad; recorte por proporciones; probar subida/eliminación con cuenta admin; verificar login/formulario con y sin imagen, y perfil con un usuario real.
+- UI: vista de Configuración → Identidad; recorte por proporciones; probar subida/eliminación con cuenta admin; verificar login con y sin fondo, formulario con y sin logo en la esquina derecha, y perfil con un usuario real.
 - Correo: solo source control y pruebas simuladas hasta despliegue específico en Apps Script y Edge.
