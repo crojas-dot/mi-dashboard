@@ -103,6 +103,7 @@ test('imagen institucional se convierte en WebP, se publica y se retira por slot
   const lectura = await f.api.GET({ signal: undefined })
   assert.equal(lectura.status, 200)
   assert.equal(lectura.body.imagenes.login_fondo, respuesta.body.imagen)
+  assert.equal(lectura.body.configuradas.login_fondo, true)
   assert.equal(lectura.body.imagenes.correo_encabezado, '')
   assert.equal(lectura.body.imagenes.formulario_encabezado, '')
   const quitar = await f.api.DELETE({ signal: undefined, json: async () => ({ slot: 'login_fondo' }) })
@@ -168,6 +169,16 @@ test('GET reconstruye la URL pública canónica aunque la configuración tenga u
   assert.equal(res.body.imagenes.login_fondo,
     `${ORIGIN}/storage/v1/object/public/branding/identidad/login_fondo/${UUID}.webp`)
   assert.ok(!res.body.imagenes.login_fondo.includes('almacen-anterior.example.test'))
+})
+
+test('identidad distingue un archivo guardado de una vista previa ilegible', async () => {
+  const f = fixture()
+  f.config.set(marcas.IDENTIDAD_IMAGENES.login_fondo.clave, 'https://invalido.example.test/icon.svg')
+  const res = await f.api.GET({ signal: undefined })
+  assert.equal(res.status, 200)
+  assert.equal(res.body.configuradas.login_fondo, true)
+  assert.equal(res.body.imagenes.login_fondo, '')
+  assert.equal(res.body.configuradas.correo_encabezado, false)
 })
 
 test('la ruta rechaza sustituciones de bucket, subdirectorios y archivos arbitrarios', () => {
