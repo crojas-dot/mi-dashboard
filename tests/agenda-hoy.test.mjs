@@ -61,6 +61,7 @@ test('muestra cinco tarjetas y Ver más dentro de la lista solo cuando quedan pe
   assert.match(html,/aria-haspopup="dialog"/);assert.match(html,/bg-red-500/)
   assert.doesNotMatch(render({items:items.slice(0,5)}),/href="\/dashboard"/)
   assert.doesNotMatch(render({items:items.slice(0,5)}),/Ver más/)
+  assert.match(render(), /href="\/quejas\?open=aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"/)
 })
 
 test('abre en calendario, navega a la lista y vuelve; una nueva apertura restablece el calendario',()=>{
