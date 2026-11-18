@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, ClipboardCheck, Eye, FilePenLine, History, Maximize, Minimize, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, Eye, FilePenLine, History, Maximize, Minimize, Pencil, Save, Send, WandSparkles } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -577,7 +577,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             {queja.justificacion_procede ? <RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} />
               : <p className="text-sm text-qms-muted">No hay justificación registrada de Calidad.</p>}
           </section>
-          <CaseSection variant="panel" source="Cliente" title="Descripción de la queja">
+          <CaseSection variant="panel" source="Cliente" title="Descripción de la queja"
+            headerActions={<Button size="sm" variant="secondary" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4" />Ver análisis completo</Button>}>
             <div className="mb-4"><AreaAfectada area={queja.area_afectada} /></div>
             <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
           </CaseSection>

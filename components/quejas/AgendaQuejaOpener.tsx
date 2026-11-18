@@ -15,7 +15,7 @@ export default function AgendaQuejaOpener({ onOpen, responsableId }: {
   const params = useSearchParams()
   const id = params.get('open')
   const onOpenRef = useRef(onOpen)
-  onOpenRef.current = onOpen
+  useEffect(() => { onOpenRef.current = onOpen }, [onOpen])
   useEffect(() => {
     if (!id || responsableId === null) return
     const controller = new AbortController()
