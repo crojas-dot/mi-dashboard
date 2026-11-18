@@ -389,7 +389,7 @@ function qmsMailBrandingUrl_(slot, value) {
   if (!match) return false;
   var expected = 'https://' + match[1] + '/storage/v1/object/public/branding/identidad/correo_' + slot + '/';
   return value.indexOf(expected) === 0
-    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(value.slice(expected.length));
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(value.slice(expected.length));
 }
 
 function qmsMailClaimReceipt_(payload, limit) {
@@ -412,7 +412,7 @@ function qmsMailClaimReceipt_(payload, limit) {
   });
   var identidad = null;
   if (Object.prototype.hasOwnProperty.call(payload, 'identidadCorreo')) {
-    identidad = qmsMailRecord_(payload.identidadCorreo, ['encabezado', 'pie']);
+    identidad = qmsMailRecord_(payload.identidadCorreo, ['encabezado']);
     if (Object.keys(identidad).length === 0) throw new Error('invalid_queue_receipt');
     if (Object.keys(identidad).some(function (slot) {
       return !qmsMailBrandingUrl_(slot, identidad[slot]);
@@ -582,18 +582,17 @@ function qmsMailHtml_(message, identidad) {
   }).map(function (paragraph) {
     return '<p style="margin:0 0 12px;color:#343a40;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
   }).join('');
-  var encabezado = identidad && identidad.encabezado
-    ? '<tr><td align="center" style="padding:0 0 4px"><img src="' + qmsMailEscape_(identidad.encabezado)
-      + '" alt="Identidad institucional" width="720" style="display:block;width:100%;height:auto;max-width:720px;border:0"></td></tr>' : '';
-  var pie = identidad && identidad.pie
-    ? '<tr><td align="center" style="padding:10px 20px"><img src="' + qmsMailEscape_(identidad.pie)
-      + '" alt="" width="720" style="display:block;width:100%;height:auto;max-width:720px;border:0"></td></tr>' : '';
+  var marca = identidad && identidad.encabezado
+    ? '<td width="42" height="42" align="center" style="width:42px;height:42px;vertical-align:middle">'
+      + '<img src="' + qmsMailEscape_(identidad.encabezado)
+      + '" alt="ECA" width="42" height="42" style="display:block;width:42px;height:42px;border:0"></td>'
+    : '<td width="36" height="36" align="center" style="width:36px;height:36px;border-radius:4px;background:#024796;color:#ffffff;font-size:18px;line-height:1;font-weight:600">E</td>';
   return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
     '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
     '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td align="center" style="padding:0">' +
-    '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' + encabezado +
+    '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
     '<tr><td style="padding:16px 20px;border-bottom:1px solid #dee2e6">' +
-    '<table role="presentation" style="border-collapse:collapse"><tr><td width="36" height="36" align="center" style="width:36px;height:36px;border-radius:4px;background:#024796;color:#ffffff;font-size:18px;line-height:1;font-weight:600">E</td>' +
+    '<table role="presentation" style="border-collapse:collapse"><tr>' + marca +
     '<td style="padding-left:12px"><div style="font-size:16px;line-height:1.4;font-weight:600;color:#212529">QMS ECA</div>' +
     '<div style="font-size:13px;line-height:1.4;color:#6c757d">Gestión de Calidad</div></td></tr></table></td></tr>' +
     '<tr><td style="padding:20px"><h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + title + '</h1>' +
@@ -601,6 +600,6 @@ function qmsMailHtml_(message, identidad) {
     '<span style="margin-left:8px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(message.folio) + '</span></p>' + paragraphs +
     (tracking && message.kind === 'recibido' ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">Consultar mi trámite</a></p>' +
       '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>' : '') + '</td></tr>' +
-    pie + '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.</td></tr>' +
+    '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.</td></tr>' +
     '</table></td></tr></table></body></html>';
 }
