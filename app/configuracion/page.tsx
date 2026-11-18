@@ -4,7 +4,7 @@ import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { CONFIG_SECTION_LABELS, useConfigSectionStore, type ConfigSection } from '@/lib/store/configuration-section-store'
-import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, Tag, type LucideIcon } from 'lucide-react'
+import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, Tag, Images, type LucideIcon } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { queryKeys } from '@/lib/queries/queryKeys'
@@ -17,6 +17,7 @@ import CatalogosSettings from './components/CatalogosSettings'
 import PlazosSettings from './components/PlazosSettings'
 import CalendarioSettings from './components/CalendarioSettings'
 import GeneralSettings from './components/GeneralSettings'
+import IdentidadSettings from './components/IdentidadSettings'
 import FormulariosSettings from './components/FormulariosSettings'
 import ModoVistaActiva from './components/ModoVistaActiva'
 import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
@@ -28,6 +29,7 @@ interface SectionDefinition {
 }
 const sections: SectionDefinition[] = [
   { id: 'general', label: CONFIG_SECTION_LABELS.general, description: 'Organización e integraciones del sistema.', group: 'Organización', icon: Settings2, component: GeneralSettings },
+  { id: 'identidad', label: CONFIG_SECTION_LABELS.identidad, description: 'Imágenes institucionales, correos, acceso y formularios.', group: 'Organización', icon: Images, component: IdentidadSettings },
   { id: 'catalogos', label: CONFIG_SECTION_LABELS.catalogos, description: 'Valores de los selectores de cada módulo.', group: 'Organización', icon: Tag, component: CatalogosSettings },
   { id: 'sla', label: CONFIG_SECTION_LABELS.sla, description: 'Días de alerta y vencimiento por prioridad.', group: 'Organización', icon: Clock, component: PlazosSettings },
   { id: 'calendario', label: CONFIG_SECTION_LABELS.calendario, description: 'Días laborables y feriados confirmados para las nuevas etapas del sistema.', group: 'Organización', icon: CalendarDays, component: CalendarioSettings },
