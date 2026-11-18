@@ -36,8 +36,8 @@ test('fondo login se precarga sin esperar el fetch de TanStack Query', () => {
     '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: () => ({ data: undefined }) },
   }).default
   const html = renderToStaticMarkup(React.createElement(Fondo, {
-    slot: 'login_fondo', initialUrl: origen, children: React.createElement('main', null, 'Iniciar sesión'),
-  }))
+    slot: 'login_fondo', initialUrl: origen,
+  }, React.createElement('main', null, 'Iniciar sesión')))
   assert.match(html, /data-login-fondo/)
   assert.ok(html.includes(origen))
   assert.ok(html.includes('Iniciar sesión'))
