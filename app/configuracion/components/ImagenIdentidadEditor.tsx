@@ -9,7 +9,7 @@ import { IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES
 import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad, type ImagenesIdentidad } from '@/lib/queries/useIdentidadImagenes'
 import LogoRecorteModal, { type BorradorLogo } from './LogoRecorteModal'
 
-export default function ImagenIdentidadEditor({ slot, url, loading = false }: { slot: ImagenIdentidad; url: string; loading?: boolean }) {
+export default function ImagenIdentidadEditor({ slot, url, loading = false, configurada = false }: { slot: ImagenIdentidad; url: string; loading?: boolean; configurada?: boolean }) {
   const meta = IDENTIDAD_IMAGENES[slot]
   const client = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -50,6 +50,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false }: { 
       client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
         correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
         ...prev, [slot]: nuevaUrl,
+        configuradas: { ...prev?.configuradas, [slot]: true },
       }))
       setImagenFallida('')
       setBorrador(null)
@@ -67,6 +68,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false }: { 
       client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
         correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
         ...prev, [slot]: '',
+        configuradas: { ...prev?.configuradas, [slot]: false },
       }))
       await client.invalidateQueries({ queryKey: identidadImagenesKey })
       showSuccess('Imagen quitada')
@@ -88,7 +90,9 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false }: { 
         ) : <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-qms-panel-soft text-qms-muted">
           <ImagePlus className="h-7 w-7" aria-hidden="true" />
           <span className="px-2 text-center text-xs">
-            {loading ? 'Cargando vista previa…' : url ? 'No se pudo mostrar la imagen' : 'Sin imagen configurada'}
+            {loading ? 'Cargando vista previa…'
+              : url || configurada ? 'Imagen guardada · Vista previa no disponible'
+              : 'Sin imagen configurada'}
           </span>
         </div>}
       </div>
@@ -101,9 +105,9 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false }: { 
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" disabled={guardando || quitando} onClick={() => inputRef.current?.click()}>
-            <ImagePlus className="h-4 w-4" aria-hidden="true" /> {url ? 'Cambiar imagen' : 'Subir imagen'}
+            <ImagePlus className="h-4 w-4" aria-hidden="true" /> {url || configurada ? 'Cambiar imagen' : 'Subir imagen'}
           </Button>
-          {url && <Button size="sm" variant="danger" disabled={guardando} loading={quitando} onClick={() => void quitar()}>
+          {(url || configurada) && <Button size="sm" variant="danger" disabled={guardando} loading={quitando} onClick={() => void quitar()}>
             <Trash2 className="h-4 w-4" aria-hidden="true" /> Quitar imagen
           </Button>}
         </div>
