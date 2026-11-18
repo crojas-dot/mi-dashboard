@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Camera, Eye, EyeOff, Play } from 'lucide-react'
 import Modal from '@/components/Modal'
@@ -21,6 +21,7 @@ import { captureQueryContext } from '@/lib/queries/queryContextScope'
 import { cambiarClavePerfil, cambiarFotoPerfil, tokenPerfil } from '@/lib/services/miPerfilService'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
 import FotoPerfil from '@/components/perfil/FotoPerfil'
+import LogoRecorteModal, { type BorradorLogo } from '@/app/configuracion/components/LogoRecorteModal'
 
 interface Props {
   open: boolean
@@ -62,7 +63,13 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
   const [claveAviso, setClaveAviso] = useState('')
   const [guardandoPrefs, setGuardandoPrefs] = useState(false)
   const inputFoto = useRef<HTMLInputElement>(null)
+  const [borradorFoto, setBorradorFoto] = useState<BorradorLogo | null>(null)
   const fotoOperation = useOperationLock<'subir' | 'quitar'>()
+
+  useEffect(() => {
+    const temporal = borradorFoto?.url
+    return () => { if (temporal) URL.revokeObjectURL(temporal) }
+  }, [borradorFoto])
 
   if (!user) return null
 
@@ -99,6 +106,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
       const path = await cambiarFotoPerfil(token, file)
       if (!scope.current()) return
       setAvatar(path)
+      setBorradorFoto(null)
       showSuccess(file ? 'Foto actualizada' : 'Foto quitada')
     } catch (error) {
       if (scope.current()) showError(error, 'No se pudo actualizar la foto')
@@ -201,7 +209,12 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
           <input ref={inputFoto} type="file" accept={AVATAR_ACCEPT} hidden onChange={event => {
             const file = event.currentTarget.files?.[0]
             event.currentTarget.value = ''
-            if (file) void cambiarFoto(file)
+            if (!file) return
+            if (!AVATAR_ACCEPT.split(',').includes(file.type) || file.size === 0 || file.size > AVATAR_UPLOAD_BYTES) {
+              showError(new Error('Elegí una foto JPG, PNG o WebP de hasta 2 MB.'), 'No se pudo subir la foto')
+              return
+            }
+            setBorradorFoto({ archivo: file, url: URL.createObjectURL(file) })
           }} />
           <div className="flex flex-wrap justify-center gap-1">
             <Button variant="link" size="sm" loading={fotoOperation.operation === 'subir'} disabled={!!fotoOperation.operation}
@@ -306,6 +319,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
   }
 
   return (
+    <>
     <Modal open={open} onClose={onClose} title="Mi perfil" size="mail" variant="document" height="fill"
       footer={<div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-qms-muted">Los cambios del nombre se aplican al guardar.</p>
@@ -323,5 +337,11 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
         </div>
       </div>
     </Modal>
+    {borradorFoto && <LogoRecorteModal key={borradorFoto.url} borrador={borradorFoto}
+      guardando={fotoOperation.operation === 'subir'} nombre="foto de perfil" outputWidth={320}
+      onCerrar={() => setBorradorFoto(null)} onGuardar={blob => {
+        void cambiarFoto(new File([blob], 'foto.webp', { type: blob.type }))
+      }} />}
+    </>
   )
 }
