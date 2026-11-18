@@ -4,6 +4,7 @@ import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { CONFIG_SECTION_LABELS, useConfigSectionStore, type ConfigSection } from '@/lib/store/configuration-section-store'
+import { identidadImagenesKey } from '@/lib/queries/useIdentidadImagenes'
 import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, Tag, Images, type LucideIcon } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -65,6 +66,7 @@ export default function ConfiguracionPage() {
         client.invalidateQueries({ queryKey: queryKeys.slaConfig }),
         client.invalidateQueries({ queryKey: queryKeys.qmsCalendar }),
         client.invalidateQueries({ queryKey: queryKeys.configuraciones }),
+        client.invalidateQueries({ queryKey: identidadImagenesKey }),
       ])
     } finally { setRefreshing(false) }
   }
