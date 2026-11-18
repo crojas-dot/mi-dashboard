@@ -47,7 +47,7 @@ export function esImagenIdentidad(value: unknown): value is ImagenIdentidad {
 }
 
 /** Nunca renderizar una URL externa o una ruta ajena al slot en un fondo o correo. */
-export function urlIdentidadValida(slot: ImagenIdentidad, value: unknown, origin: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL): string {
+export function urlIdentidadValida(slot: ImagenIdentidad, value: unknown, origin: string | undefined = typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_SUPABASE_URL : undefined): string {
   if (typeof value !== 'string' || !origin) return ''
   try {
     const expected = new URL(origin)
