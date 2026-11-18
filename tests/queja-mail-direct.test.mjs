@@ -650,3 +650,34 @@ test('endpoint legacy rechaza todos los tipos internos aunque tengan firma corre
     assert.equal(value.rows.length, 1)
   }
 })
+
+test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o pie', () => {
+  const uuid = '11111111-1111-4111-8111-111111111111'
+  const logo = `https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_encabezado/${uuid}.png`
+  const value = fixture({ response(request, { defaultResponse }) {
+    const payload = defaultResponse(request)
+    return request.purpose === 'claim_request' ? { ...payload, identidadCorreo: { encabezado: logo } } : payload
+  } })
+  value.poll()
+  assert.equal(value.sent.length, 1)
+  const html = value.sent[0].htmlBody
+  assert.ok(html.includes('<img src="' + logo))
+  assert.match(html, /width="42" height="42"/)
+  assert.equal((html.match(/<img /g) ?? []).length, 1, 'solo un logo en el encabezado')
+  assert.doesNotMatch(html, /alt=""/)
+  assert.equal(value.rows[1][2], 'sent')
+
+  for (const invalid of [
+    'https://otro.example.test/image.png',
+    logo.replace('.png', '.webp'),
+    logo.replace('/correo_encabezado/', '/correo_pie/'),
+  ]) {
+    const forged = fixture({ response(request, { defaultResponse }) {
+      const payload = defaultResponse(request)
+      return request.purpose === 'claim_request'
+        ? { ...payload, identidadCorreo: { encabezado: invalid } } : payload
+    } })
+    forged.poll()
+    assert.equal(forged.sent.length, 0)
+  }
+})

@@ -9,6 +9,11 @@ import { logger } from '@/lib/utils/logger'
 
 export const runtime = 'nodejs'
 const PRIVATE = { 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff' }
+const PRIVATE_IMAGE = {
+  ...PRIVATE,
+  'Cache-Control': 'private, max-age=120, must-revalidate',
+  'Vary': 'Authorization',
+} as const
 const json = (value: object, status = 200) => NextResponse.json(value, { status, headers: PRIVATE })
 const invalid = (message: string, status: number) => json({ error: message }, status)
 
@@ -54,7 +59,7 @@ export async function GET(request: NextRequest) {
   if (!path) return invalid('No hay foto de perfil', 404)
   const { data, error } = await context.admin.storage.from(AVATAR_BUCKET).download(path, {}, { signal: request.signal })
   if (error || !data || data.size > AVATAR_STORED_BYTES) return invalid('Foto no disponible', 404)
-  return new NextResponse(data, { headers: { ...PRIVATE, 'Content-Type': 'image/webp' } })
+  return new NextResponse(data, { headers: { ...PRIVATE_IMAGE, 'Content-Type': 'image/webp' } })
 }
 
 export async function PUT(request: NextRequest) {

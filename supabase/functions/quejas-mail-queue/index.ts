@@ -153,6 +153,50 @@ async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_cl
   catch { throw new QueueError(503, 'mail_queue_unavailable') }
 }
 
+/** Consulta opcional: el contenido del correo sigue firmado e inmutable.
+ * Solo transporta URL públicas verificadas del bucket institucional.
+ * Un fallo de identidad no bloquea ni reintenta los correos pendientes.
+ */
+async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetcher: typeof fetch) {
+  const keys = {
+    encabezado: 'org.identidad.correo_encabezado',
+  } as const
+  const url = new URL('/rest/v1/configuraciones_sistema', config.url)
+  url.search = new URLSearchParams({
+    select: 'clave,valor',
+    clave: `in.(${Object.values(keys).join(',')})`,
+  }).toString()
+  try {
+    const response = await fetcher(url.toString(), {
+      method: 'GET', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(5_000),
+      headers: { Accept: 'application/json', apikey: config.key,
+        ...(config.legacyJwt ? { Authorization: `Bearer ${config.key}` } : {}) },
+    })
+    if (!response.ok || !isJson(response.headers)) {
+      await response.body?.cancel().catch(() => undefined)
+      return null
+    }
+    const rows = await readJson(response.body, 4096)
+    if (!Array.isArray(rows) || rows.length > 1) return null
+    const result: { encabezado?: string } = {}
+    for (const [slot, key] of Object.entries(keys)) {
+      const candidate = rows.find(row => row?.clave === key)?.valor
+      if (typeof candidate !== 'string') continue
+      const expected = new URL(config.url.origin)
+      try {
+        const asset = new URL(candidate)
+        const prefix = `/storage/v1/object/public/branding/identidad/correo_${slot}/`
+        const name = asset.pathname.startsWith(prefix) ? asset.pathname.slice(prefix.length) : ''
+        if (asset.origin === expected.origin && !asset.search && !asset.hash
+          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(name)) {
+          result[slot as keyof typeof result] = asset.toString()
+        }
+      } catch { /* Se descarta una URL incorrecta. */ }
+    }
+    return Object.keys(result).length ? result : null
+  } catch { return null }
+}
+
 /** Solo un evento final autorizado puede revelar su único documento publicado al emisor HMAC. */
 async function officialDocument(config: ReturnType<typeof databaseConfig>, id: string, claim: string, fetcher: typeof fetch, now: number) {
   const eligible = await rpc(config, 'qms_mail_authorize_v2', { p_id: id, p_claim_token: claim }, fetcher)
@@ -259,7 +303,12 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
         const leaseUntilMillis = Math.floor(startedAt / 1000) * 1000 + 540_000
         if (now() >= leaseUntilMillis) throw new QueueError(503, 'mail_queue_unavailable')
         const leaseUntil = new Date(leaseUntilMillis).toISOString()
-        return response(await signQueueEnvelope('claim_receipt', { requestNonce: envelope.nonce, leaseUntil, messages }, secret, cryptoApi, now()))
+        const identidadCorreo = messages.length > 0 && dependencies.env('QMS_MAIL_BRANDING_ENABLED') === 'true'
+          ? await correoIdentidad(database, fetcher) : null
+        return response(await signQueueEnvelope('claim_receipt', {
+          requestNonce: envelope.nonce, leaseUntil, messages,
+          ...(identidadCorreo ? { identidadCorreo } : {}),
+        }, secret, cryptoApi, now()))
       }
       if (envelope.purpose === 'authorize_request') {
         // Revalidar el usuario y el hito en DB; este endpoint no acepta destinatario ni regla.

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Trash2, Upload } from 'lucide-react'
+import { ImagePlus, Trash2, Upload } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import EmpresaLogo from '@/components/EmpresaLogo'
 import { showError, showSuccess } from '@/lib/services/errorToast'
@@ -71,8 +71,22 @@ export default function LogoEmpresaEditor({ active }: { active: boolean }) {
 
   return <section className="ui-panel overflow-hidden" aria-label="Marca de la organización">
     <h3 className="border-b border-qms-border bg-qms-table-head px-5 py-3 text-sm font-semibold">Marca de la organización</h3>
-    <div className="flex flex-wrap items-start gap-4 p-5">
-      <EmpresaLogo className="h-16 w-16 text-lg" />
+    <div className="flex flex-col items-start gap-5 p-5 sm:flex-row">
+      <div className="flex w-full shrink-0 flex-col gap-2 sm:w-52">
+        <div data-logo-preview className={`flex h-36 w-full items-center justify-center overflow-hidden rounded-card border border-qms-border ${url ? 'bg-[#273342]' : 'bg-qms-panel-soft'}`}>
+          {consulta.isPending ? (
+            <span className="text-xs text-qms-muted">Cargando marca…</span>
+          ) : url ? (
+            <EmpresaLogo className="h-24 w-24 text-xl" />
+          ) : (
+            <div className="flex flex-col items-center gap-2 text-qms-muted">
+              <ImagePlus className="h-7 w-7" aria-hidden="true" />
+              <span className="text-xs">Sin logo configurado</span>
+            </div>
+          )}
+        </div>
+        {url && <p className="text-center text-xs text-qms-muted">Logo configurado · Vista con fondo oscuro para distinguir el blanco</p>}
+      </div>
       <div className="min-w-0 flex-1 space-y-2">
         <p className="text-sm text-qms-muted">Logo que aparece en el menú lateral. Se muestra sin fondo ni recorte circular, así que después de elegir la imagen podés centrarla y acercarla en un recuadro; si el archivo tiene transparencia, se conserva.</p>
         <div className="flex flex-wrap gap-2">
@@ -83,7 +97,7 @@ export default function LogoEmpresaEditor({ active }: { active: boolean }) {
             <Trash2 className="h-4 w-4" aria-hidden="true" /> Quitar logo
           </Button>}
         </div>
-        <p className="text-xs text-qms-muted">PNG, JPG o WebP, hasta {tamanio(LOGO_ORIGEN_MAX_BYTES)}. La imagen se guarda recortada en cuadrado.</p>
+        <p className="text-xs text-qms-muted">Tamaño recomendado: 512 × 512 px (1:1). Preferí PNG con transparencia y bordes bien definidos, idealmente menos de 300 KB. Admite PNG, JPG o WebP hasta {tamanio(LOGO_ORIGEN_MAX_BYTES)} de origen; se guarda recortado y optimizado.</p>
         {!!consulta.error && <p role="alert" className="text-sm text-qms-danger">No se pudo leer el logo actual.</p>}
         {errorArchivo && <p role="alert" className="text-sm text-qms-danger">{errorArchivo}</p>}
       </div>

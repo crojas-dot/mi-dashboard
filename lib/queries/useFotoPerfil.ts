@@ -11,7 +11,7 @@ export function useFotoPerfil() {
   const path = useAuthStore(state => state.user?.avatarUrl)
   const photo = useQuery({
     queryKey: [...queryKeys.fotoPerfil, authId, path],
-    queryFn: ({ signal }) => leerFotoPerfil(authId, signal),
+    queryFn: ({ signal }) => leerFotoPerfil(authId, signal, path),
     enabled: !!authId && !!path,
     staleTime: 10 * 60_000,
   }).data

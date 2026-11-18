@@ -8,6 +8,7 @@ import Field from '@/components/ui/Field'
 import Input from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/store/auth-store'
 import SessionScreen from '@/components/SessionScreen'
+import { useLogoLogin } from '@/components/identidad/FondoIdentidad'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -23,6 +24,7 @@ export default function LoginPage() {
   const initialized = useAuthStore((s) => s.initialized)
   const init = useAuthStore((s) => s.init)
   const router = useRouter()
+  const logo = useLogoLogin()
 
   useEffect(() => { init() }, [init])
 
@@ -46,14 +48,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-qms-background px-4 py-10 text-qms-dark antialiased">
+    <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <div aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-card bg-qms-primary text-2xl font-semibold text-white">E</div>
-          <span className="text-2xl font-semibold tracking-tight">ECA-QMS</span>
-        </div>
-
-        <section aria-labelledby="login-title" className="rounded-card border border-qms-border bg-qms-surface shadow-md">
+        <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-md">
+          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-5 sm:px-8">
+            <div aria-hidden="true" className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-card ${logo ? 'bg-[#232b35] p-1.5' : 'bg-qms-primary'}`}>
+              {logo ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={logo} alt="" className="h-full w-full object-contain" fetchPriority="high" />
+              ) : <span className="text-2xl font-semibold leading-none text-white">E</span>}
+            </div>
+            <div className="min-w-0">
+              <p className="text-xl font-semibold tracking-tight text-qms-dark">QMS</p>
+              <p className="mt-0.5 text-sm text-qms-muted">Gestión de Calidad</p>
+            </div>
+          </header>
           <div className="p-6 sm:p-8">
             <h1 id="login-title" className="text-center text-xl font-normal">Iniciar sesión</h1>
             <p className="mt-1 mb-6 text-center text-sm text-qms-muted">Ingresa a tu cuenta de Gestión de Calidad</p>

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 
 export const CONFIG_SECTION_LABELS = {
   general: 'Ajustes generales',
+  identidad: 'Identidad',
   catalogos: 'Catálogos',
   sla: 'Plazos de atención',
   calendario: 'Calendario laboral',

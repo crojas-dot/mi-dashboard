@@ -8,11 +8,16 @@ export async function tokenPerfil(authId: string | null): Promise<string> {
   return data.session.access_token
 }
 
-export async function leerFotoPerfil(authId: string | null, signal: AbortSignal): Promise<Blob> {
+export async function leerFotoPerfil(authId: string | null, signal: AbortSignal, version?: string | null): Promise<Blob> {
   signal.throwIfAborted()
   const token = await tokenPerfil(authId)
   signal.throwIfAborted()
-  const response = await fetch(AVATAR_ENDPOINT, { headers: { Authorization: `Bearer ${token}` }, signal, cache: 'no-store' })
+  // El URL cambia con cada foto: la caché HTTP privada nunca reutiliza una
+  // versión anterior ni cruza identidades (Vary: Authorization en el servidor).
+  const suffix = version?.split('/').at(-1) ?? 'actual'
+  const response = await fetch(`${AVATAR_ENDPOINT}?v=${encodeURIComponent(suffix)}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal, cache: 'default',
+  })
   if (!response.ok) throw Object.assign(new Error('Foto no disponible'), { status: response.status })
   const photo = await response.blob()
   if (photo.type !== 'image/webp' || photo.size > AVATAR_STORED_BYTES) throw new Error('Foto no disponible')

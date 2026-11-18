@@ -1,0 +1,41 @@
+name: Identidad visual y fotos — pruebas
+
+on:
+  push:
+    branches:
+      - codex/identidad-imagenes-perfil-20261118
+  pull_request:
+    paths:
+      - 'app/api/configuracion/identidad/**'
+      - 'app/configuracion/components/*Identidad*'
+      - 'app/q/**'
+      - 'components/perfil/MiPerfilModal.tsx'
+      - 'components/identidad/**'
+      - 'lib/constants/identidad.ts'
+      - 'supabase/functions/quejas-mail-queue/**'
+      - 'integration/apps-script/quejas-mail/Codigo.gs'
+      - 'tests/identidad-imagenes.test.mjs'
+      - 'tests/avatar-carga-estable.test.mjs'
+      - 'tests/queja-mail-direct.test.mjs'
+      - '.github/workflows/identidad-imagenes-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  identidad:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - run: node --test tests/identidad-imagenes.test.mjs tests/avatar-carga-estable.test.mjs tests/foto-perfil.test.mjs tests/mi-perfil.test.mjs tests/branding-logo-api.test.mjs tests/queja-mail-direct.test.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://fykhrrpeoehwqznccmfp.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-no-real
