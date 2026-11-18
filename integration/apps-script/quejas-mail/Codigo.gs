@@ -385,11 +385,11 @@ function qmsMailUuid_(value) {
 function qmsMailBrandingUrl_(slot, value) {
   if (typeof value !== 'string' || value.length > 500) return false;
   var queue = PropertiesService.getScriptProperties().getProperty('QMS_MAIL_QUEUE_URL') || '';
-  var match = /^https:\/\/([a-z0-9-]+\\.supabase\\.co)\/functions\/v1\/quejas-mail-queue$/.exec(queue);
+  var match = /^https:\/\/([a-z0-9-]+\.supabase\.co)\/functions\/v1\/quejas-mail-queue$/.exec(queue);
   if (!match) return false;
   var expected = 'https://' + match[1] + '/storage/v1/object/public/branding/identidad/correo_' + slot + '/';
   return value.indexOf(expected) === 0
-    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.webp$/i.test(value.slice(expected.length));
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(value.slice(expected.length));
 }
 
 function qmsMailClaimReceipt_(payload, limit) {
