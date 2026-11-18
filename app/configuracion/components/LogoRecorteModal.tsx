@@ -17,7 +17,7 @@ const PASO_TECLA = 4
 export interface BorradorLogo { archivo: File; url: string }
 
 /** Recorte reutilizable: cuadrado para logo/avatar o panorámico para identidad. */
-export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, outputWidth = LOGO_LADO, nombre = 'logo' }: {
+export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, outputWidth = LOGO_LADO, nombre = 'logo', maxEncodedBytes = Number.POSITIVE_INFINITY }: {
   borrador: BorradorLogo
   guardando: boolean
   onCerrar: () => void
@@ -25,6 +25,7 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
   aspectRatio?: number
   outputWidth?: number
   nombre?: string
+  maxEncodedBytes?: number
 }) {
   const vistaAncho = aspectRatio === 1 ? VISTA : 320
   const vistaAlto = Math.round(vistaAncho / aspectRatio)
@@ -101,12 +102,21 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
     const factorX = lienzo.width / vistaAncho
     const factorY = lienzo.height / vistaAlto
     contexto.drawImage(origen, izquierda * factorX, arriba * factorY, anchoPx * factorX, altoPx * factorY)
-    const codificar = (tipo: string) => new Promise<Blob | null>(resolver => lienzo.toBlob(resolver, tipo, 0.92))
-    // WebP ofrece mejor peso con transparencia; PNG solo como respaldo si el
-    // navegador no puede codificarlo (no se sube nada que la API rechace).
-    const cuadrado = (await codificar('image/webp')) ?? (await codificar('image/png'))
-    if (!cuadrado) { setError('No se pudo generar la imagen recortada.'); return }
-    onGuardar(cuadrado)
+    // El tamaño de origen no condiciona el recorte: optimizar el archivo
+    // generado en el navegador, antes de pasarlo al endpoint de Storage.
+    let recortada: Blob | null = null
+    for (const calidad of [0.92, 0.86, 0.80, 0.72, 0.64]) {
+      recortada = await new Promise<Blob | null>(resolver => lienzo.toBlob(resolver, 'image/webp', calidad))
+      if (!recortada || recortada.size <= maxEncodedBytes || recortada.type !== 'image/webp') break
+    }
+    if (!recortada) {
+      recortada = await new Promise<Blob | null>(resolver => lienzo.toBlob(resolver, 'image/png'))
+    }
+    if (!recortada || recortada.size > maxEncodedBytes) {
+      setError('No se pudo optimizar la imagen al tamaño admitido. Probá con un encuadre más pequeño.')
+      return
+    }
+    onGuardar(recortada)
   }
 
   return <Modal
