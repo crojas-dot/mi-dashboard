@@ -8,7 +8,6 @@ import Field from '@/components/ui/Field'
 import Input from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/store/auth-store'
 import SessionScreen from '@/components/SessionScreen'
-import FondoIdentidad from '@/components/identidad/FondoIdentidad'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -47,7 +46,6 @@ export default function LoginPage() {
   }
 
   return (
-    <FondoIdentidad slot="login_fondo">
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-3">
@@ -122,6 +120,5 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
-    </FondoIdentidad>
   )
 }
