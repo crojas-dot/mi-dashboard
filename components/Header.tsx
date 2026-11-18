@@ -9,6 +9,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useNotificaciones, useMarcarNotificacionLeida, useMarcarTodasLeidas, useArchivarNotificacion, useArchivarTodas } from '@/lib/queries/useNotificaciones'
@@ -22,11 +23,22 @@ import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { Menu } from 'lucide-react'
 import { tituloDeRuta } from '@/lib/constants/modulos'
+import { CONFIG_SECTION_LABELS, useConfigSectionStore } from '@/lib/store/configuration-section-store'
 import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
 import { useFotoPerfil } from '@/lib/queries/useFotoPerfil'
 import { moduloDeRuta } from '@/lib/permisos'
 
-export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => void } = {}) {
+export default function Header({
+  onOpenNavigation,
+  mobileNavigationOpen = false,
+  onToggleNavigation,
+  navigationCollapsed = false,
+}: {
+  onOpenNavigation?: () => void
+  mobileNavigationOpen?: boolean
+  onToggleNavigation?: () => void
+  navigationCollapsed?: boolean
+} = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
@@ -37,6 +49,11 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   const fotoUrl = useFotoPerfil()
 
   const title = tituloDeRuta(pathname)
+  const configSection = useConfigSectionStore(state => state.section)
+  const setConfigSection = useConfigSectionStore(state => state.setSection)
+  const isConfig = pathname === '/configuracion'
+  const isDashboard = pathname === '/' || pathname === '/dashboard'
+  const currentBreadcrumb = isConfig ? CONFIG_SECTION_LABELS[configSection] : title
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
@@ -96,8 +113,47 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2">
-        {onOpenNavigation && <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="ui-button ui-button-ghost ui-button-icon lg:hidden"><Menu className="h-5 w-5" aria-hidden="true" /></button>}
-        <span className="truncate text-base font-semibold text-qms-dark">{title}</span>
+        {onToggleNavigation && (
+          <button
+            type="button"
+            aria-controls="qms-main-sidebar"
+            aria-expanded={!navigationCollapsed}
+            aria-label={navigationCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
+            title={navigationCollapsed ? 'Expandir menú' : 'Contraer menú'}
+            onClick={onToggleNavigation}
+            className="ui-button ui-button-ghost ui-button-icon hidden shrink-0 lg:inline-flex"
+          >
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+        {onOpenNavigation && (
+          <button
+            type="button"
+            aria-controls="qms-mobile-navigation"
+            aria-expanded={mobileNavigationOpen}
+            aria-label="Abrir menú de navegación"
+            onClick={onOpenNavigation}
+            className="ui-button ui-button-ghost ui-button-icon shrink-0 lg:hidden"
+          >
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+        <nav aria-label="Ruta de navegación" className="flex min-w-0 items-center gap-2 text-sm">
+          {!isDashboard && (
+            <>
+              {isConfig ? (
+                <button type="button" onClick={() => setConfigSection('catalogos')}
+                  className="shrink-0 text-qms-muted transition-colors hover:text-qms-primary hover:underline">
+                  Configuración
+                </button>
+              ) : (
+                <Link href="/" className="shrink-0 text-qms-muted no-underline transition-colors hover:text-qms-primary hover:underline">Inicio</Link>
+              )}
+              <span aria-hidden="true" className="shrink-0 text-qms-muted/70">/</span>
+            </>
+          )}
+          <span aria-current="page" className="truncate font-normal text-qms-muted">{currentBreadcrumb}</span>
+        </nav>
       </div>
 
       <div ref={rootRef} className="flex shrink-0 items-center gap-2">

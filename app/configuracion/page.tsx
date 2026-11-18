@@ -3,6 +3,7 @@
 import { useEffect, useState, type ComponentType } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
+import { CONFIG_SECTION_LABELS, useConfigSectionStore, type ConfigSection } from '@/lib/store/configuration-section-store'
 import { CalendarDays, Clock, Eye, Link as LinkIcon, RotateCcw, Settings2, Tag, type LucideIcon } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useAuthStore } from '@/lib/store/auth-store'
@@ -20,19 +21,19 @@ import FormulariosSettings from './components/FormulariosSettings'
 import ModoVistaActiva from './components/ModoVistaActiva'
 import AIProvidersManager from '@/components/configuracion/AIProvidersManager'
 
-type Section = 'general' | 'catalogos' | 'sla' | 'calendario' | 'formularios' | 'vistas' | 'ia'
+type Section = ConfigSection
 interface SectionDefinition {
   id: Section; label: string; description: string; group: string; icon?: LucideIcon
   component: ComponentType<{ active: boolean }>
 }
 const sections: SectionDefinition[] = [
-  { id: 'general', label: 'Ajustes generales', description: 'Organización e integraciones del sistema.', group: 'Organización', icon: Settings2, component: GeneralSettings },
-  { id: 'catalogos', label: 'Catálogos', description: 'Valores de los selectores de cada módulo.', group: 'Organización', icon: Tag, component: CatalogosSettings },
-  { id: 'sla', label: 'Plazos de atención', description: 'Días de alerta y vencimiento por prioridad.', group: 'Organización', icon: Clock, component: PlazosSettings },
-  { id: 'calendario', label: 'Calendario laboral', description: 'Días laborables y feriados confirmados para las nuevas etapas del sistema.', group: 'Organización', icon: CalendarDays, component: CalendarioSettings },
-  { id: 'vistas', label: 'Vista por rol', description: 'Revisá cómo se presenta el panel a otro rol.', group: 'Acceso', icon: Eye, component: ModoVistaActiva },
-  { id: 'formularios', label: 'Formularios públicos', description: 'Enlaces para recibir quejas sin iniciar sesión.', group: 'Servicios', icon: LinkIcon, component: FormulariosSettings },
-  { id: 'ia', label: 'Asistente de IA', description: 'Proveedores, modelos y respaldo por módulo.', group: 'Servicios', component: AIProvidersManager },
+  { id: 'general', label: CONFIG_SECTION_LABELS.general, description: 'Organización e integraciones del sistema.', group: 'Organización', icon: Settings2, component: GeneralSettings },
+  { id: 'catalogos', label: CONFIG_SECTION_LABELS.catalogos, description: 'Valores de los selectores de cada módulo.', group: 'Organización', icon: Tag, component: CatalogosSettings },
+  { id: 'sla', label: CONFIG_SECTION_LABELS.sla, description: 'Días de alerta y vencimiento por prioridad.', group: 'Organización', icon: Clock, component: PlazosSettings },
+  { id: 'calendario', label: CONFIG_SECTION_LABELS.calendario, description: 'Días laborables y feriados confirmados para las nuevas etapas del sistema.', group: 'Organización', icon: CalendarDays, component: CalendarioSettings },
+  { id: 'vistas', label: CONFIG_SECTION_LABELS.vistas, description: 'Revisá cómo se presenta el panel a otro rol.', group: 'Acceso', icon: Eye, component: ModoVistaActiva },
+  { id: 'formularios', label: CONFIG_SECTION_LABELS.formularios, description: 'Enlaces para recibir quejas sin iniciar sesión.', group: 'Servicios', icon: LinkIcon, component: FormulariosSettings },
+  { id: 'ia', label: CONFIG_SECTION_LABELS.ia, description: 'Proveedores, modelos y respaldo por módulo.', group: 'Servicios', component: AIProvidersManager },
 ]
 const groups = ['Organización', 'Acceso', 'Servicios']
 
@@ -41,7 +42,8 @@ export default function ConfiguracionPage() {
   const initialized = useAuthStore(state => state.initialized)
   const router = useRouter()
   const client = useQueryClient()
-  const [section, setSection] = useState<Section>('catalogos')
+  const section = useConfigSectionStore(state => state.section)
+  const setSection = useConfigSectionStore(state => state.setSection)
   const [refreshing, setRefreshing] = useState(false)
   const selected = sections.find(item => item.id === section)!
   const Icon = selected.icon

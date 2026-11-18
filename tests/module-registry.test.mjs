@@ -89,7 +89,8 @@ test('Sidebar consume rutas, títulos y orden del registro sin precargar durante
     '@/hooks/useHoverPrefetch': { useHoverPrefetch: () => () => { throw new Error('No precargar durante render') } },
   })
   const visit = element => Array.isArray(element) ? element.flatMap(visit) : element?.props ? [element, ...visit(element.props.children)] : []
-  const links = visit(Sidebar()).filter(element => element.type === 'a' && element.props['aria-label'])
+  const nav = visit(Sidebar()).find(element => element.type === 'nav' && element.props['aria-label'] === 'Navegación principal')
+  const links = visit(nav).filter(element => element.type === 'a' && element.props['aria-label'])
   assert.deepEqual(clone(links.map(link => link.props.href)), clone(registry.GRUPOS_NAVEGACION.flatMap(group => group.modulos.map(id => registry.MODULOS[id].ruta))))
   assert.deepEqual(clone(links.map(link => link.props['aria-label'])), clone(registry.GRUPOS_NAVEGACION.flatMap(group => group.modulos.map(id => registry.MODULOS[id].label))))
   assert.equal(links.find(link => link.props.href === '/quejas').props['aria-current'], 'page')

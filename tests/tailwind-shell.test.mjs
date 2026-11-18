@@ -42,7 +42,8 @@ function sidebarFixture({ pathname = '/quejas', collapsed = false, permisos = [{
 
 test('Sidebar conserva permisos, ruta activa y prefetch por hover/foco/tacto', () => {
   const fixture = sidebarFixture({ expanded: true })
-  const links = elements(fixture.element).filter(node => node.type === 'a')
+  const nav = elements(fixture.element).find(node => node.type === 'nav' && node.props['aria-label'] === 'Navegación principal')
+  const links = elements(nav).filter(node => node.type === 'a')
   assert.deepEqual(links.map(node => node.props.href), ['/', '/quejas'])
   const quejas = links.find(node => node.props.href === '/quejas')
   assert.equal(quejas.props['aria-current'], 'page')
@@ -64,17 +65,22 @@ test('Sidebar conserva los grupos visibles y excepción de Configuración para a
   assert.ok(!nodes.some(node => node.props.href === '/quejas'))
 })
 
-test('Sidebar expandido permite cerrar navegación; escritorio conserva el riel y su acción', () => {
+test('Sidebar mantiene logo en el riel; solo el drawer móvil incluye botón de cierre', () => {
   const expanded = sidebarFixture({ expanded: true, collapsed: true })
   assert.equal(expanded.element.type, 'aside')
   assert.match(expanded.element.props.className, /w-\[250px\]/)
   elements(expanded.element).find(node => node.props['aria-label'] === 'Cerrar menú de navegación').props.onClick()
   assert.deepEqual(expanded.clicks, ['closed'])
+
   const desktop = sidebarFixture({ collapsed: true })
   assert.equal(desktop.element.type, 'aside')
+  assert.equal(desktop.element.props.id, 'qms-main-sidebar')
   assert.match(desktop.element.props.className, /w-16/)
-  elements(desktop.element).find(node => node.props.title === 'Expandir menú').props.onClick()
-  assert.deepEqual(desktop.clicks, ['collapsed'])
+  assert.match(desktop.element.props.className, /transition-\[width\]/)
+  const nodes = elements(desktop.element)
+  assert.ok(nodes.some(node => node.props['aria-label'] === 'Ir al inicio'))
+  assert.ok(!nodes.some(node => node.props.title === 'Expandir menú' || node.props.title === 'Contraer menú'))
+  assert.ok(nodes.some(node => node.props['aria-hidden'] === true && text(node).trim() === 'ECA-QMS'))
 })
 
 test('AuthenticatedLayout reserva espacio flex y abre un único drawer móvil', () => {
@@ -84,11 +90,15 @@ test('AuthenticatedLayout reserva espacio flex y abre un único drawer móvil', 
     '@/components/Sidebar': { default: 'aside' }, '@/components/Header': { default: props => createElement('header', null, props.children) },
     '@/components/Modal': { default: ({ open, children }) => open ? createElement('dialog', { open }, children) : null },
     '@/hooks/useMobileNavigation': { useMobileNavigation: () => mobile },
+    '@/lib/store/sidebar-store': { useSidebarStore: () => ({ collapsed: false, toggle() {} }) },
   })
   const render = () => Layout({ children: 'Contenido' })
   const desktop = render()
   assert.match(desktop.props.className, /h-dvh.*overflow-hidden/)
   assert.equal(elements(desktop).find(node => node.props.variant === 'drawer').props.open, false)
+  const topBar = elements(desktop).find(node => node.props.onToggleNavigation)
+  assert.equal(topBar.props.navigationCollapsed, false)
+  assert.equal(typeof topBar.props.onToggleNavigation, 'function')
   const html = renderToStaticMarkup(desktop)
   assert.match(html, /hidden shrink-0 lg:block/)
   assert.match(html, /min-w-0 flex-1 flex-col/)
