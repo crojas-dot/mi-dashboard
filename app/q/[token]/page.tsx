@@ -13,7 +13,7 @@ import { useFormularioPublico } from '@/lib/queries/useFormularioPublico'
 import { CATEGORIAS_PUBLICAS, PUBLIC_FILE_ACCEPT, MAX_PUBLIC_FILES, PublicRequestError, publicErrorMessage, type PublicQuejaField } from '@/lib/services/publicQuejasClient'
 import { PUBLIC_QUEJA_LIMITES, publicQuejaFieldMessage } from '@/lib/utils/publicQuejaValidation'
 import { usePublicQuejaForm } from '@/app/q/components/usePublicQuejaForm'
-import FondoIdentidad from '@/components/identidad/FondoIdentidad'
+import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
 
 // Mantener el mismo ancho al cargar, enviar y confirmar evita saltos de tamaño.
 const PUBLIC_FORM_WIDTH = 'w-full max-w-[896px]'
@@ -38,11 +38,13 @@ export default function FormularioQuejaPublicaPage() {
   const params = useParams<{ token: string }>()
   const token = params.token ?? ''
   // Un token nuevo es otra visita y otro borrador; la respuesta anterior no puede modificarlo.
-  return <FondoIdentidad slot="formulario_fondo"><FormularioQuejaPublica key={token} token={token} /></FondoIdentidad>
+  return <FormularioQuejaPublica key={token} token={token} />
 }
 
 function FormularioQuejaPublica({ token }: { token: string }) {
   const consulta = useFormularioPublico(token)
+  const { data: identidad } = useIdentidadImagenes()
+  const logoFormulario = identidad?.formulario_encabezado || ''
   const form = usePublicQuejaForm(token)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -96,13 +98,15 @@ function FormularioQuejaPublica({ token }: { token: string }) {
     return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
       <div role="status" aria-atomic="true" className={`${PUBLIC_FORM_WIDTH} rounded-card border border-qms-border bg-qms-surface`}>
         <div className="flex items-center gap-3 border-b border-qms-border px-5 py-4 sm:px-6">
-          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button bg-qms-primary text-lg font-semibold leading-none text-white">
-            E
-          </span>
-          <div className="min-w-0">
+          <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-button bg-qms-primary text-lg font-semibold leading-none text-white">E</span>
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-qms-dark">QMS ECA</p>
             <p className="text-xs text-qms-muted">Gestión de Calidad</p>
           </div>
+          {logoFormulario && <div className="flex h-14 w-44 max-w-[38%] shrink-0 items-center justify-end">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={logoFormulario} alt="Logo institucional" className="block max-h-full max-w-full object-contain" />
+          </div>}
         </div>
         <div className="px-5 py-5 sm:px-6 sm:py-6">
           <h1 className="m-0 text-xl font-semibold text-qms-dark">Queja registrada</h1>
@@ -135,9 +139,15 @@ function FormularioQuejaPublica({ token }: { token: string }) {
 
   return <div className="flex min-h-dvh items-start justify-center p-4 py-6">
     <div className={`${PUBLIC_FORM_WIDTH} flex h-[calc(100dvh-48px)] flex-col rounded-card border border-qms-border bg-qms-surface p-4 pb-0 shadow-sm sm:p-6 sm:pb-0`}>
-      <div className="mb-3 shrink-0 border-b border-qms-border pb-3">
-        <h1 className="m-0 text-xl font-semibold text-qms-dark">Registro de queja</h1>
-        <p className="mt-1 text-sm text-qms-muted">{consulta.data?.nombre || 'Formulario de quejas'}</p>
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-3 border-b border-qms-border pb-3">
+        <div className="min-w-0">
+          <h1 className="m-0 text-xl font-semibold text-qms-dark">Registro de queja</h1>
+          <p className="mt-1 text-sm text-qms-muted">{consulta.data?.nombre || 'Formulario de quejas'}</p>
+        </div>
+        {logoFormulario && <div className="flex h-[72px] w-[220px] max-w-[40%] shrink-0 items-center justify-end">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={logoFormulario} alt="Logo institucional" className="block max-h-full max-w-full object-contain" />
+        </div>}
       </div>
       {/* El validador compartido también cubre required/email y permite enfocar el error dentro del scroll. */}
       <form noValidate onSubmit={(event) => { event.preventDefault(); void form.submit() }} className="flex min-h-0 flex-1 flex-col">
