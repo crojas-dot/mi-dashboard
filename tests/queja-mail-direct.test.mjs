@@ -651,26 +651,33 @@ test('endpoint legacy rechaza todos los tipos internos aunque tengan firma corre
   }
 })
 
-test('branding de correo usa solo imágenes públicas firmadas del mismo Supabase', () => {
-  const uuid='11111111-1111-4111-8111-111111111111'
-  const image = slot => `https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_${slot}/${uuid}.webp`
-  const identidadCorreo = { encabezado: image('encabezado'), pie: image('pie') }
+test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o pie', () => {
+  const uuid = '11111111-1111-4111-8111-111111111111'
+  const logo = `https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_encabezado/${uuid}.png`
   const value = fixture({ response(request, { defaultResponse }) {
     const payload = defaultResponse(request)
-    return request.purpose === 'claim_request' ? { ...payload, identidadCorreo } : payload
+    return request.purpose === 'claim_request' ? { ...payload, identidadCorreo: { encabezado: logo } } : payload
   } })
   value.poll()
   assert.equal(value.sent.length, 1)
-  assert.ok(value.sent[0].htmlBody.includes('<img src="' + identidadCorreo.encabezado))
-  assert.ok(value.sent[0].htmlBody.includes('<img src="' + identidadCorreo.pie))
+  const html = value.sent[0].htmlBody
+  assert.ok(html.includes('<img src="' + logo))
+  assert.match(html, /width="42" height="42"/)
+  assert.equal((html.match(/<img /g) ?? []).length, 1, 'solo un logo en el encabezado')
+  assert.doesNotMatch(html, /alt=""/)
   assert.equal(value.rows[1][2], 'sent')
 
-  const forged = fixture({ response(request, { defaultResponse }) {
-    const payload = defaultResponse(request)
-    return request.purpose === 'claim_request'
-      ? { ...payload, identidadCorreo: { encabezado: 'https://otro.example.test/image.webp' } } : payload
-  } })
-  forged.poll()
-  assert.equal(forged.sent.length, 0, 'una URL arbitraria no puede incorporarse al HTML')
+  for (const invalid of [
+    'https://otro.example.test/image.png',
+    logo.replace('.png', '.webp'),
+    logo.replace('/correo_encabezado/', '/correo_pie/'),
+  ]) {
+    const forged = fixture({ response(request, { defaultResponse }) {
+      const payload = defaultResponse(request)
+      return request.purpose === 'claim_request'
+        ? { ...payload, identidadCorreo: { encabezado: invalid } } : payload
+    } })
+    forged.poll()
+    assert.equal(forged.sent.length, 0)
+  }
 })
-
