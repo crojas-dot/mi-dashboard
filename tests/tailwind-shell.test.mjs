@@ -1,4 +1,5 @@
 import test from 'node:test'
+import { readFileSync } from 'node:fs'
 import assert from 'node:assert/strict'
 import { createElement, isValidElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -55,6 +56,29 @@ test('Sidebar conserva permisos, ruta activa y prefetch por hover/foco/tacto', (
   quejas.props.onClick()
   assert.deepEqual(fixture.clicks, ['closed'])
   assert.ok(!links.some(node => node.props.href === '/usuarios'))
+})
+
+test('menú lateral utiliza los doce SVG oficiales de CoreUI sin cambiar enlaces ni permisos', () => {
+  const { MODULOS } = loadModule('lib/constants/modulos.ts')
+  const permisos = Object.keys(MODULOS).map(modulo => ({ modulo, leer: true }))
+  const fixture = sidebarFixture({ rol: 'admin', permisos })
+  const nav = elements(fixture.element).find(node => node.type === 'nav')
+  const links = elements(nav).filter(node => node.type === 'a')
+  assert.equal(links.length, 12)
+
+  const sprite = readFileSync(new URL('../public/icons/coreui-nav.svg', import.meta.url), 'utf8')
+  assert.match(sprite, /CoreUI Icons Free v3\\.1\\.0/)
+  assert.match(sprite, /CC BY 4\\.0/)
+  for (const link of links) {
+    const svg = elements(link).find(node => node.type === 'svg')
+    assert.ok(svg, `sin ícono para ${link.props['aria-label']}`)
+    assert.match(svg.props.className, /h-5 w-5/)
+    const iconId = svg.props['data-coreui-icon']
+    assert.match(iconId, /^cil-/)
+    assert.equal(elements(svg).find(node => node.type === 'use').props.href, `/icons/coreui-nav.svg#${iconId}`)
+    assert.ok(sprite.includes(`<symbol id="${iconId}"`), `SVG sin símbolo ${iconId}`)
+  }
+  assert.equal((sprite.match(/<symbol id=/g) ?? []).length, 12)
 })
 
 test('Sidebar conserva los grupos visibles y excepción de Configuración para admin', () => {
