@@ -26,7 +26,17 @@ import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
 import { useFotoPerfil } from '@/lib/queries/useFotoPerfil'
 import { moduloDeRuta } from '@/lib/permisos'
 
-export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => void } = {}) {
+export default function Header({
+  onOpenNavigation,
+  mobileNavigationOpen = false,
+  onToggleNavigation,
+  navigationCollapsed = false,
+}: {
+  onOpenNavigation?: () => void
+  mobileNavigationOpen?: boolean
+  onToggleNavigation?: () => void
+  navigationCollapsed?: boolean
+} = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
@@ -96,7 +106,31 @@ export default function Header({ onOpenNavigation }: { onOpenNavigation?: () => 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2">
-        {onOpenNavigation && <button type="button" aria-label="Abrir menú de navegación" onClick={onOpenNavigation} className="ui-button ui-button-ghost ui-button-icon lg:hidden"><Menu className="h-5 w-5" aria-hidden="true" /></button>}
+        {onToggleNavigation && (
+          <button
+            type="button"
+            aria-controls="qms-main-sidebar"
+            aria-expanded={!navigationCollapsed}
+            aria-label={navigationCollapsed ? 'Expandir menú lateral' : 'Contraer menú lateral'}
+            title={navigationCollapsed ? 'Expandir menú' : 'Contraer menú'}
+            onClick={onToggleNavigation}
+            className="ui-button ui-button-ghost ui-button-icon hidden shrink-0 lg:inline-flex"
+          >
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
+        {onOpenNavigation && (
+          <button
+            type="button"
+            aria-controls="qms-mobile-navigation"
+            aria-expanded={mobileNavigationOpen}
+            aria-label="Abrir menú de navegación"
+            onClick={onOpenNavigation}
+            className="ui-button ui-button-ghost ui-button-icon shrink-0 lg:hidden"
+          >
+            <Menu className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
         <span className="truncate text-base font-semibold text-qms-dark">{title}</span>
       </div>
 
