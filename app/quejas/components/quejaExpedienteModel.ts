@@ -96,7 +96,7 @@ export function getCaseProcessCycle(queja: Pick<Queja, 'estado'>, options?: { st
   const steps: CaseRoleCycle['steps'] = options?.steps ?? generated.map((step) => ({ ...step, current: false, completed: false }))
   // No Procede cierra tras la evaluación; no atribuirle investigación o revisión.
   const visibleSteps = queja.estado === 'No Procede' ? [steps[0], steps[3]] : steps
-  const positions: Record<string, number> = { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 4, 'No Procede': 2 }
+  const positions: Record<string, number> = { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 3, 'No Procede': 1 }
   const position = Object.hasOwn(positions, queja.estado) ? positions[queja.estado] : -1
   return { label: 'Etapas del expediente', detail: '', steps: visibleSteps.map((step, index) => ({ ...step, current: index === position, completed: position >= 0 && index < position })) }
 }
