@@ -219,7 +219,7 @@ test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios l
   assert.match(source, /ctaLabel: 'Abrir editor para modificar'/)
   assert.match(source, /ctaLabel: 'Abrir editor para redactar'/)
   assert.match(source, /line-clamp-2/)
-  assert.match(source, /CaseTriageAttachments files=\{adjuntosInvestigacion\}/)
+  assert.match(source, /CaseTriageAttachments files=\{adjuntosAnalisis\}/)
   assert.match(source, /const prepararResolucion = \(\) => \{[\s\S]*setIsExpanded\(true\)[\s\S]*setEditandoResolucion\(true\)/)
   assert.equal((source.match(/<RichTextEditor id=\{`colaborador-resolucion-/g) || []).length, 1)
   assert.match(source, /if \(resolutionDirty \|\| !!nota\.trim\(\)\)/)

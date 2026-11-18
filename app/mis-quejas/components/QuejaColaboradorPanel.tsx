@@ -30,7 +30,7 @@ import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
-import { caseDate, caseDeadline, getCaseProcessCycle, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
+import { caseDate, caseDeadline, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 
@@ -169,15 +169,6 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
-  // En Mis Quejas el ciclo de lectura arranca en Análisis y la investigación es la acción actual.
-  const cicloProceso = getCaseProcessCycle(queja, {
-    steps: [
-      { id: 'analysis', label: 'Análisis', current: false, completed: false },
-      { id: 'investigation', label: 'Investigación', current: false, completed: false },
-      { id: 'quality_review', label: 'Revisión de GC', current: false, completed: false },
-      { id: 'finished', label: 'Cierre', current: false, completed: false },
-    ],
-  })
 
   const handleGuardarResolucion = async () => {
     if (!investigando || resolutionPending || borradorVersion === null || !resolutionDirty) return
@@ -312,10 +303,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       operation.finish()
     }
   }
-  // Durante la investigación, «Mis adjuntos» lista la evidencia propia del
-  // responsable; los adjuntos de Calidad (revisión/devolución) no son su trabajo.
-  const adjuntosInvestigacion = adjuntos.filter(adjunto => adjunto.usuario_id === user?.id)
-  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => investigando && adjunto.usuario_id === user?.id && canEdit
+  const adjuntosAnalisis = adjuntos.filter(adjunto => !!adjunto.usuario_id)
+  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => investigando && !!adjunto.usuario_id && canEdit
   const agregarAdjuntosAnalisis = async (files: File[]) => {
     if (!investigando || resolutionPending) return
     // El servicio usa un candado por archivo, así que los soltados juntos se suben en orden.
@@ -444,7 +433,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         </p>}
       </section> : <CaseTriageExcerpt title={tieneDocumentoRegistrado ? 'Resultado registrado' : 'Resumen del expediente'}
         text={queja.resolucion || queja.descripcion || 'Sin información registrada.'} />}
-      <CaseTriageAttachments files={adjuntosInvestigacion} onPreview={setPreviewAdjunto}
+      <CaseTriageAttachments files={adjuntosAnalisis} onPreview={setPreviewAdjunto}
         loading={adjuntosLoading} error={!!adjuntosError} />
       <div className="space-y-2">
         <Button size="sm" variant="secondary" className="w-full" onClick={abrirAnalisis}>Ver caso completo</Button>
@@ -473,17 +462,17 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} steps={cicloProceso.steps} /></div>}
+      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
         requestFooter={<div className="space-y-4">
-          <QuejaAdjuntosCard adjuntos={adjuntosInvestigacion} loading={adjuntosLoading} error={!!adjuntosError}
+          <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
             onOpen={abrirAdjuntos} />
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div>}
-        compact={<CaseCycle queja={queja} process currentOnly steps={cicloProceso.steps} />} cycle={<CaseCycle queja={queja} process steps={cicloProceso.steps} />}
+        compact={<CaseCycle queja={queja} process currentOnly />} cycle={<CaseCycle queja={queja} process />}
         action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />Acción actual</h3>
           <Badge variant={queja.estado_color || varianteEstado('quejas', estado)}>{queja.estado_nombre || estado}</Badge>
@@ -576,7 +565,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         </CaseSection>}
       </CaseWorkspace>
       <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
-        adjuntos={adjuntosInvestigacion} loading={adjuntosLoading} error={!!adjuntosError}
+        adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
         onRetry={() => { void refetchAdjuntos() }} canUpload={investigando} uploadDisabled={resolutionPending}
         uploading={subiendoAdjuntoAnalisis} canDelete={adjunto => !resolutionPending && puedeEliminarAdjunto(adjunto)}
         onFiles={files => { void agregarAdjuntosAnalisis(files) }}

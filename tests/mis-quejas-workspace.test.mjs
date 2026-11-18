@@ -4,7 +4,7 @@ import { loadModule } from './load-module.mjs'
 import { readFileSync } from 'node:fs'
 
 // Los eventos y estados son del componente real; red, sesión y editor pesado son dobles locales.
-function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait, adjuntos = [{ id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' }, { id: 'file', usuario_id: 'owner', nombre: 'Informe.pdf' }] } = {}) {
+function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait } = {}) {
   const slots = [], calls = [], locks = [], errors = [], uploads = [], updates = [], saves = [], noteUpdates = [], noteDeletes = [], assistCalls = []
   const drafts = new Map(initialDraft ? [[initialDraft.queja_id, initialDraft]] : [])
   let draftError = false, generation = 0, guardId, active = false
@@ -45,7 +45,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
     '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: id => ({ data: draftError ? undefined : drafts.get(id) ?? null, error: draftError ? new Error('Lectura fallida') : null, isFetching: false, refetch() {} }) },
     '@/lib/queries/useQuejaActividad': { quejaActividadKey: id => ['quejas', 'actividad', id], useQuejaActividad: () => ({ data: actividad, isLoading: false, error: null, refetch() {} }), useCrearQuejaActividad: () => ({ mutateAsync: async () => {} }) },
     '@/lib/queries/useQuejaDevoluciones': { useQuejaDevoluciones: () => ({ data: [] }) },
-    '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: adjuntos }) },
+    '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: [{ id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' }, { id: 'file', usuario_id: 'owner', nombre: 'Informe.pdf' }] }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}) },
     '@/hooks/useEntityRequestGuard': { useEntityRequestGuard: id => {
       if (guardId !== id) { guardId = id; generation++; active = !!id; lanes.clear() }
@@ -399,18 +399,6 @@ test('los adjuntos de análisis viven debajo de notas, no dentro del lienzo, y s
   panel.openAnalysis()
   const cliente = panel.nodes().find(node => node.type === 'Attachments')
   assert.deepEqual(cliente.props.adjuntos.map(file => file.id), ['client-file'])
-})
-
-test('los adjuntos de calidad no se mezclan en la lista de mis adjuntos del responsable', () => {
-  const panel = fixture({ adjuntos: [
-    { id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' },
-    { id: 'quality-file', usuario_id: 'quality-user', nombre: 'Oficio de revisión.pdf' },
-    { id: 'owner-file', usuario_id: 'owner', nombre: 'Informe de la investigación.pdf' },
-  ] })
-  panel.select('A')
-  panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Ver mis adjuntos').props.onClick(); panel.render()
-  const list = panel.nodes().find(node => node.type === 'Attachments')
-  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['owner-file'], 'mis adjuntos solo son la evidencia propia del responsable')
 })
 
 test('la tarjeta lateral solo abre el modal; arrastrar y adjuntar ocurre dentro del modal', async () => {
