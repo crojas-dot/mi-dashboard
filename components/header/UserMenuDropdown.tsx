@@ -24,12 +24,12 @@ export default function UserMenuDropdown({ open, user, initials, fotoUrl, onTogg
   return (
     <div className="relative flex shrink-0 items-center border-l border-qms-border pl-2 sm:pl-3">
       <button type="button" onClick={onToggle} title={user.nombre} aria-label={`Menú de ${user.nombre}`} aria-expanded={open} aria-haspopup="dialog" aria-controls={open ? 'user-menu-panel' : undefined} className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-button border-0 bg-transparent p-1 no-underline transition-colors hover:bg-qms-hover-bg">
-        <FotoPerfil url={fotoUrl} initials={initials} size={40} className="h-10 w-10 bg-qms-primary text-sm font-semibold text-white" />
+        <FotoPerfil url={fotoUrl} hasPhoto={!!user.avatarUrl} initials={initials} size={40} className="h-10 w-10 bg-qms-primary text-sm font-semibold text-white" />
         <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 shrink-0 text-qms-muted transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && <div id="user-menu-panel" role="dialog" aria-label="Opciones de cuenta" className="fixed inset-x-3 top-16 z-50 max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-card border border-qms-border bg-qms-surface shadow-md sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-1 sm:w-80">
         <div className="flex min-w-0 items-center gap-3 border-b border-qms-border px-4 py-4">
-          <FotoPerfil url={fotoUrl} initials={initials} size={48} className="h-12 w-12 bg-qms-primary text-base font-semibold text-white" />
+          <FotoPerfil url={fotoUrl} hasPhoto={!!user.avatarUrl} initials={initials} size={48} className="h-12 w-12 bg-qms-primary text-base font-semibold text-white" />
           <div className="min-w-0">
             <p className="m-0 wrap-anywhere text-sm font-semibold text-qms-dark">{user.nombre}</p>
             <p className="mt-0.5 wrap-anywhere text-xs text-qms-muted">{user.email}</p>
