@@ -17,7 +17,7 @@ export default function FotoPerfil({ url, initials, size, className, hasPhoto = 
   const [loaded, setLoaded] = useState<string>()
   const [failed, setFailed] = useState<string>()
   const mostrarImagen = !!url && (loaded === url || fotosListas.has(url))
-  const esperandoFoto = hasPhoto && failed !== url && !mostrarImagen
+  const esperandoFoto = hasPhoto && (!url || failed !== url) && !mostrarImagen
 
   return <span aria-hidden="true" className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`}>
     {!hasPhoto || (url && failed === url) ? (
