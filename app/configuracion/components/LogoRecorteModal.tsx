@@ -16,15 +16,7 @@ const PASO_TECLA = 4
 
 export interface BorradorLogo { archivo: File; url: string }
 
-/**
- * Recorte cuadrado del logo, con el gesto de una foto de perfil: arrastrar para
- * centrar y acercar para encuadrar. La imagen siempre cubre el recuadro y el
- * desplazamiento se limita a su propio tamaño, así que nunca aparecen bordes
- * vacíos. Al guardar se dibuja el cuadrado visible en un lienzo de LOGO_LADO px:
- * lo que se almacena ya viene centrado y no se reprocesa al mostrarlo. El marco
- * no lleva esquinas redondeadas para que la vista previa coincida con el
- * resultado guardado.
- */
+/** Recorte reutilizable: cuadrado para logo/avatar o panorámico para identidad. */
 export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, outputWidth = LOGO_LADO, nombre = 'logo' }: {
   borrador: BorradorLogo
   guardando: boolean
@@ -44,7 +36,7 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
   const [posicion, setPosicion] = useState({ x: 0, y: 0 })
   const [error, setError] = useState('')
 
-  // Escala que hace que la imagen cubra el círculo sin dejar bordes libres.
+  // Escala que cubre el marco sin dejar bordes libres.
   const base = useMemo(() => medidas ? Math.max(vistaAncho / medidas.ancho, vistaAlto / medidas.alto) : 1, [medidas, vistaAncho, vistaAlto])
   const escala = base * zoom
   const anchoPx = (medidas?.ancho ?? 0) * escala
