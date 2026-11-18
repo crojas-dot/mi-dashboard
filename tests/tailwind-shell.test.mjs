@@ -57,6 +57,23 @@ test('Sidebar conserva permisos, ruta activa y prefetch por hover/foco/tacto', (
   assert.ok(!links.some(node => node.props.href === '/usuarios'))
 })
 
+test('Revisión por Dirección se muestra sin recortes conservando los íconos Lucide', () => {
+  const fixture = sidebarFixture({ rol: 'colaborador', permisos: [{ modulo: 'revision', leer: true }] })
+  const revision = elements(fixture.element).find(node => node.type === 'a' && node.props.href === '/revision')
+  assert.ok(revision)
+  assert.ok(revision.props.className.split(/\s+/).includes('min-h-11'))
+  assert.ok(!revision.props.className.split(/\s+/).includes('h-11'))
+  const label = elements(revision).find(node => node.type === 'span' && text(node) === 'Revisión por Dirección')
+  assert.ok(label)
+  assert.match(label.props.className, /whitespace-normal/)
+  assert.doesNotMatch(label.props.className, /overflow-hidden whitespace-nowrap/)
+  assert.equal(elements(revision).filter(node => node.type === 'svg').length, 0, 'el componente Lucide se renderiza como componente, no como sprite CoreUI')
+  const collapsed = sidebarFixture({ rol: 'colaborador', permisos: [{ modulo: 'revision', leer: true }], collapsed: true })
+  const compact = elements(collapsed.element).find(node => node.type === 'a' && node.props.href === '/revision')
+  const compactLabel = elements(compact).find(node => node.type === 'span' && text(node) === 'Revisión por Dirección')
+  assert.match(compactLabel.props.className, /max-w-0 whitespace-nowrap/)
+})
+
 test('Sidebar conserva los grupos visibles y excepción de Configuración para admin', () => {
   const fixture = sidebarFixture({ rol: 'admin', permisos: [] })
   const nodes = elements(fixture.element)
