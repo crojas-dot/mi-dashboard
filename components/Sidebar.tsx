@@ -81,8 +81,8 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
       className={`flex h-full shrink-0 flex-col overflow-hidden bg-qms-dark text-white transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-16' : 'w-[250px]'} ${className}`}
     >
       <div className={`flex h-14 shrink-0 items-center ${expanded ? 'justify-between border-b border-white/10' : ''}`}>
-        <Link href="/" onClick={onNavigate} aria-label="Ir al inicio" className="flex h-14 w-max shrink-0 items-center gap-2 pl-[18px] no-underline">
-          <EmpresaLogo className="h-8 w-8 text-xs" />
+        <Link href="/" onClick={onNavigate} aria-label="Ir al inicio" className="flex h-14 w-max shrink-0 items-center gap-2 pl-3 no-underline">
+          <EmpresaLogo className="h-11 w-11 text-sm" />
           <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap text-[17px] font-bold text-white transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[150px] opacity-100'}`}>
             ECA-QMS
           </span>
