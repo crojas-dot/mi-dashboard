@@ -42,7 +42,8 @@ function sidebarFixture({ pathname = '/quejas', collapsed = false, permisos = [{
 
 test('Sidebar conserva permisos, ruta activa y prefetch por hover/foco/tacto', () => {
   const fixture = sidebarFixture({ expanded: true })
-  const links = elements(fixture.element).filter(node => node.type === 'a')
+  const nav = elements(fixture.element).find(node => node.type === 'nav' && node.props['aria-label'] === 'Navegación principal')
+  const links = elements(nav).filter(node => node.type === 'a')
   assert.deepEqual(links.map(node => node.props.href), ['/', '/quejas'])
   const quejas = links.find(node => node.props.href === '/quejas')
   assert.equal(quejas.props['aria-current'], 'page')
@@ -67,7 +68,7 @@ test('Sidebar conserva los grupos visibles y excepción de Configuración para a
 test('Sidebar mantiene logo en el riel; solo el drawer móvil incluye botón de cierre', () => {
   const expanded = sidebarFixture({ expanded: true, collapsed: true })
   assert.equal(expanded.element.type, 'aside')
-  assert.match(expanded.element.props.className, /w-\\[250px\\]/)
+  assert.match(expanded.element.props.className, /w-\[250px\]/)
   elements(expanded.element).find(node => node.props['aria-label'] === 'Cerrar menú de navegación').props.onClick()
   assert.deepEqual(expanded.clicks, ['closed'])
 
@@ -75,7 +76,7 @@ test('Sidebar mantiene logo en el riel; solo el drawer móvil incluye botón de 
   assert.equal(desktop.element.type, 'aside')
   assert.equal(desktop.element.props.id, 'qms-main-sidebar')
   assert.match(desktop.element.props.className, /w-16/)
-  assert.match(desktop.element.props.className, /transition-\\[width\\]/)
+  assert.match(desktop.element.props.className, /transition-\[width\]/)
   const nodes = elements(desktop.element)
   assert.ok(nodes.some(node => node.props['aria-label'] === 'Ir al inicio'))
   assert.ok(!nodes.some(node => node.props.title === 'Expandir menú' || node.props.title === 'Contraer menú'))
