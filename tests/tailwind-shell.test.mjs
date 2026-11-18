@@ -87,7 +87,7 @@ test('Revisión por Dirección se muestra completo y puede ocupar dos líneas si
   const revision = elements(expanded.element).find(node => node.type === 'a' && node.props.href === '/revision')
   assert.ok(revision, 'El enlace Revisión por Dirección debe estar visible')
   assert.match(revision.props.className, /min-h-11/)
-  assert.doesNotMatch(revision.props.className, /\\bh-11\\b/)
+  assert.ok(!revision.props.className.split(/\s+/).includes('h-11'))
   const label = elements(revision).find(node => node.type === 'span' && text(node) === 'Revisión por Dirección')
   assert.ok(label, 'No debe abreviarse el nombre')
   assert.match(label.props.className, /whitespace-normal/)
