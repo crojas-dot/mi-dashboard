@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
+import { Suspense, useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
 import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
-import { useQuejas, quejasEstadisticasKey, fetchQuejaAdjuntos, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
+import { useQuejas, quejasEstadisticasKey, fetchQuejaAdjuntos, fetchQuejaPorId, quejaAdjuntosKey } from '@/lib/queries/useQuejas'
+import RegistroDesdeEnlace from '@/components/RegistroDesdeEnlace'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useCatalogoTipo } from '@/lib/queries/useCatalogos'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
@@ -111,6 +112,7 @@ export default function QuejasPage() {
 
   return (
     <div className="flex h-full min-w-0 flex-col">
+      <Suspense fallback={null}><RegistroDesdeEnlace clave={queryKeys.quejas} cargar={fetchQuejaPorId} abrir={handleAbrirDetalle} /></Suspense>
       <PageHeader title="Quejas" />
 
       <QuejasToolbar search={search} estado={filtroEstado} plazo={filtroPlazo} plazoDisabled={data?.origen === 'legacy'} estados={estadosDisponibles} noVistas={noVistasCount}

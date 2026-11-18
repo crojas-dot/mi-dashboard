@@ -43,18 +43,21 @@ test('El workspace mantiene navegación idéntica y lateral fijo en ambos módul
 })
 
 
-test('Historial usa los mismos puntos simples y modal centrado en ambos módulos', () => {
-  const analysis = fs.readFileSync('app/mis-quejas/components/QuejaAnalisisPanel.tsx', 'utf8')
+test('Quejas y Mis Quejas comparten historial en filas y diálogo de notas', () => {
+  const history = fs.readFileSync('components/quejas/QuejaHistorial.tsx', 'utf8')
+  const notes = fs.readFileSync('components/quejas/QuejaNotasPanel.tsx', 'utf8')
   const quality = fs.readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
-  assert.match(analysis, /export function QuejaTimeline/)
-  assert.match(analysis, /data-queja-timeline/)
-  assert.match(analysis, /ring-4 ring-qms-surface/)
-  assert.match(analysis, /index === 0 \? 'bg-qms-primary' : 'bg-gray-300'/)
-  assert.match(analysis, /<QuejaTimeline actividad=\{props.actividad\}/)
-  assert.match(quality, /<QuejaTimeline actividad=\{actividad\}/)
-  assert.match(quality, /title="Historial y observaciones" titleSuffix=\{queja.folio\}/)
-  assert.match(quality, /variant="document" size="mail" height="fill"/)
-  assert.doesNotMatch(quality, /title=\{'Actividad · ' \+ queja.folio\} variant="sheet"/)
+  const assigned = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  assert.match(history, /<table aria-label="Historial del expediente"/)
+  assert.match(history, /h-10 border-r border-b border-qms-border/)
+  assert.match(history, />Usuario<.*>Fecha<.*>Acción realizada</s)
+  assert.match(notes, /useQuejaHistorial\(props.quejaId, \{ abierto: props.open, visible: tab === 'historial' \}\)/)
+  assert.match(notes, /<QuejaHistorial movimientos=/)
+  assert.doesNotMatch(quality, /title="Observaciones"|historialExtra/)
+  assert.match(notes, /title="Historial y notas"/)
+  assert.match(notes, /variant="dialog" size="lg" fixedHeight/)
+  assert.match(notes, /scrollbarGutter: 'stable both-edges'/)
+  for (const page of [quality, assigned]) assert.match(page, /<QuejaNotasPanel open=/)
 })
 
 test('Cierre muestra tres pasos y abre un modal de solo lectura del sistema', () => {
@@ -72,7 +75,7 @@ test('Cierre muestra tres pasos y abre un modal de solo lectura del sistema', ()
 
 test('Tarjetas de Cierre usan línea gruesa, nodos icónicos y cabeceras suaves, con visor navegable', () => {
   const summary = fs.readFileSync('app/quejas/components/QuejaCierreResumen.tsx', 'utf8')
-  assert.match(summary, /data-case-close-timeline className="@container/)
+  assert.match(summary, /data-case-close-timeline[^\n]*className="@container/)
   assert.match(summary, /border-l-\[4px\] border-qms-primary\/15/)
   assert.match(summary, /top-1\/2 z-10 flex size-8 -translate-y-1\/2/)
   assert.match(summary, /rounded-full border-\[3px\] border-qms-surface/)
@@ -101,7 +104,8 @@ test('el stepper conserva panel contraído limpio y lectura solo en expandido', 
   assert.match(layout, /ExternalLink/)
   assert.match(detail, /setReadOnlyStage\(null\)/)
   assert.match(detail, /data-case-stage-readonly/)
-  assert.match(detail, /Volver a etapa actual/)
+  assert.match(layout, /Volver a etapa actual/)
+  assert.match(detail, /<CaseReadOnlyHeader etapa=/)
   assert.match(detail, /readOnlyStage \? readOnlyDocument/)
   assert.match(detail, /!readOnlyStage && canAct/)
 })

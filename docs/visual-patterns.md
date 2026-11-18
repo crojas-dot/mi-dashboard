@@ -191,8 +191,8 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   columna); el correo y el rol siguen administrados desde Usuarios. La contraseña
   se actualiza con Supabase Auth y las preferencias con el RPC
   `actualizar_mis_preferencias_notificacion`, con restauración del valor vigente
-  si el guardado falla. La carga de foto de perfil permanece deshabilitada hasta
-  existir el almacenamiento de avatares.
+  si el guardado falla. Detalles permite subir, cambiar o quitar la foto propia.
+  El avatar mantiene 40px y muestra las iniciales hasta que la imagen carga.
 - Menú de notificaciones: 400px, mensajes de 14px y fechas de 12px sin segundos.
   El contador visual llega a `99+`, conservando la cantidad exacta en el nombre
   accesible de la campana. Las preferencias de activación, sonido y tono se
@@ -240,46 +240,20 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   en un ancho máximo de `70ch` (aproximación tipográfica, no 70 caracteres exactos)
   sin achicar el marco ni la barra de edición. En el lateral contraído se conserva
   la geometría anterior.
-  En Mis Quejas, las tarjetas de trabajo del responsable se llaman **Mis adjuntos**
-  y **Mis notas**; no se confunden con la pestaña Adjuntos del modal **Ver análisis**,
-  donde solo aparecen evidencias aportadas por el cliente.
-  Mis notas es una tarjeta compacta bajo el cliente: cantidad/última fecha, y Ver mis notas
-  abre un diálogo centrado (`variant="dialog" size="lg" fixedHeight`) con lectura
-  y alta. Notas y Adjuntos tienen 672px de ancho máximo y 600px de alto (90dvh
-  en pantallas bajas); solo la lista central se desplaza con scrollbar fina.
-  Encabezado y pie siguen fijos. Mis notas muestra en cada tarjeta solo la fecha,
-  el texto y un menú de tres puntos en las notas propias.
-  Editar y Eliminar se habilitan exclusivamente mientras el expediente continúe
-  En Investigación; durante revisión se muestran inactivos con la explicación,
-  en concordancia con los guardas de la base de datos. El botón + es nativo,
-  absoluto dentro del textarea: no usar `Button`
-  porque agrega `relative`, lo que lo desplaza fuera del campo. No hay etiqueta
-  duplicada encima de la redacción. Adjuntos muestra un único título "Evidencias"
-  con cantidad; `ListaAdjuntos layout="modal"` omite encabezados internos, usa filas
-  compactas con nombres truncados y acciones visibles al foco/hover (siempre en móvil).
-  La zona de subida permanece anclada en el pie incluso sin permiso para subir, pero
-  el botón queda deshabilitado. Se conservan permisos, carga y borradores.
-  Estas tarjetas completas y el editor permanecen montados, pero solo se ven
-  en el workspace AMPLIADO. El contraído muestra dos chips como máximo y
-  "Mis notas" en el pie. En ampliado, Adjuntar está en el encabezado, a la
-  izquierda de Guardar/Editar, y abre el selector directamente. Los adjuntos
-  se listan bajo el lienzo con `ListaAdjuntos layout="cards"`, sin sheet aparte.
-  Reciben las mismas lecturas del padre y conservan los borradores al cerrar.
-  A la derecha quedan Acción actual y la devolución real de Calidad,
-  en amarillo solo cuando existe; sin bloque de contexto, extractos ni decisión repetidos.
-  Ver análisis
-  usa fondo rojo institucional `qms-brand-red`, hover blanco con texto/icono/borde
-  rojos, y queda en Acción actual, encima del
-  envío a GC; investigación omite la descripción
-  redundante de esa tarjeta. Ese único acceso abre el modal Análisis del caso. Ver
-  [investigación con consulta lateral](quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
-  **Ver análisis** conserva el tamaño del documento de consulta y tiene pestañas
-  Análisis, Adjuntos e Historial, en la cabecera de escritorio y en una segunda
-  fila accesible en móvil. Análisis prioriza la evaluación real de Calidad en
-  tarjeta amarilla tipo comentario, luego la descripción y área afectada reales;
-  Adjuntos es consulta de archivos del cliente sin operaciones de edición; Historial
-  refleja exclusivamente la actividad registrada y jamás crea eventos ni fechas
-  ficticias. Preparar resolución se mantiene en el pie si la etapa permite editar.
+  En Mis Quejas, el encabezado permite recorrer Análisis, Resolución y Revisión
+  de Calidad desde ambas presentaciones. Las etapas anteriores se consultan en
+  el expediente con la cabecera azul «Solo lectura». La tarjeta «Historial y notas» abre un
+  diálogo centrado, con la misma altura que «Mis adjuntos». El contraído ofrece
+  Historial y notas en el pie y amplía el lienzo al pedir edición. Ambos
+  diálogos limitan su scroll a la zona central. Cada etapa empieza arriba.
+  Los adjuntos de Análisis se leen al final, agrupados en cliente y archivos
+  de Calidad/antecedentes. Resolución conserva la tarjeta «Mis adjuntos» a la
+  izquierda y el editor al centro. La acción azul vive a la derecha al ampliar.
+  La evaluación de Calidad conserva su bloque café suave; la devolución usa un
+  aviso amarillo. Revisión de Calidad reutiliza el resumen vertical de Quejas,
+  con tarjetas que abren el mismo diálogo Anterior/Siguiente. Cada detalle
+  empieza arriba y la última tarjeta muestra la fecha registrada de aprobación.
+  Consultar preserva el borrador de Resolución.
 - En Mis Quejas y revisión de GC, el ciclo se presenta arriba en horizontal para
   ampliar el documento. Resolución se edita sin encabezado adicional, con Asistencia IA
   en el extremo derecho de la barra Tiptap: un clic lanza el análisis automático y
@@ -455,18 +429,26 @@ de texto es Select del kit, con flecha y controles de la misma altura.
 
 ## Presentación unificada de Quejas y Mis Quejas (12 noviembre 2026)
 
-Ambas vistas usan `CaseWorkspace` y `CaseProcessHeader`: en modal reducido
+Ambas vistas comparten `CaseWorkspace`. En Quejas, `CaseProcessHeader` y el modal reducido
 se muestra el resumen con segmentos bajo el encabezado; en modal ampliado
 las cuatro etapas tienen una línea de progreso cada una, sin checks, sobre
 el lienzo central. El ancho real se alinea descontando el gutter del scrollport
 con `--qms-case-scrollbar-width`. El encabezado de modal conserva las acciones
 específicas de navegación, no las acciones secundarias del expediente.
 
-En Mis Quejas, **Mis adjuntos** antecede a **Mis notas** en el lateral
-izquierdo. En Quejas, **Generar expediente** solo se ofrece al personal autorizado
-durante **Resuelto** (preparación del cierre), como tarjeta Documento del expediente
-con acción azul suave. **Historial y observaciones** conserva el acceso compartido
-`CaseSidebarShortcut` en todas las etapas sin duplicar acciones.
+En Evaluación de Quejas y Resolución de Mis Quejas, **Mis adjuntos** antecede a
+**Historial y notas** en el lateral izquierdo. En Quejas, **Generar expediente** se
+ofrece al personal autorizado durante **Resuelto**, como tarjeta Documento del
+expediente con acción azul suave. **Historial y notas** usa un diálogo común con
+dos pestañas con las mismas dimensiones. Cada lista tiene scroll interno.
+Historial muestra una cuadrícula centrada de líneas finas con Usuario, Fecha y
+Acción realizada. Las filas miden 40 px y el encabezado queda visible al
+desplazar la tabla. Las fechas usan hora de 24 horas y se disponen en dos líneas
+en móvil.
+Notas muestra texto sin título y un selector opcional de color personal. Ambas
+listas muestran primero lo más reciente. El estado del correo final y la reapertura
+se consultan en la columna de acciones. Agenda y Notificaciones usan la misma
+apertura lateral que una fila de la bandeja.
 
 En **Respuesta al cliente**, el compositor continúa al estilo Gmail, con
 `Modal size="xl"` (1040px máx. y 90dvh), la misma medida de la decisión de

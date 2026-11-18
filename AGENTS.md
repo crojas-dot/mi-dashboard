@@ -46,13 +46,16 @@ No cargar todos los documentos para una modificación aislada.
 | Tarjetas de «Siguiente paso» y triaje compacto | app/quejas/components/CaseTriageSummary.tsx (CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments); metadatos por etapa en quejaExpedienteModel.ts; integración en QuejaDetalleModal.tsx y QuejaColaboradorPanel.tsx |
 | Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](docs/mis-quejas-borrador-resolucion-2026-11-11.md) |
 | Asignación de investigación de Calidad | QuejaInvestigacionAsignacion.tsx, useQuejaInvestigationAssignment.ts, iniciarInvestigacionQueja en quejaWorkflowService.ts; migración 20261115041345_quejas_investigacion_asignacion.sql |
-| Notas y evidencias de investigación | app/mis-quejas/components/QuejaNotasPanel.tsx; adjuntos bajo el lienzo y datos de la visita en QuejaColaboradorPanel.tsx |
+| Ciclo de trabajo en Mis Quejas | app/mis-quejas/components/MisQuejasEtapas.tsx y etapasResponsable.ts; QuejaColaboradorPanel.tsx; lectura por expediente en useQuejaAsignada.ts |
+| Historial y notas en ambos módulos | components/quejas/QuejaNotasPanel.tsx y QuejaHistorial.tsx; hooks/useQuejaNotas.ts; useQuejaHistorial.ts y GET /api/quejas/historial |
+| Mis adjuntos en Evaluación y Resolución | app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx; autor y vínculos de oficio/devolución en etapasResponsable.ts, selección de oficio en QuejaDetalleModal.tsx y de PDF en QuejaRespuestaClienteModal.tsx |
+| Foto personal | components/perfil/MiPerfilModal.tsx, lib/queries/useFotoPerfil.ts y app/api/perfil/avatar/route.ts; bucket privado qms-avatars en la migración 20261117223249, preparada para activar |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
 | Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
 | PDF oficial automático por versión | QuejaInformeModal.tsx; subirAdjuntoQueja; informePdfFilename en lib/utils/quejaInforme.ts; quejaAdjuntosKey |
 | Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos |
-| Navegación y timeline comunes | CaseWorkspaceNavigation en QuejaExpedientePanels.tsx; QuejaTimeline en QuejaAnalisisPanel.tsx |
+| Navegación, lectura y resumen comunes | CaseWorkspaceNavigation y CaseReadOnlyHeader en QuejaExpedientePanels.tsx; QuejaCierreResumen.tsx para ambos roles; RegistroDesdeEnlace.tsx consume `?abrir=<id>` |
 | Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) |
 | Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar, contraseña integrada y pestañas), app/usuarios/page.tsx (callbacks); PasswordModal.tsx y ResetPasswordModal.tsx solo legacy, sin montaje en Usuarios |
 | Invitaciones y verificación de cuentas nuevas (backend activo, web local) | components/usuarios/UsuarioAccesoInicial.tsx, UsuarioSeguridadAcceso.tsx y UsuarioAccessBadges.tsx; app/acceso/page.tsx; lib/server/accessIdentity.ts y accessService.ts; migración 20261117214855; [contrato](docs/usuarios-acceso-inicial-mfa-2026-11-17.md) |
@@ -99,7 +102,7 @@ archivos, migraciones o documentación.
 | --- | --- | --- |
 | Inicio `/`, alias `/dashboard` | KPIs, resumen de Quejas, tareas por vencimiento, actividad y consultas independientes con caché | Dashboard analítico alternativo, métricas de todos los módulos |
 | Quejas `/quejas` | Alta/consulta, filtros, estados y colores de catálogo, área afectada, timeline, plazos, revisión GC, devolución, relación SACP, resolución, expediente oficial y publicación final | Publicar al aprobar GC, omitir PDF/oficio, derivar desde cualquier estado |
-| Mis Quejas `/mis-quejas` | Casos del responsable real, investigación, notas/evidencias, análisis, asistencia, borrador versionado y envío/reenvío a revisión | Acceso a casos ajenos, autoguardado o publicar respuesta ciudadana |
+| Mis Quejas `/mis-quejas` | Casos del responsable real, etapas Análisis/Resolución/Revisión de Calidad, notas e historial, evidencias propias, asistencia, borrador versionado y envío/reenvío a revisión | Acceso a casos ajenos, autoguardado o publicar respuesta ciudadana |
 | Informe y comunicación | Tiptap A4 en modal, versionado, exportación Word/PDF, PDF oficial en Drive por folio/versión, correo editable con borrador/publicación y archivo físico adjunto | Considerar la paginación visual como paginación del PDF; enviar sin documento autorizado |
 | Formulario ciudadano `/q/[token]` | Registro con capacidad privada, validación cliente/API, evidencias limitadas, reintento idempotente, finalización y acceso al seguimiento según estado | Portal de usuario externo con login, ver notas internas o recuperar una capacidad vencida |
 | Seguimiento ciudadano | Enlace de capacidad y consulta del estado, plazos de caducidad y etapas permitidas | Identidad verificada del portador o lectura pública del expediente completo |
@@ -223,6 +226,23 @@ Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
   Quejas usa el calendario de su run persistido; Auditorías usa el calendario vigente.
   No inferir novedades a partir de la creación si su evento real es otro.
 
+- Campana: últimos 15 avisos no archivados, orden fecha/ID y contador de
+  no leídos exacto. La consulta de conteo sin filas se hace cuando hay avisos
+  fuera de la lista. Desactivar avisos suspende su consulta, canal y sonido.
+  Agenda conserva su caché de cinco minutos, refresca en primer plano e
+  invalida con avisos nuevos o reconexión.
+- Visor: validar lectura del expediente con RLS persistida antes de acreditar
+  la carpeta/archivo en Drive. Intención de 80 ms y máximo dos precargas
+  nativas, caché privada 45 s/5 archivos por identidad/rol. Mostrar indicador
+  luego de 180 ms y revelar cuando carga la vista, con transición de 150 ms
+  que respeta movimiento reducido. Formatos de Google compatibles usan la vista
+  privada de Drive y sus permisos; la descarga queda disponible.
+- Foto propia: JPG/PNG/WebP hasta 2 MiB y 16 MP, recodificada a WebP 320×320.
+  API Bearer de perfil activo, objeto privado por usuario y puntero con
+  comparación de la versión leída. Usar iniciales hasta que la foto cargue.
+  Cliente/API y pruebas locales listos; la activación de la migración de bucket,
+  autoría de notas e índices espera autorización explícita del proyecto remoto.
+
 - TanStack es estado remoto; Zustand gestiona sesión/UI. No duplicar consultas en estado global ni globalizar borradores locales.
 - Compartir queryKeys y queryFn entre vista/precarga; invalidar el prefijo del módulo tras mutar. Una queryFn recibe contexto: pasar solo context.signal a abortSignal.
 - Precargar por intención (80 ms), con identidad/permisos y claves reales. Mis Quejas siempre filtra responsable propio; sin ID no consulta.
@@ -329,8 +349,9 @@ permisos ni datos persistidos.
   con permisos y revisión capturada. Mis Quejas la consulta sin cargar el catálogo.
   Configuración administra `quejas/area_afectada`: editar, desactivar y restaurar sin
   borrar históricos ni asignar automáticamente una opción nueva al expediente.
-- Observaciones agrupa comentarios de Actividad y conserva la observación histórica
-  sin inventar autor/fecha. Notas de investigación y propuesta enviada sí persisten.
+- Las notas se redactan en Historial y notas. Los comentarios y observaciones
+  históricos se conservan como datos del expediente y de reportería.
+  Notas de investigación y propuesta enviada se guardan por separado.
   Editar o eliminar una nota propia solo se permite En Investigación y compara el
   contenido esperado (CAS); el historial de devolución/aprobación/cierre y las notas
   ajenas no se reescriben. Migración 20261112054513 sin aplicar: sin ella la UI
@@ -368,14 +389,14 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 ## Quejas y Mis Quejas: presentación vigente
 
 - Compartir `CaseWorkspace`, `CaseCycle`, `CaseRequestHeader`, `CaseSection`,
-  `CaseWorkspaceNavigation`, `QuejaTimeline`, `AreaAfectada`, `ListaAdjuntos`
+  `CaseWorkspaceNavigation`, `CaseReadOnlyHeader`, `QuejaCierreResumen`, `AreaAfectada`, `ListaAdjuntos`
   y `QuejaPlazoIndicator` cuando el contrato coincida.
   Conservar las acciones/permisos particulares de Calidad y del responsable.
 - Workspace lateral derecho de 40vw/100dvh; la tabla conserva columnas, filtros y
   scroll en ambos ejes. Móvil y ampliado usan diálogo nativo. Cerrar restablece el
   lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
 - Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
-  etapa y segmentos horizontales no interactivos, tarjeta compacta de estado/plazo/
+  segmentos no interactivos en Quejas y navegación de consulta en Mis Quejas; tarjeta compacta de estado/plazo/
   responsable y tarjeta de «Siguiente paso» superior, con fondo suave y
   contorno uniforme tenue (SIN rayas verticales de color ni `border-l-4`),
   icono, título, explicación de 2 líneas y CTA principal azul.
@@ -385,18 +406,18 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   Los tonos azul, ámbar y verde se aplican con fondos suaves y borde fino;
   conservar iconografía, legibilidad y hover del botón azul institucional.
   No reducir el triaje a un botón plano o una vista vacía. Debajo conservar
-  extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
+  en Quejas el extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
   REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
   acción crítica (Tomar decisión, Aprobar, Devolver, Derivar a SACP, Enviar a GC,
   Resolver, Publicar) se ejecuta desde contraído. El CTA principal contextual
   (con flecha a la derecha) únicamente expande el workspace;
   los botones originales de negocio viven únicamente en la columna derecha del
   AMPLIADO. Acciones auxiliares seguras como abrir Notas/Historial/Análisis
-  o abrir el editor sí se permiten sin ejecutar transiciones.
-  El pie es compacto: Historial y observaciones (Calidad) o Mis notas (responsable).
-  NO renderizar en pantalla el documento largo ni los laterales duplicados. El
-  árbol completo de tres columnas, las instancias de Tiptap, el estado de visita,
-  revisiones y borradores siguen MONTADOS (ocultación por display, sin desmontaje).
+  y la consulta de etapas sí se permiten sin ejecutar transiciones.
+  El pie compacto ofrece Historial y notas en ambos módulos. Presentar el contenido
+  de la etapa en Mis Quejas con una sola superficie visible. El editor se monta al
+  abrir Resolución para editar y permanece montado al cambiar de vista. La visita,
+  las revisiones y los borradores se conservan.
   La tabla y la geometría del drawer no cambian.
 - Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
   izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
@@ -404,9 +425,9 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   Los laterales comparten sticky, alto máximo y scroll propio a partir del
   ancho útil previsto; centro desplazable y responsive. Anterior, siguiente,
   ampliar/reducir usan CaseWorkspaceNavigation; la X la proporciona Modal.
-  Quejas mantiene su hoja de lectura; Mis Quejas mantiene cards: NO convertir
-  ambos a la misma variante visual ni reubicar acciones para estandarizarlos.
-- Ciclo compartido de evaluación/investigación/revisión/cierre; el contraído no usa
+  Ambos módulos comparten la hoja de lectura y el resumen vertical, con las
+  etapas y acciones propias de cada rol.
+- En Quejas, ciclo de evaluación/investigación/revisión/cierre; el contraído no usa
   checks verticales. No Procede muestra únicamente evaluación y cierre. Es una
   proyección del estado, nunca otro historial ni aprobaciones/fechas inventadas.
 - Descripción comienza el documento y usa todo el ancho disponible. Área afectada
@@ -416,53 +437,39 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
   expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
   Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
-- En Mis Quejas AMPLIADO, Resolución continúa como la primera tarjeta central,
-  sin pestañas ni modal adicional de escritura, con ancho completo y lienzo
-  `min(70dvh,720px)`, mínimo 420px; no hay secciones ni acciones debajo del
-  editor. `CaseWorkspace documentStyle="cards"` conserva
-  las columnas; la hoja de Quejas sigue siendo el valor predeterminado.
-  Notas es una tarjeta compacta debajo del cliente (`requestFooter`): cantidad real,
-  última fecha o Sin notas todavía; abre un diálogo centrado (`variant="dialog"`) para
-  leer/agregar. Cada nota propia de esta investigación ofrece menú de tres puntos con
-  Editar/Eliminar y confirmación en línea; Escape o pulsar fuera lo cierra. Las notas
-  de devolución de Calidad conservan su historial sin acciones. Solo en el
-  AMPLIADO queda la tarjeta bajo el cliente; en el contraído se sustituye
-  visualmente por la acción fija "Mis notas" del pie. El contacto, la tarjeta
-  y el borrador de nota permanecen montados durante el cambio de presentación.
-  Adjuntar evidencia abre el selector nativo desde el botón Adjuntar del encabezado,
-  a la izquierda de Guardar/Editar; cancelar el selector no cierra el expediente.
-  Solo en AMPLIADO los adjuntos se listan dentro de la misma tarjeta,
-  debajo del lienzo, tanto al editar como con el borrador guardado, con
-  `ListaAdjuntos layout="cards"`; en contraído se muestran máximo dos chips
-  y un contador de archivos adicionales sin descargar ni eliminar registros.
-  Acción actual queda a la derecha. `QuejaInvestigacionResumen` muestra únicamente
-  la devolución real de Calidad en amarillo cuando existe; sin ella no reserva espacio.
-  No repetir ahí el contexto, Cliente, evaluación ni Procede. Ver caso completo queda en Acción actual, encima de
-  Enviar a Revisión GC, con fondo rojo institucional `qms-brand-red`, hover blanco
-  con texto/icono/borde rojos; investigación
-  omite la descripción redundante de esa tarjeta.
-  Ese único acceso abre `QuejaAnalisisPanel` en `Modal variant="document" size="mail"`,
-  como procedencia: primero Observación de Calidad con Procede azul, después
-  Descripción del cliente. Su pie Preparar resolución vuelve al editor.
-  Enviar a Revisión GC permanece en Acción actual, también en espacios estrechos:
-  un único control, mismo handler/revisión. Con el borrador guardado el encabezado
-  cambia Guardar por Editar: el lienzo pasa a solo lectura y Editar devuelve al modo
-  de escritura con Guardar. Asistencia es secundaria y comparte fila con Guardar solo
-  al editar: azul con cambios; Guardado con check, neutral y deshabilitado tras
-  confirmación remota. La fecha real está en el título de Editar; no inventar
-  autoguardado. Adjuntos/actividad se consultan una sola vez y se comparten.
-  Si la investigación tiene devolución previa (reenvío), el mismo control se llama
-  «Reenviar revisión a GC»; el mensaje de devolución deja de mostrarse en ese contexto
-  y el envío actual entrega la propuesta corregida. Un mensaje de devolución muy
-  largo se resume en línea y abre modal «Ver más» para revisarlo completo.
-- Análisis es un modal nativo centrado tamaño mail (máximo 896px y 90dvh); no amplía el workspace
-  al abrir. Conservar nodo/editor/borrador, cursor y revisión al consultar/cerrar.
-  El scroll de Resolución depende del foco: texto o barra de formato enfocados
-  contienen el desplazamiento, incluso al llegar al límite o estar vacío. Sin foco,
-  la rueda desplaza el expediente y conserva el punto de lectura interno.
-  Gutter estable; sin remontar el editor ni cambiar el borrador.
-  Conflictos conservan la propuesta; cargas
-  pendientes bloquean envío. El pie de lectura no permite editar casos de solo lectura.
+- Mis Quejas presenta Análisis, Resolución y Revisión de Calidad. El breadcrumb
+  separa la etapa vigente de la consultada y funciona en el contraído y el
+  ampliado. Las etapas alcanzadas se pueden consultar. Una devolución habilita
+  consultar la revisión devuelta y devuelve la acción a Resolución. No Procede
+  mantiene Análisis como único paso disponible.
+- Análisis muestra primero la evaluación en café suave y Procede en azul cuando existe, después la
+  descripción y el área afectada. Las evidencias del cliente y los archivos
+  internos de Calidad/antecedentes quedan al final, en lectura. El botón azul
+  «Ir a Resolución» cambia únicamente la vista. La consulta histórica usa la
+  cabecera azul compartida «Solo lectura». Las lecturas del oficio y de las
+  devoluciones permiten reservar sus adjuntos para Análisis incluso cuando el
+  autor coincide con el responsable de la queja.
+- Resolución muestra el lienzo integrado y «Mis adjuntos» personales. El
+  responsable asignado puede editar, guardar, adjuntar y enviar/reenviar en
+  En Investigación. La consulta de Análisis conserva el editor y el borrador
+  montados. Cada cambio de etapa empieza arriba. La tarjeta única «Historial y
+  notas» vive debajo del cliente y abre el diálogo centrado con ambas secciones;
+  el contraído conserva el mismo acceso en el pie. En consulta se leen las
+  notas, y la redacción y los menús de escritura se habilitan en Resolución.
+- Revisión de Calidad reutiliza `QuejaCierreResumen` para Análisis, Propuesta y
+  Revisión. Cada detalle permite recorrer Anterior/Siguiente desde el inicio
+  del contenido. Resuelto y Finalizado concluyen aquí el trabajo del responsable
+  y muestran la fecha registrada de aprobación de Calidad cuando existe.
+  La lectura puntual por expediente y
+  responsable utiliza la revisión más nueva para reflejar decisiones incluso
+  cuando el expediente sale del filtro de la tabla.
+- Las tarjetas de Agenda y los avisos navegables abren el registro con `?abrir=<id>`.
+  Cada bandeja consulta por ID y con los permisos de sesión; Mis Quejas exige
+  además responsabilidad propia. La bandeja abre en lateral y consume el parámetro.
+- El editor conserva el desplazamiento interno al enfocar texto o barra de
+  formato. Sin foco, la rueda desplaza el expediente. Escape reduce el
+  workspace conservando borradores. El guardado es versionado y conserva
+  los cambios ante conflictos; las cargas pendientes bloquean el envío.
 - Estados de Quejas/Mis Quejas: usar primero `estado_color` del catálogo y la paleta
   original de Badge; mapa histórico de `estados.ts` como fallback. No imponer los
   colores de una maqueta ni cambiar los códigos guardados. Otros estados neutros
@@ -500,24 +507,12 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   flujo existente de correo/publicación (sin publicar directamente).
   Resuelto/Finalizado muestran únicamente los pasos de
   `QuejaCierreResumen`; No Procede solo Solicitud y No procedencia. La respuesta
-  al cliente sigue disponible en Resuelto. Mis Quejas usa en contraído un estado
-  de resolución (sin borrador, guardado con fecha, cambios locales sin guardar),
-  alerta amarilla de devolución de 2 líneas y tarjeta «Corrección requerida»
-  con CTA «Corregir en editor →» cuando aplica. Sin borrador la tarjeta dice
-  «Redactar resolución», con fecha guardada dice «Borrador guardado» y con
-  cambios locales «Cambios sin guardar», cada una con explicación de dos líneas
-  y botón azul para abrir el mismo editor. Los estados de Mis Quejas en solo
-  lectura también tienen tarjeta de consulta, nunca vacío. Evidencia limitada
-  a dos chips, acceso Mis notas y Ver caso completo (Análisis).
-  Ampliar para redactar activa edición y enfoca el mismo Tiptap, sin autoguardado.
-  El workspace AMPLIADO mantiene intacta su distribución de cliente/documento/
-  acciones, 3 columnas desde 1100px útiles, los controles, permisos y documentos.
-  Solo al ampliar se muestran lectura y redacción completas. No crear consultas
-  adicionales en la transición: TanStack Query conserva el ámbito y claves.
-  Escape en ampliado colapsa sin perder el borrador; en contraído cierra y
-  devuelve foco a `ui-case-row` (si hay cambios locales sin guardar, bloquear
-  el descarte accidental y pedir guardar o cancelar). Los diálogos auxiliares
-  cierran primero, sin colapsar el expediente. No usar scroll-smooth ni backdrop-blur.
+  al cliente sigue disponible en Resuelto. En Mis Quejas contraído, Resolución
+  muestra el estado del borrador y su único botón azul abre el editor ampliado.
+  Análisis y Revisión de Calidad muestran la lectura de la etapa elegida.
+  Escape reduce el ampliado conservando el borrador. Desde el contraído devuelve
+  el foco a la fila si no hay edición pendiente. Los diálogos auxiliares cierran
+  primero, preservando la visita. Usar scroll inmediato y superficies opacas.
 - En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
   lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
   y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
@@ -534,10 +529,21 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   No atribuir documentos internos sin asociación de etapa,
   ni inventar autores/fechas. No modificar el timeline lateral ni las notas
   del responsable solo para igualar una maqueta.
-- Timeline: QuejaTimeline comparte línea gris, punto azul para el evento más reciente
-  y puntos grises para los anteriores, con anillo blanco sin círculo doble.
-  El modal «Historial y observaciones» de Calidad está centrado y usa size mail;
-  autores conocidos se resuelven desde cada contexto, sin inventar usuarios.
+- El diálogo centrado «Historial y notas» conserva el mismo tamaño en ambas
+  pestañas. Cada lista se desplaza dentro del diálogo. Historial usa una
+  cuadrícula centrada de líneas finas con Usuario, Fecha y Acción realizada.
+  Las filas miden 40 px y la hora usa el formato de 24 horas. El GET privado se
+  prepara al abrir el diálogo «Historial y notas» del folio y comparte petición y
+  caché de 30 s con Historial. Mientras llega, la pestaña puede mostrar el ingreso que la vista
+  ya tiene. El GET valida la sesión y el expediente por RLS y devuelve
+  movimientos en orden descendente. Usa eventos QMS, revisiones, reaperturas y
+  transiciones históricas vinculadas por folio, fecha y aviso del expediente.
+  Resuelve nombres bajo los permisos de la sesión. Notas conserva texto breve sin
+  título, orden descendente, reglas de escritura del rol y color por cuenta y
+  navegador. Reabrir queja queda bajo el correo final en la columna de acciones.
+- En Evaluación, «Mis adjuntos» permite subir mediante el diálogo compartido.
+  Un archivo propio ya subido se puede vincular como oficio de apertura; para
+  No Procede o respuesta final se puede seleccionar un PDF válido del expediente.
 - Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
   estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
   `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y

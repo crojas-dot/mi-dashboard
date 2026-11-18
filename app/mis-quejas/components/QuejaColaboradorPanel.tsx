@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { ClipboardCheck, Eye, FilePenLine, History, Maximize, Minimize, Pencil, Save, Send, WandSparkles, X } from 'lucide-react'
+import { ArrowRight, ClipboardCheck, FilePenLine, Maximize, Minimize, Pencil, Save, Send, WandSparkles } from 'lucide-react'
 import Modal from '@/components/Modal'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
@@ -13,26 +13,30 @@ import RichTextContent from '@/components/ui/RichTextContent'
 import type { Queja } from '@/lib/types'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { useAuthStore } from '@/lib/store/auth-store'
-import { quejaActividadKey, useQuejaActividad, useCrearQuejaActividad, type QuejaActividad } from '@/lib/queries/useQuejaActividad'
-import { actualizarNotaInvestigacion, eliminarNotaInvestigacion } from '@/lib/services/quejaInvestigacionService'
-import { esNotaInvestigacion, obtenerDevolucionPendiente, obtenerHistorialDevoluciones } from '@/lib/utils/quejaInvestigacionNotas'
+import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
+import { esNotaInvestigacion, NOTA_APROBACION_GC, obtenerDevolucionPendiente, obtenerHistorialDevoluciones } from '@/lib/utils/quejaInvestigacionNotas'
 import { useQuejaAdjuntos, type QuejaAdjunto } from '@/lib/queries/useQuejas'
 import { useQuejaPlazos } from '@/lib/queries/useQuejaSeguimiento'
 import { enviarResolucionBorradorRevision, guardarResolucionBorrador } from '@/lib/services/quejaWorkflowService'
 import { quejaResolucionDraftKey, useQuejaResolucionDraft, type QuejaResolucionDraft } from '@/lib/queries/useQuejaResolucionDraft'
 import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
+import { useQuejaNotas } from '@/hooks/useQuejaNotas'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
-import { CaseCompletionDate, CaseCycle, CaseProcessHeader, CaseSidebarShortcut, CaseWorkspaceNavigation, CaseRequestHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseWorkspaceNavigation, CaseRequestHeader, CaseReadOnlyHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
-import { CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
+import { CaseTriageSummary, CaseTriageNextStep, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
+import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
-import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
+import QuejaNotasPanel, { QuejaNotasCard } from '@/components/quejas/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
 import { caseDate, caseDeadline, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
+import { adjuntosMisQuejas, cicloMisQuejas, type EtapaMisQuejas } from './etapasResponsable'
+import { MisQuejasBreadcrumb } from './MisQuejasEtapas'
 
 interface Props {
   queja: Queja | null
@@ -48,8 +52,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const user = useAuthStore(s => s.user)
   const queryClient = useQueryClient()
   const scope = useEntityRequestGuard(queja?.id ?? null)
-  const draftVersions = useRef({ nota: 0, resolucion: 0 })
-  const [analisisAbierto, setAnalisisAbierto] = useState(false)
+  const draftVersions = useRef({ resolucion: 0 })
+  const [vistaEtapa, setVistaEtapa] = useState<EtapaMisQuejas | null>(null)
   const [panelNotas, setPanelNotas] = useState(false)
   const [panelAdjuntos, setPanelAdjuntos] = useState(false)
   const resolutionContainer = useRef<HTMLDivElement>(null)
@@ -62,37 +66,39 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const [guardandoResolucion, setGuardandoResolucion] = useState(false)
   const [editandoResolucion, setEditandoResolucion] = useState(true)
   const [resolutionOverlay, setResolutionOverlay] = useState<{ top: number; left: number; width: number; height: number } | null>(null)
-  const [nota, setNota] = useState('')
-  const [notaEditando, setNotaEditando] = useState<QuejaActividad | null>(null)
-  const [notaEdicion, setNotaEdicion] = useState('')
-  const [notaMenu, setNotaMenu] = useState<string | null>(null)
-  const [notaEliminar, setNotaEliminar] = useState<string | null>(null)
-  const [operandoNota, setOperandoNota] = useState(false)
   const [verMotivoDevolucion, setVerMotivoDevolucion] = useState(false)
   const [errorResolucion, setErrorResolucion] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [agregandoNota, setAgregandoNota] = useState(false)
+  const [editorVisitado, setEditorVisitado] = useState(false)
   const {
     previewAdjunto, setPreviewAdjunto, subiendoAdjunto: subiendoAdjuntoAnalisis,
     eliminandoAdjunto, confirmarEliminacion, setConfirmarEliminacion,
-    handleSubirAdjunto: handleSubirAdjuntoAnalisis, handleEliminarAdjunto, handleDescargarAdjunto,
+    handleSubirAdjuntos, handleEliminarAdjunto, handleDescargarAdjunto,
   } = useQuejaAttachmentActions(queja?.id ?? null, scope)
   const { aiAutoLoading, aiResult, setAiResult, handleAnalisisAuto } = useQuejaAssistant(queja?.id ?? null, scope)
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId)
-  const crearActividad = useCrearQuejaActividad()
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
   const estado = queja?.estado ?? ''
-  const canEdit = !!queja && !!user && (user.rol === 'admin' || user.rol === 'calidad' || user.rol === 'colaborador' && queja.responsable_id === user.id)
-  const investigando = estado === 'En Investigación' && canEdit
-  const { data: devolucionesPersistidas = [] } = useQuejaDevoluciones(quejaId, investigando)
+  const investigando = estado === 'En Investigación' && !!user && queja?.responsable_id === user.id
+    && ['admin', 'calidad', 'colaborador'].includes(user.rol)
+  const posiblesAdjuntosPropios = !!user && adjuntos.some(a => a.usuario_id === user.id)
+  const asignacion = useQuejaInvestigationAssignment(quejaId, true)
+  const devolucionesQuery = useQuejaDevoluciones(quejaId, estado === 'En Investigación' || posiblesAdjuntosPropios)
+  const devolucionesPersistidas = devolucionesQuery.data ?? []
+  const devolucion = obtenerDevolucionPendiente(estado, actividad)
+  const ciclo = cicloMisQuejas(estado, !!devolucion)
+  const etapa = vistaEtapa && ciclo.etapas.some(paso => paso.id === vistaEtapa && paso.disponible) ? vistaEtapa : ciclo.actual
+  const editable = investigando && etapa === 'resolucion'
+  const notas = useQuejaNotas({ id: quejaId, usuario: user?.id, scope, puedeAgregar: editable, puedeEditar: editable })
   const { data: borradorRemoto, isFetching: cargandoBorrador, error: errorBorrador, refetch: recargarBorrador } = useQuejaResolucionDraft(quejaId, investigando)
   const resolutionDirty = borradorGuardado ? resolucion !== borradorGuardado.contenido || resolucionFormato !== borradorGuardado.formato : !!resolucion.trim()
   const resolutionSaved = !!borradorGuardado && !resolutionDirty
   const resolutionPending = loading || guardandoResolucion || investigando && borradorVersion === null || subiendoAdjuntoAnalisis || !!eliminandoAdjunto || aiAutoLoading
-  const navigationLocked = analisisAbierto || panelNotas || panelAdjuntos || resolutionPending || agregandoNota || operandoNota || resolutionDirty || !!nota.trim() || !!notaEditando || !!aiResult.trim()
+  const navigationLocked = panelNotas || panelAdjuntos || resolutionPending || notas.pending
+    || investigando && (resolutionDirty || notas.dirty || !!aiResult.trim())
   useEffect(() => {
     onNavigationLockChange?.(!!queja && navigationLocked)
     return () => onNavigationLockChange?.(false)
@@ -121,15 +127,20 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     resolutionCaret.current = null
     setResolutionOverlay(null)
     setIsExpanded(false)
-    setAnalisisAbierto(false)
+    setVistaEtapa(null)
     setPanelNotas(false)
     setPanelAdjuntos(false)
-    setNotaMenu(null); setNotaEliminar(null)
     setAiResult('')
     onNavigationLockChange?.(false)
     onClose()
   }, [scope, onClose, onNavigationLockChange, setAiResult])
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
+  const [prevEstado, setPrevEstado] = useState(estado)
+  if (prevEstado !== estado) {
+    setPrevEstado(estado)
+    setVistaEtapa(null)
+    setVerMotivoDevolucion(false)
+  }
   const [prevInvestigando, setPrevInvestigando] = useState(investigando)
   if (prevInvestigando !== investigando) {
     setPrevInvestigando(investigando)
@@ -142,17 +153,18 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   }
   if ((queja?.id ?? null) !== prevQuejaId) {
     setPrevQuejaId(queja?.id ?? null)
+    setEditorVisitado(false)
     setResolutionOverlay(null)
     setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
     setBorradorVersion(null); setBorradorGuardado(null); setGuardandoResolucion(false)
     setEditandoResolucion(true)
-    setNotaEditando(null); setNotaEdicion(''); setNotaMenu(null); setNotaEliminar(null); setOperandoNota(false)
-    setAnalisisAbierto(false)
+    setVistaEtapa(null)
     setPanelNotas(false)
     setPanelAdjuntos(false)
-    setNota(''); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
+    setIsExpanded(false); setLoading(false)
   }
   if (!queja) return null
+  if (isExpanded && editable && !editorVisitado) setEditorVisitado(true)
   // La primera lectura hidrata esta visita; un refetch no sobrescribe lo escrito
   // ni actualiza silenciosamente la versión que se comparará al guardar/enviar.
   if (investigando && borradorVersion === null && !cargandoBorrador && !errorBorrador && borradorRemoto !== undefined) {
@@ -165,13 +177,12 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     }
   }
   const deadline = caseDeadline(queja, runs)
-  const devolucion = obtenerDevolucionPendiente(estado, actividad)
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
 
   const handleGuardarResolucion = async () => {
-    if (!investigando || resolutionPending || borradorVersion === null || !resolutionDirty) return
+    if (!editable || resolutionPending || borradorVersion === null || !resolutionDirty) return
     const operation = scope.start('workflow')
     if (!operation) return
     const isContextCurrent = scope.captureContext()
@@ -205,47 +216,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setAiResult('')
     setErrorResolucion(null)
   }
-  const puedeModificarNota = (item: QuejaActividad) => investigando && item.usuario_id === user?.id && esNotaInvestigacion(item)
-  const handleMutarNota = async (item: QuejaActividad, eliminar = false) => {
-    if (!puedeModificarNota(item) || operandoNota) return
-    const operation = scope.start('investigation-note')
-    if (!operation) return
-    const isContextCurrent = scope.captureContext()
-    setOperandoNota(true)
-    try {
-      if (eliminar) await eliminarNotaInvestigacion(item)
-      else await actualizarNotaInvestigacion(item, notaEdicion)
-      if (isContextCurrent()) void queryClient.invalidateQueries({ queryKey: quejaActividadKey(queja.id) })
-      if (operation.isCurrent()) {
-        if (!eliminar) { setNotaEditando(null); setNotaEdicion('') }
-        setNotaEliminar(null); setNotaMenu(null)
-        showSuccess(eliminar ? 'Nota eliminada' : 'Nota actualizada')
-      }
-    } catch (error) {
-      if (operation.isCurrent()) showError(error, eliminar ? 'No se pudo eliminar la nota' : 'No se pudo actualizar la nota')
-    } finally {
-      if (operation.isCurrent()) setOperandoNota(false)
-      operation.finish()
-    }
-  }
-  const alternarMenuNota = (id: string) => {
-    setNotaMenu(current => current === id ? null : id)
-    setNotaEliminar(null)
-  }
-  const iniciarEdicionNota = (item: QuejaActividad) => {
-    setNotaMenu(null); setNotaEliminar(null)
-    setNotaEditando(item)
-    setNotaEdicion(item.descripcion)
-  }
-  const cancelarEdicionNota = () => { setNotaEditando(null); setNotaEdicion('') }
-  const confirmarEliminarNota = () => {
-    const item = notasInvestigacion.find(nota => nota.id === notaEliminar)
-    return item ? handleMutarNota(item, true) : undefined
-  }
-
   const handleEnviarRevision = async () => {
     if (resolutionPending || borradorVersion === null) return
-    if (!investigando) { showError(null, 'Esta queja no está disponible para enviar a revisión.'); return }
+    if (!editable) { showError(null, 'Esta queja no está disponible para enviar a revisión.'); return }
     if (!resolucion.trim()) { showError(null, 'Escribí la conclusión antes de enviarla a revisión'); return }
     if (resolucion.length > DOCUMENT_LIMIT) { showError(null, 'La conclusión admite hasta 10.000 caracteres.'); return }
     const operation = scope.start('workflow')
@@ -282,33 +255,27 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       operation.finish()
     }
   }
-  const handleAgregarNota = async () => {
-    if (!canEdit || !nota.trim()) return
-    if (nota.length > DOCUMENT_LIMIT) { showError(null, 'La nota admite hasta 10.000 caracteres.'); return }
-    const operation = scope.start('activity-note')
-    if (!operation) return
-    const isContextCurrent = scope.captureContext()
-    const draftVersion = draftVersions.current.nota
-    setAgregandoNota(true)
-    try {
-      await crearActividad.mutateAsync({ quejaId: queja.id, descripcion: nota, usuarioId: user?.id ?? null, isContextCurrent })
-      if (operation.isCurrent()) {
-        showSuccess('Nota agregada a la actividad')
-        if (draftVersions.current.nota === draftVersion) setNota('')
-      }
-    } catch (error) {
-      if (operation.isCurrent()) showError(error, 'No se pudo agregar la nota')
-    } finally {
-      if (operation.isCurrent()) setAgregandoNota(false)
-      operation.finish()
-    }
+  const calidadIds = new Set(devolucionesPersistidas.flatMap(item => item.adjuntoIds))
+  const oficioApertura = asignacion.data?.oficio_adjunto_id
+  if (oficioApertura) calidadIds.add(oficioApertura)
+  const inicioInvestigacion = runs.filter(run => run.stage_id === 'quejas.investigation').at(-1)?.started_at
+    ?? asignacion.data?.updated_at
+  const archivos = adjuntosMisQuejas(adjuntos, queja.responsable_id === user?.id ? user?.id : undefined, calidadIds, inicioInvestigacion)
+  const archivosCargando = !!(adjuntosLoading || asignacion.isLoading || devolucionesQuery.isLoading)
+  const archivosError = !!(adjuntosError || asignacion.error || devolucionesQuery.error)
+  const recargarArchivos = () => {
+    void refetchAdjuntos()
+    if (asignacion.error) void asignacion.refetch()
+    if (devolucionesQuery.error) void devolucionesQuery.refetch()
   }
-  const adjuntosAnalisis = adjuntos.filter(adjunto => !!adjunto.usuario_id)
-  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => investigando && !!adjunto.usuario_id && canEdit
-  const agregarAdjuntosAnalisis = async (files: File[]) => {
-    if (!investigando || resolutionPending) return
-    // El servicio usa un candado por archivo, así que los soltados juntos se suben en orden.
-    for (const file of files) await handleSubirAdjuntoAnalisis(file)
+  const puedeEliminarAdjunto = (adjunto: QuejaAdjunto) => editable && !archivosCargando && !archivosError
+    && archivos.propios.some(propio => propio.id === adjunto.id)
+  const eliminarAdjuntoPropio = () => {
+    const adjunto = archivos.propios.find(propio => propio.id === confirmarEliminacion)
+    if (adjunto && puedeEliminarAdjunto(adjunto)) void handleEliminarAdjunto(adjunto.id)
+  }
+  const agregarAdjuntos = (files: File[]) => {
+    if (editable && !resolutionPending) return handleSubirAdjuntos(files)
   }
   const capturarPuntoResolucion = () => {
     const selection = window.getSelection()
@@ -324,31 +291,24 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       selection?.removeAllRanges(); selection?.addRange(caret.range)
     })
   }
-  const abrirAnalisis = () => {
-    capturarPuntoResolucion()
-    setPanelNotas(false)
-    setPanelAdjuntos(false)
-    setAnalisisAbierto(true)
-  }
-  const cerrarAnalisis = () => {
-    setAnalisisAbierto(false)
-    restaurarPuntoResolucion()
+  const cambiarEtapa = (destino: EtapaMisQuejas) => {
+    if (destino === etapa || !ciclo.etapas.some(paso => paso.id === destino && paso.disponible)) return
+    setResolutionOverlay(null)
+    setVistaEtapa(destino === ciclo.actual ? null : destino)
   }
   const abrirNotas = () => {
     capturarPuntoResolucion()
     setPanelAdjuntos(false)
-    setAnalisisAbierto(false)
-    setNotaMenu(null); setNotaEliminar(null)
+    notas.closeMenu()
     setPanelNotas(true)
   }
   const cerrarNotas = () => {
+    notas.closeMenu()
     setPanelNotas(false)
-    setNotaMenu(null); setNotaEliminar(null)
     restaurarPuntoResolucion()
   }
   const abrirAdjuntos = () => {
     capturarPuntoResolucion()
-    setAnalisisAbierto(false)
     setPanelNotas(false)
     setPanelAdjuntos(true)
   }
@@ -361,7 +321,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setResolutionOverlay(null)
     setIsExpanded(true)
     setEditandoResolucion(true)
-    cerrarAnalisis()
+    setVistaEtapa(null)
     // Primero presentar showModal y el editor existente; después restaurar foco.
     requestAnimationFrame(() => requestAnimationFrame(() => {
       // Abrir el editor no debe desplazar el scroll exterior y ocultar su margen superior.
@@ -371,80 +331,80 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       card?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
     }))
   }
-  const plazo = <QuejaPlazoIndicator deadline={deadline} />
-  const action = investigando ? null : estado === 'Pendiente de Revisión GC' ? 'Gestión de Calidad revisará la propuesta. Si requiere ajustes, volverá a investigación.' : 'El expediente conserva el trabajo y las evidencias registradas.'
-  const tieneDocumentoRegistrado = !!(queja.resolucion || queja.numero_oficio_resolucion)
-  const documentoAprobado = ['Resuelto', 'Finalizado', 'No Procede'].includes(estado)
-  const triageStep: CaseTriageNextStepData = investigando
-    ? reenviarRevision && devolucion ? {
-        title: 'Corrección requerida',
-        description: 'Calidad devolvió tu propuesta. Debes corregirla antes de reenviar.',
-        ctaLabel: 'Corregir en editor', icon: 'warning', tone: 'amber',
-      } : resolutionDirty ? {
-        title: 'Cambios sin guardar',
-        description: 'Tienes cambios locales pendientes. Revísalos y guárdalos antes de enviar la propuesta.',
-        ctaLabel: 'Continuar editando', icon: 'edit', tone: 'amber',
-      } : borradorGuardado ? {
-        title: 'Borrador guardado',
-        description: `Tienes una propuesta guardada el ${caseDate(borradorGuardado.updated_at)}. Revísala o termínala.`,
-        ctaLabel: 'Abrir editor para modificar', icon: 'saved', tone: 'blue',
-      } : {
-        title: 'Redactar resolución',
-        description: 'Prepara la propuesta de resolución para enviar a Calidad.',
-        ctaLabel: 'Abrir editor para redactar', icon: 'edit', tone: 'blue',
-      }
-    : estado === 'Pendiente de Revisión GC' ? {
-        title: 'En revisión de Calidad',
-        description: 'La propuesta fue enviada. Consulta el expediente mientras Calidad revisa el caso.',
-        ctaLabel: 'Ver expediente completo', icon: 'review', tone: 'amber',
-      } : documentoAprobado ? {
-        title: 'Expediente cerrado',
-        description: 'Consulta el resultado, los documentos y el seguimiento de este caso.',
-        ctaLabel: 'Ver expediente de cierre completo', icon: 'archive', tone: 'green',
-      } : {
-        title: 'Consultar expediente',
-        description: 'Revisa el estado y los antecedentes de este caso antes de continuar.',
-        ctaLabel: 'Ver expediente completo', icon: 'file', tone: 'blue',
-      }
-  const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
-    responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
-    primaryAction={<CaseTriageNextStep step={triageStep}
-      onOpen={investigando ? prepararResolucion : () => setIsExpanded(true)}
-      disabled={investigando && resolutionPending} />}
-    footer={<CaseTriageFooter title="Mis notas" count={!actividadLoading && !actividadError ? notasInvestigacion.length : undefined}
+  const badgeEstado = ciclo.aprobada ? 'Aprobada por Calidad' : queja.estado_nombre || estado
+  const variante = ciclo.aprobada ? 'green' : queja.estado_color || varianteEstado('quejas', estado)
+  const aprobacion = ciclo.aprobada ? actividad.findLast(item => item.descripcion === NOTA_APROBACION_GC) : undefined
+  const historica = etapa !== ciclo.actual
+  const proximaEtapa = etapa === 'analisis' && ciclo.etapas[1].disponible ? 'resolucion'
+    : etapa === 'resolucion' && !editable && ciclo.etapas[2].disponible ? 'revision'
+    : etapa === 'revision' && historica ? 'resolucion' : null
+  const irProximaEtapa = proximaEtapa && <Button size="sm" variant="primary"
+    className="w-full min-w-0 whitespace-normal" onClick={() => cambiarEtapa(proximaEtapa)}>
+    {proximaEtapa === 'revision' ? 'Ir a Revisión de Calidad' : etapa === 'revision' ? 'Volver a Resolución' : 'Ir a Resolución'}
+    <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
+  </Button>
+  const analisis = <QuejaAnalisisPanel queja={queja} asignacion={asignacion.data} adjuntosCliente={archivos.cliente} adjuntosCalidad={archivos.antecedentes}
+    adjuntosLoading={archivosCargando} adjuntosError={archivosError} onRetryAdjuntos={recargarArchivos}
+    onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto} />
+  const cuerpoLectura = etapa === 'analisis' ? analisis : etapa === 'revision'
+    ? <QuejaCierreResumen queja={queja} adjuntos={adjuntos} adjuntosLoading={archivosCargando} adjuntosError={archivosError}
+        onRetryAdjuntos={recargarArchivos} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
+        actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} responsable={user?.nombre}
+        resolveAuthor={id => id === user?.id ? user?.nombre : undefined} expanded={isExpanded}
+        revisionResponsable={{ estado: ciclo.aprobada ? 'Aprobada' : devolucion ? 'Devuelta' : 'Pendiente',
+          fecha: ciclo.aprobada ? aprobacion?.created_at : devolucion?.fecha, motivo: devolucion?.motivo,
+          propios: archivos.propios, antecedentes: archivos.antecedentes, analisis }} />
+    : !editable && <CaseSection title="Propuesta de resolución" variant="document" source="Responsable">
+          {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />
+            : <p className="text-sm text-qms-muted">Sin propuesta registrada.</p>}
+        </CaseSection>
+  const lectura = cuerpoLectura && <div data-case-stage-readonly={historica ? true : undefined}
+    className="min-w-0 overflow-hidden rounded-card border border-qms-border bg-qms-surface">
+    {historica && <CaseReadOnlyHeader etapa={ciclo.etapas.find(paso => paso.id === etapa)?.label ?? etapa} onReturn={() => cambiarEtapa(ciclo.actual)} />}
+    {cuerpoLectura}
+  </div>
+  const cardAdjuntos = <QuejaAdjuntosCard adjuntos={archivos.propios} loading={archivosCargando}
+    error={archivosError} onOpen={abrirAdjuntos} />
+  const avisoDevolucion = editable && devolucion && <QuejaInvestigacionResumen devolucion={devoluciones[0] ?? devolucion}
+    devoluciones={devoluciones} folio={queja.folio} archivos={archivos.antecedentes} onPreview={setPreviewAdjunto}
+    onEditor={prepararResolucion} open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />
+
+  const triageStep: CaseTriageNextStepData = reenviarRevision ? {
+    title: 'Corrección requerida',
+    description: 'Calidad devolvió la propuesta para corregirla.',
+    ctaLabel: 'Corregir en editor', icon: 'warning', tone: 'amber',
+  } : resolutionDirty ? {
+    title: 'Cambios sin guardar',
+    description: 'Podés continuar con el borrador que estabas editando.',
+    ctaLabel: 'Continuar editando', icon: 'edit', tone: 'amber',
+  } : borradorGuardado ? {
+    title: 'Borrador guardado',
+    description: 'Guardado el ' + caseDate(borradorGuardado.updated_at),
+    ctaLabel: 'Abrir editor para modificar', icon: 'saved', tone: 'blue',
+  } : {
+    title: 'Redactar resolución',
+    description: 'Prepara la propuesta para Gestión de Calidad.',
+    ctaLabel: 'Abrir editor para redactar', icon: 'edit', tone: 'blue',
+  }
+  const compactTriage = !isExpanded && <CaseTriageSummary key={etapa} queja={{ ...queja, estado_nombre: badgeEstado, estado_color: variante }}
+    runs={runs} plazoError={!!plazosError} responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
+    primaryAction={editable
+      ? <CaseTriageNextStep step={triageStep} onOpen={prepararResolucion} disabled={resolutionPending} />
+      : irProximaEtapa && <div className="ml-auto w-full sm:max-w-64">{irProximaEtapa}</div>}
+    footer={<CaseTriageFooter title="Historial y notas" count={!actividadLoading && !actividadError ? notasInvestigacion.length : undefined}
       onOpen={abrirNotas} />}>
-    <div className="space-y-4">
-      {reenviarRevision && devolucion && <section data-case-triage-return
-        className="space-y-1.5 rounded-md border border-amber-100 bg-amber-50/50 px-3 py-2.5 text-amber-900">
-        <h3 className="text-xs font-semibold">Observación de Calidad</h3>
-        <p className="line-clamp-2 whitespace-pre-wrap break-words text-[13px] leading-relaxed">{devolucion.motivo}</p>
-      </section>}
-      {investigando ? <section data-case-triage-resolution className="space-y-3">
-        <h3 className="text-sm font-semibold text-qms-dark">Estado de la resolución</h3>
-        {resolutionDirty ? <Badge variant="amber">Cambios sin guardar</Badge>
-          : borradorGuardado ? <Badge variant="green">Borrador guardado</Badge>
-          : <Badge variant="neutral">{borradorVersion === null ? 'Comprobando borrador' : 'Sin borrador'}</Badge>}
-        {borradorGuardado && <p className="text-xs text-qms-muted">Guardado: {caseDate(borradorGuardado.updated_at)}</p>}
-        {(resolutionDirty || borradorGuardado) && <p className="line-clamp-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-qms-muted">
-          {resolucion || 'El borrador no contiene texto todavía.'}
-        </p>}
-        {errorBorrador && borradorVersion === null && <p role="alert" className="text-sm text-qms-danger">No se pudo cargar el borrador.
-          <Button size="sm" variant="link" onClick={() => { void recargarBorrador() }}>Reintentar</Button>
-        </p>}
-      </section> : <CaseTriageExcerpt title={tieneDocumentoRegistrado ? 'Resultado registrado' : 'Resumen del expediente'}
-        text={queja.resolucion || queja.descripcion || 'Sin información registrada.'} />}
-      <CaseTriageAttachments files={adjuntosAnalisis} onPreview={setPreviewAdjunto}
-        loading={adjuntosLoading} error={!!adjuntosError} />
-      <div className="space-y-2">
-        <Button size="sm" variant="secondary" className="w-full" onClick={abrirAnalisis}>Ver caso completo</Button>
-      </div>
-    </div>
+    {lectura}
+    {etapa === 'resolucion' && cardAdjuntos}
+    {avisoDevolucion}
+    {editable && errorBorrador && borradorVersion === null && <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-danger">
+      No se pudo cargar el borrador.<Button size="sm" variant="link" onClick={() => { void recargarBorrador() }}>Reintentar</Button>
+    </div>}
   </CaseTriageSummary>
+  const cicloMostrado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} />
 
   return <>
-    <Modal open onClose={analisisAbierto ? cerrarAnalisis : panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose}
+    <Modal open onClose={panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose}
       onEscape={() => {
-        if (analisisAbierto) { cerrarAnalisis(); return }
         if (panelNotas) { cerrarNotas(); return }
         if (panelAdjuntos) { cerrarAdjuntos(); return }
         if (isExpanded) {
@@ -453,7 +413,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
           return
         }
-        if (resolutionDirty || !!nota.trim()) {
+        if (investigando && (resolutionDirty || notas.dirty)) {
           showError(null, 'Hay cambios sin guardar. Abrí el editor para guardarlos o descartarlos antes de salir.')
           return
         }
@@ -462,34 +422,39 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} /></div>}
+      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{cicloMostrado}</div></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
-      <CaseWorkspace documentKey={queja.id} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
+      <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
+        cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
-        requestFooter={<div className="space-y-4">
-          <QuejaAdjuntosCard adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
-            onOpen={abrirAdjuntos} />
+        requestFooter={isExpanded && <div className="space-y-4">
+          {etapa === 'resolucion' && cardAdjuntos}
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div>}
-        compact={<CaseCycle queja={queja} process currentOnly />} cycle={<CaseCycle queja={queja} process />}
-        action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />Acción actual</h3>
-          <Badge variant={queja.estado_color || varianteEstado('quejas', estado)}>{queja.estado_nombre || estado}</Badge>
-          <CaseCompletionDate queja={queja} />
-          <div className="mt-3" title={deadline.stageTitle}>{plazo}{plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}</div>
-          {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
-          <div className="mt-4 space-y-2">
-            <Button aria-label="Ver análisis" className="w-full border-qms-brand-red! bg-qms-brand-red! hover:border-qms-brand-red! hover:bg-qms-surface! hover:text-qms-brand-red!" size="sm" onClick={abrirAnalisis}><Eye aria-hidden="true" className="size-4 shrink-0" />Ver análisis</Button>
-            {investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
+        compact={cicloMostrado} cycle={cicloMostrado}
+        action={isExpanded && <div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{historica ? 'Etapa actual' : 'Acción actual'}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={variante}>{badgeEstado}</Badge>
           </div>
-          {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
-        </section>{investigando && <CaseSidebarShortcut title="Historial y observaciones" description={actividadLoading ? 'Consultando movimientos…' : actividadError ? 'No se pudo consultar el historial.' : actividad.length ? 'Consultar los cambios y observaciones registrados.' : 'Sin movimientos registrados todavía.'}
-          actionLabel="Ver historial" icon={<History className="size-4 shrink-0 text-qms-primary" />} count={!actividadLoading && !actividadError ? actividad.length : undefined} onClick={abrirNotas} />}
-        {reenviarRevision && <QuejaInvestigacionResumen devolucion={devoluciones[0] ?? devolucion} devoluciones={devoluciones} folio={queja.folio}
-          archivos={adjuntos} onPreview={setPreviewAdjunto} onEditor={prepararResolucion}
-          open={verMotivoDevolucion} onOpenChange={setVerMotivoDevolucion} />}</div>}>
-        {investigando ? <div data-resolution-shell className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
+          {ciclo.aprobada && aprobacion && <p className="mt-2 text-sm text-qms-muted">
+            Revisión finalizada el <time dateTime={aprobacion.created_at}>{caseDate(aprobacion.created_at)}</time>
+          </p>}
+          {editable && <div className="mt-3" title={deadline.stageTitle}><QuejaPlazoIndicator deadline={deadline} />
+            {plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}
+          </div>}
+          {(irProximaEtapa || editable) && <div className="mt-4 space-y-2">
+            {irProximaEtapa}
+            {editable && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision}
+              loading={loading} disabled={!resolucion.trim() || resolutionPending}>
+              {reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}
+            </Button>}
+          </div>}
+          {editable && errorResolucion && <p role="alert" className="mt-3 text-sm text-qms-danger">{errorResolucion}</p>}
+        </section>{avisoDevolucion}</div>}>
+        {isExpanded && lectura}
+        {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
           <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
             style={resolutionOverlay ?? undefined}
             className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
@@ -560,28 +525,20 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             </div>}
           </div>
           </div>
-        </div> : <CaseSection title={tieneDocumentoRegistrado ? documentoAprobado ? 'Resolución interna aprobada' : 'Propuesta enviada a Calidad' : 'Expediente'} source={tieneDocumentoRegistrado ? documentoAprobado ? 'Gestión de Calidad' : 'Responsable' : undefined} variant="panel"><div data-reading-copy>{queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
-          {queja.numero_oficio_resolucion && <p className="mt-3 break-words text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}</div>
-        </CaseSection>}
+        </div>}
       </CaseWorkspace>
       <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
-        adjuntos={adjuntosAnalisis} loading={adjuntosLoading} error={!!adjuntosError}
-        onRetry={() => { void refetchAdjuntos() }} canUpload={investigando} uploadDisabled={resolutionPending}
+        adjuntos={archivos.propios} loading={archivosCargando} error={archivosError}
+        onRetry={recargarArchivos} canUpload={editable} uploadDisabled={resolutionPending}
         uploading={subiendoAdjuntoAnalisis} canDelete={adjunto => !resolutionPending && puedeEliminarAdjunto(adjunto)}
-        onFiles={files => { void agregarAdjuntosAnalisis(files) }}
+        onFiles={files => { void agregarAdjuntos(files) }}
         onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
         onDelete={adjunto => setConfirmarEliminacion(adjunto.id)} />
-      <QuejaNotasPanel open={panelNotas} folio={queja.folio} currentUser={user ? { id: user.id } : undefined} onClose={cerrarNotas} notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onRetry={() => { void refetchActividad() }} canEdit={canEdit} nota={nota} maxLength={DOCUMENT_LIMIT} saving={agregandoNota} onChange={value => { draftVersions.current.nota++; setNota(value) }} onAdd={handleAgregarNota}
-        puedeModificar={puedeModificarNota} menuId={notaMenu} editingId={notaEditando?.id ?? null} editValue={notaEdicion} deletingId={notaEliminar} operating={operandoNota}
-        onToggleMenu={alternarMenuNota} onEdit={iniciarEdicionNota} onEditChange={setNotaEdicion} onCancelEdit={cancelarEdicionNota}
-        onSaveEdit={() => notaEditando ? handleMutarNota(notaEditando) : undefined} onRequestDelete={setNotaEliminar} onCancelDelete={() => setNotaEliminar(null)} onConfirmDelete={confirmarEliminarNota} />
-      <QuejaAnalisisPanel queja={queja} open={analisisAbierto} onClose={cerrarAnalisis}
-        onPrepararResolucion={investigando ? prepararResolucion : undefined} devolucion={devolucion}
-        adjuntos={adjuntos} adjuntosLoading={adjuntosLoading} adjuntosError={!!adjuntosError} onRetryAdjuntos={() => { void refetchAdjuntos() }} onPreview={setPreviewAdjunto} onDownload={handleDescargarAdjunto}
-        actividad={actividad} actividadLoading={actividadLoading} actividadError={!!actividadError} onRetryActividad={() => { void refetchActividad() }}
-        resolveAuthor={event => event.usuario_id === user?.id ? user?.nombre : undefined} />
+      <QuejaNotasPanel open={panelNotas} quejaId={queja.id} fechaIngreso={queja.fecha} folio={queja.folio} currentUser={user ? { id: user.id } : undefined} onClose={cerrarNotas}
+        notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError}
+        onRetry={() => { void refetchActividad() }} {...notas.campos} />
     </Modal>
     <AdjuntoPreviewModal adjunto={previewAdjunto} onClose={() => setPreviewAdjunto(null)} />
-    <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
+    <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={eliminarAdjuntoPropio} onCancel={() => setConfirmarEliminacion(null)} />
   </>
 }

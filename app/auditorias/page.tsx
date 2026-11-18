@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Plus, ListChecks } from 'lucide-react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
-import { useAuditorias, auditoriasKey, useHallazgos, type Auditoria } from '@/lib/queries/useAuditorias'
+import { useAuditorias, auditoriasKey, fetchAuditoriaPorId, useHallazgos, type Auditoria } from '@/lib/queries/useAuditorias'
+import RegistroDesdeEnlace from '@/components/RegistroDesdeEnlace'
 import Pagination from '@/components/ui/Pagination'
 import PageHeader from '@/components/ui/PageHeader'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
@@ -28,6 +29,7 @@ export default function AuditoriasPage() {
 
   return (
     <div className="space-y-6">
+      <Suspense fallback={null}><RegistroDesdeEnlace clave={auditoriasKey} cargar={fetchAuditoriaPorId} abrir={setHallazgosOpen} /></Suspense>
       <PageHeader title="Auditorías" description="Planificación y ejecución de auditorías">
         <Button onClick={() => setNuevoOpen(true)}><Plus className="h-4 w-4" /> Nueva Auditoría</Button>
       </PageHeader>

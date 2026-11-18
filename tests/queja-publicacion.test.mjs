@@ -123,8 +123,9 @@ function panelFixture(options = {}) {
     '@/components/quejas/AdjuntoPreviewModal': { default: 'Preview' }, '@/components/quejas/ListaAdjuntos': { default: 'Files' }, '@/components/usuarios/ConfirmDialog': { default: 'Confirm' },
     '@/lib/store/auth-store': { useAuthStore: select => select({ user: { id: 'staff', rol: options.role ?? 'calidad' } }) },
     '@/lib/queries/useUsuarios': { useUsuarios: () => ({ data: [] }) },
-    '@/lib/queries/useQuejaComentarios': { useQuejaComentarios: () => ({}), useCrearQuejaComentario: () => ({}) },
-    '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}) },
+    '@/lib/queries/useQuejaActividad': { useQuejaActividad: () => ({}), useCrearQuejaActividad: () => ({}) },
+    '@/lib/services/quejaInvestigacionService': {},
+    '@/components/quejas/QuejaNotasPanel': { default: 'NotesDialog', QuejaNotasCard: 'NotesCard' },
     '@/lib/queries/useQuejaResolucionDraft': { useQuejaResolucionDraft: () => ({ data:null,isLoading:false,error:null }) },
     '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data:null,isLoading:false,error:null }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}), useQuejaCorreos: () => ({}) },
@@ -249,44 +250,41 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   assert.equal(analyst.button('Resolver'), undefined)
 })
 
-test('Reabrir queja solo figura en Otras acciones para Finalizado', () => {
+test('Reabrir queja solo figura en la columna de acciones para Finalizado', () => {
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
     const panel = panelFixture()
     panel.select({ estado })
-    const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
+    const shortcut = panel.nodes().find(node => node.type === 'NotesCard')
     assert.ok(shortcut, 'historial accesible para ' + estado)
-    shortcut.props.onClick()
+    shortcut.props.onOpen()
     panel.render()
     assert.equal(panel.button('Reabrir queja'), undefined, 'sin acción de reapertura en ' + estado)
   }
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
-  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
-  assert.ok(shortcut)
-  shortcut.props.onClick()
-  panel.render()
-  assert.ok(panel.button('Reabrir queja'), 'acción excepcional en historial de Finalizado')
+  const aside = panel.nodes().find(node => node.type?.name === 'CaseAction')
+  const reopen = panel.button('Reabrir queja')
+  assert.ok(reopen, 'acción disponible en Finalizado')
+  assert.ok(aside.props.children.includes(reopen), 'la acción queda en la columna derecha')
 })
 
 test('Reapertura exige motivo y no emite un segundo RPC durante el primer envío', async () => {
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
-  const shortcut = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
-  assert.ok(shortcut)
-  shortcut.props.onClick()
-  panel.render()
   panel.click('Reabrir queja')
-  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'motivo vacío bloquea la acción')
+  const confirm = () => panel.nodes().find(node => node.type === 'Button' && node.props.children === 'Reabrir queja')
+  assert.equal(confirm().props.disabled, true, 'motivo vacío bloquea la acción')
   panel.field('-reapertura-' + quejaId, '   ')
-  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'espacios vacíos bloquean la acción')
+  assert.equal(confirm().props.disabled, true, 'espacios vacíos bloquean la acción')
   panel.field('-reapertura-' + quejaId, 'Apareció información adicional que requiere investigación')
-  const operation = panel.click('Reabrir queja')
+  const operation = confirm().props.onClick()
+  panel.render()
   assert.equal(panel.requests.length, 1)
   assert.equal(panel.requests[0].kind, 'reopen')
   assert.equal(panel.requests[0].args[0].revision, 7)
   assert.match(panel.requests[0].args[1], /información adicional/)
-  assert.equal(panel.button('Reabrir queja').props.disabled, true, 'el botón se bloquea mientras se procesa')
-  await panel.button('Reabrir queja').props.onClick()
+  assert.equal(confirm().props.disabled, true, 'el botón se bloquea mientras se procesa')
+  await confirm().props.onClick()
   assert.equal(panel.requests.length, 1, 'no hay doble reapertura')
   panel.requests[0].resolve({ id: quejaId, estado: 'En Investigación', revision: 8 })
   await operation

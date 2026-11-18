@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, FolderOpen, UserRound } from 'lucide-react'
 import Modal from '@/components/Modal'
@@ -30,6 +30,14 @@ interface Props {
   responsable?: string
   resolveAuthor: (id: string) => string | undefined
   expanded?: boolean
+  revisionResponsable?: {
+    estado: 'Pendiente' | 'Devuelta' | 'Aprobada'
+    fecha?: string
+    motivo?: string
+    analisis: ReactNode
+    propios: QuejaAdjunto[]
+    antecedentes: QuejaAdjunto[]
+  }
 }
 
 const PASOS = [
@@ -40,7 +48,7 @@ const PASOS = [
 
 /** Resumen de Resuelto: cada etapa muestra únicamente hechos vinculados al expediente real. */
 export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, adjuntosError,
-  onRetryAdjuntos, onPreview, onDownload, actividad, actividadLoading, actividadError, responsable, resolveAuthor, expanded = false }: Props) {
+  onRetryAdjuntos, onPreview, onDownload, actividad, actividadLoading, actividadError, responsable, resolveAuthor, expanded = false, revisionResponsable }: Props) {
   const [selected, setSelected] = useState<number | null>(null)
   const { data: informe, isLoading: informeLoading, isError: informeError } = useQuery({
     queryKey: [...queryKeys.quejas, 'informe', queja.id],
@@ -48,47 +56,56 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
       const { fetchQuejaInforme } = await import('@/lib/queries/useQuejaInforme')
       return fetchQuejaInforme(queja.id, signal)
     },
-    enabled: !!queja.id && queja.estado !== 'No Procede',
+    enabled: !!queja.id && queja.estado !== 'No Procede' && !revisionResponsable,
     staleTime: 30_000,
     retry: false,
   })
   const noProcede = queja.estado === 'No Procede'
-  const pasos = noProcede ? [PASOS[0], { id: 'no_procede', title: 'No procedencia', Icon: FileText, dot: 'bg-qms-muted', accent: 'text-qms-muted' }] : PASOS
+  const pasos = revisionResponsable ? [
+    { ...PASOS[0], title: 'Análisis' }, { ...PASOS[1], title: 'Propuesta de resolución' },
+    { ...PASOS[2], title: 'Revisión de Calidad' },
+  ] : noProcede ? [PASOS[0], { id: 'no_procede', title: 'No procedencia', Icon: FileText, dot: 'bg-qms-muted', accent: 'text-qms-muted' }] : PASOS
   const analysis = getQuejaAnalysis(queja)
   const devoluciones = obtenerHistorialDevoluciones(actividad)
   const aprobacion = [...actividad].reverse().find(item => item.descripcion === NOTA_APROBACION_GC)
   const nombreAprobador = aprobacion?.usuario_id ? resolveAuthor(aprobacion.usuario_id) : undefined
-  const pdfNombre = informe ? informePdfFilename(queja.folio, informe.version) : null
+  const pdfNombre = informe && !revisionResponsable ? informePdfFilename(queja.folio, informe.version) : null
   const pdf = pdfNombre ? adjuntos.find(file => file.nombre === pdfNombre
     && file.tipo_mime.toLowerCase() === 'application/pdf' && !!file.usuario_id) : null
   const cliente = adjuntos.filter(file => !file.usuario_id)
+  const antecedentes = revisionResponsable ? [...cliente, ...revisionResponsable.antecedentes] : cliente
   // No atribuir archivos institucionales históricos a una etapa que la DB no registra.
-  const internos = adjuntos.filter(file => !!file.usuario_id && file.id !== pdf?.id)
-  const archivos = selected === 0 ? cliente : noProcede ? internos : selected === 1 ? internos : pdf ? [pdf] : []
-  const cierre = aprobacion?.descripcion || (queja.estado === 'Finalizado' ? 'El expediente ha sido finalizado y conserva su resolución y evidencias.' : 'Propuesta aprobada por Gestión de Calidad. Pendiente de comunicar la respuesta final.')
+  const internos = revisionResponsable?.propios ?? adjuntos.filter(file => !!file.usuario_id && file.id !== pdf?.id)
+  const archivos = selected === 0 ? antecedentes : noProcede ? internos : selected === 1 ? internos : pdf ? [pdf] : []
+  const cierre = revisionResponsable
+    ? revisionResponsable.estado === 'Aprobada' ? 'Gestión de Calidad aprobó la propuesta.'
+      : revisionResponsable.motivo || 'Gestión de Calidad está revisando la propuesta.'
+    : aprobacion?.descripcion || (queja.estado === 'Finalizado' ? 'El expediente ha sido finalizado y conserva su resolución y evidencias.' : 'Propuesta aprobada por Gestión de Calidad. Pendiente de comunicar la respuesta final.')
   const textos = noProcede
     ? [queja.descripcion || 'Sin descripción registrada.', queja.resolucion || queja.justificacion_procede || 'Se registró la no procedencia de la solicitud.']
     : [queja.descripcion || 'Sin descripción registrada.', queja.resolucion || 'Sin propuesta registrada.', cierre]
   const estados = noProcede
     ? ['Recibida', 'No Procede']
-    : [queja.justificacion_procede ? 'Procedente' : 'Recibida', 'Propuesta registrada', queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto · pendiente de envío']
-  const fechas = noProcede ? [queja.fecha, null] : [queja.fecha, null, aprobacion?.created_at ?? null]
+    : [queja.justificacion_procede ? 'Procedente' : 'Recibida', 'Propuesta registrada', revisionResponsable?.estado
+      ?? (queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto · pendiente de envío')]
+  const fechas = noProcede ? [queja.fecha, null] : [queja.fecha, null, revisionResponsable?.fecha ?? aprobacion?.created_at ?? null]
   const paso = pasos[selected ?? 0]
 
   return <>
-    <section data-case-close-timeline className="@container min-w-0 px-4 py-4 sm:px-7 sm:py-5">
+    <section data-case-close-timeline data-mis-quejas-review={revisionResponsable ? true : undefined} className="@container min-w-0 px-4 py-4 sm:px-7 sm:py-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-qms-border pb-3">
         <h3 className="flex items-center gap-2 text-base font-semibold text-qms-dark"><FolderOpen aria-hidden="true" className="size-4 text-qms-muted" />Resumen del expediente</h3>
       </div>
       <ol className="relative ml-4 space-y-3 border-l-[4px] border-qms-primary/15 pb-1">
         {pasos.map((item, index) => {
           const Icon = item.Icon
-          const cantidad = index === 0 ? cliente.length : noProcede || index === 1 ? internos.length : pdf ? 1 : 0
-          const tinta = index === 0 ? 'bg-qms-primary-soft/70' : noProcede ? 'bg-qms-hover-bg' : index === 1 ? 'bg-qms-purple/10' : 'bg-qms-success/10'
-          const estadoVisible = index === 2 ? (queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto') : estados[index]
+          const cantidad = index === 0 ? antecedentes.length : noProcede || index === 1 ? internos.length : pdf ? 1 : 0
+          const esperandoRevision = index === 2 && !!revisionResponsable && revisionResponsable.estado !== 'Aprobada'
+          const tinta = index === 0 ? 'bg-qms-primary-soft/70' : noProcede ? 'bg-qms-hover-bg' : index === 1 ? 'bg-qms-purple/10' : esperandoRevision ? 'bg-soft-amber-bg' : 'bg-qms-success/10'
+          const estadoVisible = index === 2 && !revisionResponsable ? (queja.estado === 'Finalizado' ? 'Finalizado' : 'Resuelto') : estados[index]
           return <li key={item.id} className="relative min-w-0 pl-7 sm:pl-8">
             <span aria-hidden="true" className="absolute -left-[19px] top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-qms-surface bg-qms-surface ring-4 ring-qms-surface">
-              <span className={'flex size-full items-center justify-center rounded-full ' + tinta}><Icon className={'size-4 ' + item.accent} /></span>
+              <span className={'flex size-full items-center justify-center rounded-full ' + tinta}><Icon className={'size-4 ' + (esperandoRevision ? 'text-soft-amber-text' : item.accent)} /></span>
             </span>
             <button type="button" data-case-close-step={item.id} aria-label={'Ver detalle de ' + item.title}
               onClick={() => setSelected(index)}
@@ -130,7 +147,7 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
           </Button>
         </div>
       </div>}>
-      <div data-case-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg px-3 py-4 [will-change:transform] sm:px-5 sm:py-5">
+      <div key={paso.id} data-case-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-qms-hover-bg px-3 py-4 [will-change:transform] sm:px-5 sm:py-5">
         <article className="mx-auto w-full rounded-card border border-qms-border bg-qms-surface p-5 sm:p-7">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-2 border-b border-qms-border pb-4">
             <div><h3 className="text-base font-semibold text-qms-dark">{paso.title}</h3>
@@ -140,14 +157,14 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
             </div>
             <span className="rounded-button bg-qms-primary-soft px-2 py-1 text-xs font-medium text-qms-primary">{estados[selected ?? 0]}</span>
           </div>
-          {selected === 0 && <>
+          {selected === 0 && (revisionResponsable ? revisionResponsable.analisis : <>
             <div data-case-reading-copy><h4 className="mb-2 text-sm font-semibold text-qms-dark">Descripción del cliente</h4>
               <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
             {queja.justificacion_procede && <div data-case-reading-copy className="mt-6 border-t border-qms-border pt-5">
               <h4 className="mb-3 text-sm font-semibold text-qms-dark">Evaluación de Calidad</h4>
               <RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} />
             </div>}
-          </>}
+          </>)}
           {selected === 1 && !noProcede && <>
             <div data-case-reading-copy><h4 className="mb-3 text-sm font-semibold text-qms-dark">Propuesta del responsable</h4>
               {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Sin propuesta registrada.</p>}
@@ -175,21 +192,21 @@ export default function QuejaCierreResumen({ queja, adjuntos, adjuntosLoading, a
               <h4 className="mb-2 text-sm font-semibold text-qms-dark">Revisión de Calidad</h4>
               <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{cierre}</p>
             </div>
-            <p className="mt-4 text-sm text-qms-muted">{queja.estado === 'Finalizado' ? 'Expediente finalizado. Se conservan los documentos de la respuesta.' : 'Estado actual: Resuelto. La comunicación al cliente se publica por separado.'}</p>
-            {informeLoading && <p role="status" className="mt-3 text-sm text-qms-muted">Consultando informe oficial…</p>}
-            {informeError && <p role="alert" className="mt-3 text-sm text-qms-muted">No se pudo consultar el informe oficial.</p>}
+            {!revisionResponsable && <p className="mt-4 text-sm text-qms-muted">{queja.estado === 'Finalizado' ? 'Expediente finalizado. Se conservan los documentos de la respuesta.' : 'Estado actual: Resuelto. La comunicación al cliente se publica por separado.'}</p>}
+            {!revisionResponsable && informeLoading && <p role="status" className="mt-3 text-sm text-qms-muted">Consultando informe oficial…</p>}
+            {!revisionResponsable && informeError && <p role="alert" className="mt-3 text-sm text-qms-muted">No se pudo consultar el informe oficial.</p>}
           </>}
-          <section className="mt-6 border-t border-qms-border pt-5">
+          {(!revisionResponsable || selected === 1) && <section className="mt-6 border-t border-qms-border pt-5">
             <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-qms-dark">
               <FileText aria-hidden="true" className="size-4 text-qms-primary" />
-              {selected === 0 ? 'Adjuntos del cliente' : noProcede ? 'Documentos asociados a la no procedencia' : selected === 1 ? 'Archivos internos del expediente' : 'PDF oficial de esta versión'}
+              {revisionResponsable ? 'Adjuntos del responsable' : selected === 0 ? 'Adjuntos del cliente' : noProcede ? 'Documentos asociados a la no procedencia' : selected === 1 ? 'Archivos internos del expediente' : 'PDF oficial de esta versión'}
             </h4>
-            {selected === 1 && <p className="mb-3 text-xs text-qms-muted">No todos los archivos internos están vinculados exclusivamente a esta etapa.</p>}
+            {selected === 1 && !revisionResponsable && <p className="mb-3 text-xs text-qms-muted">No todos los archivos internos están vinculados exclusivamente a esta etapa.</p>}
             {adjuntosLoading ? <p role="status" className="text-sm text-qms-muted">Consultando adjuntos…</p>
               : adjuntosError ? <div role="alert" className="text-sm text-qms-muted">No se pudieron cargar. <Button size="sm" variant="link" onClick={onRetryAdjuntos}>Reintentar</Button></div>
               : archivos.length ? <ListaAdjuntos adjuntos={archivos} layout="modal" hideGroupTitle onPreview={onPreview} onDownload={onDownload} />
               : <p className="text-sm text-qms-muted">No hay archivos asociados para mostrar.</p>}
-          </section>
+          </section>}
         </article>
       </div>
     </Modal>

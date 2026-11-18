@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Info, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Eye, Info, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -12,6 +12,13 @@ import { CASE_ACTIONS, caseDate, caseDeadline, getCaseRoleCycle, getCaseProcessC
 import { tipoVisible } from '@/lib/constants/quejas'
 
 export type CaseSectionVariant = 'panel' | 'document' | 'plain'
+
+export function CaseReadOnlyHeader({ etapa, onReturn }: { etapa: string; onReturn: () => void }) {
+  return <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-primary-soft px-5 py-3 text-sm sm:px-8">
+    <span className="flex items-center gap-2 font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />Solo lectura · {etapa}</span>
+    <Button size="sm" variant="secondary" onClick={onReturn}>Volver a etapa actual</Button>
+  </div>
+}
 
 export function CaseCompletionDate({ queja }: { queja: Queja }) {
   if (!['Finalizado', 'No Procede'].includes(queja.estado) || !queja.fecha_cierre || !Number.isFinite(Date.parse(queja.fecha_cierre))) return null
@@ -301,19 +308,4 @@ export function CaseAction({ queja, runs, children, plazoError, condensed = fals
     <CaseCompletionDate queja={queja} />
     <div className="mt-5 border-t border-qms-border pt-4"><p className="mb-2 text-xs text-qms-muted">{deadline.stageTitle}</p><QuejaPlazoIndicator deadline={deadline} />{deadline.progress !== null && <div role="progressbar" aria-label="Plazo transcurrido" aria-valuenow={Math.round(deadline.progress)} aria-valuemin={0} aria-valuemax={100} className="mt-3 h-1.5 overflow-hidden rounded-full bg-qms-border"><div className={`h-full rounded-full ${deadline.vencido ? 'bg-qms-danger' : 'bg-qms-primary'}`} style={{ width: `${deadline.progress}%` }} /></div>}{deadline. vence && <p className="mt-2 text-xs text-qms-muted">{deadline.business ? 'Según el calendario del expediente.' : 'Días naturales hasta la fecha límite.'}</p>}{plazoError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el detalle del calendario. Se conserva la fecha límite registrada.</p>}</div>{children && <div className="mt-5 border-t border-qms-border pt-4">{children}</div>}
   </CaseSection>
-}
-
-const mailLabels: Record<QuejaCorreoEstado['tipo'], string> = {
-  recibido: 'Acuse de recibo', investigacion: 'Inicio de investigación', final: 'Comunicación final',
-  interno_recibido: 'Recepción · Calidad',
-  interno_evaluacion_1: 'Evaluación: falta 1 día hábil · Calidad',
-  interno_asignacion: 'Asignación al responsable',
-  interno_investigacion_5: 'Investigación: faltan 5 días hábiles · Calidad',
-  interno_investigacion_3: 'Investigación: faltan 3 días hábiles · Calidad y responsable',
-  interno_evaluacion_vencida: 'Evaluación vencida',
-  interno_investigacion_vencida: 'Investigación vencida',
-}
-const mailStatus: Record<string, string> = { pending: 'Pendiente', leased: 'En proceso', retry: 'Reintento pendiente', sent: 'Aceptado por correo', uncertain: 'Requiere comprobación', failed: 'Fallido', skipped: 'Omitido' }
-export function CaseMailStatus({ messages }: { messages: QuejaCorreoEstado[] }) {
-  return <CaseSection title="Comunicaciones"><p className="mb-3 text-xs text-qms-muted">El estado corresponde al servicio de envío; no confirma lectura ni entrega en la bandeja.</p>{messages.length === 0 ? <p className="text-sm text-qms-muted">No hay comunicaciones registradas.</p> : <ul className="divide-y divide-qms-border">{messages.map(message => <li key={message.id} className="py-3"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm">{mailLabels[message.tipo]}</span>{mailStatus[message.status] && <Badge variant="neutral">{mailStatus[message.status]}</Badge>}</div>{message.sent_at && <p className="mt-1 text-xs text-qms-muted">{caseDate(message.sent_at)}</p>}</li>)}</ul>}</CaseSection>
 }

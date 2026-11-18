@@ -43,6 +43,21 @@ export function useQuejaAttachmentActions(quejaId: string | null, scope: EntityR
     }
   }
 
+  const handleSubirAdjuntos = async (files: readonly File[]) => {
+    const batch = scope.start('attachment-batch')
+    if (!batch) return
+    const isContextCurrent = scope.captureContext()
+    try {
+      for (const file of files) {
+        // Una subida puede terminar después de una navegación a otro folio.
+        if (!batch.isCurrent() || !isContextCurrent()) break
+        await handleSubirAdjunto(file)
+      }
+    } finally {
+      batch.finish()
+    }
+  }
+
   const handleEliminarAdjunto = async (adjuntoId: string) => {
     if (!quejaId) return
     const operation = scope.start('attachment-delete')
@@ -79,6 +94,6 @@ export function useQuejaAttachmentActions(quejaId: string | null, scope: EntityR
   return {
     previewAdjunto, setPreviewAdjunto, subiendoAdjunto, eliminandoAdjunto,
     confirmarEliminacion, setConfirmarEliminacion,
-    handleSubirAdjunto, handleEliminarAdjunto, handleDescargarAdjunto,
+    handleSubirAdjunto, handleSubirAdjuntos, handleEliminarAdjunto, handleDescargarAdjunto,
   }
 }

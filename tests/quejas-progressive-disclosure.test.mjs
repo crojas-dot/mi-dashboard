@@ -84,7 +84,7 @@ test('las etapas de Calidad usan resúmenes y conservan tres tarjetas salvo No P
   assert.match(source, /CaseTriageExcerpt title="Propuesta para revisión"/)
   assert.match(source, /CaseTriageExcerpt title="Estado de la investigación"/)
   assert.match(source, /QuejaCierreResumen key=\{queja\.id \+ ':compact'\}/)
-  assert.match(source, /CaseTriageFooter count=/)
+  assert.match(source, /CaseTriageFooter title="Historial y notas" count=/)
   assert.match(source, /onEscape=\{\(\) => \{/)
 })
 
@@ -172,14 +172,13 @@ test('Mis Quejas también tiene siguiente paso para borrador, devolución y cons
   const triage = source.split('  const triageStep: CaseTriageNextStepData = ')[1]?.split('  // La ayuda se despliega')[0]
   assert.ok(triage)
   for (const text of [
-    'Redactar resolución', 'Prepara la propuesta de resolución',
-    'Borrador guardado', 'Tienes una propuesta guardada el',
-    'Corrección requerida', 'Calidad devolvió tu propuesta',
+    'Redactar resolución', 'Prepara la propuesta para Gestión de Calidad',
+    'Borrador guardado', 'Guardado el',
+    'Corrección requerida', 'Calidad devolvió la propuesta',
     'Cambios sin guardar', 'Continuar editando',
-    'En revisión de Calidad', 'Expediente cerrado', 'Consultar expediente',
   ]) assert.ok(triage.includes(text), text)
-  assert.match(source, /primaryAction=\{<CaseTriageNextStep step=\{triageStep\}/)
-  assert.match(source, /onOpen=\{investigando \? prepararResolucion : \(\) => setIsExpanded\(true\)\}/)
+  assert.match(source, /primaryAction=\{editable\s*\? <CaseTriageNextStep step=\{triageStep\} onOpen=\{prepararResolucion\}/)
+  assert.match(source, /<QuejaCierreResumen[\s\S]*revisionResponsable=/)
   const compact = source.split('  const compactTriage = ')[1]?.split('  return <>')[0]
   assert.ok(compact)
   assert.equal((compact.match(/data-case-triage-expand/g) || []).length, 0, 'el CTA es el único botón primario en CaseTriageNextStep')
@@ -200,17 +199,18 @@ test('en Quejas las acciones reales existen solo en la columna del AMPLIADO', ()
 })
 
 test('aviso de devolución en Mis Quejas también evita la raya lateral', () => {
-  const source = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
-  const notice = source.split('<section data-case-triage-return')[1]?.split('</section>')[0]
+  const source = fs.readFileSync('app/mis-quejas/components/QuejaInvestigacionResumen.tsx', 'utf8')
+  const notice = source.split('<button type="button" data-investigation-return')[1]?.split('</button>')[0]
   assert.ok(notice, 'la observación de Calidad permanece visible')
-  assert.match(notice, /rounded-md border border-amber-100 bg-amber-50/)
+  assert.match(notice, /rounded-card border border-qms-warning\/30 bg-soft-amber-bg/)
   assert.doesNotMatch(notice, /border-l-|border-l-2|border-l-4/)
 })
 
 test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios locales', () => {
   const source = fs.readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
-  assert.match(source, /compactContent=\{compactTriage\}/)
-  assert.match(source, /data-case-triage-resolution/)
+  assert.match(source, /compactContent=\{compactTriage \|\| undefined\}/)
+  assert.match(source, /if \(isExpanded && editable && !editorVisitado\) setEditorVisitado\(true\)/)
+  assert.match(source, /investigando && editorVisitado && <div data-resolution-shell/)
   assert.match(source, /Borrador guardado/)
   assert.match(source, /Cambios sin guardar/)
   assert.match(source, /Redactar resolución/)
@@ -218,11 +218,10 @@ test('Mis Quejas reserva Tiptap para el ampliado visible y protege sus cambios l
   assert.match(source, /ctaLabel: 'Continuar editando'/)
   assert.match(source, /ctaLabel: 'Abrir editor para modificar'/)
   assert.match(source, /ctaLabel: 'Abrir editor para redactar'/)
-  assert.match(source, /line-clamp-2/)
-  assert.match(source, /CaseTriageAttachments files=\{adjuntosAnalisis\}/)
+  assert.match(source, /QuejaAdjuntosCard adjuntos=\{archivos.propios\}/)
   assert.match(source, /const prepararResolucion = \(\) => \{[\s\S]*setIsExpanded\(true\)[\s\S]*setEditandoResolucion\(true\)/)
   assert.equal((source.match(/<RichTextEditor id=\{`colaborador-resolucion-/g) || []).length, 1)
-  assert.match(source, /if \(resolutionDirty \|\| !!nota\.trim\(\)\)/)
+  assert.match(source, /if \(investigando && \(resolutionDirty \|\| notas.dirty\)\)/)
 })
 
 test('Escape tiene callback propio y conserva el botón X de cierre', () => {

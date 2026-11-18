@@ -85,10 +85,10 @@ Ver [preparación del lanzamiento](../quejas-lanzamiento-2026-10-09.md) para evi
   el 14 octubre mediante el poll independiente de Apps Script.
 - Prioridad retirada de la UX de Quejas, sin borrar datos ni prioridades de otros módulos.
   Opciones de estado comparten IDs canónicos, etiquetas/colores configurables en catálogo.
-- Observaciones concentra el seguimiento de Actividad en quejas_comentarios; tipo y
-  visibilidad conservan su contrato. El texto histórico qms_quejas.observaciones se lee
-  una vez en la misma sección, sin inventar autor/fecha ni migrarlo. Las notas de
-  investigación de Mis Quejas siguen en quejas_actividad: son un contrato distinto.
+- Historial y notas concentra la consulta operativa en ambos módulos. Historial
+  muestra movimientos fechados y Notas conserva las anotaciones de investigación
+  de `quejas_actividad`. Los comentarios históricos siguen en `quejas_comentarios`
+  para reportería y la observación histórica queda asociada al expediente.
 - Oficio se captura al declarar No Procede o resolver/aprobar; no hay un campo vacío
   en recepción. Un oficio existente sigue visible con la resolución, incluso tras
   reapertura; no se genera una numeración nueva.

@@ -4,7 +4,10 @@ import { loadModule } from './load-module.mjs'
 import { readFileSync } from 'node:fs'
 
 // Los eventos y estados son del componente real; red, sesión y editor pesado son dobles locales.
-function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait } = {}) {
+function fixture({ rol = 'colaborador', actividad = [], workflowError = true, initialDraft = null, saveWait, autoExpand = true,
+  asignacion: assignment = null, devoluciones: returns = [], adjuntos: attachments = [
+    { id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' }, { id: 'file', usuario_id: 'owner', nombre: 'Informe.pdf' },
+  ] } = {}) {
   const slots = [], calls = [], locks = [], errors = [], uploads = [], updates = [], saves = [], noteUpdates = [], noteDeletes = [], assistCalls = []
   const drafts = new Map(initialDraft ? [[initialDraft.queja_id, initialDraft]] : [])
   let draftError = false, generation = 0, guardId, active = false
@@ -19,7 +22,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
   }
   const { default: Panel } = loadModule('app/mis-quejas/components/QuejaColaboradorPanel.tsx', {
     react,
-    '@tanstack/react-query': { useQueryClient: () => ({ setQueryData: (key, value) => drafts.set(key.at(-1), value), invalidateQueries() {} }) },
+    '@tanstack/react-query': { useQuery: () => ({}), useQueryClient: () => ({ setQueryData: (key, value) => drafts.set(key.at(-1), value), invalidateQueries() {} }) },
     '@/components/Modal': { default: 'Modal' },
     '@/components/ui/Button': { default: 'Button' },
     '@/components/ui/Badge': { default: 'Badge' },
@@ -44,8 +47,10 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
     },
     '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: id => ({ data: draftError ? undefined : drafts.get(id) ?? null, error: draftError ? new Error('Lectura fallida') : null, isFetching: false, refetch() {} }) },
     '@/lib/queries/useQuejaActividad': { quejaActividadKey: id => ['quejas', 'actividad', id], useQuejaActividad: () => ({ data: actividad, isLoading: false, error: null, refetch() {} }), useCrearQuejaActividad: () => ({ mutateAsync: async () => {} }) },
-    '@/lib/queries/useQuejaDevoluciones': { useQuejaDevoluciones: () => ({ data: [] }) },
-    '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: [{ id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' }, { id: 'file', usuario_id: 'owner', nombre: 'Informe.pdf' }] }) },
+    '@/lib/queries/useQuejaHistorial': { useQuejaHistorial: () => ({ data: [], isPending: false, isError: false }) },
+    '@/lib/queries/useQuejaDevoluciones': { useQuejaDevoluciones: () => ({ data: returns }) },
+    '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data: assignment }) },
+    '@/lib/queries/useQuejas': { useQuejaAdjuntos: () => ({ data: attachments }) },
     '@/lib/queries/useQuejaSeguimiento': { useQuejaPlazos: () => ({}) },
     '@/hooks/useEntityRequestGuard': { useEntityRequestGuard: id => {
       if (guardId !== id) { guardId = id; generation++; active = !!id; lanes.clear() }
@@ -56,15 +61,15 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
         return { isCurrent, finish() { if (isCurrent()) lanes.delete(key) } }
       } }
     } },
-    '@/hooks/useQuejaAttachmentActions': { useQuejaAttachmentActions: () => ({ previewAdjunto: null, confirmarEliminacion: null, subiendoAdjunto: uploading, eliminandoAdjunto: null, handleSubirAdjunto: async file => { uploads.push(file) }, setConfirmarEliminacion() {} }) },
+    '@/hooks/useQuejaAttachmentActions': { useQuejaAttachmentActions: () => ({ previewAdjunto: null, confirmarEliminacion: null, subiendoAdjunto: uploading, eliminandoAdjunto: null, handleSubirAdjuntos: async files => { uploads.push(...files) }, setConfirmarEliminacion() {} }) },
     '@/app/mis-quejas/components/useQuejaAssistant': { useQuejaAssistant: () => ({ aiAutoLoading: false, chatLoading: false, aiResult: '', chat: [], chatInput: '', setAiResult() {}, setChatInput() {}, handleAnalisisAuto() { assistCalls.push('auto') }, handleEnviarIA() {}, setModoEdicion() {} }) },
   }, { window: { innerHeight: 900, getSelection: () => null, matchMedia: () => ({ matches: true }), addEventListener() {}, removeEventListener() {} }, requestAnimationFrame() {} })
   const visit = value => {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (!value?.props) return []
-    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion', 'CaseWorkspaceNavigation'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
+    if (['QuejaInvestigacionResumen', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel', 'QuejaAdjuntosCard', 'QuejaAdjuntosInvestigacion', 'CaseWorkspaceNavigation', 'MisQuejasBreadcrumb', 'CaseTriageNextStep', 'QuejaHistorial', 'Tabs'].includes(value.type?.name)) return [value, ...visit(value.type(value.props))]
     if (value.type === 'Modal' && !value.props.open) return [value]
-    return [value, ...visit(value.props.children), ...visit(value.props.toolbarActions), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter), ...visit(value.props.compactContent)]
+    return [value, ...visit(value.props.children), ...visit(value.props.toolbarActions), ...visit(value.props.headerActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter), ...visit(value.props.headerCenter), ...visit(value.props.compactContent), ...visit(value.props.primaryAction)]
   }
   const nodes = () => visit(tree)
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
@@ -74,12 +79,19 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
     calls, errors, nodes, render, uploads, updates, saves, noteUpdates, noteDeletes, assistCalls,
     remoteDraft(id, value) { drafts.set(id, value); render() },
     draftError(value) { draftError = value; render() },
-    select(id, extra = {}) { queja = id ? { id, folio: '2026-001', cliente_nombre: 'Persona sintética', fecha: '2026-10-15', categoria: 'Queja', estado: 'En Investigación', responsable_id: 'owner', revision: 7, ...extra } : null; render() },
-    openAnalysis() { button('Ver análisis').props.onClick(); render() },
+    select(id, extra = {}) {
+      const nuevaVisita = id && id !== queja?.id
+      queja = id ? { id, folio: '2026-001', cliente_nombre: 'Persona sintética', fecha: '2026-10-15', categoria: 'Queja', estado: 'En Investigación', responsable_id: 'owner', revision: 7, ...extra } : null
+      render()
+      if (nuevaVisita && autoExpand && button('Ampliar expediente')) { button('Ampliar expediente').props.onClick(); render() }
+    },
+    stage(id) { nodes().find(node => node.props['data-case-stage'] === id).props.onClick(); render() },
+    activeStage: () => nodes().find(node => node.props['data-case-stage'] && node.props['aria-pressed'])?.props['data-case-stage'],
+    openAnalysis() { this.stage('analisis') },
     openNotes() { nodes().find(node => node.props['data-investigation-notes-card']).props.onClick(); render() },
     modal: () => nodes().find(node => node.type === 'Modal' && node.props.variant === 'workspace'),
     analysisModal: () => nodes().find(node => node.type === 'Modal' && node.props.title.startsWith('Análisis')),
-    notesModal: () => nodes().find(node => node.type === 'Modal' && node.props.title.startsWith('Mis notas')),
+    notesModal: () => nodes().find(node => node.type === 'Modal' && node.props.title === 'Historial y notas'),
     button,
     uploading(value) { uploading = value; render() },
     editor: () => nodes().find(node => node.type === 'Editor' && !nodes().some(parent => parent.props.hidden && visit(parent.props.children).includes(node))),
@@ -88,7 +100,7 @@ function fixture({ rol = 'colaborador', actividad = [], workflowError = true, in
 }
 
 test('Mis Quejas comparte workspace ampliable; cerrar y volver a abrir restablece lateral', () => {
-  const panel = fixture()
+  const panel = fixture({ autoExpand: false })
   panel.select('A')
   assert.equal(panel.modal().props.expanded, false)
   panel.button('Ampliar expediente').props.onClick(); panel.render()
@@ -110,7 +122,7 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.equal(workspace.props.requestFooter.props.children[0].type.name, 'QuejaAdjuntosCard')
   assert.equal(workspace.props.requestFooter.props.children[1].type.name, 'QuejaNotasCard')
   assert.ok(panel.modal().props.headerCenter)
-  assert.equal(workspace.props.cycle.props.process, true)
+  assert.equal(workspace.props.cycle.type.name, 'MisQuejasBreadcrumb')
   assert.equal(panel.editor().props.label, 'Resolución')
   assert.equal(panel.nodes().find(node => node.props['data-resolution-header']), undefined)
   const footer = panel.nodes().find(node => node.props['data-resolution-footer'])
@@ -201,37 +213,37 @@ test('Guardar y Cancelar restauran altura normal; Editar no expande hasta solici
   assert.equal(panel.nodes().find(node => node.props['data-resolution-inline']).props['data-resolution-expanded'], undefined)
 })
 
-test('un único acceso abre Análisis en un modal amplio sin ampliar el trabajo ni perder el borrador', () => {
+test('el breadcrumb abre Análisis de solo lectura y conserva el borrador al regresar', () => {
   const panel = fixture()
   panel.select('A', { justificacion_procede: 'Observación de Calidad registrada.' })
   const editorId = panel.editor().props.id
-  assert.equal(panel.nodes().filter(node => node.type === 'Button' && node.props['aria-label'] === 'Ver análisis').length, 1)
   panel.editor().props.onChange('Borrador en curso', 'plain'); panel.render()
   panel.openAnalysis()
-  assert.equal(panel.modal().props.expanded, false)
-  assert.equal(panel.analysisModal().props.open, true)
-  assert.equal(panel.analysisModal().props.variant, 'document')
-  assert.equal(panel.analysisModal().props.size, 'mail')
-  assert.ok(panel.nodes().some(node => node.props['data-quality-review']))
+  assert.equal(panel.activeStage(), 'analisis')
+  assert.equal(panel.modal().props.expanded, true)
+  assert.equal(panel.analysisModal(), undefined)
+  assert.ok(panel.nodes().some(node => node.props['data-mis-quejas-analysis']))
   assert.ok(panel.nodes().some(node => node.props['data-client-description']))
   assert.equal(panel.nodes().find(node => node.type === 'Badge' && node.props.children === 'Procede').props.variant, 'blue')
+  assert.equal(panel.editor(), undefined)
+  assert.equal(panel.button('Enviar a Revisión GC'), undefined)
+  panel.button('Ir a Resolución').props.onClick(); panel.render()
+  assert.equal(panel.activeStage(), 'resolucion')
   assert.equal(panel.editor().props.id, editorId)
-  assert.equal(panel.editor().props.value, 'Borrador en curso')
-  panel.analysisModal().props.onClose(); panel.render()
-  assert.equal(panel.analysisModal().props.open, false)
   assert.equal(panel.editor().props.value, 'Borrador en curso')
 })
 
-test('el pie de Análisis vuelve al editor y conserva la amplitud anterior del trabajo', () => {
-  const panel = fixture()
+test('el panel lateral conserva la etapa y amplía el editor desde Resolución', () => {
+  const panel = fixture({ autoExpand: false })
   panel.select('A')
-  panel.editor().props.onChange('Conclusión', 'plain'); panel.render()
-  panel.button('Ampliar expediente').props.onClick(); panel.render()
   panel.openAnalysis()
-  panel.button('Preparar resolución').props.onClick(); panel.render()
-  assert.equal(panel.analysisModal().props.open, false)
+  assert.equal(panel.modal().props.expanded, false)
+  assert.equal(panel.activeStage(), 'analisis')
+  panel.button('Ir a Resolución').props.onClick(); panel.render()
+  assert.equal(panel.activeStage(), 'resolucion')
+  panel.button('Abrir editor para redactar').props.onClick(); panel.render()
   assert.equal(panel.modal().props.expanded, true)
-  assert.equal(panel.editor().props.value, 'Conclusión')
+  assert.equal(panel.editor().props.value, '')
 })
 
 test('la devolución activa muestra el aviso y cambia el botón a Reenviar a Revisión GC', () => {
@@ -330,6 +342,10 @@ test('propuesta en revisión y estados finales conservan lectura y no permiten e
     assert.equal(panel.editor(), undefined)
     assert.equal(panel.button('Enviar a Revisión GC'), undefined)
     assert.equal(panel.button('Confirmar resolución'), undefined)
+    if (estado !== 'No Procede') {
+      assert.equal(panel.activeStage(), 'revision')
+      panel.stage('resolucion')
+    }
     assert.ok(panel.nodes().some(node => node.type === 'Content' && node.props.value === 'Trabajo registrado'))
     panel.openAnalysis()
     assert.equal(panel.button('Preparar resolución'), undefined)
@@ -360,7 +376,7 @@ test('un clic en Asistencia IA inicia análisis sin chat ni desplegables y conse
   assert.deepEqual(panel.assistCalls, ['auto'])
   panel.editor().props.onChange('Conclusión en curso', 'plain'); panel.render()
   panel.openAnalysis()
-  panel.analysisModal().props.onClose(); panel.render()
+  panel.stage('resolucion')
   assert.equal(panel.editor().props.value, 'Conclusión en curso')
   assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
 })
@@ -372,12 +388,23 @@ test('borrador bloquea navegación; cambiar de visita retira borrador y lateral 
   assert.equal(panel.button('Queja siguiente').props.disabled, true)
   panel.openAnalysis()
   panel.select('B')
-  assert.equal(panel.analysisModal().props.open, false)
+  assert.equal(panel.activeStage(), 'resolucion')
   assert.equal(panel.editor().props.value, '')
 })
 
-test('los adjuntos de análisis viven debajo de notas, no dentro del lienzo, y se separan de los del cliente', () => {
-  const panel = fixture()
+test('Mis adjuntos excluye a Calidad, al cliente y al oficio aunque el autor sea el responsable', () => {
+  const panel = fixture({
+    asignacion: { oficio_adjunto_id: 'office', updated_at: '2026-11-01' },
+    devoluciones: [{ adjuntoIds: ['return-file'], motivo: 'Completar', fecha: '2026-11-04' }],
+    adjuntos: [
+      { id: 'client-file', usuario_id: null, nombre: 'Solicitud.pdf' },
+      { id: 'file', usuario_id: 'owner', created_at: '2026-11-02', nombre: 'Informe.pdf' },
+      { id: 'office', usuario_id: 'owner', created_at: '2026-11-02', nombre: 'Oficio.pdf' },
+      { id: 'return-file', usuario_id: 'owner', created_at: '2026-11-04', nombre: 'Devolución.pdf' },
+      { id: 'quality', usuario_id: 'quality', created_at: '2026-11-03', nombre: 'Análisis de Calidad.pdf' },
+      { id: 'earlier', usuario_id: 'owner', created_at: '2026-10-30', nombre: 'Evaluación.pdf' },
+    ],
+  })
   panel.select('A')
   assert.equal(panel.nodes().some(node => node.props['data-resolution-attachments']), false)
   assert.equal(panel.button('Adjuntar'), undefined)
@@ -391,14 +418,16 @@ test('los adjuntos de análisis viven debajo de notas, no dentro del lienzo, y s
   assert.ok(panel.nodes().some(node => node.props['data-attachment-list-scroll']))
   const list = panel.nodes().find(node => node.type === 'Attachments')
   assert.equal(list.props.layout, 'modal')
-  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['file'])
+  assert.deepEqual(Array.from(list.props.adjuntos, file => file.id), ['file'])
   assert.equal(list.props.puedeEliminar(list.props.adjuntos[0]), true)
   assert.ok(panel.button('Agregar archivos'))
   panel.modal().props.onClose(); panel.render()
   assert.equal(panel.nodes().find(node => node.type === 'Modal' && node.props.title?.startsWith('Mis adjuntos')).props.open, false)
   panel.openAnalysis()
-  const cliente = panel.nodes().find(node => node.type === 'Attachments')
-  assert.deepEqual(cliente.props.adjuntos.map(file => file.id), ['client-file'])
+  const listas = panel.nodes().filter(node => node.type === 'Attachments')
+  assert.deepEqual(Array.from(listas[0].props.adjuntos, file => file.id), ['client-file'])
+  assert.deepEqual(Array.from(listas[1].props.adjuntos, file => file.id), ['office', 'return-file', 'quality', 'earlier'])
+  assert.ok(listas.every(node => !node.props.puedeEliminar))
 })
 
 test('la tarjeta lateral solo abre el modal; arrastrar y adjuntar ocurre dentro del modal', async () => {
@@ -435,30 +464,30 @@ test('una evidencia pendiente bloquea envío mientras permite consultar y cerrar
   panel.uploading(true)
   assert.equal(panel.button('Enviar a Revisión GC').props.disabled, true)
   panel.openAnalysis()
-  panel.analysisModal().props.onClose(); panel.render()
-  assert.equal(panel.analysisModal().props.open, false)
+  panel.stage('resolucion')
+  assert.equal(panel.activeStage(), 'resolucion')
   await panel.button('Enviar a Revisión GC').props.onClick()
   assert.equal(panel.calls.length, 0)
   panel.uploading(false)
   assert.equal(panel.button('Enviar a Revisión GC').props.disabled, false)
 })
 
-test('el historial queda en el panel de acción durante la investigación para enviar a revisión GC', () => {
+test('un único acceso lateral reúne historial y notas de investigación', () => {
   const panel = fixture()
   panel.select('A')
-  const history = panel.nodes().find(node => node.type?.name === 'CaseSidebarShortcut')
-  assert.ok(history, 'el panel de acción ofrece historial mientras prepara la revisión')
-  assert.equal(history.props.title, 'Historial y observaciones')
-  assert.equal(history.props.actionLabel, 'Ver historial')
-  assert.equal(typeof history.props.onClick, 'function')
-  history.props.onClick(); panel.render()
+  assert.equal(panel.nodes().filter(node => node.props['data-investigation-notes-card']).length, 1)
+  assert.equal(panel.nodes().some(node => node.type?.name === 'CaseSidebarShortcut'), false)
+  panel.openNotes()
   assert.equal(panel.notesModal().props.open, true)
+  assert.ok(panel.nodes().some(node => node.props.role === 'tab' && node.props.children === 'Historial'))
 })
 
-test('fuera de la investigación el panel de acción no ofrece el acceso al historial para enviar', () => {
+test('en revisión el historial es consultable sin agregar notas', () => {
   const panel = fixture()
   panel.select('A', { estado: 'Pendiente de Revisión GC' })
-  assert.equal(panel.nodes().some(node => node.type?.name === 'CaseSidebarShortcut'), false)
+  panel.openNotes()
+  assert.equal(panel.notesModal().props.open, true)
+  assert.equal(panel.nodes().some(node => node.props['aria-label'] === 'Agregar nota'), false)
 })
 
 test('un envío confirmado entrega una sola transición a GC y el documento queda de lectura', async () => {
@@ -471,6 +500,7 @@ test('un envío confirmado entrega una sola transición a GC y el documento qued
   panel.select('A', panel.updates[0])
   assert.equal(panel.editor(), undefined)
   assert.equal(panel.button('Enviar a Revisión GC'), undefined)
+  assert.equal(panel.nodes().find(node => node.type?.name === 'QuejaCierreResumen').props.revisionResponsable.estado, 'Pendiente')
 })
 
 test('Guardar persiste sin enviar, deja el documento en lectura y vuelve a cargar el mismo texto/formato al reabrir', async () => {
@@ -562,7 +592,7 @@ test('Mis notas conserva el botón + y elimina el nombre repetido de cada tarjet
   ] })
   panel.select('A'); panel.openNotes()
   const modal = panel.notesModal()
-  assert.equal(modal.props.title, 'Mis notas')
+  assert.equal(modal.props.title, 'Historial y notas')
   assert.equal(modal.props.titleSuffix, '2026-001')
   assert.deepEqual(modal.props.currentUser, undefined)
   const add = panel.nodes().find(node => node.type === 'button' && node.props['aria-label'] === 'Agregar nota')
@@ -735,27 +765,30 @@ test('Mis notas muestra menú en revisión pero no permite modificar fuera de In
   assert.equal(panel.noteDeletes.length, 0)
 })
 
-test('Ver análisis presenta las tres pestañas con adjuntos del cliente e historial real', () => {
-  const panel = fixture({ actividad: [{ id:'n1', queja_id:'A', usuario_id:'owner', tipo:'nota', descripcion:'Hallazgo real', created_at:'2026-11-11T18:00:00Z' }] })
-  panel.select('A', { justificacion_procede: 'Calidad autorizó investigar.' })
-  panel.openAnalysis()
-  const modal = panel.analysisModal()
-  assert.equal(modal.props.title, 'Análisis del caso')
-  assert.equal(modal.props.titleSuffix, '2026-001')
-  assert.equal(modal.props.size, 'mail')
-  assert.equal(modal.props.variant, 'document')
-  const tabs = panel.nodes().filter(node => node.props.role === 'tab')
-  assert.equal(tabs.length, 6)
-  assert.ok(tabs.some(node => node.props.children?.some?.(child => child === 'Adjuntos')))
-  const sections = panel.nodes().filter(node => node.props.role === 'tabpanel')
-  assert.equal(sections.length, 3)
-  assert.equal(sections.find(node => node.props['aria-label'] === 'Adjuntos del cliente').props.hidden, true)
-  assert.equal(sections.find(node => node.props['aria-label'] === 'Historial del expediente').props.hidden, true)
-  assert.ok(panel.nodes().some(node => node.props['data-quality-review']))
-  assert.ok(panel.nodes().some(node => node.props['data-client-description']))
-  const list = panel.nodes().find(node => node.type === 'Attachments')
-  assert.deepEqual(list.props.adjuntos.map(file => file.id), ['client-file'])
-  assert.equal(list.props.hideGroupTitle, true)
+test('la revisión muestra solo la propuesta y el resultado del responsable', () => {
+  const panel = fixture()
+  const resultado = () => panel.nodes().find(node => node.type?.name === 'QuejaCierreResumen')?.props.revisionResponsable.estado
+  panel.select('A', { estado: 'Pendiente de Revisión GC', resolucion: 'Propuesta enviada' })
+  const stages = () => new Set(panel.nodes().map(node => node.props['data-case-stage']).filter(Boolean))
+  assert.deepEqual([...stages()], ['analisis', 'resolucion', 'revision'])
+  assert.equal(panel.activeStage(), 'revision')
+  assert.equal(resultado(), 'Pendiente')
+  panel.select('A', { estado: 'Resuelto', resolucion: 'Propuesta enviada' })
+  assert.equal(resultado(), 'Aprobada')
+  panel.select('A', { estado: 'Finalizado', resolucion: 'Propuesta enviada' })
+  assert.equal(panel.activeStage(), 'revision')
+  assert.equal(stages().has('finished'), false)
+  assert.equal(panel.button('Publicar'), undefined)
+  assert.equal(resultado(), 'Aprobada')
+})
+
+test('No Procede conserva Análisis y deja Resolución y Revisión indisponibles', () => {
+  const panel = fixture()
+  panel.select('A', { estado: 'No Procede', resolucion: 'No aplica al alcance.' })
+  assert.equal(panel.activeStage(), 'analisis')
+  assert.equal(panel.nodes().find(node => node.props['data-case-stage'] === 'resolucion').props.disabled, true)
+  assert.equal(panel.nodes().find(node => node.props['data-case-stage'] === 'revision').props.disabled, true)
+  assert.equal(panel.button('Ir a Resolución'), undefined)
 })
 
 test('guardar el borrador conserva adjuntos a la izquierda sin duplicarlos en el editor', async () => {

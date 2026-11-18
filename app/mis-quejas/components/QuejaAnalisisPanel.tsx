@@ -1,197 +1,80 @@
 'use client'
 
-import { useRef, useState, type KeyboardEvent } from 'react'
-import { Clock3, FileText, LockKeyhole, Paperclip, UserRound } from 'lucide-react'
-import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import RichTextContent from '@/components/ui/RichTextContent'
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import AreaAfectada from '@/components/quejas/AreaAfectada'
-import { caseDate } from '@/app/quejas/components/quejaExpedienteModel'
+import { CaseSection } from '@/app/quejas/components/QuejaExpedientePanels'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
-import { NOTA_DEVOLUCION_PREFIX, NOTA_APROBACION_GC } from '@/lib/utils/quejaInvestigacionNotas'
 import type { Queja } from '@/lib/types'
 import type { QuejaAdjunto } from '@/lib/queries/useQuejas'
-import type { QuejaActividad } from '@/lib/queries/useQuejaActividad'
-import type { DevolucionInvestigacion } from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
+import type { QuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 
 interface Props {
   queja: Queja
-  open: boolean
-  onClose: () => void
-  onPrepararResolucion?: () => void
-  devolucion?: DevolucionInvestigacion
-  adjuntos: QuejaAdjunto[]
+  asignacion?: QuejaInvestigationAssignment | null
+  adjuntosCliente: QuejaAdjunto[]
+  adjuntosCalidad: QuejaAdjunto[]
   adjuntosLoading: boolean
   adjuntosError: boolean
   onRetryAdjuntos: () => void
   onPreview: (adjunto: QuejaAdjunto) => void
   onDownload: (adjunto: QuejaAdjunto) => void
-  actividad: QuejaActividad[]
-  actividadLoading: boolean
-  actividadError: boolean
-  onRetryActividad: () => void
-  resolveAuthor?: (item: QuejaActividad) => string | undefined
 }
 
-type AnalysisTab = 'analisis' | 'adjuntos' | 'historial'
-
-const tabs = [
-  { id: 'analisis', label: 'Análisis', Icon: FileText },
-  { id: 'adjuntos', label: 'Adjuntos', Icon: Paperclip },
-  { id: 'historial', label: 'Historial', Icon: Clock3 },
-] as const
-
-interface TimelineProps {
-  actividad: QuejaActividad[]
-  loading?: boolean
-  error?: boolean
-  onRetry?: () => void
-  resolveAuthor?: (item: QuejaActividad) => string | undefined
-}
-
-/** Línea de tiempo compartida por Calidad y el responsable; solo varían los eventos autorizados. */
-export function QuejaTimeline({ actividad, loading, error, onRetry, resolveAuthor }: TimelineProps) {
-  const events = [...actividad].sort((a, b) => b.created_at.localeCompare(a.created_at))
-  return <section data-queja-timeline className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-      <h3 className="text-[17px] font-semibold text-qms-dark">Línea de tiempo</h3>
-      <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-1 text-[11px] font-semibold text-qms-muted">Registro de actividad</span>
-    </div>
-    {loading ? <LoadingSkeleton variant="list" label="Cargando historial…" framed={false} />
-      : error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudo cargar el historial.{onRetry && <Button size="sm" variant="ghost" onClick={onRetry}>Reintentar historial</Button>}</div>
-      : events.length === 0 ? <p className="text-sm text-qms-muted">Sin actividad registrada.</p>
-      : <ol className="relative ml-3 space-y-8 border-l-2 border-qms-border pb-4">
-        {events.map((item, index) => {
-          const returned = item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX)
-          const approved = item.descripcion === NOTA_APROBACION_GC
-          const title = returned ? 'Devolución a investigación' : approved ? 'Resolución aprobada' : item.tipo === 'nota' ? 'Nota agregada' : item.tipo.replace(/_/g, ' ')
-          const description = returned ? 'Motivo: ' + item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length) : item.descripcion
-          const author = resolveAuthor?.(item) || (returned || approved ? 'Gestión de Calidad' : item.usuario_id ? 'Usuario registrado' : 'Autor no registrado')
-          return <li key={item.id} className="relative min-w-0 pl-8">
-            <span aria-hidden="true" className={`absolute -left-[9px] top-1.5 z-10 size-4 rounded-full ring-4 ring-qms-surface ${index === 0 ? 'bg-qms-primary' : 'bg-gray-300'}`} />
-            <div className="mb-2 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-              <h4 className="text-[15px] font-semibold text-qms-dark">{title}</h4>
-              <time dateTime={item.created_at} className="shrink-0 text-[13px] font-medium text-qms-muted">{caseDate(item.created_at)}</time>
-            </div>
-            <p className="mb-3 flex items-center gap-1.5 text-[13px] text-qms-muted"><UserRound aria-hidden="true" className="size-3" />Por: {author}</p>
-            <p className="whitespace-pre-wrap break-words rounded-button border border-qms-border bg-qms-hover-bg p-4 text-[14px] leading-relaxed text-qms-dark shadow-sm">{description}</p>
-          </li>
-        })}
-      </ol>}
-  </section>
-}
-
-export default function QuejaAnalisisPanel(props: Props) {
-  const { queja } = props
-  const [activeTab, setActiveTab] = useState<AnalysisTab>('analisis')
-  const [tabContext, setTabContext] = useState({ caseId: queja.id, open: props.open })
-  const scrollRef = useRef<HTMLDivElement>(null)
-  // Restablecer la pestaña en la misma renderización que abre otro expediente.
-  // Evita un efecto síncrono extra y no enseña una pestaña previa durante un frame.
-  if (tabContext.caseId !== queja.id || tabContext.open !== props.open) {
-    setTabContext({ caseId: queja.id, open: props.open })
-    if (props.open) setActiveTab('analisis')
-  }
-
+export default function QuejaAnalisisPanel({
+  queja, asignacion, adjuntosCliente, adjuntosCalidad, adjuntosLoading, adjuntosError,
+  onRetryAdjuntos, onPreview, onDownload,
+}: Props) {
   const analysis = getQuejaAnalysis(queja)
-  const adjuntosCliente = props.adjuntos.filter(adjunto => !adjunto.usuario_id)
-  const decision = queja.estado === 'No Procede' ? 'No Procede' : queja.justificacion_procede ? 'Procede' : null
-  const tabId = (id: AnalysisTab) => `analisis-${queja.id}-${id}`
-  const changeTab = (id: AnalysisTab) => {
-    setActiveTab(id)
-    scrollRef.current?.scrollTo({ top: 0 })
-  }
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, current: AnalysisTab) => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-    event.preventDefault()
-    const index = tabs.findIndex(tab => tab.id === current)
-    const nextIndex = event.key === 'Home' ? 0
-      : event.key === 'End' ? tabs.length - 1
-      : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
-    changeTab(tabs[nextIndex].id)
-    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus()
-  }
+  const noProcede = queja.estado === 'No Procede'
+  const decision = noProcede ? 'No Procede' : queja.justificacion_procede ? 'Procede' : null
+  const observacion = queja.justificacion_procede || (noProcede ? queja.resolucion : null)
+  const formato = queja.justificacion_procede ? queja.justificacion_procede_formato : queja.resolucion_formato
+  const instrucciones = asignacion?.instrucciones?.trim()
+  const adjuntosProps = { layout: 'rows' as const, hideGroupTitle: true, onPreview, onDownload }
 
-  const tabButtons = (mobile: boolean) => <div role="tablist" aria-label="Secciones del análisis" className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-button bg-qms-hover-bg p-1">
-    {tabs.map(({ id, label, Icon }) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} aria-controls={tabId(id)}
-      tabIndex={activeTab === id ? 0 : -1} onClick={() => changeTab(id)} onKeyDown={event => handleTabKeyDown(event, id)}
-      className={`inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-button px-3 py-2 text-xs font-medium transition-colors ${activeTab === id ? 'bg-qms-surface font-semibold text-qms-primary shadow-sm' : 'text-qms-muted hover:bg-qms-surface hover:text-qms-dark'} ${mobile ? 'min-h-10' : ''}`}>
-      <Icon aria-hidden="true" className="size-3.5" />{label}
-      {id === 'adjuntos' && !props.adjuntosLoading && !props.adjuntosError && <span className="rounded-button bg-qms-neutral-soft px-1.5 py-0.5 text-[11px] font-semibold text-qms-muted">{adjuntosCliente.length}</span>}
-    </button>)}
-  </div>
-
-  return <Modal open={props.open} onClose={props.onClose} title="Análisis del caso" titleSuffix={queja.folio} variant="document" size="mail" emphasizeTitle
-    headerActions={<div className="hidden min-w-0 items-center gap-3 md:flex">{tabButtons(false)}<span aria-hidden="true" className="h-5 w-px shrink-0 bg-qms-border" /></div>}
-    footer={<div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" onClick={props.onClose}>Cerrar</Button>{props.onPrepararResolucion && <Button className="min-w-0 whitespace-normal" onClick={props.onPrepararResolucion}>Preparar resolución</Button>}</div>}>
-    <div className="shrink-0 border-b border-qms-border bg-qms-surface px-3 py-2 md:hidden">{tabButtons(true)}</div>
-    <div ref={scrollRef} data-analysis-scroll data-case-scroll className="min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] bg-qms-hover-bg">
-      <section id={tabId('analisis')} role="tabpanel" aria-label="Análisis" hidden={activeTab !== 'analisis'} className={activeTab === 'analisis' ? 'mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6 p-4 sm:p-6' : 'hidden'}>
-        <div data-quality-review className="relative mb-1">
-          <div className="relative z-10 rounded-card border border-qms-warning/50 bg-soft-amber-bg p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
-                <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-button border border-qms-warning/50 bg-soft-amber-bg font-semibold text-sm text-soft-amber-text">GC</span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold text-qms-dark">Evaluación de Calidad</h3>
-                  <p className="mt-1 text-xs text-qms-muted">Observación registrada en el expediente</p>
-                </div>
-              </div>
-              {decision && <Badge variant={decision === 'Procede' ? 'blue' : 'gray'}>{decision}</Badge>}
-            </div>
-            {queja.justificacion_procede
-              ? <div className="break-words text-base leading-relaxed text-qms-dark"><RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} /></div>
-              : <p className="text-sm text-qms-muted">Sin observación de Calidad registrada.</p>}
-          </div>
-          <span aria-hidden="true" className="absolute bottom-[-6px] left-10 z-20 size-3 rotate-45 border-r border-b border-qms-warning/50 bg-soft-amber-bg" />
+  return <div data-mis-quejas-analysis className="min-w-0 divide-y divide-qms-border">
+    <div className="px-5 py-5 sm:px-8 sm:py-6">
+      <section data-quality-review className="rounded-card border border-qms-warning/40 bg-soft-amber-bg px-4 py-3 text-soft-amber-text sm:p-5">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-semibold">Evaluación de Calidad</h3>
+          {decision && <Badge variant={noProcede ? 'gray' : 'blue'}>{decision}</Badge>}
         </div>
-        <section data-client-description className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
-          <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <h3 className="flex items-center gap-2 text-lg font-semibold text-qms-dark"><FileText aria-hidden="true" className="size-5 text-qms-muted" />Descripción del cliente</h3>
-            <AreaAfectada area={queja.area_afectada} />
-          </div>
-          <p className="whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
-        </section>
-        {props.devolucion && <section className="rounded-card border border-qms-warning/50 bg-qms-surface p-5 shadow-sm sm:p-6">
-          <h3 className="mb-2 text-sm font-semibold">Devolución de Calidad</h3>
-          <time className="text-xs text-qms-muted" dateTime={props.devolucion.fecha}>{caseDate(props.devolucion.fecha)}</time>
-          <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed">{props.devolucion.motivo}</p>
-        </section>}
-        {analysis && <section className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-6">
-          <h3 className="mb-3 text-sm font-semibold">Análisis registrado</h3>
-          <RichTextContent value={analysis.value} format={analysis.format} />
-        </section>}
-        {(queja.resolucion || queja.numero_oficio_resolucion) && <section className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-6">
-          <h3 className="mb-3 text-sm font-semibold">{queja.estado === 'En Investigación' ? 'Propuesta anterior registrada' : 'Documento registrado'}</h3>
-          {queja.resolucion && <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />}
-          {queja.numero_oficio_resolucion && <p className="mt-3 text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}
-        </section>}
-        {queja.observaciones && <section className="rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-6">
-          <h3 className="mb-3 text-sm font-semibold">Observación anterior</h3>
-          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{queja.observaciones}</p>
-        </section>}
-      </section>
-      <section id={tabId('adjuntos')} role="tabpanel" aria-label="Adjuntos del cliente" hidden={activeTab !== 'adjuntos'} className={activeTab === 'adjuntos' ? 'mx-auto w-full min-w-0 max-w-5xl p-4 sm:p-6' : 'hidden'}>
-        <div className="overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-hover-bg px-4 py-4 sm:px-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold">Evidencias del cliente</h3>
-              <span className="rounded-button bg-qms-neutral-soft px-2 py-0.5 text-xs font-medium text-qms-muted">Solo lectura</span>
-            </div>
-            {!props.adjuntosLoading && !props.adjuntosError && <span className="inline-flex items-center gap-1.5 text-xs font-medium text-qms-muted"><LockKeyhole aria-hidden="true" className="size-3.5" />{adjuntosCliente.length} {adjuntosCliente.length === 1 ? 'archivo' : 'archivos'}</span>}
-          </div>
-          {props.adjuntosLoading ? <div className="p-5"><LoadingSkeleton variant="list" label="Cargando archivos del cliente…" framed={false} /></div>
-            : props.adjuntosError ? <div role="alert" className="flex flex-wrap items-center gap-2 p-5 text-sm text-qms-muted">No se pudieron cargar los archivos.<Button variant="ghost" size="sm" onClick={props.onRetryAdjuntos}>Reintentar archivos</Button></div>
-            : adjuntosCliente.length ? <ListaAdjuntos adjuntos={adjuntosCliente} layout="rows" hideGroupTitle onPreview={props.onPreview} onDownload={props.onDownload} />
-            : <p className="p-5 text-sm text-qms-muted">Sin adjuntos del cliente.</p>}
-        </div>
-      </section>
-      <section id={tabId('historial')} role="tabpanel" aria-label="Historial del expediente" hidden={activeTab !== 'historial'} className={activeTab === 'historial' ? 'mx-auto w-full min-w-0 max-w-5xl p-4 sm:p-6' : 'hidden'}>
-        <QuejaTimeline actividad={props.actividad} loading={props.actividadLoading} error={props.actividadError} onRetry={props.onRetryActividad} resolveAuthor={props.resolveAuthor} />
+      {observacion ? <RichTextContent value={observacion} format={formato} />
+        : <p className="text-sm">Sin observación de Calidad registrada.</p>}
+      {instrucciones && instrucciones !== observacion?.trim() && <section className="mt-4 border-t border-qms-warning/30 pt-3">
+        <h4 className="mb-2 text-sm font-semibold">Indicaciones para la investigación</h4>
+        <p className="whitespace-pre-wrap wrap-anywhere text-sm">{instrucciones}</p>
+      </section>}
       </section>
     </div>
-  </Modal>
+    <CaseSection title="Descripción del cliente" variant="document" headerActions={<AreaAfectada area={queja.area_afectada} />}>
+      <p data-client-description className="whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
+    </CaseSection>
+    {analysis && <CaseSection title="Análisis registrado" variant="document">
+      <RichTextContent value={analysis.value} format={analysis.format} />
+    </CaseSection>}
+    {queja.observaciones && <CaseSection title="Observación anterior" variant="document">
+      <p className="whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed">{queja.observaciones}</p>
+    </CaseSection>}
+    <CaseSection title="Adjuntos" variant="document">
+      {adjuntosLoading ? <LoadingSkeleton variant="list" label="Cargando adjuntos…" framed={false} />
+        : adjuntosError ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">
+            No se pudieron consultar los adjuntos.<Button size="sm" variant="ghost" onClick={onRetryAdjuntos}>Reintentar</Button>
+          </div> : <div className="space-y-4">
+            <section>
+              <h4 className="mb-2 text-sm font-medium">Evidencias del cliente</h4>
+              {adjuntosCliente.length ? <ListaAdjuntos {...adjuntosProps} adjuntos={adjuntosCliente} />
+                : <p className="text-sm text-qms-muted">Sin adjuntos del cliente.</p>}
+            </section>
+            {adjuntosCalidad.length > 0 && <section>
+              <h4 className="mb-2 text-sm font-medium">Archivos de Calidad y antecedentes</h4>
+              <ListaAdjuntos {...adjuntosProps} adjuntos={adjuntosCalidad} />
+            </section>}
+          </div>}
+    </CaseSection>
+  </div>
 }

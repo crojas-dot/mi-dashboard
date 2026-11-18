@@ -93,6 +93,14 @@ export function useQuejas(params: QuejasParams = {}, enabled = true) {
   })
 }
 
+export async function fetchQuejaPorId(id: string, signal: AbortSignal, responsableId?: string): Promise<Queja | null> {
+  let query = supabase.from('qms_quejas').select('*').eq('id', id)
+  if (responsableId) query = query.eq('responsable_id', responsableId)
+  const { data, error } = await query.abortSignal(signal).maybeSingle()
+  if (error) throw error
+  return data as Queja | null
+}
+
 export interface QuejaAdjunto {
   id: string
   queja_id: string

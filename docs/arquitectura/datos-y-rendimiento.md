@@ -1,5 +1,22 @@
 # Datos, caché, rendimiento y diagnóstico
 
+El corte del 17 de noviembre acota la campana a 15 filas con orden estable y
+un conteo de no leídos sin descargar más mensajes. La agenda se refresca cada
+cinco minutos en primer plano y vuelve a consultar ante nuevos avisos o al
+recuperar el canal. Leer o archivar avisos refresca solo la campana.
+
+El visor comprueba el acceso al expediente antes de leer Drive. La precarga
+requiere 80 ms de intención para formatos nativos y admite dos lecturas en
+paralelo. El indicador aparece a los 180 ms de espera. Un archivo caliente se
+revela cuando está listo, con transición breve que respeta movimiento reducido.
+
+En PostgreSQL aislado con 60 000 adjuntos y 120 000 avisos sintéticos, con 24
+consultas simultáneas, los índices preparados bajaron el p95 de la búsqueda de
+adjuntos de 608,15 a 2,62 ms y el de la campana de 17 a 2,4 ms. El formulario
+superó 73 comprobaciones aisladas, incluidas 25 solicitudes simultáneas con el
+mismo identificador que generaron un expediente. La aplicación de los índices
+en Supabase está pendiente con la migración del avatar y la autoría de notas.
+
 > Referencia vigente del código y del snapshot remoto del 7 de octubre de 2026. Consultar solo el tema que se modifica; una nota histórica no demuestra el estado de un despliegue nuevo.
 
 ### Lecturas y claves
@@ -66,9 +83,10 @@
 | Fuente | Qué contiene / quién la consume |
 | --- | --- |
 | `logs` | Auditoría de operaciones de los RPC legacy/workflow que la escriben: fecha, usuario, acción, módulo y detalle **text**. No es una captura universal de cada API o cambio |
-| `quejas_actividad` | Historia operativa del expediente; panel de colaborador y las últimas cinco entradas del dashboard |
+| `quejas_actividad` | Notas del expediente y marcas históricas del flujo; ambos paneles y las últimas cinco entradas del dashboard |
 | `qms_config_audit` | Historia de configuración versionada/catálogos, actor y motivo, `old_value/new_value` JSONB; acceso de administración en DB, sin visor completo montado |
 | `qms_case_events` | Eventos de apertura/cierre/resolución generados por triggers QMS; distintos de quejas_actividad |
+| `/api/quejas/historial` | Proyección para el expediente autorizado desde el diálogo «Historial y notas». Combina eventos QMS, revisiones, reaperturas y transiciones históricas asociadas al caso. La precarga al abrir el diálogo y la pestaña comparten petición y caché de 30 s. Antes de recibir los movimientos se muestra el ingreso disponible en el expediente |
 | `qms_stage_runs.snapshot` | Copia inmutable de regla/calendario usados en un plazo; sirve para explicar su cálculo |
 | Logger de aplicación | Contexto seguro con timestamp/entorno/módulo/acción/usuario/status/código en consola cliente o servidor; QueryProvider, Auth y dashboard registran errores. No persiste automáticamente en DB ni en una plataforma de observabilidad |
 | Supabase/Vercel | Herramientas externas para logs/asesores. No hay un conector de esas fuentes a un visor dentro del panel actual |

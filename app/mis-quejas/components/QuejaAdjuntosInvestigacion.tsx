@@ -45,7 +45,7 @@ interface CardProps {
 }
 
 export function QuejaAdjuntosCard({ adjuntos, loading, error, onOpen }: CardProps) {
-  const ultimo = adjuntos.at(-1)
+  const ultimo = adjuntos[0]
   return <section data-investigation-files-card className="min-w-0 rounded-card border border-qms-border bg-qms-surface shadow-sm">
     <button type="button" onClick={onOpen} aria-label="Ver mis adjuntos" className="w-full min-w-0 cursor-pointer p-4 text-left">
       <span className="flex items-start gap-2">
@@ -91,7 +91,7 @@ export default function QuejaAdjuntosInvestigacion(props: PanelProps) {
           <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-full bg-qms-primary-soft text-qms-primary"><Upload className="size-4" /></span>
           <div className="min-w-0">
             <p className="text-sm font-semibold">Subir nuevo archivo</p>
-            {!props.canUpload && <p className="text-xs text-qms-muted">Disponible durante la investigación.</p>}
+            {!props.canUpload && <p className="text-xs text-qms-muted">Adjuntos en modo lectura.</p>}
           </div>
         </div>
         <Button size="sm" aria-label="Agregar archivos" className="shrink-0" onClick={() => inputRef.current?.click()} loading={props.uploading} loadingLabel="Subiendo archivos…" disabled={!props.canUpload || props.uploadDisabled || props.uploading}>

@@ -91,7 +91,7 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
             <button type="button" onClick={onRetry} className="ml-2 text-qms-primary underline">Reintentar</button></div>
           : !items.length ? <p className="p-3 text-sm text-qms-muted">No hay tareas urgentes para hoy.</p>
           : <><ul className="space-y-1">{items.slice(0, mostrarTodos ? items.length : 5).map((item, indice) => <li key={`${item.ruta}:${item.id}`}>
-            <Link ref={indice === 5 ? primerExtra : undefined} href={item.ruta} prefetch={false} onClick={onClose}
+            <Link ref={indice === 5 ? primerExtra : undefined} href={item.ruta + '?abrir=' + encodeURIComponent(item.id)} prefetch={false} onClick={onClose}
               className="block min-w-0 rounded-card border border-qms-border/50 p-3 hover:bg-slate-50 focus-visible:bg-slate-50">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="min-w-0 max-w-full truncate text-sm font-semibold text-qms-dark">{item.codigo}</span>

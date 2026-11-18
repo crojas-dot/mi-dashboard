@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useRef, useState } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Search } from 'lucide-react'
@@ -13,7 +13,8 @@ import NuevaQuejaModal from '@/app/quejas/components/NuevaQuejaModal'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import type { Queja } from '@/lib/types'
 import { updateSelectedQueja } from '@/lib/utils/quejaSelection'
-import { useQuejas } from '@/lib/queries/useQuejas'
+import { fetchQuejaPorId, useQuejas } from '@/lib/queries/useQuejas'
+import RegistroDesdeEnlace from '@/components/RegistroDesdeEnlace'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { useAuthStore } from '@/lib/store/auth-store'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
@@ -23,6 +24,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import EmptyState from '@/components/ui/EmptyState'
 import Pagination from '@/components/ui/Pagination'
 import QuejaColaboradorPanel from './components/QuejaColaboradorPanel'
+import { useQuejaAsignada } from './components/useQuejaAsignada'
 import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
@@ -44,6 +46,7 @@ export default function MisQuejasPage() {
   const [page, setPage] = useState(0)
   const pageSize = 25
   const [panelOpen, setPanelOpen] = useState<Queja | null>(null)
+  const seleccion = useQuejaAsignada(panelOpen?.id ?? '', user?.id ?? '')
   const [navigationLocked, setNavigationLocked] = useState(false)
   const tableRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -63,6 +66,13 @@ export default function MisQuejasPage() {
   const quejas = data?.data ?? []
   const totalCount = data?.count ?? 0
   const selectedIndex = panelOpen ? quejas.findIndex(q => q.id === panelOpen.id) : -1
+  // La selección sigue el registro vigente aunque el cambio de estado lo saque
+  // del filtro activo. RLS y el responsable se comprueban en la lectura puntual.
+  const vigente = seleccion.data ? updateSelectedQueja(panelOpen, seleccion.data) : panelOpen
+  if (panelOpen && seleccion.data === null && seleccion.isFetchedAfterMount && !seleccion.isFetching) {
+    setPanelOpen(null)
+    setNavigationLocked(false)
+  }
   const openPanel = (queja: Queja) => {
     if (navigationLocked && panelOpen?.id !== queja.id) {
       showError(null, 'Terminá la edición o cerrá el expediente antes de abrir otra queja.')
@@ -80,6 +90,8 @@ export default function MisQuejasPage() {
 
   return (
     <div className="flex h-full min-w-0 flex-col">
+      <Suspense fallback={null}><RegistroDesdeEnlace clave={[...queryKeys.quejas, 'asignada', user?.id]}
+        habilitado={!!user?.id} cargar={(id, signal) => fetchQuejaPorId(id, signal, user?.id)} abrir={openPanel} /></Suspense>
       <PageHeader title="Mis Quejas" description="Quejas asignadas a tu usuario para procesamiento" />
 
       <div className="@container mb-4 shrink-0">
@@ -149,7 +161,7 @@ export default function MisQuejasPage() {
         {!loading && !error && <div className="shrink-0 border-t border-qms-border bg-qms-surface px-3 py-3 sm:px-6 [&>nav]:py-0">{totalCount <= pageSize ? <p className="text-sm text-qms-muted">{totalCount} resultados</p> : <Pagination page={page} count={totalCount} busy={isFetching} onChange={next => { setPage(next); if (tableRef.current) tableRef.current.scrollTop = 0 }} />}</div>}
       </div>
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidate() }} categorias={categorias} />
-      <QuejaColaboradorPanel queja={panelOpen} onClose={() => { setPanelOpen(null); setNavigationLocked(false) }} onNavigationLockChange={setNavigationLocked} onPrevious={selectedIndex > 0 ? () => openPanel(quejas[selectedIndex - 1]) : undefined} onNext={selectedIndex >= 0 && selectedIndex < quejas.length - 1 ? () => openPanel(quejas[selectedIndex + 1]) : undefined} onUpdated={invalidate} />
+      <QuejaColaboradorPanel queja={vigente} onClose={() => { setPanelOpen(null); setNavigationLocked(false) }} onNavigationLockChange={setNavigationLocked} onPrevious={selectedIndex > 0 ? () => openPanel(quejas[selectedIndex - 1]) : undefined} onNext={selectedIndex >= 0 && selectedIndex < quejas.length - 1 ? () => openPanel(quejas[selectedIndex + 1]) : undefined} onUpdated={invalidate} />
     </div>
   )
 }

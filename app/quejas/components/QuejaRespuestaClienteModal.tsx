@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Eye, FileText, Reply, Send, Trash2, Upload, X, Pencil } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
+import Select from '@/components/ui/Select'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import QuejaCorreoEditor from '@/app/quejas/components/QuejaCorreoEditor'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
@@ -279,6 +280,14 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
               <Button size="sm" variant="secondary" disabled={disabled} onClick={() => fileInputRef.current?.click()}>
                 <Upload aria-hidden="true" className="size-4" />Subir archivo
               </Button>
+              {files.length > 0 && <Select aria-label="Elegir PDF del expediente" wrapperClassName="w-full sm:w-64"
+                value={selectedFile?.id ?? ''} disabled={disabled} onChange={event => {
+                  autoSelected.current = true
+                  change({ adjuntoId: event.target.value || null })
+                }}>
+                <option value="">Elegir PDF adjunto</option>
+                {files.map(file => <option key={file.id} value={file.id}>{file.nombre}</option>)}
+              </Select>}
               {selectedFile && <div data-response-selected-file className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-1.5 shadow-sm">
                 <FileText aria-hidden="true" className="size-4 shrink-0 text-qms-danger" />
                 <button type="button" title={'Previsualizar ' + selectedFile.nombre} onPointerEnter={() => prefetchDriveBlob(selectedFile.storage_path)} onFocus={() => prefetchDriveBlob(selectedFile.storage_path)} onClick={() => setPreviewFile(selectedFile)}

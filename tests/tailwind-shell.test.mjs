@@ -121,7 +121,9 @@ test('Tab del drawer envuelve extremos y omite controles ocultos', () => {
 
 test('notificaciones conserva callbacks separados de lectura, navegación y archivo', () => {
   const actions = []
-  const { default: Notifications } = loadModule('components/header/NotificationDropdown.tsx')
+  const { default: Notifications } = loadModule('components/header/NotificationDropdown.tsx', {
+    '@/lib/services/notificacionService': { NOTIFICACIONES_VISIBLES: 15 },
+  })
   const item = { id: 'q1', leida: false, mensaje: 'Queja recibida', fecha: '2026-10-05T12:00:00Z' }
   const element = Notifications({ open: true, enabled: true, notifications: [item], total: 1, unreadCount: 1, onToggle() {}, onSettings() {},
     onMarkAll() {}, onArchiveAll() {}, onMarkRead: n => actions.push(['leer', n.id]),

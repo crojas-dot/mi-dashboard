@@ -405,16 +405,15 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   assert.match(workspaceHeader.props.children[1].props.className, /@min-\[1100px\]\/workspace:px-0/)
 })
 
-test('Ver análisis permite recorrer las pestañas con teclado y conserva la separación de evidencias', () => {
+test('Análisis es una etapa del expediente con grupos de evidencias de solo lectura', () => {
   const panel = fs.readFileSync('app/mis-quejas/components/QuejaAnalisisPanel.tsx', 'utf8')
+  const stages = fs.readFileSync('app/mis-quejas/components/MisQuejasEtapas.tsx', 'utf8')
   const files = fs.readFileSync('app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx', 'utf8')
-  assert.ok(panel.includes("['ArrowLeft', 'ArrowRight', 'Home', 'End']"))
-  assert.ok(panel.includes("tabIndex={activeTab === id ? 0 : -1}"))
-  assert.ok(panel.includes("onKeyDown={event => handleTabKeyDown(event, id)}"))
-  assert.ok(panel.includes("changeTab(tabs[nextIndex].id)"))
-  assert.ok(panel.includes("querySelectorAll<HTMLButtonElement>('[role=\"tab\"]')[nextIndex]?.focus()"))
-  assert.ok(panel.includes("props.adjuntos.filter(adjunto => !adjunto.usuario_id)"))
-  assert.ok(panel.includes('layout="rows" hideGroupTitle'))
+  assert.match(stages, /<nav data-mis-quejas-cycle aria-label="Etapas de Mis Quejas"/)
+  assert.match(stages, /<button type="button" data-case-stage=/)
+  assert.doesNotMatch(panel, /<Modal|onEliminar/)
+  assert.match(panel, /adjuntos=\{adjuntosCliente\}/)
+  assert.match(panel, /adjuntos=\{adjuntosCalidad\}/)
   assert.ok(files.includes('aria-label="Seleccionar mis adjuntos"'))
   assert.ok(files.includes('aria-label="Lista de mis adjuntos"'))
 })
@@ -444,7 +443,7 @@ test('modales fijos mantienen el encabezado de referencia sin alterar los diálo
 test('tarjetas de adjuntos no repiten el encabezado de evidencias y dejan acciones disponibles', () => {
   const source = fs.readFileSync('components/quejas/ListaAdjuntos.tsx', 'utf8')
   const modal = fs.readFileSync('app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx', 'utf8')
-  const notes = fs.readFileSync('app/mis-quejas/components/QuejaNotasPanel.tsx', 'utf8')
+  const notes = fs.readFileSync('components/quejas/QuejaNotasPanel.tsx', 'utf8')
   const styles = fs.readFileSync('app/styles/components.css', 'utf8')
   assert.ok(source.includes("layout !== 'modal' && <p"))
   assert.ok(source.includes("layout === 'modal' ? ("))

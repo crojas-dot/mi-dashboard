@@ -9,6 +9,30 @@ function deferred() {
   return { promise, resolve, reject }
 }
 
+test('una subida múltiple detiene los archivos pendientes al cambiar de expediente', async () => {
+  const pending = deferred()
+  const uploads = [], invalidations = []
+  const { createRequestScope } = loadModule('lib/utils/requestScope.ts')
+  const scope = { ...createRequestScope(), captureContext: () => () => true }
+  const { useQuejaAttachmentActions } = loadModule('hooks/useQuejaAttachmentActions.ts', {
+    react: { useState: value => [value, () => {}] },
+    '@tanstack/react-query': { useQueryClient: () => ({ invalidateQueries: ({ queryKey }) => invalidations.push(queryKey) }) },
+    '@/lib/queries/useQuejas': { quejaAdjuntosKey: id => ['adjuntos', id] },
+    '@/lib/services/quejaWorkflowService': {
+      subirAdjuntoQueja: (id, file) => { uploads.push([id, file.name]); return pending.promise },
+    },
+    '@/lib/services/errorToast': { showSuccess() {}, showError() {} },
+  })
+  scope.activate()
+  const { handleSubirAdjuntos } = useQuejaAttachmentActions('A', scope)
+  const batch = handleSubirAdjuntos([new File(['a'], 'uno.txt'), new File(['b'], 'dos.txt')])
+  scope.activate()
+  pending.resolve()
+  await batch
+  assert.deepEqual(uploads, [['A', 'uno.txt']])
+  assert.deepEqual(invalidations, [['adjuntos', 'A']])
+})
+
 // Ejecuta los handlers reales y los efectos de commit; la red y el DOM son dobles locales.
 // Las generaciones se invalidan por el hook real, también al cerrar/desmontar.
 const queryContexts = loadModule('lib/queries/queryContextScope.ts')
@@ -72,7 +96,7 @@ function panelHarness(kind = 'colaborador') {
     '@/lib/queries/useQuejaResolucionDraft': { quejaResolucionDraftKey: id => ['quejas','resolucion-borrador',id], useQuejaResolucionDraft: () => ({ data:null,isFetching:false,error:null }) },
     '@/lib/queries/useQuejaDevoluciones': { useQuejaDevoluciones: () => ({ data: [] }) },
     '@/app/mis-quejas/components/QuejaAnalisisPanel': { default: 'QuejaAnalisisPanel' },
-    '@/app/mis-quejas/components/QuejaNotasPanel': { default: 'QuejaNotasPanel', QuejaNotasCard: 'QuejaNotasCard' },
+    '@/components/quejas/QuejaNotasPanel': { default: 'QuejaNotasPanel', QuejaNotasCard: 'QuejaNotasCard' },
     '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion': { default: 'QuejaAdjuntosInvestigacion', QuejaAdjuntosCard: 'QuejaAdjuntosCard' },
     '@/lib/queries/useQuejaInvestigationAssignment': { useQuejaInvestigationAssignment: () => ({ data:null,isLoading:false,error:null }) },
     '@/lib/queries/useQuejaPublicacion': { usePublicacionQuejasDisponible: () => ({ data: false }) },
@@ -109,7 +133,7 @@ function panelHarness(kind = 'colaborador') {
   function visit(value) {
     if (Array.isArray(value)) return value.flatMap(visit)
     if (value?.props?.hidden && value.type !== 'input' || value?.type === 'Modal' && !value.props.open) return []
-    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'QuejaNotasCard', 'QuejaNotasPanel'].includes(value.type.name)) return visit(value.type(value.props))
+    if (typeof value?.type === 'function' && ['Tabs', 'RichTextContent', 'QuejaAnalisisPanel', 'CaseWorkspaceNavigation', 'MisQuejasBreadcrumb'].includes(value.type.name)) return visit(value.type(value.props))
     // El workspace renderiza estas ranuras además del documento central.
     return value?.props ? [value, ...visit(value.props.headerActions), ...visit(value.props.children), ...visit(value.props.toolbarActions), ...visit(value.props.footer), ...visit(value.props.compact), ...visit(value.props.cycle), ...visit(value.props.action), ...visit(value.props.request), ...visit(value.props.requestFooter)] : []
   }
@@ -123,9 +147,18 @@ function panelHarness(kind = 'colaborador') {
   const button = (label) => nodes().find((node) => ['Button', 'CButton', 'button'].includes(node.type) && text(node).trim() === label.trim())
   return {
     requests, updates, guards, invalidations, toasts, render, nodes, button, invalidateContext,
-    select(id, overrides = {}) { entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null; render() },
+    select(id, overrides = {}) {
+      const newVisit = id && id !== entity?.id
+      entity = id ? { id, folio: id, cliente_nombre: id, revision: 4, responsable_id: 'user', numero_oficio_resolucion: 'ECA-GC-2026-001', estado: 'En Investigación', fecha: '2026-09-01', prioridad: 'Media', categoria: 'Queja', ...overrides } : null
+      render()
+      if (newVisit && kind === 'colaborador') {
+        const expand = nodes().find(node => node.props['aria-label'] === 'Ampliar expediente')
+        expand?.props.onClick()
+        if (expand) render()
+      }
+    },
     assistance() { const result = nodes().find(node => node.props['aria-label'] === 'Asistencia para la resolución').props.onClick(); render(); return result },
-    analysis() { nodes().find(node => node.props['aria-label'] === 'Ver caso completo').props.onClick(); render() },
+    analysis() { nodes().find(node => node.props['data-case-stage'] === 'analisis').props.onClick(); render() },
     notes() { nodes().find(node => node.props['data-investigation-notes-card']).props.onClick(); render() },
     activity() { nodes().find(node => node.props['aria-label'] === 'Ver actividad').props.onClick(); render() },
     input(placeholder, value) { const node = nodes().find(node => ['textarea', 'RichTextEditor'].includes(node.type) && node.props.placeholder?.includes(placeholder)); node.props.onChange(node.type === 'RichTextEditor' ? value : { target: { value } }, 'markdown'); render() },

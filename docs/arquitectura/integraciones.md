@@ -55,12 +55,13 @@ capacidad ni la recepción del botón en un buzón. No se reenviaron eventos his
 | POST/PATCH/DELETE `/api/usuarios` | Admin, Auth administrativo + perfiles, autoprotección y último admin |
 | GET/PUT `/api/configuracion/zona-horaria` | Lee solo la zona; escritura admin, clave org.zona_horaria |
 | GET/PUT/DELETE `/api/configuracion/logo` | GET para cualquier perfil activo (el logo del shell no es sensible); PUT/DELETE admin, sube a storage.branding y conserva en org.logo_url solo la URL vigente |
+| GET/PUT/DELETE `/api/perfil/avatar` | Bearer de perfil activo, foto propia en bucket privado `qms-avatars`. Recodifica a WebP 320×320 y comprueba la versión al cambiar la ruta. Bucket pendiente de activación |
 | POST `/api/drive/upload` | Bearer, staff o responsable, queja resuelta por ID, folio obtenido desde DB, Analisis/ |
 | GET `/api/public/formularios/[token]` | Sin Bearer; enlace exacto activo de Quejas, devuelve solo nombre/modulo/uploadsAllowed |
 | POST `/api/public/quejas` | BotID Basic, JSON ciudadano estricto, cuotas PostgreSQL, creación idempotente y capacidad firmada |
 | POST `/api/drive/upload-public` | BotID Basic y capacidad firmada; reserva DB antes de Drive, vínculo exacto formulario/envío/queja y archivo validado |
 | POST `/api/public/quejas/finalizar` | BotID Basic y capacidad vigente; finalización y notificación idempotentes |
-| GET `/api/drive/download?id=...` | Bearer, adjunto resuelto en DB, staff/responsable, stream y filename RFC 5987 |
+| GET `/api/drive/download?id=...` | Bearer, RLS del expediente, pertenencia y privacidad verificadas en Drive, stream y filename RFC 5987. Con `vista=drive` devuelve la URL privada del visor |
 | DELETE `/api/drive/delete` | Bearer, permiso según origen del adjunto, Drive primero y fila después |
 | POST `/api/ai/analizar` | Bearer activo, staff o responsable de queja; módulo/entidad/tipo auto-custom |
 | POST `/api/ai/test` | Admin, un proveedor/modelo por solicitud; ejecuta test en servidor |

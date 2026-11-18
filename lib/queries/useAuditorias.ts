@@ -35,6 +35,12 @@ export function useAuditorias(page = 0, estado = '') {
   return useQuery({ queryKey: paginaKey(auditoriasKey, page, estado), queryFn: ({ signal }) => fetchAuditorias(page, estado, signal) })
 }
 
+export async function fetchAuditoriaPorId(id: string, signal: AbortSignal): Promise<Auditoria | null> {
+  const { data, error } = await supabase.from('auditorias').select('*').eq('id', id).abortSignal(signal).maybeSingle()
+  if (error) throw error
+  return data as Auditoria | null
+}
+
 export function hallazgosKey(auditoriaId: string) {
   return [...queryKeys.auditorias, 'hallazgos', auditoriaId] as const
 }
