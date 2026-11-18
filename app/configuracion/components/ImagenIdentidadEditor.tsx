@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import { IDENTIDAD_ACCEPT, IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_STORED_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
+import { IDENTIDAD_ACCEPT, IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
 import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad } from '@/lib/queries/useIdentidadImagenes'
 import LogoRecorteModal, { type BorradorLogo } from './LogoRecorteModal'
 
@@ -37,7 +37,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
 
   const guardar = async (imagen: Blob) => {
     if (guardando || quitando) return
-    if (imagen.size > IDENTIDAD_STORED_BYTES) { setError('La imagen generada supera 2 MB. Elegí otra foto.'); return }
+    if (imagen.size > IDENTIDAD_MAX_BYTES) { setError('No se pudo comprimir la imagen antes de subirla.'); return }
     setGuardando(true)
     try {
       await guardarImagenIdentidad(slot, imagen)
@@ -92,7 +92,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
       </div>
     </div>
     {borrador && <LogoRecorteModal key={borrador.url} borrador={borrador} guardando={guardando}
-      aspectRatio={meta.proporcion} outputWidth={slot === 'login_fondo' ? IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho : meta.ancho} nombre={meta.titulo.toLowerCase()}
+      aspectRatio={meta.proporcion} outputWidth={slot === 'login_fondo' ? IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho : meta.ancho} maxEncodedBytes={IDENTIDAD_MAX_BYTES} nombre={meta.titulo.toLowerCase()}
       onCerrar={() => setBorrador(null)} onGuardar={(imagen) => { void guardar(imagen) }} />}
   </section>
 }
