@@ -9,6 +9,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { useNotificaciones, useMarcarNotificacionLeida, useMarcarTodasLeidas, useArchivarNotificacion, useArchivarTodas } from '@/lib/queries/useNotificaciones'
@@ -22,6 +23,7 @@ import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 import { queryKeys } from '@/lib/queries/queryKeys'
 import { Menu } from 'lucide-react'
 import { tituloDeRuta } from '@/lib/constants/modulos'
+import { CONFIG_SECTION_LABELS, useConfigSectionStore } from '@/lib/store/configuration-section-store'
 import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
 import { useFotoPerfil } from '@/lib/queries/useFotoPerfil'
 import { moduloDeRuta } from '@/lib/permisos'
@@ -47,6 +49,11 @@ export default function Header({
   const fotoUrl = useFotoPerfil()
 
   const title = tituloDeRuta(pathname)
+  const configSection = useConfigSectionStore(state => state.section)
+  const setConfigSection = useConfigSectionStore(state => state.setSection)
+  const isConfig = pathname === '/configuracion'
+  const isDashboard = pathname === '/' || pathname === '/dashboard'
+  const currentBreadcrumb = isConfig ? CONFIG_SECTION_LABELS[configSection] : title
   const initials = user?.nombre?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || 'AD'
   const notifHabilitadas = user?.notif_habilitadas !== false
   const notifSonido = user?.notif_sonido !== false
@@ -131,7 +138,22 @@ export default function Header({
             <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
-        <span className="truncate text-base font-semibold text-qms-dark">{title}</span>
+        <nav aria-label="Ruta de navegación" className="flex min-w-0 items-center gap-2 text-sm sm:text-base">
+          {!isDashboard && (
+            <>
+              {isConfig ? (
+                <button type="button" onClick={() => setConfigSection('catalogos')}
+                  className="shrink-0 text-qms-muted transition-colors hover:text-qms-primary hover:underline">
+                  Configuración
+                </button>
+              ) : (
+                <Link href="/" className="shrink-0 text-qms-muted no-underline transition-colors hover:text-qms-primary hover:underline">Inicio</Link>
+              )}
+              <span aria-hidden="true" className="shrink-0 text-qms-muted/70">/</span>
+            </>
+          )}
+          <span aria-current="page" className="truncate font-semibold text-qms-dark">{currentBreadcrumb}</span>
+        </nav>
       </div>
 
       <div ref={rootRef} className="flex shrink-0 items-center gap-2">
