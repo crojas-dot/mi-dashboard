@@ -74,10 +74,11 @@ export async function PUT(request: NextRequest) {
       return fail('La imagen no es válida o contiene animación', 415)
     }
     const target = slot === 'login_fondo'
-      ? { ancho: meta.procesamientoAncho, alto: meta.procesamientoAlto }
+      ? { ancho: IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho, alto: IDENTIDAD_IMAGENES.login_fondo.procesamientoAlto }
       : { ancho: meta.ancho, alto: meta.alto }
     const image = source.autoOrient().resize(target.ancho, target.alto, {
-      fit: 'inside', withoutEnlargement: true,
+      fit: slot === 'login_fondo' ? 'inside' : 'cover',
+      withoutEnlargement: slot === 'login_fondo',
     })
     bytes = meta.formato === 'png'
       ? await image.png({ compressionLevel: 9 }).toBuffer()
