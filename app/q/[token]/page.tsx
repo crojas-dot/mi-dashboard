@@ -13,6 +13,7 @@ import { useFormularioPublico } from '@/lib/queries/useFormularioPublico'
 import { CATEGORIAS_PUBLICAS, PUBLIC_FILE_ACCEPT, MAX_PUBLIC_FILES, PublicRequestError, publicErrorMessage, type PublicQuejaField } from '@/lib/services/publicQuejasClient'
 import { PUBLIC_QUEJA_LIMITES, publicQuejaFieldMessage } from '@/lib/utils/publicQuejaValidation'
 import { usePublicQuejaForm } from '@/app/q/components/usePublicQuejaForm'
+import FondoIdentidad from '@/components/identidad/FondoIdentidad'
 
 // Mantener el mismo ancho al cargar, enviar y confirmar evita saltos de tamaño.
 const PUBLIC_FORM_WIDTH = 'w-full max-w-[896px]'
@@ -37,7 +38,7 @@ export default function FormularioQuejaPublicaPage() {
   const params = useParams<{ token: string }>()
   const token = params.token ?? ''
   // Un token nuevo es otra visita y otro borrador; la respuesta anterior no puede modificarlo.
-  return <FormularioQuejaPublica key={token} token={token} />
+  return <FondoIdentidad slot="formulario_fondo"><FormularioQuejaPublica key={token} token={token} /></FondoIdentidad>
 }
 
 function FormularioQuejaPublica({ token }: { token: string }) {
