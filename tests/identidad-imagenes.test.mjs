@@ -158,3 +158,26 @@ test('las recomendaciones son solo sugerencias; el tamaño original puede ser ma
   assert.ok(marcas.IDENTIDAD_ACCEPT.includes('image/gif'))
   assert.equal(marcas.IDENTIDAD_ACCEPT_PICKER, 'image/*')
 })
+
+test('GET reconstruye la URL pública canónica aunque la configuración tenga un host antiguo', async () => {
+  const f = fixture()
+  const clave = marcas.IDENTIDAD_IMAGENES.login_fondo.clave
+  f.config.set(clave, `https://almacen-anterior.example.test/storage/v1/object/public/branding/identidad/login_fondo/${UUID}.webp`)
+  const res = await f.api.GET({ signal: undefined })
+  assert.equal(res.status, 200)
+  assert.equal(res.body.imagenes.login_fondo,
+    `${ORIGIN}/storage/v1/object/public/branding/identidad/login_fondo/${UUID}.webp`)
+  assert.ok(!res.body.imagenes.login_fondo.includes('almacen-anterior.example.test'))
+})
+
+test('la ruta rechaza sustituciones de bucket, subdirectorios y archivos arbitrarios', () => {
+  const url = `${ORIGIN}/storage/v1/object/public/branding/identidad/login_fondo/${UUID}.webp`
+  for (const invalid of [
+    url.replace('/branding/', '/qms-avatars/'),
+    url.replace('/login_fondo/', '/correo_encabezado/'),
+    url.replace('.webp', '.svg'),
+    url.replace('/' + UUID + '.webp', '/../../../secreto.webp'),
+    url + '#hash',
+    url.replace('https:', 'javascript:'),
+  ]) assert.equal(marcas.rutaImagenIdentidad('login_fondo', invalid), null)
+})
