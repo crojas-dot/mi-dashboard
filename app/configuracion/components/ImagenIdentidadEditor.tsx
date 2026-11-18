@@ -92,7 +92,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
       </div>
     </div>
     {borrador && <LogoRecorteModal key={borrador.url} borrador={borrador} guardando={guardando}
-      aspectRatio={meta.proporcion} outputWidth={slot === 'login_fondo' ? meta.procesamientoAncho : meta.ancho} nombre={meta.titulo.toLowerCase()}
+      aspectRatio={meta.proporcion} outputWidth={slot === 'login_fondo' ? IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho : meta.ancho} nombre={meta.titulo.toLowerCase()}
       onCerrar={() => setBorrador(null)} onGuardar={(imagen) => { void guardar(imagen) }} />}
   </section>
 }
