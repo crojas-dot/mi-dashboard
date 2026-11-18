@@ -152,7 +152,7 @@ export default function Header({
               <span aria-hidden="true" className="shrink-0 text-qms-muted/70">/</span>
             </>
           )}
-          <span aria-current="page" className="truncate font-semibold text-qms-dark">{currentBreadcrumb}</span>
+          <span aria-current="page" className="truncate font-normal text-qms-muted">{currentBreadcrumb}</span>
         </nav>
       </div>
 
