@@ -138,7 +138,7 @@ export default function Header({
             <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
-        <nav aria-label="Ruta de navegación" className="flex min-w-0 items-center gap-2 text-sm sm:text-base">
+        <nav aria-label="Ruta de navegación" className="flex min-w-0 items-center gap-2 text-sm">
           {!isDashboard && (
             <>
               {isConfig ? (
