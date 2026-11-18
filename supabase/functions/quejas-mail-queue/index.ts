@@ -160,7 +160,6 @@ async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_cl
 async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetcher: typeof fetch) {
   const keys = {
     encabezado: 'org.identidad.correo_encabezado',
-    pie: 'org.identidad.correo_pie',
   } as const
   const url = new URL('/rest/v1/configuraciones_sistema', config.url)
   url.search = new URLSearchParams({
@@ -178,8 +177,8 @@ async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetche
       return null
     }
     const rows = await readJson(response.body, 4096)
-    if (!Array.isArray(rows) || rows.length > 2) return null
-    const result: { encabezado?: string; pie?: string } = {}
+    if (!Array.isArray(rows) || rows.length > 1) return null
+    const result: { encabezado?: string } = {}
     for (const [slot, key] of Object.entries(keys)) {
       const candidate = rows.find(row => row?.clave === key)?.valor
       if (typeof candidate !== 'string') continue
@@ -189,7 +188,7 @@ async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetche
         const prefix = `/storage/v1/object/public/branding/identidad/correo_${slot}/`
         const name = asset.pathname.startsWith(prefix) ? asset.pathname.slice(prefix.length) : ''
         if (asset.origin === expected.origin && !asset.search && !asset.hash
-          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(name)) {
+          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(name)) {
           result[slot as keyof typeof result] = asset.toString()
         }
       } catch { /* Se descarta una URL incorrecta. */ }
