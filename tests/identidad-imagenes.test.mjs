@@ -8,19 +8,24 @@ const UUID = '11111111-1111-4111-8111-111111111111'
 const marcas = loadModule('lib/constants/identidad.ts')
 
 test('cada recurso institucional tiene clave, aspecto y nombre separados', () => {
-  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'correo_pie', 'login_fondo', 'formulario_fondo'])
+  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'login_fondo', 'formulario_encabezado'])
   assert.equal(marcas.IDENTIDAD_IMAGENES.login_fondo.proporcion, 16 / 9)
-  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 3)
-  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 4)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 1)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.formulario_encabezado.proporcion, 3)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.formato, 'png')
+  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 3)
 })
 
 test('solo se admiten URL del bucket institucional y del slot correcto', () => {
   const url = `${ORIGIN}/storage/v1/object/public/branding/identidad/login_fondo/${UUID}.webp`
   assert.equal(marcas.urlIdentidadValida('login_fondo', url, ORIGIN), url)
   assert.equal(marcas.rutaImagenIdentidad('login_fondo', url, ORIGIN), `identidad/login_fondo/${UUID}.webp`)
+  const logoCorreo = `${ORIGIN}/storage/v1/object/public/branding/identidad/correo_encabezado/${UUID}.png`
+  assert.equal(marcas.urlIdentidadValida('correo_encabezado', logoCorreo, ORIGIN), logoCorreo)
+  assert.equal(marcas.urlIdentidadValida('correo_encabezado', logoCorreo.replace('.png', '.webp'), ORIGIN), '')
   for (const invalid of [
     url.replace('qms.test','otro.test'),
-    url.replace('/login_fondo/','/correo_pie/'),
+    url.replace('/login_fondo/','/formulario_encabezado/'),
     url + '?v=2',
     url.replace('public/branding','public/qms-avatars'),
     url.replace('.webp','.svg'),
@@ -65,9 +70,9 @@ function fixture({ rol = 'admin' } = {}) {
     '@/lib/server/supabase-admin': { createServiceClient: () => client },
     sharp: { default: sharp },
   }, { process: { env: { NEXT_PUBLIC_SUPABASE_URL: ORIGIN } } })
-  const makeRequest = file => ({ signal: undefined, formData: async () => {
+  const makeRequest = (file, slot = 'login_fondo') => ({ signal: undefined, formData: async () => {
     const data = new FormData()
-    data.set('slot', 'login_fondo')
+    data.set('slot', slot)
     if (file) data.set('archivo', file)
     return data
   }})
@@ -98,6 +103,7 @@ test('imagen institucional se convierte en WebP, se publica y se retira por slot
   assert.equal(lectura.status, 200)
   assert.equal(lectura.body.imagenes.login_fondo, respuesta.body.imagen)
   assert.equal(lectura.body.imagenes.correo_encabezado, '')
+  assert.equal(lectura.body.imagenes.formulario_encabezado, '')
   const quitar = await f.api.DELETE({ signal: undefined, json: async () => ({ slot: 'login_fondo' }) })
   assert.equal(quitar.status, 200)
   assert.equal(f.config.get(clave), '')
@@ -109,4 +115,24 @@ test('el endpoint no admite SVG ni claves inventadas', async () => {
   assert.equal((await f.api.PUT(req)).status, 400)
   assert.equal((await f.api.DELETE({ signal: undefined, json: async () => ({ slot: 'otra' }) })).status, 400)
   assert.equal(f.objects.size, 0)
+})
+
+test('logo del correo se guarda como PNG cuadrado y logo del formulario como WebP horizontal', async () => {
+  for (const [slot, extension, width, height] of [
+    ['correo_encabezado', 'png', 512, 512],
+    ['formulario_encabezado', 'webp', 900, 300],
+  ]) {
+    const f = fixture()
+    const res = await f.api.PUT(f.makeRequest(new File([FOTO], 'logo.png', { type: 'image/png' }), slot))
+    assert.equal(res.status, 200)
+    const path = f.logs.find(v => v[0] === 'upload')[1]
+    assert.ok(path.endsWith('.' + extension))
+    const meta = await sharp(f.objects.get(path)).metadata()
+    assert.equal(meta.format, extension)
+    assert.equal(meta.width, width)
+    assert.equal(meta.height, height)
+    assert.equal(res.body.slot, slot)
+    assert.equal(f.config.get(marcas.IDENTIDAD_IMAGENES[slot].clave), res.body.imagen)
+    assert.ok(!res.body.imagen.includes('correo_pie'))
+  }
 })
