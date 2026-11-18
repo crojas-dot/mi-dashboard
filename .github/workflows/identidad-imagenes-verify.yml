@@ -34,6 +34,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npm run lint
       - run: node --test tests/identidad-imagenes.test.mjs tests/avatar-carga-estable.test.mjs tests/foto-perfil.test.mjs tests/mi-perfil.test.mjs tests/branding-logo-api.test.mjs tests/queja-mail-direct.test.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://fykhrrpeoehwqznccmfp.supabase.co
