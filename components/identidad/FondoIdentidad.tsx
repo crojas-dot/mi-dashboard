@@ -6,7 +6,7 @@ import type { ImagenIdentidad } from '@/lib/constants/identidad'
 
 /** Imagen de fondo pública y opcional; no altera los formularios ni el guard de sesión. */
 export default function FondoIdentidad({ slot, children }: {
-  slot: Extract<ImagenIdentidad, 'login_fondo' | 'formulario_fondo'>
+  slot: Extract<ImagenIdentidad, 'login_fondo'>
   children: ReactNode
 }) {
   const { data } = useIdentidadImagenes()
