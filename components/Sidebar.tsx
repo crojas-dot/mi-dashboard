@@ -12,8 +12,7 @@ import type { QueryFunctionContext } from '@tanstack/react-query'
 import {
   ChartPie, MessageSquareText, FolderOpen, ListChecks,
   ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
-  UsersRound, Settings2, ChartNoAxesCombined, ChevronLeft, ChevronRight,
-  X, type LucideIcon,
+  UsersRound, Settings2, ChartNoAxesCombined, X, type LucideIcon,
 } from 'lucide-react'
 import EmpresaLogo from '@/components/EmpresaLogo'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
@@ -63,7 +62,7 @@ const prefetchMap: Partial<Record<ModuloId, PrefetchConfig | PrefetchConfig[]>> 
 
 export default function Sidebar({ expanded = false, onNavigate, className = '' }: { expanded?: boolean; onNavigate?: () => void; className?: string } = {}) {
   const pathname = usePathname()
-  const { collapsed: storedCollapsed, toggle } = useSidebarStore()
+  const { collapsed: storedCollapsed } = useSidebarStore()
   const collapsed = expanded ? false : storedCollapsed
   const user = useAuthStore((s) => s.user)
   const permisos = useAuthStore((s) => s.permisos)
@@ -78,49 +77,39 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   return (
     <aside
-      className={`flex h-full shrink-0 flex-col text-white transition-all duration-200 ${collapsed ? 'w-16' : 'w-[250px]'} bg-qms-dark ${className}`}
+      id={expanded ? 'qms-mobile-navigation' : 'qms-main-sidebar'}
+      className={`flex h-full shrink-0 flex-col overflow-hidden bg-qms-dark text-white transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-16' : 'w-[250px]'} ${className}`}
     >
-      <div className={`flex h-14 shrink-0 items-center justify-between px-3 ${expanded ? 'border-b border-white/10' : ''}`}>
-        {!collapsed ? (
-          <>
-            <Link href="/" onClick={onNavigate} className="flex items-center gap-2.5 no-underline">
-              <EmpresaLogo className="h-10 w-10 text-sm" />
-              <div className="text-[17px] font-bold text-white">ECA-QMS</div>
-            </Link>
-            <button
-              type="button"
-              onClick={onNavigate ?? toggle}
-              aria-label={onNavigate ? 'Cerrar menú de navegación' : 'Colapsar menú'}
-              title={onNavigate ? 'Cerrar menú' : 'Colapsar menú'}
-              className={`flex shrink-0 items-center justify-center rounded-card bg-transparent transition-colors hover:bg-white/[0.08] hover:text-white ${expanded ? 'h-11 w-11 text-white/70' : 'h-7 w-7 border border-white/10 text-white/35 hover:border-white/25'}`}
-            >
-              {expanded ? <X className="h-5 w-5" aria-hidden="true" /> : <ChevronLeft className="h-4 w-4" aria-hidden="true" />}
-            </button>
-          </>
-        ) : (
+      <div className={`flex h-14 shrink-0 items-center ${expanded ? 'justify-between border-b border-white/10' : ''}`}>
+        <Link href="/" onClick={onNavigate} aria-label="Ir al inicio" className="flex h-14 w-max shrink-0 items-center gap-2 pl-3 no-underline">
+          <EmpresaLogo className="h-11 w-11 text-sm" />
+          <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap text-[17px] font-bold text-white transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[150px] opacity-100'}`}>
+            ECA-QMS
+          </span>
+        </Link>
+        {expanded && (
           <button
-            onClick={toggle}
-            title="Expandir menú"
-            className="mx-auto flex h-7 w-7 items-center justify-center rounded-card border border-white/10 bg-transparent text-white/35 transition-colors hover:border-white/25 hover:bg-white/[0.08] hover:text-white/70"
+            type="button"
+            onClick={onNavigate}
+            aria-label="Cerrar menú de navegación"
+            title="Cerrar menú"
+            className="mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-button text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
           >
-            <ChevronRight className="h-4 w-4" />
+            <X className="h-5 w-5" aria-hidden="true" />
           </button>
         )}
       </div>
-
       {!expanded && <hr className="mx-3 border-0 border-t border-white/10" />}
 
-       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pt-3 ${expanded ? 'pb-3' : ''}`}>
+       <nav aria-label="Navegación principal" className={`min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-2 pt-3 ${expanded ? 'pb-3' : ''}`}>
          {sections.map((section) => {
            const linksVisibles = section.links.filter((link) => tienePermiso(permisos, link.id, false, user?.rol))
            if (linksVisibles.length === 0) return null
            return (
           <div key={section.label} className="mb-2">
-            {!collapsed && (
-              <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-white/50">
-                {section.label}
-              </p>
-            )}
+            <p aria-hidden={collapsed} className={`overflow-hidden whitespace-nowrap px-3 text-[11px] font-semibold uppercase tracking-wider text-white/50 transition-[max-height,opacity,margin] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'mb-0 max-h-0 opacity-0' : 'mb-1 max-h-7 opacity-100'}`}>
+              {section.label}
+            </p>
             {linksVisibles.map((link) => {
               const isActive = pathname === link.href
               const Icon = link.icon
@@ -132,13 +121,13 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   aria-label={link.label}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={onNavigate}
-                  className={`my-0.5 flex items-center gap-2.5 rounded-button py-2.5 text-base leading-6 no-underline transition-colors ${collapsed ? 'justify-center px-0' : 'px-[15px]'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
+                  className={`my-0.5 flex min-h-11 items-center gap-2.5 overflow-hidden rounded-button py-2 pl-[15px] pr-2 text-base leading-6 no-underline transition-[width,background-color,color] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-12' : 'w-full'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
                   onMouseEnter={() => prepareNavigation(link.id)}
                   onFocus={() => prepareNavigation(link.id)}
                   onTouchStart={() => prepareNavigation(link.id)}
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                  {!collapsed && <span className="truncate">{link.label}</span>}
+                  <span aria-hidden={collapsed} className={`block min-w-0 shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 whitespace-nowrap opacity-0' : 'max-w-[175px] whitespace-normal opacity-100'}`}>{link.label}</span>
                 </Link>
               )
             })}
