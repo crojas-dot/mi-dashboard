@@ -118,7 +118,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   aria-label={link.label}
                   aria-current={isActive ? 'page' : undefined}
                   onClick={onNavigate}
-                  className={`my-0.5 flex h-11 items-center gap-2.5 overflow-hidden rounded-button pl-[15px] pr-2 text-base leading-6 no-underline transition-[width,background-color,color] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-12' : 'w-full'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
+                  className={`my-0.5 flex min-h-11 items-center gap-2.5 overflow-hidden rounded-button py-2 pl-[15px] pr-2 text-base leading-6 no-underline transition-[width,background-color,color] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-12' : 'w-full'} ${isActive ? 'bg-qms-primary text-white' : 'text-white/75 hover:bg-qms-primary hover:text-white'}`}
                   onMouseEnter={() => prepareNavigation(link.id)}
                   onFocus={() => prepareNavigation(link.id)}
                   onTouchStart={() => prepareNavigation(link.id)}
@@ -126,7 +126,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                   <svg className="h-5 w-5 shrink-0" viewBox="0 0 512 512" fill="currentColor" data-coreui-icon={iconId} aria-hidden="true" focusable="false">
                     <use href={`/icons/coreui-nav.svg#${iconId}`} />
                   </svg>
-                  <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[165px] opacity-100'}`}>{link.label}</span>
+                  <span aria-hidden={collapsed} className={`block min-w-0 shrink-0 overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 whitespace-nowrap opacity-0' : 'max-w-[175px] whitespace-normal opacity-100'}`}>{link.label}</span>
                 </Link>
               )
             })}
