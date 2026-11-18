@@ -20,8 +20,8 @@ export function useFotoPerfil() {
   useEffect(() => {
     if (!photo) return
     const url = URL.createObjectURL(photo)
-    const frame = requestAnimationFrame(() => setImage({ photo, url }))
-    return () => { cancelAnimationFrame(frame); URL.revokeObjectURL(url) }
+    setImage({ photo, url })
+    return () => URL.revokeObjectURL(url)
   }, [photo])
 
   return image?.photo === photo ? image?.url : undefined
