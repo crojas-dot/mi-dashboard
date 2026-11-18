@@ -17,6 +17,6 @@ export default function FondoIdentidad({ slot, children }: {
         style={{ backgroundImage: `url("${url}")` }} />
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-white/70" />
     </>}
-    <div className="relative z-0 min-h-dvh">{children}</div>
+    <div className="relative z-10 min-h-dvh">{children}</div>
   </div>
 }
