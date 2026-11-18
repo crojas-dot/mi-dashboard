@@ -4,19 +4,13 @@ import { LOGO_BUCKET } from '@/lib/constants/marca'
 export const IDENTIDAD_IMAGENES = {
   correo_encabezado: {
     clave: 'org.identidad.correo_encabezado',
-    titulo: 'Encabezado de los correos',
-    descripcion: 'Imagen horizontal para la cabecera de las comunicaciones por correo.',
-    proporcion: 3,
-    ancho: 1200,
-    alto: 400,
-  },
-  correo_pie: {
-    clave: 'org.identidad.correo_pie',
-    titulo: 'Pie de los correos',
-    descripcion: 'Imagen opcional para la firma visual al final del mensaje.',
-    proporcion: 3,
-    ancho: 1200,
-    alto: 400,
+    titulo: 'Logo del encabezado de correos',
+    descripcion: 'Reemplaza el cuadro azul con la E, junto a «QMS ECA». No es un banner.',
+    proporcion: 1,
+    ancho: 512,
+    alto: 512,
+    formato: 'png',
+    recomendacion: 'Imagen cuadrada de 512 × 512 px. Preferí PNG con fondo transparente y bordes nítidos; idealmente menos de 300 KB.',
   },
   login_fondo: {
     clave: 'org.identidad.login_fondo',
@@ -25,14 +19,18 @@ export const IDENTIDAD_IMAGENES = {
     proporcion: 16 / 9,
     ancho: 1600,
     alto: 900,
+    formato: 'webp',
+    recomendacion: 'Imagen horizontal de 1600 × 900 px (16:9). Preferí JPG o WebP de buena calidad, sin texto importante; idealmente entre 300 KB y 1 MB.',
   },
-  formulario_fondo: {
-    clave: 'org.identidad.formulario_fondo',
-    titulo: 'Fondo del formulario externo',
-    descripcion: 'Fondo de los formularios públicos y su pantalla de confirmación.',
-    proporcion: 16 / 9,
-    ancho: 1600,
-    alto: 900,
+  formulario_encabezado: {
+    clave: 'org.identidad.formulario_encabezado',
+    titulo: 'Logo del formulario externo',
+    descripcion: 'Se muestra en la esquina superior derecha del encabezado, sin cubrir los campos.',
+    proporcion: 3,
+    ancho: 900,
+    alto: 300,
+    formato: 'webp',
+    recomendacion: 'Logo horizontal de 900 × 300 px (3:1). Preferí PNG transparente o WebP de alta calidad; idealmente menos de 400 KB.',
   },
 } as const
 
@@ -54,8 +52,11 @@ export function urlIdentidadValida(slot: ImagenIdentidad, value: unknown, origin
     const url = new URL(value)
     const prefix = `/storage/v1/object/public/${LOGO_BUCKET}/identidad/${slot}/`
     const name = url.pathname.startsWith(prefix) ? url.pathname.slice(prefix.length) : ''
+    const ext = IDENTIDAD_IMAGENES[slot].formato
+    const suffix = `.${ext}`
     if (expected.protocol !== 'https:' || url.origin !== expected.origin || url.search || url.hash
-      || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(name)) return ''
+      || !name.endsWith(suffix)
+      || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(name.slice(0, -suffix.length))) return ''
     return url.toString()
   } catch { return '' }
 }
