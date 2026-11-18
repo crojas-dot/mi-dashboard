@@ -83,7 +83,7 @@ export default function LogoEmpresaEditor({ active }: { active: boolean }) {
             <Trash2 className="h-4 w-4" aria-hidden="true" /> Quitar logo
           </Button>}
         </div>
-        <p className="text-xs text-qms-muted">PNG, JPG o WebP, hasta {tamanio(LOGO_ORIGEN_MAX_BYTES)}. La imagen se guarda recortada en cuadrado.</p>
+        <p className="text-xs text-qms-muted">Tamaño recomendado: 512 × 512 px (1:1). Preferí PNG con transparencia y bordes bien definidos, idealmente menos de 300 KB. Admite PNG, JPG o WebP hasta {tamanio(LOGO_ORIGEN_MAX_BYTES)} de origen; se guarda recortado y optimizado.</p>
         {!!consulta.error && <p role="alert" className="text-sm text-qms-danger">No se pudo leer el logo actual.</p>}
         {errorArchivo && <p role="alert" className="text-sm text-qms-danger">{errorArchivo}</p>}
       </div>
