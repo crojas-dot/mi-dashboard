@@ -341,7 +341,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
       </div>
     </Modal>
     {borradorFoto && <LogoRecorteModal key={borradorFoto.url} borrador={borradorFoto}
-      guardando={fotoOperation.operation === 'subir'} nombre="foto de perfil" outputWidth={320}
+      guardando={fotoOperation.operation === 'subir'} nombre="foto de perfil" outputWidth={320} maxEncodedBytes={AVATAR_UPLOAD_BYTES}
       onCerrar={() => setBorradorFoto(null)} onGuardar={blob => {
         void cambiarFoto(new File([blob], 'foto.webp', { type: blob.type }))
       }} />}
