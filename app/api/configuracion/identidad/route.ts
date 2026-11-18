@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/server/auth'
 import { createServiceClient } from '@/lib/server/supabase-admin'
 import { rateLimit } from '@/lib/server/rateLimit'
 import { LOGO_BUCKET } from '@/lib/constants/marca'
+import { urlPublicaIdentidad } from '@/lib/server/identidad-publica'
 import { IDENTIDAD_ACCEPT, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, IDENTIDAD_SLOTS, IDENTIDAD_STORED_BYTES, esImagenIdentidad, rutaImagenIdentidad, urlIdentidadValida, type ImagenIdentidad } from '@/lib/constants/identidad'
 
 export const runtime = 'nodejs'
@@ -18,7 +19,7 @@ async function actual(admin: Admin, slot: ImagenIdentidad): Promise<string> {
   const { data, error } = await admin.from('configuraciones_sistema')
     .select('valor').eq('clave', IDENTIDAD_IMAGENES[slot].clave).maybeSingle()
   if (error) throw new Error('No se pudo consultar la imagen')
-  return urlIdentidadValida(slot, data?.valor)
+  return urlPublicaIdentidad(admin, slot, data?.valor)
 }
 
 async function publicar(admin: Admin, slot: ImagenIdentidad, imagen: string) {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     .select('clave,valor').in('clave', IDENTIDAD_SLOTS.map(slot => IDENTIDAD_IMAGENES[slot].clave))
   if (error) return fail('No se pudieron consultar las imágenes', 503)
   const imagenes = Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
-    slot, urlIdentidadValida(slot, data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor),
+    slot, urlPublicaIdentidad(admin, slot, data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor),
   ]))
   return json({ imagenes })
 }
