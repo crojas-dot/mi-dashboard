@@ -64,8 +64,11 @@ export default function SessionScreen({
 function LoginSkeleton() {
   return <div className="flex min-h-dvh items-center justify-center px-4 py-10">
     <div className="w-full max-w-md motion-safe:animate-pulse [animation-duration:2.4s]">
-      <div className="mb-8 flex items-center justify-center gap-3"><Skeleton className="h-12 w-12 rounded-card" /><Skeleton className="h-7 w-36" /></div>
-      <div className="rounded-card border border-qms-border bg-qms-surface">
+      <div className="overflow-hidden rounded-card border border-qms-border bg-qms-surface">
+        <div className="flex items-center gap-3 border-b border-qms-border px-6 py-5 sm:px-8">
+          <Skeleton className="h-14 w-14 rounded-card" />
+          <div className="space-y-2"><Skeleton className="h-6 w-20" /><Skeleton className="h-3 w-32" /></div>
+        </div>
         <div className="space-y-6 p-6 sm:p-8">
           <div className="space-y-3"><Skeleton className="mx-auto h-6 w-36" /><Skeleton className="mx-auto h-3 w-3/4" /></div>
           {[0, 1].map(index => <div key={index} className="space-y-2"><Skeleton className="h-4 w-28" /><Skeleton className="h-11 w-full rounded-button" /></div>)}
