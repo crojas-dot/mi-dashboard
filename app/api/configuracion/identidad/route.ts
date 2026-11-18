@@ -48,7 +48,13 @@ export async function GET(request: NextRequest) {
   const imagenes = Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
     slot, urlPublicaIdentidad(admin, slot, data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor),
   ]))
-  return json({ imagenes })
+  // Separar "guardada" de "previsualizable": la ausencia de una URL válida
+  // no debe informar falsamente que se borró un archivo que aún existe.
+  const configuradas = Object.fromEntries(IDENTIDAD_SLOTS.map(slot => {
+    const value = data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor
+    return [slot, typeof value === 'string' && value.trim().length > 0]
+  }))
+  return json({ imagenes, configuradas })
 }
 
 export async function PUT(request: NextRequest) {
