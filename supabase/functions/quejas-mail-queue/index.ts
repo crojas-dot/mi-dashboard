@@ -189,7 +189,7 @@ async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetche
         const prefix = `/storage/v1/object/public/branding/identidad/correo_${slot}/`
         const name = asset.pathname.startsWith(prefix) ? asset.pathname.slice(prefix.length) : ''
         if (asset.origin === expected.origin && !asset.search && !asset.hash
-          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\\.webp$/i.test(name)) {
+          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(name)) {
           result[slot as keyof typeof result] = asset.toString()
         }
       } catch { /* Se descarta una URL incorrecta. */ }
