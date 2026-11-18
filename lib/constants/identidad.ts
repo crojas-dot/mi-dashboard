@@ -19,6 +19,8 @@ export const IDENTIDAD_IMAGENES = {
     proporcion: 16 / 9,
     ancho: 1600,
     alto: 900,
+    procesamientoAncho: 2560,
+    procesamientoAlto: 1440,
     formato: 'webp',
     recomendacion: 'Imagen horizontal de 1600 × 900 px (16:9). Preferí JPG o WebP de buena calidad, sin texto importante; idealmente entre 300 KB y 1 MB.',
   },
@@ -36,9 +38,13 @@ export const IDENTIDAD_IMAGENES = {
 
 export type ImagenIdentidad = keyof typeof IDENTIDAD_IMAGENES
 export const IDENTIDAD_SLOTS = Object.keys(IDENTIDAD_IMAGENES) as ImagenIdentidad[]
+// La imagen original se recorta localmente: no se envían decenas de MB a la API.
+// El archivo recortado sí debe respetar el límite HTTP y el bucket de Storage.
+export const IDENTIDAD_ORIGEN_MAX_BYTES = 30 * 1024 * 1024
 export const IDENTIDAD_MAX_BYTES = 4 * 1024 * 1024
 export const IDENTIDAD_STORED_BYTES = 2 * 1024 * 1024
-export const IDENTIDAD_ACCEPT = 'image/png,image/jpeg,image/webp'
+export const IDENTIDAD_ACCEPT = 'image/png,image/jpeg,image/webp,image/avif,image/gif'
+export const IDENTIDAD_ACCEPT_PICKER = 'image/*'
 
 export function esImagenIdentidad(value: unknown): value is ImagenIdentidad {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(IDENTIDAD_IMAGENES, value)
