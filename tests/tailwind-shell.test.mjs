@@ -81,6 +81,25 @@ test('menú lateral utiliza los doce SVG oficiales de CoreUI sin cambiar enlaces
   assert.equal((sprite.match(/<symbol id=/g) ?? []).length, 12)
 })
 
+test('Revisión por Dirección se muestra completo y puede ocupar dos líneas sin cortar el menú', () => {
+  const permissions = [{ modulo: 'revision', leer: true }]
+  const expanded = sidebarFixture({ rol: 'colaborador', permisos: permissions })
+  const revision = elements(expanded.element).find(node => node.type === 'a' && node.props.href === '/revision')
+  assert.ok(revision, 'El enlace Revisión por Dirección debe estar visible')
+  assert.match(revision.props.className, /min-h-11/)
+  assert.doesNotMatch(revision.props.className, /\\bh-11\\b/)
+  const label = elements(revision).find(node => node.type === 'span' && text(node) === 'Revisión por Dirección')
+  assert.ok(label, 'No debe abreviarse el nombre')
+  assert.match(label.props.className, /whitespace-normal/)
+  assert.doesNotMatch(label.props.className, /whitespace-nowrap/)
+
+  const collapsed = sidebarFixture({ rol: 'colaborador', permisos: permissions, collapsed: true })
+  const compact = elements(collapsed.element).find(node => node.type === 'a' && node.props.href === '/revision')
+  const compactLabel = elements(compact).find(node => node.type === 'span' && text(node) === 'Revisión por Dirección')
+  assert.match(compactLabel.props.className, /max-w-0 whitespace-nowrap/)
+  assert.match(compact.props.className, /min-h-11/)
+})
+
 test('Sidebar conserva los grupos visibles y excepción de Configuración para admin', () => {
   const fixture = sidebarFixture({ rol: 'admin', permisos: [] })
   const nodes = elements(fixture.element)
