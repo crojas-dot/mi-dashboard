@@ -20,7 +20,7 @@ export default function FondoIdentidad({ slot, children, initialUrl = '', initia
 }) {
   const { data } = useIdentidadImagenes()
   // Render del servidor primero: evita pantalla vacía mientras carga el cliente.
-  const url = data?.[slot] || initialUrl
+  const url = initialUrl || data?.[slot] || ''
   return <LoginLogoContext.Provider value={initialLogo}>
     <div className={`relative isolate min-h-dvh ${url ? 'bg-[#082440]' : 'bg-qms-background'}`}>
     {url && <>
