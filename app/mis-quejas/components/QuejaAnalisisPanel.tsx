@@ -55,29 +55,45 @@ interface TimelineProps {
 /** Línea de tiempo compartida por Calidad y el responsable; solo varían los eventos autorizados. */
 export function QuejaTimeline({ actividad, loading, error, onRetry, resolveAuthor }: TimelineProps) {
   const events = [...actividad].sort((a, b) => b.created_at.localeCompare(a.created_at))
-  return <section data-queja-timeline className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-5 shadow-sm sm:p-8">
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-      <h3 className="text-[17px] font-semibold text-qms-dark">Línea de tiempo</h3>
-      <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2 py-1 text-[11px] font-semibold text-qms-muted">Registro de actividad</span>
+  return <section data-queja-timeline className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm sm:p-6">
+    <div className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b border-qms-border pb-4">
+      <div>
+        <h3 className="text-[17px] font-semibold text-qms-dark">Historial del expediente</h3>
+        <p className="mt-1 text-sm leading-relaxed text-qms-muted">Decisiones, cambios y notas. Los movimientos más recientes aparecen primero.</p>
+      </div>
+      {!loading && !error && <span className="rounded-button border border-qms-border bg-qms-hover-bg px-2.5 py-1.5 text-xs font-semibold text-qms-muted">{events.length} {events.length === 1 ? 'movimiento' : 'movimientos'}</span>}
     </div>
     {loading ? <LoadingSkeleton variant="list" label="Cargando historial…" framed={false} />
-      : error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudo cargar el historial.{onRetry && <Button size="sm" variant="ghost" onClick={onRetry}>Reintentar historial</Button>}</div>
-      : events.length === 0 ? <p className="text-sm text-qms-muted">Sin actividad registrada.</p>
-      : <ol className="relative ml-3 space-y-8 border-l-2 border-qms-border pb-4">
+      : error ? <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-qms-muted">No se pudo cargar el historial.{onRetry && <Button size="sm" variant="secondary" onClick={onRetry}>Reintentar</Button>}</div>
+      : events.length === 0 ? <p className="text-sm text-qms-muted">Aún no hay movimientos registrados para este expediente.</p>
+      : <ol className="relative ml-2 border-l-2 border-qms-border">
         {events.map((item, index) => {
           const returned = item.descripcion.startsWith(NOTA_DEVOLUCION_PREFIX)
           const approved = item.descripcion === NOTA_APROBACION_GC
-          const title = returned ? 'Devolución a investigación' : approved ? 'Resolución aprobada' : item.tipo === 'nota' ? 'Nota agregada' : item.tipo.replace(/_/g, ' ')
-          const description = returned ? 'Motivo: ' + item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length) : item.descripcion
-          const author = resolveAuthor?.(item) || (returned || approved ? 'Gestión de Calidad' : item.usuario_id ? 'Usuario registrado' : 'Autor no registrado')
-          return <li key={item.id} className="relative min-w-0 pl-8">
-            <span aria-hidden="true" className={`absolute -left-[9px] top-1.5 z-10 size-4 rounded-full ring-4 ring-qms-surface ${index === 0 ? 'bg-qms-primary' : 'bg-gray-300'}`} />
-            <div className="mb-2 flex flex-col justify-between gap-1 sm:flex-row sm:items-baseline sm:gap-3">
-              <h4 className="text-[15px] font-semibold text-qms-dark">{title}</h4>
-              <time dateTime={item.created_at} className="shrink-0 text-[13px] font-medium text-qms-muted">{caseDate(item.created_at)}</time>
-            </div>
-            <p className="mb-3 flex items-center gap-1.5 text-[13px] text-qms-muted"><UserRound aria-hidden="true" className="size-3" />Por: {author}</p>
-            <p className="whitespace-pre-wrap break-words rounded-button border border-qms-border bg-qms-hover-bg p-4 text-[14px] leading-relaxed text-qms-dark shadow-sm">{description}</p>
+          const closed = item.descripcion === 'Respuesta al cliente y oficio oficial publicados. Expediente finalizado.'
+          const note = item.tipo === 'nota' && !returned && !approved && !closed
+          const rawTitle = item.tipo.replace(/[_-]+/g, ' ').trim()
+          const title = returned ? 'Devuelta a investigación' : approved ? 'Aprobación de Calidad' : closed ? 'Expediente finalizado'
+            : note ? 'Nota registrada' : rawTitle ? rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1) : 'Actividad registrada'
+          const description = returned ? item.descripcion.slice(NOTA_DEVOLUCION_PREFIX.length).trim()
+            : approved ? 'Gestión de Calidad aprobó la resolución y el expediente continúa hacia el cierre.'
+            : closed ? 'Se registró la publicación de la respuesta y el oficio de cierre.'
+            : item.descripcion
+          const category = returned ? 'Devolución' : approved ? 'Aprobación' : closed ? 'Cierre' : note ? 'Nota' : 'Movimiento'
+          const author = resolveAuthor?.(item) || (returned || approved ? 'Gestión de Calidad' : item.usuario_id ? 'Usuario del sistema' : 'Actor no identificado')
+          return <li key={item.id} className="relative min-w-0 pb-6 pl-7 last:pb-0">
+            <span aria-hidden="true" className={`absolute -left-[9px] top-4 z-10 size-4 rounded-full border-[3px] border-qms-surface ${returned ? 'bg-qms-warning' : approved || closed ? 'bg-qms-success' : index === 0 ? 'bg-qms-primary' : 'bg-gray-300'}`} />
+            <article className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1.5">
+                  <Badge variant={returned ? 'amber' : approved || closed ? 'green' : note ? 'gray' : 'blue'}>{category}</Badge>
+                  <h4 className="break-words text-base font-semibold text-qms-dark">{title}</h4>
+                </div>
+                <time dateTime={item.created_at} className="shrink-0 text-xs font-medium text-qms-muted">{caseDate(item.created_at)}</time>
+              </div>
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-qms-muted"><UserRound aria-hidden="true" className="size-3.5" />{author}</p>
+              {description && <p className="mt-3 whitespace-pre-wrap break-words rounded-button bg-qms-hover-bg px-3 py-3 text-sm leading-relaxed text-qms-dark">{description}</p>}
+            </article>
           </li>
         })}
       </ol>}
