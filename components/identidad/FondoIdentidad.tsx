@@ -13,9 +13,9 @@ export default function FondoIdentidad({ slot, children }: {
   const url = data?.[slot] || ''
   return <div className="relative isolate min-h-dvh bg-qms-background">
     {url && <>
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+      <div data-login-fondo aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url("${url}")` }} />
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-white/70" />
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 bg-black/10" />
     </>}
     <div className="relative z-10 min-h-dvh">{children}</div>
   </div>
