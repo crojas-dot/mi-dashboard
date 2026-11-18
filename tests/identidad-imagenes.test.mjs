@@ -95,8 +95,9 @@ test('imagen institucional se convierte en WebP, se publica y se retira por slot
   const path = f.logs.find(value => value[0] === 'upload')[1]
   const image = await sharp(f.objects.get(path)).metadata()
   assert.equal(image.format, 'webp')
-  assert.equal(image.width, 1600)
-  assert.equal(image.height, 900)
+  // Un origen pequeño no debe agrandarse artificialmente para cubrir la medida sugerida.
+  assert.equal(image.width, 90)
+  assert.equal(image.height, 60)
   const clave = marcas.IDENTIDAD_IMAGENES.login_fondo.clave
   assert.equal(f.config.get(clave), respuesta.body.imagen)
   const lectura = await f.api.GET({ signal: undefined })
@@ -135,4 +136,25 @@ test('logo del correo se guarda como PNG cuadrado y logo del formulario como Web
     assert.equal(f.config.get(marcas.IDENTIDAD_IMAGENES[slot].clave), res.body.imagen)
     assert.ok(!res.body.imagen.includes('correo_pie'))
   }
+})
+
+test('un fondo de alta resolución conserva nitidez hasta el máximo de 2560 × 1440', async () => {
+  const f = fixture()
+  const grande = await sharp({ create: { width: 3200, height: 1800, channels: 3, background: '#224466' } }).png().toBuffer()
+  const respuesta = await f.api.PUT(f.makeRequest(new File([grande], 'fondo-hd.png', { type: 'image/png' })))
+  assert.equal(respuesta.status, 200)
+  const path = f.logs.find(value => value[0] === 'upload')[1]
+  const meta = await sharp(f.objects.get(path)).metadata()
+  assert.equal(meta.width, 2560)
+  assert.equal(meta.height, 1440)
+  assert.equal(meta.format, 'webp')
+})
+
+test('las recomendaciones son solo sugerencias; el tamaño original puede ser mayor al del archivo enviado', () => {
+  assert.equal(marcas.IDENTIDAD_ORIGEN_MAX_BYTES, 30 * 1024 * 1024)
+  assert.equal(marcas.IDENTIDAD_MAX_BYTES, 4 * 1024 * 1024)
+  assert.equal(marcas.IDENTIDAD_STORED_BYTES, 2 * 1024 * 1024)
+  assert.ok(marcas.IDENTIDAD_ACCEPT.includes('image/avif'))
+  assert.ok(marcas.IDENTIDAD_ACCEPT.includes('image/gif'))
+  assert.equal(marcas.IDENTIDAD_ACCEPT_PICKER, 'image/*')
 })
