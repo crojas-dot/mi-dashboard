@@ -200,7 +200,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
       <div data-mi-perfil-detalles className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
         <aside className="flex w-full shrink-0 flex-col items-center gap-3 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-44">
           <div className="relative">
-            <FotoPerfil url={fotoUrl} initials={inicial} size={96}
+            <FotoPerfil url={fotoUrl} hasPhoto={!!user.avatarUrl} initials={inicial} size={96}
               className="size-24 border-4 border-qms-surface bg-qms-primary/15 text-3xl font-semibold text-qms-primary shadow-sm" />
             <span aria-hidden="true" className="absolute -bottom-1 -right-1 inline-flex size-8 items-center justify-center rounded-full border border-qms-border bg-qms-surface text-qms-primary shadow-sm">
               <Camera className="size-4" />
