@@ -67,8 +67,8 @@ test('menú lateral utiliza los doce SVG oficiales de CoreUI sin cambiar enlaces
   assert.equal(links.length, 12)
 
   const sprite = readFileSync(new URL('../public/icons/coreui-nav.svg', import.meta.url), 'utf8')
-  assert.match(sprite, /CoreUI Icons Free v3\\.1\\.0/)
-  assert.match(sprite, /CC BY 4\\.0/)
+  assert.match(sprite, /CoreUI Icons Free v3\.1\.0/)
+  assert.match(sprite, /CC BY 4\.0/)
   for (const link of links) {
     const svg = elements(link).find(node => node.type === 'svg')
     assert.ok(svg, `sin ícono para ${link.props['aria-label']}`)
