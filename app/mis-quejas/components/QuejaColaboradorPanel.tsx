@@ -46,6 +46,18 @@ interface Props {
   onNext?: () => void
 }
 const DOCUMENT_LIMIT = 10000
+type CaseViewStage = 'analysis' | 'investigation' | 'quality_review' | 'finished'
+
+function currentStageFromStatus(status?: string): CaseViewStage {
+  switch (status) {
+    case 'En Investigación': return 'investigation'
+    case 'Pendiente de Revisión GC': return 'quality_review'
+    case 'Resuelto':
+    case 'Finalizado':
+    case 'No Procede': return 'finished'
+    default: return 'analysis'
+  }
+}
 
 export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNavigationLockChange, onPrevious, onNext }: Props) {
   const user = useAuthStore(s => s.user)
@@ -54,7 +66,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const draftVersions = useRef({ nota: 0, resolucion: 0 })
   const [analisisAbierto, setAnalisisAbierto] = useState(false)
   const [historialAbierto, setHistorialAbierto] = useState(false)
-  const [stageView, setStageView] = useState<'analysis' | 'investigation' | 'quality_review' | 'finished'>('analysis')
+  const [stageView, setStageView] = useState<CaseViewStage>(() => currentStageFromStatus(queja?.estado))
+  const [editorAbierto, setEditorAbierto] = useState(false)
   const [panelNotas, setPanelNotas] = useState(false)
   const [panelAdjuntos, setPanelAdjuntos] = useState(false)
   const resolutionContainer = useRef<HTMLDivElement>(null)
@@ -128,20 +141,23 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setIsExpanded(false)
     setAnalisisAbierto(false)
     setHistorialAbierto(false)
-    setStageView('analysis')
+    setStageView(currentStageFromStatus(queja?.estado))
+    setEditorAbierto(false)
     setPanelNotas(false)
     setPanelAdjuntos(false)
     setNotaMenu(null); setNotaEliminar(null)
     setAiResult('')
     onNavigationLockChange?.(false)
     onClose()
-  }, [scope, onClose, onNavigationLockChange, setAiResult])
+  }, [scope, onClose, onNavigationLockChange, setAiResult, queja?.estado])
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   const [prevInvestigando, setPrevInvestigando] = useState(investigando)
+  const [prevEstado, setPrevEstado] = useState(estado)
   if (prevInvestigando !== investigando) {
     setPrevInvestigando(investigando)
     setResolutionOverlay(null)
-    setStageView('analysis')
+    setStageView(currentStageFromStatus(estado))
+    setEditorAbierto(false)
     if (investigando) {
       setBorradorVersion(null); setBorradorGuardado(null)
       setResolucion(''); setResolucionFormato('plain'); setResolucionRevision(null)
@@ -157,10 +173,17 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setNotaEditando(null); setNotaEdicion(''); setNotaMenu(null); setNotaEliminar(null); setOperandoNota(false)
     setAnalisisAbierto(false)
     setHistorialAbierto(false)
-    setStageView('analysis')
+    setStageView(currentStageFromStatus(estado))
+    setEditorAbierto(false)
     setPanelNotas(false)
     setPanelAdjuntos(false)
     setNota(''); setIsExpanded(false); setLoading(false); setAgregandoNota(false)
+  }
+  if (prevEstado !== estado) {
+    setPrevEstado(estado)
+    setStageView(currentStageFromStatus(estado))
+    setEditorAbierto(false)
+    setResolutionOverlay(null)
   }
   if (!queja) return null
   // La primera lectura hidrata esta visita; un refetch no sobrescribe lo escrito
@@ -179,7 +202,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
-  // En Mis Quejas el ciclo de lectura arranca en Análisis y la investigación es la acción actual.
+  // El ciclo muestra el estado real; consultar una etapa no modifica el workflow.
   const cicloProceso = getCaseProcessCycle(queja, {
     steps: [
       { id: 'analysis', label: 'Análisis', current: false, completed: false },
@@ -189,13 +212,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     ],
   })
 
-  const etapaActual = cicloProceso.steps.find(step => step.current)?.id
-    ?? (['Resuelto', 'Finalizado'].includes(estado) ? 'finished' : 'analysis')
+  const etapaActual = currentStageFromStatus(estado)
   const etapaConsultada = stageView === etapaActual ? null : stageView
   const cambiarEtapa = (stage: string) => {
     if (navigationLocked || !cicloProceso.steps.some(step => step.id === stage)) return
     setResolutionOverlay(null)
-    setStageView(stage as typeof stageView)
+    setStageView(stage as CaseViewStage)
+    if (stage !== 'investigation') setEditorAbierto(false)
   }
   const analisisRegistrado = getQuejaAnalysis(queja)
   const adjuntosCliente = adjuntos.filter(adjunto => !adjunto.usuario_id)
@@ -388,15 +411,23 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     setPanelAdjuntos(false)
     restaurarPuntoResolucion()
   }
+  const abrirEtapaActual = () => {
+    setResolutionOverlay(null)
+    setStageView(currentStageFromStatus(estado))
+    setEditorAbierto(false)
+    setIsExpanded(true)
+  }
   const abrirVistaAnalisis = () => {
     setResolutionOverlay(null)
     setStageView('analysis')
+    setEditorAbierto(false)
     setIsExpanded(true)
   }
   const prepararResolucion = () => {
     if (!investigando || resolutionPending) return
     setResolutionOverlay(null)
     setStageView('investigation')
+    setEditorAbierto(true)
     setIsExpanded(true)
     setEditandoResolucion(true)
     cerrarAnalisis()
@@ -417,7 +448,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     ? reenviarRevision && devolucion ? {
         title: 'Corrección requerida',
         description: 'Consulta la devolución y los antecedentes antes de corregir la resolución.',
-        ctaLabel: 'Ver análisis y devolución', icon: 'warning', tone: 'amber',
+        ctaLabel: 'Revisar investigación', icon: 'warning', tone: 'amber',
       } : resolutionDirty ? {
         title: 'Cambios sin guardar',
         description: 'Tienes cambios locales pendientes. Revísalos y guárdalos antes de enviar la propuesta.',
@@ -425,11 +456,11 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       } : borradorGuardado ? {
         title: 'Borrador guardado',
         description: `Tienes una propuesta guardada el ${caseDate(borradorGuardado.updated_at)}. Revísala o termínala.`,
-        ctaLabel: 'Revisar antecedentes', icon: 'saved', tone: 'blue',
+        ctaLabel: 'Ver investigación', icon: 'saved', tone: 'blue',
       } : {
-        title: 'Análisis del caso',
-        description: 'Revisa lo indicado por el cliente y por Calidad antes de preparar tu resolución.',
-        ctaLabel: 'Ver análisis y antecedentes', icon: 'edit', tone: 'blue',
+        title: 'Investigación en curso',
+        description: 'Consulta el avance y los antecedentes antes de preparar la resolución.',
+        ctaLabel: 'Ver investigación', icon: 'edit', tone: 'blue',
       }
     : estado === 'Pendiente de Revisión GC' ? {
         title: 'En revisión de Calidad',
@@ -447,7 +478,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
     responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
     primaryAction={<CaseTriageNextStep step={triageStep}
-      onOpen={investigando && resolutionDirty ? prepararResolucion : abrirVistaAnalisis}
+      onOpen={investigando && resolutionDirty ? prepararResolucion : abrirEtapaActual}
       disabled={investigando && resolutionPending} />}
     footer={<CaseTriageFooter title="Historial y observaciones" count={!actividadLoading && !actividadError ? actividad.length : undefined}
       onOpen={() => setHistorialAbierto(true)} />}>
@@ -489,7 +520,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         if (panelAdjuntos) { cerrarAdjuntos(); return }
         if (isExpanded) {
           setResolutionOverlay(null)
-          setStageView('analysis')
+          setStageView(currentStageFromStatus(estado))
+          setEditorAbierto(false)
           setIsExpanded(false)
           requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-case-triage-expand]')?.focus({ preventScroll: true }))
           return
@@ -504,25 +536,26 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
-      headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setStageView('analysis'); setIsExpanded(value => !value) }}
+      headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setStageView(currentStageFromStatus(estado)); setEditorAbierto(false); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + stageView} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
         request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
-        requestFooter={stageView === 'investigation' ? <div className="space-y-4">
+        requestFooter={stageView === 'investigation' && editorAbierto ? <div className="space-y-4">
           <QuejaAdjuntosCard adjuntos={adjuntosInvestigacion} loading={adjuntosLoading} error={!!adjuntosError}
             onOpen={abrirAdjuntos} />
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div> : null}
         compact={<CaseCycle queja={queja} process currentOnly steps={cicloProceso.steps} />} cycle={<CaseCycle queja={queja} process steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} />}
         action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{stageView === 'investigation' ? 'Acción actual' : 'Consulta del expediente'}</h3>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{stageView === etapaActual ? 'Etapa actual' : 'Consulta del expediente'}</h3>
           <Badge variant={queja.estado_color || varianteEstado('quejas', estado)}>{queja.estado_nombre || estado}</Badge>
           <CaseCompletionDate queja={queja} />
           <div className="mt-3" title={deadline.stageTitle}>{plazo}{plazosError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el calendario. Se conserva el vencimiento registrado.</p>}</div>
           {action && <p className="mt-3 text-xs leading-relaxed text-qms-muted">{action}</p>}
           <div className="mt-4 space-y-2">
             {stageView === 'analysis' && investigando && <Button size="sm" variant="primary" className="min-h-11 w-full min-w-0 justify-between whitespace-normal" onClick={prepararResolucion} disabled={resolutionPending}><span className="flex items-center gap-2"><FilePenLine aria-hidden="true" className="size-4 shrink-0" />Preparar resolución</span><ArrowRight aria-hidden="true" className="size-4 shrink-0" /></Button>}
-            {stageView === 'investigation' && investigando && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
+            {stageView === 'investigation' && investigando && !editorAbierto && <Button size="sm" variant="primary" className="min-h-11 w-full min-w-0 justify-between whitespace-normal" onClick={prepararResolucion} disabled={resolutionPending}><span className="flex items-center gap-2"><FilePenLine aria-hidden="true" className="size-4 shrink-0" />Preparar resolución</span><ArrowRight aria-hidden="true" className="size-4 shrink-0" /></Button>}
+            {stageView === 'investigation' && investigando && editorAbierto && <Button size="sm" className="w-full min-w-0 whitespace-normal" onClick={handleEnviarRevision} loading={loading} disabled={!resolucion.trim() || resolutionPending}>{reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}</Button>}
             {stageView !== 'investigation' && !investigando && <p className="text-sm leading-relaxed text-qms-muted">Esta vista es solo de consulta; no modifica el estado de la queja.</p>}
           </div>
           {errorResolucion && <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-3 text-sm text-qms-danger">{errorResolucion}</div>}
@@ -571,7 +604,31 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             {documentoAprobado && queja.numero_oficio_resolucion && <p className="mt-3 text-sm text-qms-muted">N.º de oficio: {queja.numero_oficio_resolucion}</p>}
           </CaseSection>
         </div>
-        : investigando ? <div data-resolution-shell className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
+        : stageView === 'investigation' && (!investigando || !editorAbierto) ? <div data-case-stage-overview data-case-stage="investigation" className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-qms-primary/20 bg-qms-primary-soft px-5 py-3 text-sm">
+            <span className="flex items-center gap-2 font-semibold text-qms-primary"><Eye aria-hidden="true" className="size-4" />{investigando ? 'Investigación · Etapa actual' : 'Investigación · Solo lectura'}</span>
+            {investigando && <Button size="sm" variant="secondary" onClick={prepararResolucion} disabled={resolutionPending}>Preparar resolución</Button>}
+          </div>
+          <CaseSection variant="panel" source="Responsable" title="Estado de la resolución">
+            {borradorGuardado && investigando
+              ? <><p className="mb-3 text-sm text-qms-muted">Borrador guardado el {caseDate(borradorGuardado.updated_at)}</p><RichTextContent value={resolucion} format={resolucionFormato} /></>
+              : queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} />
+              : <p className="text-sm leading-relaxed text-qms-muted">La resolución aún no está registrada. Podés consultar los antecedentes antes de prepararla.</p>}
+          </CaseSection>
+          {devolucion && <CaseSection variant="panel" source="Gestión de Calidad" title="Devolución pendiente">
+            <p className="mb-2 text-xs text-qms-muted">{caseDate(devolucion.fecha)}</p>
+            <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{devolucion.motivo}</p>
+          </CaseSection>}
+          <CaseSection variant="panel" source="Gestión de Calidad" title="Justificación de procedencia">
+            {queja.justificacion_procede ? <RichTextContent value={queja.justificacion_procede} format={queja.justificacion_procede_formato} />
+              : <p className="text-sm text-qms-muted">No hay justificación registrada.</p>}
+          </CaseSection>
+          <CaseSection variant="panel" source="Cliente" title="Antecedentes de la queja">
+            <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
+            <Button size="sm" variant="secondary" className="mt-4" onClick={abrirVistaAnalisis}>Consultar análisis completo</Button>
+          </CaseSection>
+        </div>
+        : investigando && editorAbierto ? <div data-resolution-shell className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
           <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
             style={resolutionOverlay ?? undefined}
             className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
