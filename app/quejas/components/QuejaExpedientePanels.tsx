@@ -51,7 +51,7 @@ export function CaseRequestHeader({ queja, children, showReceivedAt = false, var
   if (variant === 'panel') {
     // Variante lateral del expediente: datos del solicitante presentados estáticos,
     // sin el desplegable del resumen pegado arriba del documento.
-    return <section data-case-request className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4">
+    return <section data-case-request className="min-w-0">
       <div className="flex min-w-0 items-start gap-3"><span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><UserRound className="size-4" /></span><h3 className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium text-qms-dark pt-1">{queja.cliente_nombre}</h3></div>
       <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-3 text-sm">
         <div className="min-w-0"><dt className="flex items-center gap-2 text-xs text-qms-muted"><Mail aria-hidden="true" className="size-3.5 shrink-0" />Correo electrónico</dt><dd className="mt-1 break-all [overflow-wrap:anywhere]">{queja.email_cliente || 'Sin correo registrado'}</dd></div>
@@ -91,8 +91,8 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }) {
   return <>
     <div className="hidden items-center gap-1 @min-[480px]/workspace:flex">
-      <Button size="icon" variant="ghost" aria-label="Queja anterior" title="Queja anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-5" /></Button>
-      <Button size="icon" variant="ghost" aria-label="Queja siguiente" title="Queja siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-5" /></Button>
+      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja anterior" title="Queja anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-6" /></Button>
+      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja siguiente" title="Queja siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-6" /></Button>
     </div>
     <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} title={expanded ? 'Reducir expediente' : 'Ampliar expediente'}
       aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 aria-hidden="true" className="size-5" /> : <Maximize2 aria-hidden="true" className="size-5" />}</Button>
@@ -102,21 +102,27 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
 export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
+  const centerRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
-  useLayoutEffect(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0 }, [documentKey])
+  useLayoutEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0
+    if (centerRef.current) centerRef.current.scrollTop = 0
+  }, [documentKey])
   // Igualar el ancho del ciclo en la cabecera con el ancho *útil* del editor:
   // el scrollport reserva un gutter de scrollbar que la cabecera no tiene.
   useLayoutEffect(() => {
     const scrollport = scrollRef.current
+    const center = centerRef.current
     const modal = scrollport?.closest('dialog')
     if (!scrollport || !modal) return
     const syncGutter = () => {
-      const gutter = Math.max(0, scrollport.offsetWidth - scrollport.clientWidth)
+      const gutter = Math.max(scrollport.offsetWidth - scrollport.clientWidth, center ? center.offsetWidth - center.clientWidth : 0)
       modal.style.setProperty('--qms-case-scrollbar-width', `${gutter}px`)
     }
     syncGutter()
     const observer = new ResizeObserver(syncGutter)
     observer.observe(scrollport)
+    if (center) observer.observe(center)
     return () => {
       observer.disconnect()
       modal.style.removeProperty('--qms-case-scrollbar-width')
@@ -133,14 +139,16 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
     {compactContent && <div data-case-triage hidden={expanded} style={expanded ? { display: 'none' } : undefined} className="mx-3 mt-3 min-h-0 flex-1 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4">{compactContent}</div>}
     {/* No desmontar las columnas ni Tiptap: ocultar el mismo árbol durante el triaje. */}
     <div data-case-frame style={!expanded && compactContent ? { display: 'none' } : undefined} className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
-      {/* El scrollport y los documentos conservan sus nodos al ampliar/reducir. */}
-      <div ref={scrollRef} data-case-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg' : 'bg-qms-surface'}`}>
-        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:items-start ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
-          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:[will-change:transform]' : ''}`}>
+      {/* En escritorio la cuadrícula queda fija. En móvil se desplaza el conjunto apilado. */}
+      <div ref={scrollRef} data-case-scroll data-case-stack-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg @min-[1100px]:overflow-clip @min-[1100px]:[will-change:auto]' : 'bg-qms-surface'}`}>
+        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:h-full @min-[1100px]:grid-rows-[minmax(0,1fr)] ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
+          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
           </aside>
-          <main data-case-document className={`order-3 min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`} ${expanded ? '@min-[1100px]:order-none' : ''}`}>{children}</main>
-          <aside data-case-action className={`order-1 min-w-0 bg-qms-surface p-4 ${expanded ? '@min-[1100px]:sticky @min-[1100px]:top-4 @min-[1100px]:self-start @min-[1100px]:order-none @min-[1100px]:[will-change:transform] @min-[1100px]:bg-transparent @min-[1100px]:p-0' : 'border-b border-qms-border'}`}>{action}</aside>
+          <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
+            <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`}`}>{children}</main>
+          </div>
+          <aside data-case-action className={`order-1 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>{action}</aside>
         </div>
       </div>
     </div>

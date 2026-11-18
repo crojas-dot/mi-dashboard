@@ -28,6 +28,10 @@ export async function proxy(request: NextRequest) {
   // Un cliente nunca puede aportar identidad mediante estos encabezados.
   for (const name of ['x-user-id', 'x-user-role', 'x-user-email']) headers.delete(name)
   if (isPublicPath(request.nextUrl.pathname)) return NextResponse.next({ request: { headers } })
+  // El login y el formulario público consumen solo las URL institucionales.
+  if (request.nextUrl.pathname === '/api/configuracion/identidad' && request.method === 'GET') {
+    return NextResponse.next({ request: { headers } })
+  }
   // Solo este POST usa HMAC de máquina en el handler, antes de service role.
   // Los demás métodos/rutas conservan el guard Bearer existente.
   if (request.nextUrl.pathname === '/api/quejas/correos' && request.method === 'POST') {

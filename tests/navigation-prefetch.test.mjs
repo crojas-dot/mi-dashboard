@@ -3,13 +3,14 @@ import assert from 'node:assert/strict'
 import { loadModule, fakeDatabase } from './load-module.mjs'
 
 function navigation(permisos, id = 'perfil-propio') {
-  const db = fakeDatabase({ qms_quejas: [{ id: 'propia', responsable_id: id, fecha: '2026-10-06' }, { id: 'ajena', responsable_id: 'otro', fecha: '2026-10-06' }] })
+  const db = fakeDatabase({ qms_quejas_bandeja: [{ id: 'propia', responsable_id: id, fecha: '2026-10-06' }, { id: 'ajena', responsable_id: 'otro', fecha: '2026-10-06' }] })
   const preloads = []
   const Sidebar = loadModule('components/Sidebar.tsx', {
     'next/link': { default: 'a' },
     'next/navigation': { usePathname: () => '/mis-quejas' },
     '@/lib/supabase': db,
-    '@/lib/store/sidebar-store': { useSidebarStore: () => ({ collapsed: false, toggle() {} }) },
+    '@/lib/store/sidebar-store': { useSidebarStore: select => select({ collapsed: false, toggle() {} }) },
+    '@/lib/queries/useLogoEmpresa': { useLogoEmpresa: () => ({ data: undefined }) },
     '@/lib/store/auth-store': { useAuthStore: selector => selector({ user: { id, rol: 'colaborador' }, permisos }) },
     '@/hooks/useHoverPrefetch': { useHoverPrefetch: () => config => preloads.push(config) },
   }).default

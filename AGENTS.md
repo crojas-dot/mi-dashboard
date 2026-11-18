@@ -37,7 +37,7 @@ No cargar todos los documentos para una modificación aislada.
 | Rutas, nombres, grupos e IDs de módulo | lib/constants/modulos.ts |
 | Roles operativos | lib/constants/roles.ts |
 | Colores de badges/estados | lib/constants/badges.ts y estados.ts; Quejas prioriza estado_color del catálogo |
-| Marca institucional (logo del menú) | lib/constants/marca.ts (bucket, clave y límites); components/EmpresaLogo.tsx, lib/queries/useLogoEmpresa.ts y app/configuracion/components/LogoEmpresaEditor.tsx |
+| Marca institucional (menú y login) | components/EmpresaLogo.tsx con isotipo ECA local; claves independientes en lib/constants/marca.ts e identidad.ts; editores en app/configuracion/components/IdentidadSettings.tsx |
 | Colores y tipografía | app/styles/theme.css (@theme) |
 | Recetas y utilidades visuales | app/styles/components.css y app/globals.css |
 | Controles, modales y cargas | components/ui/ y components/Modal.tsx |
@@ -198,6 +198,13 @@ Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
 
 ## Datos, rendimiento y cargas
 
+- El logo lateral y el botón de menú comparten el control de expansión. En
+  móvil el logo cierra el menú abierto. Dashboard usa velocímetro, Reportería
+  un informe con gráfico y Configuración un engranaje.
+- Menú y login conservan el isotipo ECA local hasta que carga su imagen
+  personalizada. Identidad administra «Logo del inicio de sesión» por separado.
+  Su recuadro conserva 56 px y el fondo azul del sistema. El servidor lee fondo
+  y logo del login en una sola consulta. El cliente consulta si esa lectura falla.
 - Agenda: RPC invoker de Quejas/Auditorías, permisos y fechas CR, máximo 20 y un
   motivo prioritario por registro. Caché de cinco minutos por perfil, sin canal
   Realtime adicional ni hover. Los avisos existentes invalidan también Agenda.
@@ -422,9 +429,11 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
 - Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
   izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
   se alinean con Descripción. Por debajo se apila sin desbordar el diálogo.
-  Los laterales comparten sticky, alto máximo y scroll propio a partir del
-  ancho útil previsto; centro desplazable y responsive. Anterior, siguiente,
-  ampliar/reducir usan CaseWorkspaceNavigation; la X la proporciona Modal.
+  El lienzo central tiene su propio scroll y ambos laterales quedan fijos, con
+  texto sobre el fondo y botones del kit. Los laterales solo desplazan su
+  contenido cuando el alto disponible es insuficiente. El encabezado ampliado
+  usa el fondo de superficie del sistema. Anterior y Siguiente miden 44 px y comparten
+  CaseWorkspaceNavigation con Ampliar/Reducir; la X la proporciona Modal.
   Ambos módulos comparten la hoja de lectura y el resumen vertical, con las
   etapas y acciones propias de cada rol.
 - En Quejas, ciclo de evaluación/investigación/revisión/cierre; el contraído no usa
@@ -548,9 +557,9 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
   `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
   [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
-  o scroll-smooth en scrollports internos. Laterales sticky sin max-height ni
-  overflow propios: el lienzo principal controla el único scroll; ampliado sin
-  velo sobre el fondo ya cubierto. Interiores de modal: 16px y puntas cuadradas.
+  o scroll-smooth en scrollports internos. En escritorio el lienzo central se
+  desplaza dentro de la cuadrícula fija. Móvil conserva la pila con un scroll
+  común. Ampliado sin velo sobre el fondo ya cubierto.
 - Visor privado: NO usar iframe externo, preconnect, enlace externo ni
   autenticación directa contra drive.google.com. Los archivos Drive se consultan por
   fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
@@ -691,7 +700,7 @@ Detalle y evidencia visual: [patrones](docs/visual-patterns.md),
   Para Respuesta normal y No Procede, conservar la cuadrícula acotada con
   filas `minmax(0,1fr)` para el correo y `auto` para los adjuntos. La barra
   interior pertenece solo a `[data-response-message-scroll]`; el botón extra
-  «Preparar documento de no procedencia», errores o precarga no habilitan
+  «Preparar documento (opcional)» en cierre y No Procede, los errores y la precarga no habilitan
   desplazamiento del contenedor externo. No ocultar mensajes ni controles.
   El PDF recién generado/subido se conserva en memoria privada durante
   45 segundos ÚNICAMENTE tras recibir confirmación del servidor de Drive/DB;

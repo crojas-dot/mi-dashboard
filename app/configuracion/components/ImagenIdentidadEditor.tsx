@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import { IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
+import { IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, IDENTIDAD_URLS_VACIAS, type ImagenIdentidad } from '@/lib/constants/identidad'
 import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad, type ImagenesIdentidad } from '@/lib/queries/useIdentidadImagenes'
 import LogoRecorteModal, { type BorradorLogo } from './LogoRecorteModal'
 
@@ -48,8 +48,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false, conf
       // Mostrar la imagen recién subida inmediatamente, sin depender de una lectura
       // adicional que puede estar en curso o haber quedado en caché.
       client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
-        correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
-        ...prev, [slot]: nuevaUrl,
+        ...(prev ?? IDENTIDAD_URLS_VACIAS), [slot]: nuevaUrl,
         configuradas: { ...prev?.configuradas, [slot]: true },
       }))
       setImagenFallida('')
@@ -66,8 +65,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false, conf
     try {
       await quitarImagenIdentidad(slot)
       client.setQueryData<ImagenesIdentidad>(identidadImagenesKey, prev => ({
-        correo_encabezado: '', login_fondo: '', formulario_encabezado: '',
-        ...prev, [slot]: '',
+        ...(prev ?? IDENTIDAD_URLS_VACIAS), [slot]: '',
         configuradas: { ...prev?.configuradas, [slot]: false },
       }))
       await client.invalidateQueries({ queryKey: identidadImagenesKey })
@@ -81,7 +79,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false, conf
       <h3 className="text-sm font-semibold">{meta.titulo}</h3>
     </div>
     <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:gap-6">
-      <div className="flex w-full shrink-0 items-center justify-center overflow-hidden rounded-card border border-qms-border bg-qms-panel-soft sm:w-52"
+      <div className={`flex w-full shrink-0 items-center justify-center overflow-hidden rounded-card border border-qms-border sm:w-52 ${slot === 'login_encabezado' ? 'bg-qms-primary' : 'bg-qms-panel-soft'}`}
         style={{ aspectRatio: String(meta.proporcion) }}>
         {url && imagenFallida !== url ? (
           /* eslint-disable-next-line @next/next/no-img-element */

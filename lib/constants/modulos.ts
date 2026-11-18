@@ -3,7 +3,7 @@
  * Sin React, red o secretos: este registro se comparte entre cliente y servidor.
  */
 export const MODULOS = {
-  dashboard: { ruta: '/', label: 'Dashboard', iconKey: 'chartPie' },
+  dashboard: { ruta: '/', label: 'Dashboard', iconKey: 'gauge' },
   quejas: { ruta: '/quejas', label: 'Quejas', iconKey: 'messageSquareText' },
   mis_quejas: { ruta: '/mis-quejas', label: 'Mis Quejas', iconKey: 'inbox' },
   documentos: { ruta: '/documentos', label: 'Documentos', iconKey: 'folderOpen' },
@@ -13,8 +13,8 @@ export const MODULOS = {
   revision: { ruta: '/revision', label: 'Revisión por Dirección', iconKey: 'presentation' },
   procesos: { ruta: '/procesos', label: 'Procesos', iconKey: 'workflow' },
   usuarios: { ruta: '/usuarios', label: 'Usuarios', iconKey: 'usersRound' },
-  configuracion: { ruta: '/configuracion', label: 'Configuración', iconKey: 'settings2' },
-  reporteria: { ruta: '/reporteria', label: 'Reportería', iconKey: 'chartNoAxesCombined' },
+  configuracion: { ruta: '/configuracion', label: 'Configuración', iconKey: 'settings' },
+  reporteria: { ruta: '/reporteria', label: 'Reportería', iconKey: 'fileChartColumn' },
 } as const
 
 export type ModuloId = keyof typeof MODULOS

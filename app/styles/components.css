@@ -127,13 +127,6 @@
 /* La barra ya tiene su propio border-bottom: no dibujar otra línea dentro
    del contenido editable ni desplazar el placeholder respecto de Tiptap. */
 
-/* Solo Mis Quejas ampliado: tarjetas laterales holgadas y lectura central
-   con ancho máximo, sin reducir el lienzo ni crear un segundo scroll. */
-[data-case-reading-layout="true"] [data-case-request],
-[data-case-reading-layout="true"] [data-case-action] > div > section:first-child {
-  padding: 1.25rem;
-}
-
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;

@@ -326,8 +326,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     requestAnimationFrame(() => requestAnimationFrame(() => {
       // Abrir el editor no debe desplazar el scroll exterior y ocultar su margen superior.
       const card = resolutionContainer.current
-      const scrollport = card?.closest<HTMLElement>('[data-case-scroll]')
-      if (scrollport) scrollport.scrollTop = 0
+      const scrollports = card?.closest('[data-case-frame]')?.querySelectorAll<HTMLElement>('[data-case-scroll]')
+      scrollports?.forEach(scrollport => { scrollport.scrollTop = 0 })
       card?.querySelector<HTMLElement>('[contenteditable="true"]')?.focus({ preventScroll: true })
     }))
   }
@@ -433,7 +433,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div>}
         compact={cicloMostrado} cycle={cicloMostrado}
-        action={isExpanded && <div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
+        action={isExpanded && <div className="space-y-4"><section className="min-w-0">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{historica ? 'Etapa actual' : 'Acción actual'}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={variante}>{badgeEstado}</Badge>

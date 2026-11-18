@@ -46,19 +46,17 @@ interface CardProps {
 
 export function QuejaAdjuntosCard({ adjuntos, loading, error, onOpen }: CardProps) {
   const ultimo = adjuntos[0]
-  return <section data-investigation-files-card className="min-w-0 rounded-card border border-qms-border bg-qms-surface shadow-sm">
-    <button type="button" onClick={onOpen} aria-label="Ver mis adjuntos" className="w-full min-w-0 cursor-pointer p-4 text-left">
-      <span className="flex items-start gap-2">
-        <Paperclip aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-primary" />
-        <span className="min-w-0 flex-1 text-sm font-semibold">Mis adjuntos</span>
-        {!loading && !error && <span className="rounded-button bg-qms-primary-soft px-1.5 py-0.5 text-xs font-medium text-qms-primary">{adjuntos.length}</span>}
-      </span>
-      <span className="mt-3 block min-w-0 truncate text-xs text-qms-muted">
-        {loading ? 'Cargando archivos…' : error ? 'No se pudieron cargar los archivos.' : ultimo ? ultimo.nombre : 'Sin archivos todavía'}
-      </span>
-      <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-qms-primary">
-        Ver mis adjuntos <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
-      </span>
+  return <section data-investigation-files-card className="min-w-0 border-t border-qms-border pt-3">
+    <div className="flex items-start gap-2">
+      <Paperclip aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-primary" />
+      <h3 className="min-w-0 flex-1 text-sm font-semibold">Mis adjuntos</h3>
+      {!loading && !error && <span className="rounded-button bg-qms-primary-soft px-1.5 py-0.5 text-xs font-medium text-qms-primary">{adjuntos.length}</span>}
+    </div>
+    <p className="mt-2 min-w-0 truncate text-xs text-qms-muted">
+      {loading ? 'Cargando archivos…' : error ? 'No se pudieron cargar los archivos.' : ultimo ? ultimo.nombre : 'Sin archivos todavía'}
+    </p>
+    <button type="button" onClick={onOpen} aria-label="Ver mis adjuntos" className="ui-button ui-button-secondary ui-button-sm mt-2">
+      Ver mis adjuntos<ChevronRight aria-hidden="true" className="size-4 shrink-0" />
     </button>
   </section>
 }

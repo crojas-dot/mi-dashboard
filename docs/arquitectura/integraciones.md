@@ -55,6 +55,7 @@ capacidad ni la recepción del botón en un buzón. No se reenviaron eventos his
 | POST/PATCH/DELETE `/api/usuarios` | Admin, Auth administrativo + perfiles, autoprotección y último admin |
 | GET/PUT `/api/configuracion/zona-horaria` | Lee solo la zona; escritura admin, clave org.zona_horaria |
 | GET/PUT/DELETE `/api/configuracion/logo` | GET para cualquier perfil activo (el logo del shell no es sensible); PUT/DELETE admin, sube a storage.branding y conserva en org.logo_url solo la URL vigente |
+| GET/PUT/DELETE `/api/configuracion/identidad` | El proxy admite únicamente el GET anónimo exacto. La lectura devuelve las URL y presencia de los recursos institucionales permitidos. PUT y DELETE exigen administrador activo |
 | GET/PUT/DELETE `/api/perfil/avatar` | Bearer de perfil activo, foto propia en bucket privado `qms-avatars`. Recodifica a WebP 320×320 y comprueba la versión al cambiar la ruta. Bucket pendiente de activación |
 | POST `/api/drive/upload` | Bearer, staff o responsable, queja resuelta por ID, folio obtenido desde DB, Analisis/ |
 | GET `/api/public/formularios/[token]` | Sin Bearer; enlace exacto activo de Quejas, devuelve solo nombre/modulo/uploadsAllowed |
@@ -164,7 +165,8 @@ orquestación y revisión de las escrituras. No importar SDK servidor en esas vi
 | APPS_SCRIPT_WEBAPP_URL | Webhook opcional de extracción de contexto |
 | drive_folder_id_quejas (DB) | ID de carpeta raíz para evidencias |
 | org.zona_horaria (DB) | Configuración de visualización; fallback Costa Rica, no cambia automáticamente todos los RPC/fechas |
-| org.logo_url (DB) | URL pública del objeto vigente en el bucket branding; vacío o un valor que no sea http(s) equivale a la inicial «E» |
+| org.logo_url (DB) | URL pública del logo lateral en el bucket branding. Usa el isotipo ECA local mientras carga o cuando falta |
+| org.identidad.login_encabezado (DB) | PNG cuadrado del encabezado de login, administrado en Identidad por la API de imágenes institucionales. Usa el isotipo ECA local por defecto |
 | ai_providers / ai_routing / ai_cache_ttl_minutes (DB) | Proveedores, rutas, fallback, consumo y caché IA |
 
 `.env*`, `.next`, node_modules y .vercel están ignorados. Configurar también el entorno del despliegue; la presencia de .env.local no demuestra configuración de producción. No agregar secretos al repo. La infraestructura externa Apps Script/Drive no se verifica solo por compilar.

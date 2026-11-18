@@ -62,7 +62,7 @@ test('las dos disposiciones conservan una sola instancia de acción, solicitud y
   }
 })
 
-test('Mis Quejas deja los dos laterales sticky en el scroll único del expediente', () => {
+test('el escritorio ampliado separa el scroll del lienzo de los laterales', () => {
   const result = html(CaseWorkspace, {
     documentKey: 'case', presentation: 'reference', expanded: true, cyclePlacement: 'header',
     request: createElement('div', null, 'Datos'),
@@ -70,14 +70,10 @@ test('Mis Quejas deja los dos laterales sticky en el scroll único del expedient
     action: createElement('div', null, 'Acción'),
     compact: null, cycle: null, children: createElement('div', null, 'Documento extenso'),
   })
-  const left = result.match(/<aside data-case-request-region[^>]+>/)?.[0] ?? ''
-  const right = result.match(/<aside data-case-action[^>]+>/)?.[0] ?? ''
-  for (const panel of [left, right]) {
-    assert.match(panel, /@min-\[1100px\]:sticky/)
-    assert.match(panel, /@min-\[1100px\]:top-4/)
-    assert.doesNotMatch(panel, /overflow-y-auto|max-h-/)
-  }
-  assert.match(result, /data-case-scroll[^>]*overflow-y-auto/)
+  assert.match(result, /data-case-stack-scroll[^>]*overflow-y-auto[^>]*@min-\[1100px\]:overflow-clip/)
+  assert.match(result, /data-case-document-scroll[^>]*@min-\[1100px\]:overflow-y-auto/)
+  assert.match(result, /<aside data-case-request-region[^>]*>[\s\S]*<\/aside><div[^>]*data-case-document-scroll/)
+  assert.match(result, /<\/main><\/div><aside data-case-action/)
   assert.doesNotMatch(result, /data-case-top-cycle/)
 })
 

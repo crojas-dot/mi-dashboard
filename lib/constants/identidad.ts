@@ -12,6 +12,16 @@ export const IDENTIDAD_IMAGENES = {
     formato: 'png',
     recomendacion: 'Imagen cuadrada de 512 × 512 px. Preferí PNG con fondo transparente y bordes nítidos; idealmente menos de 300 KB.',
   },
+  login_encabezado: {
+    clave: 'org.identidad.login_encabezado',
+    titulo: 'Logo del inicio de sesión',
+    descripcion: 'Se muestra junto a «QMS» sobre el azul del sistema. Si no elegís una imagen, se usa el isotipo ECA.',
+    proporcion: 1,
+    ancho: 512,
+    alto: 512,
+    formato: 'png',
+    recomendacion: 'Preferí un logo claro en PNG transparente para que se vea sobre el fondo azul.',
+  },
   login_fondo: {
     clave: 'org.identidad.login_fondo',
     titulo: 'Fondo del inicio de sesión',
@@ -38,6 +48,7 @@ export const IDENTIDAD_IMAGENES = {
 
 export type ImagenIdentidad = keyof typeof IDENTIDAD_IMAGENES
 export const IDENTIDAD_SLOTS = Object.keys(IDENTIDAD_IMAGENES) as ImagenIdentidad[]
+export const IDENTIDAD_URLS_VACIAS = Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [slot, ''])) as Record<ImagenIdentidad, string>
 // La imagen original se recorta localmente: no se envían decenas de MB a la API.
 // El archivo recortado sí debe respetar el límite HTTP y el bucket de Storage.
 export const IDENTIDAD_ORIGEN_MAX_BYTES = 30 * 1024 * 1024

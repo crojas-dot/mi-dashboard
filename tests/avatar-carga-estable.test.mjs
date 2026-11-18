@@ -31,17 +31,29 @@ test('si el usuario no tiene foto, sus iniciales aparecen sin estado de carga', 
 })
 
 
-test('fondo login se precarga sin esperar el fetch de TanStack Query', () => {
+test('login usa la identidad del servidor y omite la consulta duplicada', () => {
   const origen = 'https://qms.test/storage/v1/object/public/branding/identidad/login_fondo/ejemplo.webp'
-  const Fondo = loadModule('components/identidad/FondoIdentidad.tsx', {
-    '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: () => ({ data: undefined }) },
-  }).default
+  const logo = 'https://qms.test/login.png'
+  const { default: Fondo, useLogoLogin } = loadModule('components/identidad/FondoIdentidad.tsx', {
+    '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: enabled => {
+      assert.equal(enabled, false)
+      return { data: undefined }
+    } },
+  })
+  function Marca() { return React.createElement('img', { src: useLogoLogin(), alt: '' }) }
   const html = renderToStaticMarkup(React.createElement(Fondo, {
-    slot: 'login_fondo', initialUrl: origen,
-  }, React.createElement('main', null, 'Iniciar sesión')))
+    slot: 'login_fondo', initialUrl: origen, initialLogo: logo,
+  }, React.createElement(Marca)))
   assert.match(html, /data-login-fondo/)
   assert.ok(html.includes(origen))
-  assert.ok(html.includes('Iniciar sesión'))
+  assert.ok(html.includes(logo))
+})
+
+test('la marca ECA local se muestra antes del logo de Storage', () => {
+  const { default: Logo } = loadModule('components/EmpresaLogo.tsx')
+  const html = renderToStaticMarkup(React.createElement(Logo, { url: 'https://qms.test/personalizado.png' }))
+  assert.match(html, /src="\/eca-isologo-blanco\.webp"[^>]*class="h-full w-full object-contain "/)
+  assert.match(html, /src="https:\/\/qms\.test\/personalizado\.png"[^>]*class="[^"]*invisible"/)
 })
 
 test('el fondo login no tapa la imagen con una capa blanca intensa', () => {
@@ -74,7 +86,7 @@ test('el fondo login se mantiene durante la comprobación de sesión', () => {
   assert.match(source, /layout === 'login' \? 'bg-transparent'/)
   const fondo = readFileSync('components/identidad/FondoIdentidad.tsx', 'utf8')
   assert.match(fondo, /fetchPriority="high"/)
-  assert.match(fondo, /initialUrl \|\| data\?\.\[slot\]/)
+  assert.match(fondo, /initialUrl \?\? data\?\.\[slot\]/)
 })
 
 test('el editor de marca mantiene proporciones y contraste con logos blancos', () => {

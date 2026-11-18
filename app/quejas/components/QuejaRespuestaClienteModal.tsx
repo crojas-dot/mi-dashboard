@@ -301,13 +301,13 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
               <input ref={fileInputRef} type="file" accept="application/pdf,.pdf" aria-label="Subir PDF oficial del cliente" className="sr-only"
                 disabled={disabled} onChange={event => { const file = event.target.files?.[0]; event.target.value = ''; if (file) void upload(file) }} />
             </div>
-            {noProcede && <div className="ml-auto shrink-0">
-              <Button size="sm" variant="ghost" disabled={disabled} title="Opcional: preparar el documento de no procedencia" onClick={() => {
+            <div className="ml-auto shrink-0">
+              <Button size="sm" variant="ghost" disabled={disabled} onClick={() => {
                 const visit = scope.capture(), context = scope.captureContext()
                 reportIsCurrent.current = () => visit() && context()
                 setEditingReport(true)
               }}><Pencil aria-hidden="true" className="size-4" />Preparar documento (opcional)</Button>
-            </div>}
+            </div>
           </div>
           {props.archivosError && <p role="alert" className="mt-3 text-xs text-qms-danger">No se pudieron cargar los archivos. <Button size="sm" variant="link" onClick={props.onReintentar}>Reintentar</Button></p>}
           {informeError && !report && <p role="alert" className="mt-2 text-xs text-qms-danger">No se pudo comprobar el informe guardado. <Button size="sm" variant="link" onClick={onReintentarInforme}>Reintentar</Button></p>}

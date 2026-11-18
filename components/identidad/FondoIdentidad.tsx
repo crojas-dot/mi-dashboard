@@ -12,16 +12,17 @@ export function useLogoLogin(): string {
 }
 
 /** Imagen de fondo pública y opcional; no altera los formularios ni el guard de sesión. */
-export default function FondoIdentidad({ slot, children, initialUrl = '', initialLogo = '' }: {
+export default function FondoIdentidad({ slot, children, initialUrl, initialLogo }: {
   slot: Extract<ImagenIdentidad, 'login_fondo'>
   children: ReactNode
   initialUrl?: string
   initialLogo?: string
 }) {
-  const { data } = useIdentidadImagenes()
-  // Render del servidor primero: evita pantalla vacía mientras carga el cliente.
-  const url = initialUrl || data?.[slot] || ''
-  return <LoginLogoContext.Provider value={initialLogo}>
+  // El cliente solo recupera la identidad si falló la lectura del servidor.
+  const { data } = useIdentidadImagenes(initialUrl === undefined || initialLogo === undefined)
+  const url = initialUrl ?? data?.[slot] ?? ''
+  const logo = initialLogo ?? data?.login_encabezado ?? ''
+  return <LoginLogoContext.Provider value={logo}>
     <div className={`relative isolate min-h-dvh ${url ? 'bg-[#082440]' : 'bg-qms-background'}`}>
     {url && <>
       {/* La etiqueta img permite comprobar la carga y aprovecha la caché HTTP de Storage. */}

@@ -17,11 +17,13 @@ interface NotasProps {
 
 export function QuejaNotasCard({ notas, loading, error, onOpen }: NotasProps & { onOpen: () => void }) {
   const ultima = notas.reduce<QuejaActividad | undefined>((latest, item) => !latest || item.created_at > latest.created_at ? item : latest, undefined)
-  return <button type="button" data-investigation-notes-card aria-label="Ver historial y notas" onClick={onOpen} className="w-full min-w-0 cursor-pointer rounded-card border border-qms-border bg-qms-surface p-4 text-left shadow-sm transition-colors hover:bg-qms-hover-bg">
+  return <section className="min-w-0 border-t border-qms-border pt-3">
     <span className="flex items-start gap-2"><NotebookPen aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-purple" /><span className="min-w-0 flex-1 text-sm font-semibold">Historial y notas</span>{!loading && !error && <span className="rounded-button bg-soft-purple-bg px-1.5 py-0.5 text-xs font-medium text-qms-purple">{notas.length}</span>}</span>
-    <span className="mt-3 block text-xs leading-relaxed text-qms-muted">{loading ? 'Cargando notas…' : error ? 'No se pudieron cargar las notas.' : ultima ? <>Última nota: <time dateTime={ultima.created_at}>{caseDate(ultima.created_at)}</time></> : 'Sin notas todavía'}</span>
-    <span className="mt-3 flex items-center justify-between gap-2 text-xs font-medium text-qms-primary">Ver actividad<ChevronRight aria-hidden="true" className="size-4 shrink-0" /></span>
-  </button>
+    <p className="mt-2 text-xs leading-relaxed text-qms-muted">{loading ? 'Cargando notas…' : error ? 'No se pudieron cargar las notas.' : ultima ? <>Última nota: <time dateTime={ultima.created_at}>{caseDate(ultima.created_at)}</time></> : 'Sin notas todavía'}</p>
+    <Button data-investigation-notes-card aria-label="Ver historial y notas" onClick={onOpen} variant="secondary" size="sm" className="mt-2">
+      Ver actividad<ChevronRight aria-hidden="true" className="size-4 shrink-0" />
+    </Button>
+  </section>
 }
 
 interface Props extends NotasProps {

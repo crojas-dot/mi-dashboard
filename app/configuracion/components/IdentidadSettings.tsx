@@ -28,6 +28,7 @@ export default function IdentidadSettings({ active }: { active: boolean }) {
         <h3 className="text-base font-semibold text-qms-dark">Pantallas de acceso y formularios</h3>
         <p className="mt-1 text-sm text-qms-muted">El fondo se aplica únicamente al inicio de sesión. El formulario externo mostrará su logo en la esquina superior derecha, sin modificar sus campos.</p>
       </div>
+      <ImagenIdentidadEditor slot="login_encabezado" url={urls?.login_encabezado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.login_encabezado ?? false} />
       <ImagenIdentidadEditor slot="login_fondo" url={urls?.login_fondo ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.login_fondo ?? false} />
       <ImagenIdentidadEditor slot="formulario_encabezado" url={urls?.formulario_encabezado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.formulario_encabezado ?? false} />
     </div>

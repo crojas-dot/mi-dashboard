@@ -8,6 +8,8 @@
 export const LOGO_BUCKET = 'branding'
 /** Clave en configuraciones_sistema. Guarda la URL pública del objeto vigente. */
 export const LOGO_CLAVE = 'org.logo_url'
+/** Isotipo blanco publicado por ECA, servido con la aplicación. */
+export const LOGO_ECA_LOCAL = '/eca-isologo-blanco.webp'
 /** Solo imágenes raster: un SVG podría traer scripts si se sirviera como documento. */
 export const LOGO_MIME = ['image/png', 'image/jpeg', 'image/webp'] as const
 export type LogoMime = (typeof LOGO_MIME)[number]

@@ -1,35 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { useLogoEmpresa } from '@/lib/queries/useLogoEmpresa'
+import { LOGO_ECA_LOCAL } from '@/lib/constants/marca'
 
-/**
- * Marca del shell. Con logo, la imagen se muestra sola: sin máscara circular ni
- * fondo, así un PNG con transparencia conserva su forma. Sin logo (o si la URL
- * falla) se usa la inicial «E» dentro del círculo azul. Guarda la URL que falló,
- * no un booleano: una carga posterior se intenta sin intervención.
- */
-export default function EmpresaLogo({ className = '' }: { className?: string }) {
-  const { data } = useLogoEmpresa()
-  const url = data ?? ''
-  const [fallo, setFallo] = useState('')
-
-  if (url && fallo !== url) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={url}
-        alt=""
-        draggable={false}
-        onError={() => setFallo(url)}
-        className={`shrink-0 object-contain ${className}`}
-      />
-    )
-  }
+/** El isotipo local cubre la espera y los errores de una imagen configurada. */
+export default function EmpresaLogo({ url, className = '' }: { url?: string; className?: string }) {
+  const [cargada, setCargada] = useState('')
+  const personalizadaVisible = !!url && cargada === url
 
   return (
-    <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded-full bg-qms-primary font-semibold text-white ${className}`}>
-      <span className="translate-y-px leading-none">E</span>
+    <span aria-hidden="true" className={`relative block shrink-0 ${className}`}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={LOGO_ECA_LOCAL} alt="" draggable={false}
+        className={`h-full w-full object-contain ${personalizadaVisible ? 'invisible' : ''}`} />
+      {url && url !== LOGO_ECA_LOCAL && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={url} src={url} alt="" draggable={false} onLoad={() => setCargada(url)} onError={() => setCargada('')}
+          className={`absolute inset-0 h-full w-full object-contain ${personalizadaVisible ? '' : 'invisible'}`} />
+      )}
     </span>
   )
 }

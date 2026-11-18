@@ -77,7 +77,7 @@ export default function LogoEmpresaEditor({ active }: { active: boolean }) {
           {consulta.isPending ? (
             <span className="text-xs text-qms-muted">Cargando marca…</span>
           ) : url ? (
-            <EmpresaLogo className="h-24 w-24 text-xl" />
+            <EmpresaLogo url={url} className="size-24" />
           ) : (
             <div className="flex flex-col items-center gap-2 text-qms-muted">
               <ImagePlus className="h-7 w-7" aria-hidden="true" />

@@ -147,7 +147,7 @@ test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificia
   const source = readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
   const css = readFileSync('app/styles/components.css', 'utf8')
   assert.doesNotMatch(source, /scrollIntoView\(\{ block: 'start' \}\)/)
-  assert.match(source, /if \(scrollport\) scrollport\.scrollTop = 0/)
+  assert.match(source, /scrollports\?\.forEach\(scrollport => \{ scrollport\.scrollTop = 0 \}\)/)
   assert.match(source, /focus\(\{ preventScroll: true \}\)/)
   assert.doesNotMatch(css, /\[data-case-document\]:has\(\[data-resolution-shell\]\)\s*\{\s*position:\s*sticky/)
   assert.doesNotMatch(css, /\.mis-quejas-resolution-editor \[data-rich-text-viewport\]::before/)

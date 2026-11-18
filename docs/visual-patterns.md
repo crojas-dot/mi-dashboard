@@ -8,8 +8,9 @@ como otra biblioteca. El azul de marca es **#024796**.
 
 Este apartado **sustituye únicamente** las instrucciones anteriores para el
 workspace **contraído**. El escritorio **ampliado** (tres columnas desde 1100px,
-Cliente a izquierda, documento/editor al centro, acciones a derecha) conserva
-sus medidas, apariencia, scroll, Tiptap y flujos sin rediseño.
+Cliente a izquierda, documento/editor al centro, acciones a derecha) mantiene
+Tiptap y los flujos. El lienzo es la superficie principal y se desplaza
+independientemente del contacto y las acciones.
 
 - `CaseWorkspace` mantiene el árbol completo montado dentro de
   `data-case-frame` y lo oculta visualmente con `display:none` mientras
@@ -213,11 +214,12 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
 - Quejas utiliza Modal variant="workspace" derecho (40vw, 100dvh, ampliable).
   En escritorio deja la tabla operativa; solo su ventana se recorta, sin recomponer
   columnas/buscador/filtros. Móvil y ampliado son modales nativos. No hay footer de
-  lectura: ciclo/estado/acción quedan sticky. El scrollport del expediente se promueve
+  lectura. En escritorio ampliado el folio, el contexto y las acciones quedan fijos.
+  El scrollport del lienzo se promueve
   a capa compuesta (`will-change: transform`) con fondo opaco, queda fuera de la barra
   `::-webkit-scrollbar` global (barra nativa `solid-color`, ancho normal y gutter estable) porque la personalizada se
-  repinta en el hilo principal, y los laterales sticky llevan capa propia; así el
-  desplazamiento al ampliar a todo el ancho no degrada. En ampliado no se compone
+  repinta en el hilo principal. En móvil el contenido apilado comparte un
+  scroll. En ampliado no se compone
   velo (`backdrop:bg-transparent`) sobre el fondo opaco ya cubierto. Actividad
   (sheet de 420 px) y decisiones
   (document de altura fija, encabezado blanco) son diálogos superiores; Escape desde
@@ -433,13 +435,14 @@ Ambas vistas comparten `CaseWorkspace`. En Quejas, `CaseProcessHeader` y el moda
 se muestra el resumen con segmentos bajo el encabezado; en modal ampliado
 las cuatro etapas tienen una línea de progreso cada una, sin checks, sobre
 el lienzo central. El ancho real se alinea descontando el gutter del scrollport
-con `--qms-case-scrollbar-width`. El encabezado de modal conserva las acciones
-específicas de navegación, no las acciones secundarias del expediente.
+con `--qms-case-scrollbar-width`. El encabezado ampliado usa el fondo de
+superficie del sistema y botones Anterior y Siguiente de 44 px. Cliente y
+acciones quedan sobre el fondo del expediente.
 
 En Evaluación de Quejas y Resolución de Mis Quejas, **Mis adjuntos** antecede a
 **Historial y notas** en el lateral izquierdo. En Quejas, **Generar expediente** se
-ofrece al personal autorizado durante **Resuelto**, como tarjeta Documento del
-expediente con acción azul suave. **Historial y notas** usa un diálogo común con
+ofrece al personal autorizado durante **Resuelto** mediante un botón azul
+suave. **Historial y notas** usa un diálogo común con
 dos pestañas con las mismas dimensiones. Cada lista tiene scroll interno.
 Historial muestra una cuadrícula centrada de líneas finas con Usuario, Fecha y
 Acción realizada. Las filas miden 40 px y el encabezado queda visible al
@@ -462,7 +465,7 @@ El pie con Publicar respuesta, Descartar y Guardar borrador se mantiene fijo.
 
 La sección inferior comparte composición entre «No Procede» y el cierre:
 la nota de PDF a la izquierda y el contador de caracteres a la derecha;
-debajo, **Subir archivo** a la izquierda y, solo en «No Procede», la acción
+debajo, **Subir archivo** a la izquierda y, en ambas variantes, la acción
 «Preparar documento (opcional)» a la derecha. El chip de PDF conserva las
 acciones de previsualizar o quitar la selección. El selector desplegable se
 elimina. Si no existe PDF seleccionado se muestra un aviso discreto;

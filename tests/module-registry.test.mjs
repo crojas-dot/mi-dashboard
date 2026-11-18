@@ -84,7 +84,8 @@ test('Sidebar consume rutas, títulos y orden del registro sin precargar durante
     'next/link': { default: 'a' },
     'next/navigation': { usePathname: () => '/quejas' },
     '@/lib/supabase': { supabase: {} },
-    '@/lib/store/sidebar-store': { useSidebarStore: () => ({ collapsed: false, toggle() {} }) },
+    '@/lib/store/sidebar-store': { useSidebarStore: select => select({ collapsed: false, toggle() {} }) },
+    '@/lib/queries/useLogoEmpresa': { useLogoEmpresa: () => ({ data: undefined }) },
     '@/lib/store/auth-store': { useAuthStore: selector => selector({ user: { id: 'fixture', rol: 'colaborador' }, permisos: registry.MODULOS_PERMISOS.map(modulo => ({ modulo: modulo.key, leer: true, escribir: false })) }) },
     '@/hooks/useHoverPrefetch': { useHoverPrefetch: () => () => { throw new Error('No precargar durante render') } },
   })

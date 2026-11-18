@@ -10,11 +10,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { QueryFunctionContext } from '@tanstack/react-query'
 import {
-  ChartPie, MessageSquareText, FolderOpen, ListChecks,
+  Gauge, MessageSquareText, FolderOpen, ListChecks,
   ShieldAlert, ClipboardCheck, Presentation, Workflow, Inbox,
-  UsersRound, Settings2, ChartNoAxesCombined, X, type LucideIcon,
+  UsersRound, Settings, FileChartColumn, X, type LucideIcon,
 } from 'lucide-react'
 import EmpresaLogo from '@/components/EmpresaLogo'
+import { useLogoEmpresa } from '@/lib/queries/useLogoEmpresa'
 import { useSidebarStore } from '@/lib/store/sidebar-store'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { tienePermiso } from '@/lib/permisos'
@@ -33,10 +34,10 @@ import { dashboardPrefetchOptions } from '@/lib/queries/useDashboard'
 
 // Los iconos viven en UI: el registro compartido no incorpora Lucide al servidor.
 const ICONOS_MODULO: Record<ModuloIconKey, LucideIcon> = {
-  chartPie: ChartPie, messageSquareText: MessageSquareText, inbox: Inbox,
+  gauge: Gauge, messageSquareText: MessageSquareText, inbox: Inbox,
   folderOpen: FolderOpen, listChecks: ListChecks, shieldAlert: ShieldAlert,
   clipboardCheck: ClipboardCheck, presentation: Presentation, workflow: Workflow,
-  usersRound: UsersRound, settings2: Settings2, chartNoAxesCombined: ChartNoAxesCombined,
+  usersRound: UsersRound, settings: Settings, fileChartColumn: FileChartColumn,
 }
 const sections = GRUPOS_NAVEGACION.map(section => ({
   label: section.label,
@@ -62,8 +63,12 @@ const prefetchMap: Partial<Record<ModuloId, PrefetchConfig | PrefetchConfig[]>> 
 
 export default function Sidebar({ expanded = false, onNavigate, className = '' }: { expanded?: boolean; onNavigate?: () => void; className?: string } = {}) {
   const pathname = usePathname()
-  const { collapsed: storedCollapsed } = useSidebarStore()
+  const storedCollapsed = useSidebarStore((s) => s.collapsed)
+  const toggle = useSidebarStore((s) => s.toggle)
   const collapsed = expanded ? false : storedCollapsed
+  const { data: logo } = useLogoEmpresa()
+  const id = expanded ? 'qms-mobile-navigation' : 'qms-main-sidebar'
+  const accionMarca = expanded ? 'Cerrar menú' : collapsed ? 'Expandir menú' : 'Contraer menú'
   const user = useAuthStore((s) => s.user)
   const permisos = useAuthStore((s) => s.permisos)
   const prefetch = useHoverPrefetch()
@@ -77,23 +82,25 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
 
   return (
     <aside
-      id={expanded ? 'qms-mobile-navigation' : 'qms-main-sidebar'}
+      id={id}
       className={`flex h-full shrink-0 flex-col overflow-hidden bg-qms-dark text-white transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-16' : 'w-[250px]'} ${className}`}
     >
-      <div className={`flex h-14 shrink-0 items-center ${expanded ? 'justify-between border-b border-white/10' : ''}`}>
-        <Link href="/" onClick={onNavigate} aria-label="Ir al inicio" className="flex h-14 w-max shrink-0 items-center gap-2 pl-3 no-underline">
-          <EmpresaLogo className="h-11 w-11 text-sm" />
-          <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap text-[17px] font-bold text-white transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[150px] opacity-100'}`}>
-            ECA-QMS
-          </span>
-        </Link>
+      <div className={`flex h-14 shrink-0 items-center gap-2 ${expanded ? 'border-b border-white/10' : ''}`}>
+        <button type="button" onClick={expanded ? onNavigate : toggle} title={accionMarca}
+          aria-label={accionMarca} aria-controls={id} aria-expanded={!collapsed}
+          className="ml-2.5 shrink-0 rounded-button transition-colors hover:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+          <EmpresaLogo url={logo} className="size-11" />
+        </button>
+        <span aria-hidden={collapsed} className={`block shrink-0 overflow-hidden whitespace-nowrap text-[17px] font-bold text-white transition-[max-width,opacity] duration-200 ease-in-out motion-reduce:transition-none ${collapsed ? 'max-w-0 opacity-0' : 'max-w-[150px] opacity-100'}`}>
+          ECA-QMS
+        </span>
         {expanded && (
           <button
             type="button"
             onClick={onNavigate}
             aria-label="Cerrar menú de navegación"
             title="Cerrar menú"
-            className="mr-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-button text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
+            className="mr-3 ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-button text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
           >
             <X className="h-5 w-5" aria-hidden="true" />
           </button>

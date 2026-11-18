@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input'
 import { useAuthStore } from '@/lib/store/auth-store'
 import SessionScreen from '@/components/SessionScreen'
 import { useLogoLogin } from '@/components/identidad/FondoIdentidad'
+import EmpresaLogo from '@/components/EmpresaLogo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -52,11 +53,8 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-md">
           <header className="flex items-center gap-3 border-b border-qms-border px-6 py-5 sm:px-8">
-            <div aria-hidden="true" className={`flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-card ${logo ? 'bg-[#232b35] p-1.5' : 'bg-qms-primary'}`}>
-              {logo ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={logo} alt="" className="h-full w-full object-contain" fetchPriority="high" />
-              ) : <span className="text-2xl font-semibold leading-none text-white">E</span>}
+            <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
+              <EmpresaLogo url={logo} className="size-full" />
             </div>
             <div className="min-w-0">
               <p className="text-xl font-semibold tracking-tight text-qms-dark">QMS</p>

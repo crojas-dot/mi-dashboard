@@ -8,12 +8,12 @@ const UUID = '11111111-1111-4111-8111-111111111111'
 const marcas = loadModule('lib/constants/identidad.ts')
 
 test('cada recurso institucional tiene clave, aspecto y nombre separados', () => {
-  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'login_fondo', 'formulario_encabezado'])
+  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'login_encabezado', 'login_fondo', 'formulario_encabezado'])
   assert.equal(marcas.IDENTIDAD_IMAGENES.login_fondo.proporcion, 16 / 9)
   assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 1)
   assert.equal(marcas.IDENTIDAD_IMAGENES.formulario_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.formato, 'png')
-  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 3)
+  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 4)
 })
 
 test('solo se admiten URL del bucket institucional y del slot correcto', () => {
@@ -76,7 +76,7 @@ function fixture({ rol = 'admin' } = {}) {
     if (file) data.set('archivo', file)
     return data
   }})
-  return { api, config, objects, logs, makeRequest }
+  return { api, client, config, objects, logs, makeRequest }
 }
 
 test('escritura de imágenes se rechaza para cuentas no administradoras', async () => {
@@ -84,8 +84,34 @@ test('escritura de imágenes se rechaza para cuentas no administradoras', async 
     const f = fixture({ rol })
     const result = await f.api.PUT(f.makeRequest(new File([FOTO], 'fondo.png', { type: 'image/png' })))
     assert.equal(result.status, rol ? 403 : 401)
+    assert.equal((await f.api.DELETE({ signal: undefined })).status, rol ? 403 : 401)
     assert.equal(f.logs.length, 0)
   }
+})
+
+test('el proxy deja leer solo el GET de identidad pública y retira encabezados de identidad', async () => {
+  const { proxy } = loadModule('proxy.ts', {
+    'next/server': { NextResponse: {
+      json: Response.json,
+      next: ({ request }) => {
+        assert.equal(request.headers.has('x-user-role'), false)
+        return new Response(null, { status: 200 })
+      },
+    } },
+    '@/lib/server/auth': {
+      getAuthToken: () => null,
+      getCurrentUser: () => { throw new Error('No debe consultar identidad en esta solicitud') },
+    },
+  })
+  const probar = async (method, path = '/api/configuracion/identidad') => {
+    const request = new Request(ORIGIN + path, { method, headers: { 'x-user-role': 'admin' } })
+    request.nextUrl = new URL(request.url)
+    return (await proxy(request)).status
+  }
+  assert.equal(await probar('GET'), 200)
+  assert.equal(await probar('PUT'), 401)
+  assert.equal(await probar('DELETE'), 401)
+  assert.equal(await probar('GET', '/api/configuracion/identidad/otro'), 401)
 })
 
 test('imagen institucional se convierte en WebP, se publica y se retira por slot', async () => {
@@ -119,9 +145,10 @@ test('el endpoint no admite SVG ni claves inventadas', async () => {
   assert.equal(f.objects.size, 0)
 })
 
-test('logo del correo se guarda como PNG cuadrado y logo del formulario como WebP horizontal', async () => {
+test('los logos de correo y login son PNG cuadrados y el del formulario es WebP horizontal', async () => {
   for (const [slot, extension, width, height] of [
     ['correo_encabezado', 'png', 512, 512],
+    ['login_encabezado', 'png', 512, 512],
     ['formulario_encabezado', 'webp', 900, 300],
   ]) {
     const f = fixture()
@@ -137,6 +164,24 @@ test('logo del correo se guarda como PNG cuadrado y logo del formulario como Web
     assert.equal(f.config.get(marcas.IDENTIDAD_IMAGENES[slot].clave), res.body.imagen)
     assert.ok(!res.body.imagen.includes('correo_pie'))
   }
+})
+
+test('el login usa su propio logo y conserva el fondo al quitarlo', async () => {
+  const f = fixture()
+  const logo = ORIGIN + '/storage/v1/object/public/branding/identidad/login_encabezado/' + UUID + '.png'
+  const fondo = ORIGIN + '/storage/v1/object/public/branding/identidad/login_fondo/' + UUID + '.webp'
+  const logoLateral = ORIGIN + '/storage/v1/object/public/branding/logo-123.png'
+  f.config.set(marcas.IDENTIDAD_IMAGENES.login_encabezado.clave, logo)
+  f.config.set(marcas.IDENTIDAD_IMAGENES.login_fondo.clave, fondo)
+  f.config.set('org.logo_url', logoLateral)
+  const { identidadLoginInicial } = loadModule('lib/server/identidad-publica.ts', {
+    '@/lib/server/supabase-admin': { createServiceClient: () => f.client },
+  })
+  assert.deepEqual({ ...await identidadLoginInicial() }, { logo, fondo })
+  const resultado = await f.api.DELETE({ signal: undefined, json: async () => ({ slot: 'login_encabezado' }) })
+  assert.equal(resultado.status, 200)
+  assert.deepEqual({ ...await identidadLoginInicial() }, { logo: '', fondo })
+  assert.equal(f.config.get('org.logo_url'), logoLateral)
 })
 
 test('un fondo de alta resolución conserva nitidez hasta el máximo de 2560 × 1440', async () => {
