@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
+import { useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
@@ -28,7 +28,6 @@ import { opcionesEstadoQueja, TIPOS_REGISTRO_QUEJA, tipoVisible } from '@/lib/co
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
 import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
-import AgendaQuejaOpener from '@/components/quejas/AgendaQuejaOpener'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
@@ -184,7 +183,6 @@ export default function QuejasPage() {
         )}
       </div>
 
-      <Suspense fallback={null}><AgendaQuejaOpener onOpen={handleAbrirDetalle} /></Suspense>
       <NuevaQuejaModal open={nuevaOpen} onClose={() => setNuevaOpen(false)} onCreated={() => { invalidateQuejas() }} categorias={categorias} />
       <QuejaDetalleModal queja={detalleOpen} onNavigationLockChange={setDetalleNavigationLocked} onClose={() => { setDetalleOpen(null); setDetalleNavigationLocked(false) }} onPrevious={detalleIndex > 0 ? () => handleAbrirDetalle(quejas[detalleIndex - 1]) : undefined} onNext={detalleIndex >= 0 && detalleIndex < quejas.length - 1 ? () => handleAbrirDetalle(quejas[detalleIndex + 1]) : undefined} onUpdated={(updated, isCurrent) => { if (updated) setDetalleOpen(current => updateSelectedQueja(current, updated, isCurrent)); invalidateQuejas() }} />
     </div>

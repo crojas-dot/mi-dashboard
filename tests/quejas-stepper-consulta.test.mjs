@@ -42,19 +42,21 @@ test('No Procede conserva su recorrido abreviado sin fingir investigación o rev
   assert.deepEqual(Array.from(cycle.steps, step => step.id), ['evaluation', 'finished'])
 })
 
-test('Mis Quejas finaliza en Revisión de GC y sus tres líneas ocupan columnas iguales', () => {
+test('Mis Quejas usa una proyección de estado independiente sin alterar el ciclo de Calidad', () => {
+  const { estadoVisualMisQuejas } = loadModule('app/mis-quejas/components/quejaVisualMisQuejas.ts')
   const steps = [
     { id: 'analysis', label: 'Análisis', current: false, completed: false },
     { id: 'investigation', label: 'Investigación', current: false, completed: false },
     { id: 'quality_review', label: 'Revisión de GC', current: false, completed: false },
   ]
   for (const status of ['Pendiente de Revisión GC', 'Resuelto', 'Finalizado']) {
-    const cycle = model.getCaseProcessCycle({ estado: status }, { steps })
-    assert.deepEqual(Array.from(cycle.steps, s => s.id), ['analysis', 'investigation', 'quality_review'])
+    const visual = estadoVisualMisQuejas(status)
+    const cycle = model.getCaseProcessCycle({ estado: visual }, { steps })
+    assert.deepEqual(Array.from(cycle.steps, step => step.id), ['analysis','investigation','quality_review'])
     assert.equal(cycle.steps[2].current, true)
     assert.equal(cycle.steps[0].completed && cycle.steps[1].completed, true)
   }
-  const render = CaseCycle({ queja: { estado: 'Finalizado' }, process: true, steps })
-  assert.ok(walk(render).some(n => typeof n.props.className === 'string' && n.props.className.includes('grid-cols-3')))
-  assert.deepEqual(Array.from(model.getCaseProcessCycle({ estado: 'No Procede' }, { steps }).steps, s => s.id), ['analysis'])
+  assert.equal(estadoVisualMisQuejas('No Procede'), 'Recibido')
+  assert.equal(estadoVisualMisQuejas('En Investigación'), 'En Investigación')
+  assert.deepEqual(Array.from(model.getCaseProcessCycle({ estado: 'Finalizado' }).steps, step => step.id), ['evaluation','investigation','quality_review','finished'])
 })

@@ -94,15 +94,9 @@ export function getCaseProcessCycle(queja: Pick<Queja, 'estado'>, options?: { st
     { id: 'finished', label: 'Cierre' },
   ]
   const steps: CaseRoleCycle['steps'] = options?.steps ?? generated.map((step) => ({ ...step, current: false, completed: false }))
-  // La vista del responsable termina en Revisión GC; Cierre solo corresponde al equipo de Calidad.
-  const collaboratorFlow = steps.length === 3 && steps[0]?.id === 'analysis' && steps[2]?.id === 'quality_review'
-  // No Procede no llegó a investigación: el recorrido abreviado de Calidad se conserva.
-  const visibleSteps = queja.estado === 'No Procede'
-    ? collaboratorFlow ? [steps[0]] : [steps[0], steps[3]]
-    : steps
-  const positions: Record<string, number> = collaboratorFlow
-    ? { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 2, Finalizado: 2, 'No Procede': 0 }
-    : { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 3, 'No Procede': 1 }
+  // No Procede cierra tras la evaluación; no atribuirle investigación o revisión.
+  const visibleSteps = queja.estado === 'No Procede' ? [steps[0], steps[3]] : steps
+  const positions: Record<string, number> = { Recibido: 0, 'En Investigación': 1, 'Pendiente de Revisión GC': 2, Resuelto: 3, Finalizado: 3, 'No Procede': 1 }
   const position = Object.hasOwn(positions, queja.estado) ? positions[queja.estado] : -1
   return { label: 'Etapas del expediente', detail: '', steps: visibleSteps.map((step, index) => ({ ...step, current: index === position, completed: position >= 0 && index < position })) }
 }

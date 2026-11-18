@@ -27,7 +27,7 @@ import { tipoVisible } from '@/lib/constants/quejas'
 import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
 import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
-import AgendaQuejaOpener from '@/components/quejas/AgendaQuejaOpener'
+import AgendaQuejaOpener from '@/app/mis-quejas/components/AgendaQuejaOpener'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {

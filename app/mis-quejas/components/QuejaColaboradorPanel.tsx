@@ -31,6 +31,7 @@ import QuejaAnalisisPanel, { QuejaTimeline } from '@/app/mis-quejas/components/Q
 import ListaAdjuntos from '@/components/quejas/ListaAdjuntos'
 import AreaAfectada from '@/components/quejas/AreaAfectada'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
+import { quejaVisualMisQuejas } from '@/app/mis-quejas/components/quejaVisualMisQuejas'
 import QuejaNotasPanel, { QuejaNotasCard } from '@/app/mis-quejas/components/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
 import { caseDate, caseDeadline, getCaseProcessCycle, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
@@ -201,8 +202,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
-  // El ciclo muestra el estado real; consultar una etapa no modifica el workflow.
-  const cicloProceso = getCaseProcessCycle(queja, {
+  // Mis Quejas proyecta su última etapa en Revisión de GC, sin modificar el estado real.
+  const quejaCiclo = quejaVisualMisQuejas(queja)
+  const cicloProceso = getCaseProcessCycle(quejaCiclo, {
     steps: [
       { id: 'analysis', label: 'Análisis', current: false, completed: false },
       { id: 'investigation', label: 'Investigación', current: false, completed: false },
@@ -533,7 +535,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className="w-full min-w-0"><CaseProcessHeader queja={queja} steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
+      headerCenter={<div className="w-full min-w-0 [&_ol]:grid-cols-3!"><CaseProcessHeader queja={quejaCiclo} steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setStageView(currentStageFromStatus(estado)); setEditorAbierto(false); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + stageView} expanded={isExpanded} compactContent={compactTriage} cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
@@ -543,7 +545,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             onOpen={abrirAdjuntos} />
           <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
         </div> : null}
-        compact={<CaseCycle queja={queja} process currentOnly steps={cicloProceso.steps} />} cycle={<CaseCycle queja={queja} process steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} />}
+        compact={<CaseCycle queja={quejaCiclo} process currentOnly steps={cicloProceso.steps} />} cycle={<div className="[&_ol]:grid-cols-3!"><CaseCycle queja={quejaCiclo} process steps={cicloProceso.steps} selectedStage={isExpanded ? etapaConsultada : null} onStageChange={isExpanded ? cambiarEtapa : undefined} disabled={navigationLocked} /></div>}
         action={<div className="space-y-4"><section className="min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{stageView === etapaActual ? 'Etapa actual' : 'Consulta del expediente'}</h3>
           <Badge variant={queja.estado_color || varianteEstado('quejas', estado)}>{queja.estado_nombre || estado}</Badge>
