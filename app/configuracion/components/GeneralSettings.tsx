@@ -15,7 +15,6 @@ import Field from '@/components/ui/Field'
 import ErrorState from '@/components/ui/ErrorState'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import ZonaHorariaEditor from './ZonaHorariaEditor'
-import LogoEmpresaEditor from './LogoEmpresaEditor'
 
 const key = [...queryKeys.configuraciones, 'general'] as const
 const serializar = (valor: unknown) => typeof valor === 'string' ? valor : JSON.stringify(valor, null, 2)
@@ -28,8 +27,8 @@ export default function GeneralSettings({ active }: { active: boolean }) {
   const [saving, setSaving] = useState(false)
   const [errorValor, setErrorValor] = useState('')
   const savingRef = useRef(false)
-  // La zona horaria y el logo tienen editor propio; no se editan como texto libre.
-  const configs = (query.data ?? []).filter(config => !['org.zona_horaria', 'org.logo_url'].includes(config.clave))
+  // La zona horaria y las imágenes institucionales tienen editores propios.
+  const configs = (query.data ?? []).filter(config => !['org.zona_horaria', 'org.logo_url'].includes(config.clave) && !config.clave.startsWith('org.identidad.'))
   const categorias = [...new Set(configs.map(config => config.categoria || 'general'))]
 
   const guardar = async () => {
@@ -52,7 +51,6 @@ export default function GeneralSettings({ active }: { active: boolean }) {
 
   return <div className="space-y-5">
     <ZonaHorariaEditor active={active} />
-    <LogoEmpresaEditor active={active} />
     {!configs.length && <p className="ui-panel p-6 text-sm text-qms-muted">No hay otros ajustes generales disponibles.</p>}
     {categorias.map(categoria => <section key={categoria} className="ui-panel overflow-hidden" aria-label={presentarNombre(categoria)}>
       <h3 className="border-b border-qms-border bg-qms-table-head px-5 py-3 text-sm font-semibold">{presentarNombre(categoria)}</h3>
