@@ -73,12 +73,23 @@ export async function PUT(request: NextRequest) {
       `image/${info.format}` !== archivo.type) {
       return fail('La imagen no es válida o contiene animación', 415)
     }
-    const image = source.autoOrient().resize(meta.ancho, meta.alto, { fit: 'cover', position: 'centre' })
+    const target = slot === 'login_fondo'
+      ? { ancho: meta.procesamientoAncho, alto: meta.procesamientoAlto }
+      : { ancho: meta.ancho, alto: meta.alto }
+    const image = source.autoOrient().resize(target.ancho, target.alto, {
+      fit: 'inside', withoutEnlargement: true,
+    })
     bytes = meta.formato === 'png'
       ? await image.png({ compressionLevel: 9 }).toBuffer()
-      : await image.webp({ quality: 82, effort: 4 }).toBuffer()
+      : await image.webp({ quality: slot === 'login_fondo' ? 92 : 85, effort: 5 }).toBuffer()
   } catch { return fail('La imagen no es válida o supera 16 megapíxeles', 415) }
-  if (bytes.length > IDENTIDAD_STORED_BYTES) return fail('La imagen optimizada supera 2 MB', 413)
+  if (bytes.length > IDENTIDAD_STORED_BYTES && meta.formato === 'webp') {
+    try {
+      const sharp = (await import('sharp')).default
+      bytes = await sharp(bytes).webp({ quality: 76, effort: 5 }).toBuffer()
+    } catch { return fail('No se pudo optimizar la imagen', 415) }
+  }
+  if (bytes.length > IDENTIDAD_STORED_BYTES) return fail('La imagen optimizada supera 2 MB; probá un encuadre menos detallado', 413)
 
   let anterior: string
   try { anterior = await actual(context.admin, slot) }
