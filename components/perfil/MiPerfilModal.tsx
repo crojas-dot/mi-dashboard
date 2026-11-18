@@ -216,6 +216,9 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
             }
             setBorradorFoto({ archivo: file, url: URL.createObjectURL(file) })
           }} />
+          <p className="text-center text-xs leading-relaxed text-qms-muted">
+            Recomendado: 320 × 320 px (cuadrado), JPG o WebP de buena calidad. Máximo 2 MB de origen; se optimiza automáticamente.
+          </p>
           <div className="flex flex-wrap justify-center gap-1">
             <Button variant="link" size="sm" loading={fotoOperation.operation === 'subir'} disabled={!!fotoOperation.operation}
               onClick={() => inputFoto.current?.click()}>{user.avatarUrl ? 'Cambiar foto' : 'Subir foto'}</Button>
