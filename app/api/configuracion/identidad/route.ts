@@ -73,8 +73,10 @@ export async function PUT(request: NextRequest) {
       `image/${info.format}` !== archivo.type) {
       return fail('La imagen no es válida o contiene animación', 415)
     }
-    bytes = await source.autoOrient().resize(meta.ancho, meta.alto, { fit: 'cover', position: 'centre' })
-      .webp({ quality: 82, effort: 4 }).toBuffer()
+    const image = source.autoOrient().resize(meta.ancho, meta.alto, { fit: 'cover', position: 'centre' })
+    bytes = meta.formato === 'png'
+      ? await image.png({ compressionLevel: 9 }).toBuffer()
+      : await image.webp({ quality: 82, effort: 4 }).toBuffer()
   } catch { return fail('La imagen no es válida o supera 16 megapíxeles', 415) }
   if (bytes.length > IDENTIDAD_STORED_BYTES) return fail('La imagen optimizada supera 2 MB', 413)
 
@@ -82,9 +84,9 @@ export async function PUT(request: NextRequest) {
   try { anterior = await actual(context.admin, slot) }
   catch { return fail('No se pudo consultar la imagen anterior', 503) }
 
-  const ruta = `identidad/${slot}/${randomUUID()}.webp`
+  const ruta = `identidad/${slot}/${randomUUID()}.${meta.formato}`
   const subida = await context.admin.storage.from(LOGO_BUCKET).upload(ruta, bytes, {
-    contentType: 'image/webp', upsert: false, cacheControl: '31536000',
+    contentType: meta.formato === 'png' ? 'image/png' : 'image/webp', upsert: false, cacheControl: '31536000',
   })
   if (subida.error) return fail('No se pudo guardar la imagen en Storage', 503)
   const url = context.admin.storage.from(LOGO_BUCKET).getPublicUrl(ruta).data.publicUrl
