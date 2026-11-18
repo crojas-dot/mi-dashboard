@@ -68,12 +68,16 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
         style={{ aspectRatio: String(meta.proporcion) }}>
         {url ? (
           /* eslint-disable-next-line @next/next/no-img-element */
-          <img src={url} alt={meta.titulo} className="h-full w-full object-cover" />
+          <img src={url} alt={meta.titulo} className="h-full w-full object-contain" />
         ) : <ImagePlus className="h-7 w-7 text-qms-muted" aria-hidden="true" />}
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-relaxed text-qms-muted">{meta.descripcion}</p>
-        <p className="mt-1 text-xs text-qms-muted">Formato PNG, JPG o WebP. Recortá y centrá la imagen antes de guardar; máximo 4 MB de origen.</p>
+        <div className="mt-2 space-y-1 text-xs leading-relaxed text-qms-muted">
+          <p><span className="font-semibold text-qms-dark">Tamaño recomendado:</span> {meta.ancho} × {meta.alto} px. Proporción {meta.proporcion === 1 ? '1:1' : meta.proporcion === 3 ? '3:1' : '16:9'}.</p>
+          <p><span className="font-semibold text-qms-dark">Formato y calidad:</span> {meta.recomendacion}</p>
+          <p>Admite JPG, PNG o WebP de hasta 4 MB antes del recorte. Se optimiza automáticamente a {meta.formato.toUpperCase()} y un máximo de 2 MB al guardar.</p>
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" disabled={guardando || quitando} onClick={() => inputRef.current?.click()}>
             <ImagePlus className="h-4 w-4" aria-hidden="true" /> {url ? 'Cambiar imagen' : 'Subir imagen'}
