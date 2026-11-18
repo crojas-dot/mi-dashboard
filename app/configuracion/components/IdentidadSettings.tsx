@@ -10,6 +10,12 @@ export default function IdentidadSettings({ active }: { active: boolean }) {
 
   return <div className="space-y-5">
     <LogoEmpresaEditor active={active} />
+    {imagenes.isError && (
+      <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-qms-danger/30 bg-qms-danger/5 p-3 text-sm text-qms-danger">
+        <span>No se pudo recuperar la configuración de imágenes. Los archivos guardados no se han borrado.</span>
+        <button type="button" className="font-medium underline" onClick={() => void imagenes.refetch()}>Reintentar</button>
+      </div>
+    )}
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-qms-dark">Identidad del correo</h3>
@@ -25,6 +31,6 @@ export default function IdentidadSettings({ active }: { active: boolean }) {
       <ImagenIdentidadEditor slot="login_fondo" url={urls?.login_fondo ?? ''} loading={imagenes.isPending} />
       <ImagenIdentidadEditor slot="formulario_encabezado" url={urls?.formulario_encabezado ?? ''} loading={imagenes.isPending} />
     </div>
-    {imagenes.isError && <p role="alert" className="text-sm text-qms-danger">No se pudieron cargar las imágenes actuales.</p>}
+
   </div>
 }
