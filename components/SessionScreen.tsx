@@ -31,7 +31,8 @@ export default function SessionScreen({
     return () => clearTimeout(timer)
   }, [denied, onRetry])
 
-  if (!denied) return <main data-session-layout={layout} className="relative min-h-dvh bg-qms-background">
+  if (!denied) return <main data-session-layout={layout}
+    className={`relative min-h-dvh ${layout === 'login' ? 'bg-transparent' : 'bg-qms-background'}`}>
     <span role="status" className="sr-only">{label}</span>
     {layout === 'login' && <div aria-hidden="true" aria-busy="true"><LoginSkeleton /></div>}
     {slow && <div className="fixed inset-x-4 bottom-4 z-10 mx-auto max-w-sm rounded-card border border-qms-border bg-qms-surface p-4 shadow-sm">
