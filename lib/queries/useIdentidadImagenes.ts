@@ -36,7 +36,7 @@ export async function guardarImagenIdentidad(slot: ImagenIdentidad, blob: Blob) 
   if (!IDENTIDAD_IMAGENES[slot]) throw new Error('Imagen no reconocida')
   const form = new FormData()
   form.append('slot', slot)
-  form.append('archivo', blob, 'imagen.webp')
+  form.append('archivo', blob, blob.type === 'image/png' ? 'imagen.png' : 'imagen.webp')
   const res = await fetch('/api/configuracion/identidad', {
     method: 'PUT',
     headers: { Authorization: `Bearer ${await tokenAdmin()}` },
