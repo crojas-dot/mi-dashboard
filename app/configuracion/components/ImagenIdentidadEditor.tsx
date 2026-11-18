@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { ImagePlus, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import { IDENTIDAD_ACCEPT, IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
+import { IDENTIDAD_ACCEPT_PICKER, IDENTIDAD_ORIGEN_MAX_BYTES, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, type ImagenIdentidad } from '@/lib/constants/identidad'
 import { identidadImagenesKey, guardarImagenIdentidad, quitarImagenIdentidad } from '@/lib/queries/useIdentidadImagenes'
 import LogoRecorteModal, { type BorradorLogo } from './LogoRecorteModal'
 
@@ -27,8 +27,11 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
     const archivo = event.currentTarget.files?.[0]
     event.currentTarget.value = ''
     if (!archivo) return
-    if (!IDENTIDAD_ACCEPT.split(',').includes(archivo.type) || archivo.size === 0 || archivo.size > IDENTIDAD_ORIGEN_MAX_BYTES) {
-      setError('Seleccioná una imagen JPG, PNG, WebP, AVIF o GIF de hasta 30 MB. Los formatos no compatibles no pueden recortarse con seguridad.')
+    // Se aceptan formatos de imagen que el navegador pueda decodificar.
+    // Nunca subir el original: el canvas convierte el recorte a WebP/PNG seguro.
+    if (!archivo.type.startsWith('image/') || archivo.type === 'image/svg+xml' ||
+      archivo.size === 0 || archivo.size > IDENTIDAD_ORIGEN_MAX_BYTES) {
+      setError('Seleccioná una imagen de hasta 30 MB que el navegador pueda abrir. Por seguridad no se admite SVG.')
       return
     }
     setError('')
@@ -76,7 +79,7 @@ export default function ImagenIdentidadEditor({ slot, url }: { slot: ImagenIdent
         <div className="mt-2 space-y-1 text-xs leading-relaxed text-qms-muted">
           <p><span className="font-semibold text-qms-dark">Tamaño recomendado:</span> {meta.ancho} × {meta.alto} px. Proporción {meta.proporcion === 1 ? '1:1' : meta.proporcion === 3 ? '3:1' : '16:9'}.</p>
           <p><span className="font-semibold text-qms-dark">Formato y calidad:</span> {meta.recomendacion}</p>
-          <p>Las medidas y el formato indicados son sugerencias, no requisitos. Admite JPG, PNG, WebP, AVIF y GIF de hasta 30 MB para recortar; convierte el resultado a {meta.formato.toUpperCase()} y máximo 2 MB por límite de Storage.</p>
+          <p>Las medidas y el formato indicados son sugerencias, no requisitos. Podés elegir cualquier imagen compatible con el navegador, sin exigir el formato sugerido (excepto SVG por seguridad). Máximo técnico de 30 MB de origen; se convierte a {meta.formato.toUpperCase()} y se optimiza a 2 MB para Storage.</p>
         </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button size="sm" variant="secondary" disabled={guardando || quitando} onClick={() => inputRef.current?.click()}>
