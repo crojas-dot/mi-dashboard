@@ -4,7 +4,8 @@ set local lock_timeout = '5s';
 -- El archivo personal se lee y escribe a través de la API autenticada. No se
 -- amplían las policies de storage.objects ni se emiten enlaces públicos.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values ('qms-avatars', 'qms-avatars', false, 524288, array['image/webp']);
+values ('qms-avatars', 'qms-avatars', false, 524288, array['image/webp'])
+on conflict (id) do nothing;
 
 -- La columna anterior se conserva. Solo la API puede publicar una ruta nueva.
 revoke update (avatar_url) on public.usuarios from anon, authenticated;
