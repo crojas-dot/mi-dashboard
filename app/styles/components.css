@@ -161,6 +161,15 @@
   overflow-wrap: anywhere;
   text-wrap: pretty;
 }
+
+/* En la lectura de Calidad, encabezados, análisis, adjuntos y separadores
+   comparten el mismo borde de inicio. La hoja sigue ocupando toda la columna. */
+[data-case-quality-two-columns="true"] [data-case-document-section="true"] > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 72ch;
+  margin-inline: auto;
+}
 [data-case-quality-two-columns="true"] [data-case-stage-readonly] > section > div:first-child h3 {
   font-size: 1.125rem;
   line-height: 1.5rem;
