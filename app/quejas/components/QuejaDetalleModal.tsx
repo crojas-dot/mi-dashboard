@@ -659,16 +659,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <button type="button" onClick={() => openEvaluationDecision('procede')}
       disabled={workflowPending || editing}
       className="group flex h-12 w-full min-w-0 items-center gap-2.5 rounded-lg border border-qms-border bg-white px-3.5 text-left text-sm font-semibold text-qms-dark transition-colors hover:border-qms-primary hover:bg-qms-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-      <span aria-hidden="true" className="size-4 shrink-0 rounded-full border-[1.5px] border-qms-muted group-hover:border-qms-primary" />
       <span className="min-w-0 flex-1">Procede</span>
-      <ArrowRight aria-hidden="true" className="size-3.5 shrink-0 text-qms-muted" />
+      <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-qms-muted transition-colors group-hover:text-qms-primary" />
     </button>
     <button type="button" onClick={() => openEvaluationDecision('no_procede')}
       disabled={workflowPending || editing || !publicacionVerificada}
       className="group flex h-12 w-full min-w-0 items-center gap-2.5 rounded-lg border border-qms-border bg-white px-3.5 text-left text-sm font-semibold text-qms-dark transition-colors hover:border-qms-primary hover:bg-qms-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-      <span aria-hidden="true" className="size-4 shrink-0 rounded-full border-[1.5px] border-qms-muted group-hover:border-qms-primary" />
       <span className="min-w-0 flex-1">No procede</span>
-      <ArrowRight aria-hidden="true" className="size-3.5 shrink-0 text-qms-muted" />
+      <ArrowRight aria-hidden="true" className="size-4 shrink-0 text-qms-muted transition-colors group-hover:text-qms-primary" />
     </button>
   </div> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
