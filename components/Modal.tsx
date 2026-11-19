@@ -20,7 +20,7 @@ interface ModalProps {
   descriptionId?: string
   headerLeading?: React.ReactNode
   headerSubtitle?: React.ReactNode
-  headerTone?: 'default' | 'quality'
+  headerTone?: 'default' | 'quality' | 'profile'
   headerCenter?: React.ReactNode
   headerActions?: React.ReactNode
   footer?: React.ReactNode
@@ -147,7 +147,7 @@ export default function Modal({ open, onClose, onEscape, title, titleSuffix, emp
           data-modal-header
           data-case-header-grid={centeredWorkspaceHeader || undefined}
           data-case-header-tone={headerTone === 'quality' ? 'quality' : undefined}
-          className={`${report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : fixedHeight ? 'flex shrink-0 items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-3 text-qms-dark sm:px-6 sm:py-4' : 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark'} ${centeredWorkspaceHeader ? `@min-[1100px]/workspace:grid ${headerTone === 'quality' ? '@min-[1100px]/workspace:grid-cols-[250px_minmax(0,1fr)_190px]' : '@min-[1100px]/workspace:grid-cols-[220px_minmax(0,1fr)_260px]'} @min-[1100px]/workspace:gap-4` : ''} ${headerTone === 'quality' ? 'relative z-30 h-[70px] min-h-[70px] bg-qms-primary! text-white! [&>div:last-child_button]:text-white! [&>div:last-child_button:hover]:bg-white/15!' : ''}`}
+          className={`${report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : fixedHeight ? 'flex shrink-0 items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-3 text-qms-dark sm:px-6 sm:py-4' : 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark'} ${centeredWorkspaceHeader ? `@min-[1100px]/workspace:grid ${headerTone === 'quality' ? '@min-[1100px]/workspace:grid-cols-[250px_minmax(0,1fr)_190px]' : '@min-[1100px]/workspace:grid-cols-[220px_minmax(0,1fr)_260px]'} @min-[1100px]/workspace:gap-4` : ''} ${headerTone === 'quality' ? 'relative z-30 h-[70px] min-h-[70px] bg-qms-primary! text-white! [&>div:last-child_button]:text-white! [&>div:last-child_button:hover]:bg-white/15!' : headerTone === 'profile' ? 'bg-[#F0F5FA]! text-qms-primary!' : ''}`}
         >
           <div className={`flex min-w-0 items-center gap-3 ${headerCenter ? 'shrink-0' : 'flex-1'} ${report ? 'gap-2' : confirmation ? 'gap-3' : ''}`}>
             {headerLeading}
