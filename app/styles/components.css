@@ -147,6 +147,25 @@
   margin-inline: auto;
 }
 
+/* Quejas ampliadas: limitar únicamente párrafos, no la hoja, títulos, separadores
+   ni las cuadrículas de adjuntos. Mis quejas mantiene su ancho anterior. */
+[data-case-quality-two-columns="true"] [data-case-reading-copy] {
+  max-width: none;
+  margin-inline: 0;
+}
+[data-case-quality-two-columns="true"] [data-case-reading-text] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 72ch;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+[data-case-quality-two-columns="true"] [data-case-stage-readonly] > section > div:first-child h3 {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+}
+
 @media (min-width: 640px) {
   [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
     width: min(calc(100% - 4rem), 70ch);
