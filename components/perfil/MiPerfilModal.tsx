@@ -197,7 +197,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
     detalles: <form id="mi-perfil-panel-detalles" role="tabpanel" aria-labelledby="mi-perfil-tab-detalles"
         hidden={tab !== 'detalles'} onSubmit={guardarNombre} className="mx-auto max-w-4xl">
       <div data-mi-perfil-detalles className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
-        <aside className="flex w-full shrink-0 flex-col items-center gap-2.5 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-44">
+        <aside className="flex w-full shrink-0 flex-col items-center gap-2.5 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-56">
           <div className="relative">
             <FotoPerfil url={fotoUrl} hasPhoto={!!user.avatarUrl} initials={inicial} size={96}
               className="size-24 border-4 border-qms-surface bg-qms-primary/15 text-3xl font-semibold text-qms-primary shadow-sm" />
@@ -222,9 +222,9 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
               onClick={() => { void cambiarFoto(null) }}>Quitar</Button>}
           </div>
           <p className="text-center text-sm font-semibold text-qms-dark">{getRoleLabel(user.rol)}</p>
-          <p className="text-center text-xs leading-relaxed text-qms-muted">
-            JPG o WebP · Máx. 2 MB
-            <span className="block">Tamaño sugerido: 320 × 320 px</span>
+          <p className="text-center text-[12px] leading-5 text-qms-muted">
+            <span className="block whitespace-nowrap">JPG o WebP · Máx. 2 MB</span>
+            <span className="block whitespace-nowrap">Tamaño sugerido: 320 × 320 px</span>
           </p>
         </aside>
         <div className="min-w-0 flex-1 space-y-4 rounded-card border border-qms-border bg-qms-surface p-4 shadow sm:p-5">
