@@ -11,7 +11,6 @@ export default function QuejaClienteDropdown({ queja }: { queja: Queja }) {
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
-  useEffect(() => { setOpen(false) }, [queja.id])
   useEffect(() => {
     if (!open) return
     const outside = (event: MouseEvent) => {
