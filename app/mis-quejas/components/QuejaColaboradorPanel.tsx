@@ -464,7 +464,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           </div>}
           {editable && errorResolucion && <p role="alert" className="mt-3 text-sm text-qms-danger">{errorResolucion}</p>}
         </section></div>}>
-        <div data-mis-quejas-reading-column className="min-h-[calc(100dvh-70px)] w-full min-w-0 bg-white px-2 py-3 sm:px-3 sm:py-4">
+        <div data-mis-quejas-reading-column className="mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-[#F3F6FB] px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6 lg:px-8">
         {isExpanded && lectura}
         {isExpanded && avisoDevolucion && <div className="mt-5">{avisoDevolucion}</div>}
         {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(420px,calc(100dvh-95px),820px)] min-w-0">
@@ -472,7 +472,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             style={resolutionOverlay ?? undefined}
             className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-white shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-2 sm:px-5">
+          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D3DAE4] bg-[#E7ECF3] px-4 py-2 sm:px-5">
             <span className="text-sm font-medium text-qms-muted">Borrador guardado</span>
             <Button data-resolution-edit size="sm" variant="secondary"
               title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
@@ -518,7 +518,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 {resolutionOverlay ? <Minimize aria-hidden="true" className="size-5" /> : <Maximize aria-hidden="true" className="size-5" />}
               </Button>
             </div> : undefined}
-            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#F8FAFD]" /></div>
+            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#E7ECF3]" /></div>
           <div data-resolution-footer className="sticky bottom-0 z-20 flex shrink-0 min-w-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>

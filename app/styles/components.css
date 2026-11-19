@@ -89,10 +89,10 @@
   }
 }
 
-/* Mis Quejas conserva el lienzo principal blanco. Solo el marco del editor
-   recibe un tinte semitransparente; hoja, barra y botones permanecen opacos. */
+/* Mis Quejas: mismo fondo mate del panel Acciones del responsable.
+   Editor/hoja blancos y una sola barra de edición gris, sin marcos adicionales. */
 [data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
-  background: #FFFFFF;
+  background: #F3F6FB;
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
@@ -115,7 +115,8 @@
   min-height: 44px;
   flex-wrap: wrap;
   overflow: visible;
-  background: #F8FAFD;
+  background: #E7ECF3;
+  border-bottom-color: #D3DAE4;
   border-start-start-radius: var(--radius-card);
   border-start-end-radius: var(--radius-card);
 }
