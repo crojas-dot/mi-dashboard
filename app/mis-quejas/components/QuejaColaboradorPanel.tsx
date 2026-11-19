@@ -431,7 +431,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
         cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn
         requestFooter={isExpanded && <div className="space-y-2">
-          {etapa === 'resolucion' && <button type="button" data-investigation-files-card onClick={abrirAdjuntos}
+          {etapa === 'resolucion' && <button type="button" data-investigation-files-card aria-label="Ver mis adjuntos" onClick={abrirAdjuntos}
             className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
             <span>Mis adjuntos <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!archivosCargando && !archivosError ? archivos.propios.length : '—'}</span></span>
             <span className="text-xs text-qms-primary">Ver ›</span>

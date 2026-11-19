@@ -679,8 +679,9 @@ test('la tarjeta de notas abre solo el panel, conserva ambos borradores y excluy
   ] })
   panel.select('A')
   assert.equal(panel.nodes().some(node => node.type === 'textarea' && node.props['aria-label'] === 'Nueva nota de investigación'), false)
-  const card = panel.nodes().find(node => node.type?.name === 'QuejaNotasCard')
-  assert.deepEqual(card.props.notas.map(note => note.id), ['note'])
+  const notasShortcut = panel.nodes().find(node => node.props['data-investigation-notes-card'])
+  assert.ok(notasShortcut, 'el historial sigue accesible en el lateral derecho')
+  assert.equal(notasShortcut.props.children[0].props.children[1].props.children, 1, 'la devolución no cuenta como nota')
   panel.editor().props.onChange('Redacción en curso', 'plain'); panel.render()
   const editorId = panel.editor().props.id
   panel.openNotes()
