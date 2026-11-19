@@ -626,7 +626,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const puedeDerivarSACP = esStaff && !sacpCreadaEnVisita && puedeDerivarEnRevisionGC(estadoActual, queja.derivado_sacp_id, queja.resolucion)
   const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
   const requestDocument = <section data-case-client-document className="min-w-0 px-6 py-8 sm:px-10 sm:py-10 lg:px-12">
-    <div className="mx-auto w-full max-w-[870px]">
+    <div className="mx-auto w-full max-w-[72ch]">
       <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-qms-dark sm:text-[30px]">Descripción del cliente</h2>
       <div data-case-reading-copy className="mt-6"><p data-case-reading-text className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
       <div className="mt-7 border-t border-qms-border pt-4">
