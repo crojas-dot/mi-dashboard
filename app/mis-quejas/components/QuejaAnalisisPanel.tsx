@@ -52,7 +52,7 @@ export default function QuejaAnalisisPanel({
       </section>
     </div>
     <CaseSection title="Descripción del cliente" variant="document" headerActions={<AreaAfectada area={queja.area_afectada} />}>
-      <p data-client-description className="whitespace-pre-wrap wrap-anywhere text-sm leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
+      <p data-client-description className="whitespace-pre-wrap wrap-anywhere text-base leading-relaxed text-qms-dark">{queja.descripcion || 'Sin descripción registrada.'}</p>
     </CaseSection>
     {analysis && <CaseSection title="Análisis registrado" variant="document">
       <RichTextContent value={analysis.value} format={analysis.format} />
