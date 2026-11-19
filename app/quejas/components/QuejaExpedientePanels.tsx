@@ -150,11 +150,11 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
           <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
             <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? 'min-h-full bg-white' : ''}`}`}>{children}</main>
           </div>
-          <aside data-case-action className={`order-1 min-w-0 ${qualityTwoColumn ? 'bg-[#F3F6FB] p-4 @min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:p-7' : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
+          <aside data-case-action className={`order-1 min-w-0 ${qualityTwoColumn ? 'bg-[#F3F6FB] p-4 @min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5' : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
             {action}
-            {qualityTwoColumn && <div data-case-quality-tools className="mt-7 border-t border-[#DFE5ED] pt-5">
+            {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
               <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTA QUEJA</p>
-              {requestFooter && <div className="mt-3 space-y-3">{requestFooter}</div>}
+              {requestFooter && <div className="mt-2 space-y-2">{requestFooter}</div>}
               {request && <details className="mt-4 rounded-lg border border-[#DADCE0] bg-white">
                 <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-qms-dark">Datos del solicitante</summary>
                 <div className="border-t border-qms-border px-3.5 py-4">{request}</div>
@@ -249,7 +249,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
       {flow.steps.map((step, position) => {
         const selected = selectedStage === step.id
         const active = (step.current && !selectedStage) || selected
-        const color = active ? 'bg-qms-primary font-semibold text-white' : step.completed ? 'bg-[#DCEAF8] font-semibold text-[#245A9C]' : 'bg-[#EDF1F6] text-[#626B79]'
+        const color = active ? 'bg-white font-semibold text-qms-primary' : step.completed ? 'bg-white/25 font-semibold text-white' : 'bg-white/10 text-white/85'
         const clipPath = position === 0
           ? 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%)'
           : 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)'
@@ -320,12 +320,11 @@ export function CaseAction({ queja, runs, children, plazoError, condensed = fals
           {deadline.vence && <QuejaPlazoIndicator deadline={deadline} className="text-xs" />}
         </div>
         {plazoError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el detalle del calendario.</p>}
-        <p className="mt-3 text-xs leading-relaxed text-qms-muted">Recibida {caseDate(queja.fecha)} · Tipo: {tipoVisible(queja)}</p>
-        <h4 className="mt-5 text-lg font-semibold text-qms-dark">Evaluar procedencia</h4>
-        <p className="mt-2 text-sm leading-relaxed text-qms-muted">Revisa la solicitud y selecciona el resultado de la evaluación para continuar con el flujo.</p>
+        <p className="mt-2 text-xs leading-relaxed text-qms-muted">Recibida {caseDate(queja.fecha)} · Tipo: {tipoVisible(queja)}</p>
+        <h4 className="mt-4 text-base font-semibold text-qms-dark">Evaluar procedencia</h4>
+        <p className="mt-1 text-[13px] leading-snug text-qms-muted">Seleccioná el resultado para continuar.</p>
         {children && <>
-          <div className="mt-5 flex min-w-0 flex-col gap-3.5">{children}</div>
-          <p className="mt-4 text-xs leading-relaxed text-qms-muted">Al seleccionar una opción, se abrirá el editor correspondiente.</p>
+          <div className="mt-3 flex min-w-0 flex-col gap-2">{children}</div>
         </>}
       </div>
     </CaseSection>
