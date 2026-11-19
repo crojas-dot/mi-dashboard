@@ -90,7 +90,7 @@ function QuejaClienteDropdown({ queja }: { queja: Queja }) {
     <button ref={buttonRef} type="button" aria-haspopup="dialog" aria-expanded={open}
       aria-controls={open ? 'queja-cliente-datos' : undefined}
       onClick={() => setOpen(value => !value)}
-      className="flex max-w-full items-center gap-1.5 rounded-sm text-left text-[13px] leading-5 text-white/90 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+      className="flex max-w-full items-center gap-1.5 rounded-sm text-left text-[13px] leading-5 text-[#343A40] hover:text-[#1A1718] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2A61B0]">
       <span className="min-w-0 truncate">{queja.cliente_nombre || 'Solicitante sin nombre'}</span>
       <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
