@@ -45,7 +45,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { ArrowRight, CheckCircle, Upload, RotateCcw, FileText, Paperclip, Eye, Info, XCircle } from 'lucide-react'
+import { ArrowRight, Upload, RotateCcw, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
@@ -582,12 +582,16 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const qualityReview = estadoActual === 'Pendiente de Revisión GC'
   const puedeDerivarSACP = esStaff && !sacpCreadaEnVisita && puedeDerivarEnRevisionGC(estadoActual, queja.derivado_sacp_id, queja.resolucion)
   const areaControl = <AreaQuejaControl quejaId={queja.id} area={queja.area_afectada ?? ''} draft={puedeEditarArea ? registroDraft : null} onEdit={puedeEditarArea ? handleEditarRegistro : undefined} onSave={handleGuardarRegistro} onCancel={() => { draftVersions.current.workflow++; setRegistroDraft(null) }} saving={guardandoRegistro} disabled={workflowPending && !guardandoRegistro || editorOpen} />
-  const requestDocument = <CaseSection variant="document" title="Descripción del cliente" headerActions={areaControl}>
-    <div data-case-reading-copy><p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
-    <div className="mt-4 border-t border-qms-border pt-3"><h4 className="mb-2 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>
-      {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
+  const requestDocument = <section data-case-client-document className="min-w-0 px-6 py-8 sm:px-10 sm:py-10 lg:px-12">
+    <div className="max-w-[780px]">
+      <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-qms-dark sm:text-[30px]">Descripción del cliente</h2>
+      <div data-case-reading-copy className="mt-6"><p className="whitespace-pre-wrap break-words text-base leading-[1.7]">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
+      <div className="mt-8 border-t border-qms-border pt-5">
+        <h3 className="mb-3 text-[17px] font-semibold text-qms-primary">Adjuntos del cliente · {adjuntosCliente.length}</h3>
+        {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
+      </div>
     </div>
-  </CaseSection>
+  </section>
   const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
   const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
   const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
@@ -609,14 +613,20 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
   </> : estadoActual === 'Recibido' ? !editing && <>
-    <Button size="sm" className="min-h-12 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}>
-      <span className="flex items-center gap-2"><CheckCircle aria-hidden="true" className="size-4" />Procede</span>
-      <ArrowRight aria-hidden="true" className="size-4" />
-    </Button>
-    <Button size="sm" variant="danger" className="min-h-12 w-full min-w-0 justify-between" onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}>
-      <span className="flex items-center gap-2"><XCircle aria-hidden="true" className="size-4" />No Procede</span>
-      <ArrowRight aria-hidden="true" className="size-4" />
-    </Button>
+    <button type="button" data-case-evaluation-choice="procede" onClick={() => openEvaluationDecision('procede')}
+      disabled={workflowPending || editing}
+      className="group flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-lg border border-[#CFD4DA] bg-white px-3.5 py-3 text-left transition-colors hover:border-qms-primary hover:bg-[#EAF1FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
+      <span aria-hidden="true" className="mt-1 size-4 shrink-0 rounded-full border-2 border-[#9CA3AF] group-hover:border-qms-primary" />
+      <span className="min-w-0 flex-1"><strong className="block text-[15px] text-qms-dark">Procede</strong><small className="mt-1 block text-[13px] leading-snug text-qms-muted">Continúa con el flujo.</small></span>
+      <ArrowRight aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-muted" />
+    </button>
+    <button type="button" data-case-evaluation-choice="no-procede" onClick={() => openEvaluationDecision('no_procede')}
+      disabled={workflowPending || editing || !publicacionVerificada}
+      className="group flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-lg border border-[#CFD4DA] bg-white px-3.5 py-3 text-left transition-colors hover:border-qms-primary hover:bg-[#EAF1FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
+      <span aria-hidden="true" className="mt-1 size-4 shrink-0 rounded-full border-2 border-[#9CA3AF] group-hover:border-qms-primary" />
+      <span className="min-w-0 flex-1"><strong className="block text-[15px] text-qms-dark">No procede</strong><small className="mt-1 block text-[13px] leading-snug text-qms-muted">Cierra la queja con su justificación.</small></span>
+      <ArrowRight aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-muted" />
+    </button>
   </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
   const processSteps = getCaseProcessCycle(queja).steps
@@ -708,10 +718,10 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
-      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
+      headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader chevrons queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
-      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout
+      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn
         request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
         requestFooter={<div className="space-y-4">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0">
@@ -728,7 +738,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
-          {workflowActions}
+          {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-3">
+            <div className="min-w-0"><p className="mb-2 text-sm font-semibold text-qms-dark">Área afectada</p>{areaControl}</div>
+            <p className="mt-2 text-sm font-semibold text-qms-dark">Resultado de la evaluación</p>
+            {workflowActions}
+          </div>}
+          {estadoActual !== 'Recibido' && workflowActions}
           {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
           {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"
             className="min-h-10 w-full" disabled={workflowPending || editing}
