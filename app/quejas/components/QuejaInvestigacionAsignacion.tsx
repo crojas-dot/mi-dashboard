@@ -39,7 +39,7 @@ export default function QuejaInvestigacionAsignacion({
           <h4 className="mb-2 flex items-center gap-2 font-semibold text-qms-dark">
             <ClipboardList aria-hidden="true" className="size-4 text-qms-primary" /> Justificación de Calidad
           </h4>
-          <RichTextContent value={instrucciones} format={instruccionesFormato} />
+          <div data-case-reading-text><RichTextContent value={instrucciones} format={instruccionesFormato} /></div>
         </section> : asignacionLoading ? <p className="text-sm text-qms-muted">Consultando detalles de la asignación…</p>
         : <p className="text-sm text-qms-muted">Sin justificación registrada para esta asignación.</p>}
       {asignacionError && <p role="alert" className="text-sm text-qms-danger">No se pudieron consultar los archivos vinculados a la asignación.</p>}
