@@ -23,15 +23,16 @@ import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaNotas } from '@/hooks/useQuejaNotas'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
-import { CaseWorkspaceNavigation, CaseRequestHeader, CaseReadOnlyHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseWorkspaceNavigation, CaseReadOnlyHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
 import { CaseTriageSummary, CaseTriageNextStep, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
-import QuejaNotasPanel, { QuejaNotasCard } from '@/components/quejas/QuejaNotasPanel'
+import QuejaNotasPanel from '@/components/quejas/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
+import QuejaClienteDropdown from '@/components/quejas/QuejaClienteDropdown'
 import { caseDate, caseDeadline, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -423,17 +424,24 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
       title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="quality"
-      headerSubtitle={<span className="block max-w-[245px] truncate text-[13px] leading-5 text-[#343A40]" title={queja.cliente_nombre || ''}>{queja.cliente_nombre || 'Solicitante sin nombre'}</span>}
+      headerSubtitle={<QuejaClienteDropdown queja={queja} />}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{isExpanded ? cicloEncabezado : cicloMostrado}</div></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
         cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn
-        request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
-        requestFooter={isExpanded && <div className="space-y-4">
-          {etapa === 'resolucion' && cardAdjuntos}
-          <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
-        </div>}
+        requestFooter={isExpanded && <div className="space-y-2">
+          {etapa === 'resolucion' && <button type="button" data-investigation-files-card onClick={abrirAdjuntos}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Mis adjuntos <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!archivosCargando && !archivosError ? archivos.propios.length : '—'}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>}
+          <button type="button" data-investigation-notes-card onClick={abrirNotas}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Historial y notas <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!actividadLoading && !actividadError ? notasInvestigacion.length : '—'}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>
+        </div>
         compact={cicloMostrado} cycle={cicloMostrado}
         action={isExpanded && <div className="space-y-4"><section className="min-w-0">
           <p className="mb-3 text-xs font-semibold tracking-[0.06em] text-qms-muted">ACCIONES DEL RESPONSABLE</p>
