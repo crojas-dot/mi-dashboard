@@ -628,14 +628,14 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const requestDocument = <section data-case-client-document className="min-w-0 px-6 py-8 sm:px-10 sm:py-10 lg:px-12">
     <div className="mx-auto w-full max-w-[870px]">
       <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-qms-dark sm:text-[30px]">Descripción del cliente</h2>
-      <div data-case-reading-copy className="mt-6 max-w-[760px]"><p className="whitespace-pre-wrap break-words text-base leading-[1.7]">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
+      <div data-case-reading-copy className="mt-6"><p data-case-reading-text className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
       <div className="mt-7 max-w-[760px] border-t border-qms-border pt-4">
         <h3 className="mb-3 text-[17px] font-semibold text-qms-primary">Adjuntos del cliente · {adjuntosCliente.length}</h3>
         {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
       </div>
     </div>
   </section>
-  const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
+  const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><div data-case-reading-text><RichTextContent value={analysis.value} format={analysis.format} /></div></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><div data-case-reading-text><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
   const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
   const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
   const clienteTab = terminalDocument && publicacionDisponible && documentTab === 'cliente'
@@ -683,19 +683,19 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const readOnlyDocument = readOnlyStage && <div data-case-stage-readonly className="min-w-0">
     <CaseReadOnlyHeader etapa={historicalTitle} onReturn={() => setReadOnlyStage(null)} />
     {readOnlyStage === 'evaluation' && <CaseSection variant="document" title="Solicitud del cliente">
-      <p className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
+      <p data-case-reading-text className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p>
       <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Adjuntos del cliente · {adjuntosCliente.length}</h4>{soloLecturaFiles(adjuntosCliente)}</div>
 
     </CaseSection>}
     {readOnlyStage === 'investigation' && <CaseSection variant="document" title="Investigación">
-      {analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium">Análisis registrado</h4><RichTextContent value={analysis.value} format={analysis.format} /></div>}
-      {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Aún no hay propuesta registrada.</p>}
+      {analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium">Análisis registrado</h4><div data-case-reading-text><RichTextContent value={analysis.value} format={analysis.format} /></div></div>}
+      {queja.resolucion ? <div data-case-reading-text><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div> : <p className="text-sm text-qms-muted">Aún no hay propuesta registrada.</p>}
       <div className="mt-5 border-t border-qms-border pt-4"><h4 className="mb-3 text-sm font-medium">Archivos internos</h4>{soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}</div>
 
     </CaseSection>}
     {readOnlyStage === 'quality_review' && <>
       <CaseSection variant="document" title="Propuesta del responsable">
-        {queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">Todavía no hay una propuesta enviada para revisar.</p>}
+        {queja.resolucion ? <div data-case-reading-text><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div> : <p className="text-sm text-qms-muted">Todavía no hay una propuesta enviada para revisar.</p>}
       </CaseSection>
       <CaseSection variant="document" title="Adjuntos de la investigación">
         {soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}
@@ -802,7 +802,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </CaseAction>}>
             {readOnlyStage ? readOnlyDocument : qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
-                <div data-case-reading-copy>{queja.resolucion ? <RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
+                <div data-case-reading-copy>{queja.resolucion ? <div data-case-reading-text><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div> : <p className="text-sm text-qms-muted">No hay una propuesta registrada para revisar.</p>}</div>
               </CaseSection>
               <CaseSection variant="document" title="Adjuntos de la investigación">
                 {soloLecturaFiles(adjuntos.filter(item => !!item.usuario_id))}
