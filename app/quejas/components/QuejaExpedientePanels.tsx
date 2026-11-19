@@ -249,7 +249,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
       {flow.steps.map((step, position) => {
         const selected = selectedStage === step.id
         const active = (step.current && !selectedStage) || selected
-        const color = active ? 'bg-white font-semibold text-qms-primary' : step.current ? 'bg-white/30 font-semibold text-white' : step.completed ? 'bg-white/20 font-semibold text-white' : 'bg-white/10 text-white/85'
+        const color = active ? 'bg-[#2A61B0] font-semibold text-white' : step.current ? 'bg-[#D9E5F5] font-semibold text-[#174574]' : step.completed ? 'bg-[#D3D5D8] font-semibold text-[#333333]' : 'bg-white/75 text-[#4B5563]'
         const clipPath = position === 0
           ? 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%)'
           : 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)'
