@@ -43,7 +43,7 @@ export function CaseSection({ title, children, headerActions, variant = 'panel',
   // 'plain': barras laterales silenciosas, sin tarjeta ni borde.
   // 'panel': tarjeta independiente (Actividad, revisión, Mis Quejas).
   if (variant === 'plain') return <section className="min-w-0"><h3 className="mb-3 text-xs font-semibold tracking-wide text-qms-muted uppercase">{title}</h3>{children}</section>
-  return <section className={variant === 'document' ? 'min-w-0 px-5 py-5 sm:px-8 sm:py-6' : 'ui-panel min-w-0 p-4 sm:p-5'}><div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2"><div>{source && <p className={`mb-1 text-xs font-medium ${source === 'Cliente' ? 'text-qms-muted' : 'text-qms-primary'}`}>{source}</p>}<h3 className="text-base font-semibold text-qms-dark">{title}</h3></div>{headerActions}</div>{children}</section>
+  return <section data-case-document-section={variant === 'document' || undefined} className={variant === 'document' ? 'min-w-0 px-5 py-5 sm:px-8 sm:py-6' : 'ui-panel min-w-0 p-4 sm:p-5'}><div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2"><div>{source && <p className={`mb-1 text-xs font-medium ${source === 'Cliente' ? 'text-qms-muted' : 'text-qms-primary'}`}>{source}</p>}<h3 className="text-base font-semibold text-qms-dark">{title}</h3></div>{headerActions}</div>{children}</section>
 }
 
 /** Mantiene el contacto disponible sin ocupar el espacio de lectura del documento. */
