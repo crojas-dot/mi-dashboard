@@ -78,7 +78,15 @@ function QuejaClienteDropdown({ queja }: { queja: Queja }) {
     return () => document.removeEventListener('mousedown', outside)
   }, [open])
 
-  return <div ref={rootRef} data-case-client-dropdown className="relative min-w-0 max-w-[250px]">
+  return <div ref={rootRef} data-case-client-dropdown className="relative min-w-0 max-w-[250px]"
+    onKeyDown={event => {
+      if (open && event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        setOpen(false)
+        buttonRef.current?.focus()
+      }
+    }}>
     <button ref={buttonRef} type="button" aria-haspopup="dialog" aria-expanded={open}
       aria-controls={open ? 'queja-cliente-datos' : undefined}
       onClick={() => setOpen(value => !value)}
@@ -87,14 +95,6 @@ function QuejaClienteDropdown({ queja }: { queja: Queja }) {
       <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div id="queja-cliente-datos" role="dialog" aria-label="Datos del solicitante"
-      onKeyDown={event => {
-        if (event.key === 'Escape') {
-          event.preventDefault()
-          event.stopPropagation()
-          setOpen(false)
-          buttonRef.current?.focus()
-        }
-      }}
       className="absolute top-full left-0 z-50 mt-3 w-[min(350px,calc(100vw-2rem))] rounded-lg border border-qms-border bg-white p-4 text-qms-dark shadow-xl">
       <div className="mb-3 flex items-center justify-between gap-2 border-b border-qms-border pb-2.5">
         <p className="text-sm font-semibold text-qms-dark">Datos del solicitante</p>
