@@ -52,8 +52,8 @@ export default function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
         <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-md">
-          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-5 sm:px-8">
-            <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
+          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-3 sm:px-8">
+            <div aria-hidden="true" className="size-12 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
               <EmpresaLogo url={logo} className="size-full" />
             </div>
             <div className="min-w-0">
