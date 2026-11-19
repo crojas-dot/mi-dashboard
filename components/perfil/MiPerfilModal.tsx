@@ -10,12 +10,11 @@ import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Switch from '@/components/ui/Switch'
 import Tabs from '@/components/ui/Tabs'
-import Badge from '@/components/ui/Badge'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { SONIDO_DEFAULT, SONIDOS_NOTIFICACION, playNotificationSound } from '@/lib/services/sonidosNotificacion'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import { getRoleLabel, getRoleVariant } from '@/lib/constants/roles'
+import { getRoleLabel } from '@/lib/constants/roles'
 import { AVATAR_ACCEPT, AVATAR_UPLOAD_BYTES } from '@/lib/constants/avatar'
 import { captureQueryContext } from '@/lib/queries/queryContextScope'
 import { cambiarClavePerfil, cambiarFotoPerfil, tokenPerfil } from '@/lib/services/miPerfilService'
@@ -198,7 +197,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
     detalles: <form id="mi-perfil-panel-detalles" role="tabpanel" aria-labelledby="mi-perfil-tab-detalles"
         hidden={tab !== 'detalles'} onSubmit={guardarNombre} className="mx-auto max-w-4xl">
       <div data-mi-perfil-detalles className="flex min-w-0 flex-col items-start gap-5 sm:flex-row sm:gap-7">
-        <aside className="flex w-full shrink-0 flex-col items-center gap-3 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-44">
+        <aside className="flex w-full shrink-0 flex-col items-center gap-2.5 rounded-card border border-qms-border bg-qms-panel-soft p-4 sm:w-56">
           <div className="relative">
             <FotoPerfil url={fotoUrl} hasPhoto={!!user.avatarUrl} initials={inicial} size={96}
               className="size-24 border-4 border-qms-surface bg-qms-primary/15 text-3xl font-semibold text-qms-primary shadow-sm" />
@@ -216,19 +215,17 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
             }
             setBorradorFoto({ archivo: file, url: URL.createObjectURL(file) })
           }} />
-          <p className="text-center text-xs leading-relaxed text-qms-muted">
-            Recomendado: 320 × 320 px (cuadrado), JPG o WebP de buena calidad. Máximo 2 MB de origen; se optimiza automáticamente.
-          </p>
           <div className="flex flex-wrap justify-center gap-1">
             <Button variant="link" size="sm" loading={fotoOperation.operation === 'subir'} disabled={!!fotoOperation.operation}
               onClick={() => inputFoto.current?.click()}>{user.avatarUrl ? 'Cambiar foto' : 'Subir foto'}</Button>
             {user.avatarUrl && <Button variant="ghost" size="sm" loading={fotoOperation.operation === 'quitar'} disabled={!!fotoOperation.operation}
               onClick={() => { void cambiarFoto(null) }}>Quitar</Button>}
           </div>
-          <div className="text-center">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-qms-muted">Rol actual</p>
-            <p className="mt-1 text-sm font-semibold text-qms-dark">{getRoleLabel(user.rol)}</p>
-          </div>
+          <p className="text-center text-sm font-semibold text-qms-dark">{getRoleLabel(user.rol)}</p>
+          <p className="text-center text-[12px] leading-5 text-qms-muted">
+            <span className="block whitespace-nowrap">JPG o WebP · Máx. 2 MB</span>
+            <span className="block whitespace-nowrap">Tamaño sugerido: 320 × 320 px</span>
+          </p>
         </aside>
         <div className="min-w-0 flex-1 space-y-4 rounded-card border border-qms-border bg-qms-surface p-4 shadow sm:p-5">
           {nombreError && <p role="alert" className="rounded-card border border-qms-danger/30 bg-qms-danger/5 p-2.5 text-sm text-qms-danger">{nombreError}</p>}
@@ -240,10 +237,6 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
           <Field id="mi-perfil-correo" label="Correo electrónico" hint="El correo de acceso lo administra Calidad desde Usuarios.">
             <Input id="mi-perfil-correo" name="email" type="email" value={user.email} readOnly disabled className="shadow border-qms-muted/40" />
           </Field>
-          <div className="flex flex-wrap items-center gap-2 rounded-card border border-qms-border bg-qms-hover-bg px-3 py-2.5">
-            <span className="text-xs font-medium text-qms-muted">Rol en el sistema</span>
-            <Badge variant={getRoleVariant(user.rol)}>{getRoleLabel(user.rol)}</Badge>
-          </div>
         </div>
       </div>
     </form>,
@@ -323,7 +316,7 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
 
   return (
     <>
-    <Modal open={open} onClose={onClose} title="Mi perfil" size="mail" variant="document" height="fill"
+    <Modal open={open} onClose={onClose} title="Mi perfil" size="mail" variant="document" height="fill" headerTone="profile"
       footer={<div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-qms-muted">Los cambios del nombre se aplican al guardar.</p>
         <div className="flex items-center gap-2">

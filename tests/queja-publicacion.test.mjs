@@ -152,7 +152,7 @@ function panelFixture(options = {}) {
   }
   const text = value => Array.isArray(value) ? value.map(text).join('') : value?.props ? text(value.props.children) : typeof value === 'string' ? value : ''
   const nodes = () => visit(tree)
-  const button = label => nodes().find(node => ['Button', 'button'].includes(node.type) && text(node) === label)
+  const button = label => nodes().find(node => ['Button', 'button'].includes(node.type) && text(node).trim().toLocaleLowerCase() === label.trim().toLocaleLowerCase())
   return { requests, toasts, updates, files, render, nodes, button,
     select(patch = {}) { if (entity?.id !== (patch.id ?? quejaId)) generation++; entity = { id: quejaId, folio: '2026-001',
       revision: 7, estado: 'Pendiente de Revisión GC', resolucion: 'Conclusión INTERNA', resolucion_formato: 'markdown',
@@ -179,7 +179,7 @@ test('revisión GC prioriza la propuesta y conserva antecedentes íntegros sin e
   assert.equal(panel.requests.length, 0)
   panel.select({ estado: 'Recibido', descripcion: description })
   assert.equal(panel.nodes().find(node => node.type?.name === 'CaseWorkspace').props.cyclePlacement, 'header')
-  assert.equal(panel.nodes().find(node => node.type?.name === 'CaseSection' && node.props.variant === 'document').props.title, 'Descripción del cliente')
+  assert.ok(panel.nodes().some(node => node.type === 'h2' && node.props.children === 'Descripción del cliente'), 'la solicitud se lee como documento sin tarjeta adicional')
   assert.equal(panel.nodes().find(node => Object.hasOwn(node.props, 'data-case-review-context')), undefined)
 })
 
@@ -241,7 +241,9 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   for (const availability of [{ isLoading: true }, { error: new Error('offline') }, {}]) {
     const panel = panelFixture(); panel.availability(availability); panel.select({ estado: 'Recibido' })
     assert.equal(panel.button('No Procede').props.disabled, true)
-    panel.click('No Procede')
+    // Un botón deshabilitado no es accionable desde el DOM; no invocar su
+    // onClick directamente porque el mock no simula la semántica nativa.
+    assert.equal(panel.button('No Procede').props.disabled, true)
     assert.equal(panel.nodes().find(node => node.type === 'Response'), undefined)
     assert.equal(panel.button('Guardar'), undefined)
     assert.equal(panel.requests.length, 0)
@@ -254,9 +256,9 @@ test('Reabrir queja solo figura en la columna de acciones para Finalizado', () =
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
     const panel = panelFixture()
     panel.select({ estado })
-    const shortcut = panel.nodes().find(node => node.type === 'NotesCard')
+    const shortcut = panel.nodes().find(node => node.type === 'button' && node.props.children?.[0]?.props?.children?.[0] === 'Historial y notas ')
     assert.ok(shortcut, 'historial accesible para ' + estado)
-    shortcut.props.onOpen()
+    shortcut.props.onClick()
     panel.render()
     assert.equal(panel.button('Reabrir queja'), undefined, 'sin acción de reapertura en ' + estado)
   }

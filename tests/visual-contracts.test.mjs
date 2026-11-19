@@ -44,9 +44,23 @@ test('diálogo y botón usan sus tokens compartidos sin hex locales', () => {
   const button = Button({ children: 'Nueva queja' })
   const recipes = fs.readFileSync('app/styles/components.css', 'utf8')
 
-  assert.match(header.props.className, /\bbg-qms-dark\b/)
+  assert.match(header.props.className, /\bbg-qms-table-head\b/)
   assert.match(button.props.className, /\bui-button-primary\b/)
   assert.match(recipes, /@utility ui-button-primary\s*\{\s*@apply border-qms-primary bg-qms-primary text-white;/)
+})
+
+test('todas las cabeceras de modal interno comparten el gris de la tabla, sin fondo oscuro heredado', () => {
+  for (const variant of ['dialog', 'document', 'report', 'workspace', 'confirmation']) {
+    for (const headerTone of ['default', 'profile', 'activity', 'quality']) {
+      const { dialog } = modalFixture({ variant, headerTone })
+      const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
+      assert.match(header.props.className, /bg-qms-table-head/)
+      assert.equal(header.props.style, undefined)
+      assert.doesNotMatch(header.props.className, /bg-qms-dark|text-white!/)
+    }
+  }
+  const visor = fs.readFileSync('components/quejas/AdjuntoPreviewModal.tsx', 'utf8')
+  assert.match(visor, /border-b border-qms-border bg-qms-table-head/)
 })
 
 test('Select permite que un ancho de wrapper específico reemplace el ancho de 100%', () => {
@@ -361,7 +375,7 @@ test('el documento conserva altura fija y encabezado de lectura desde la primera
   const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
   assert.match(dialog.props.className, /\bh-\[90dvh\]/)
   assert.match(dialog.props.className, /\bmax-w-\[1040px\]/)
-  assert.match(header.props.className, /\bbg-qms-surface\b/)
+  assert.match(header.props.className, /\bbg-qms-table-head\b/)
   assert.doesNotMatch(header.props.className, /\bbg-qms-dark\b/)
 })
 
@@ -394,7 +408,7 @@ test('los diálogos usan cabecera clara y la variante alta reserva espacio a la 
   const { dialog } = modalFixture({ tall: true, variant: 'dialog' })
   const header = dialog.props.children.find(child => child?.props?.['data-modal-header'])
   assert.match(dialog.props.className, /h-\[min\(76dvh,720px\)\]/)
-  assert.match(header.props.className, /bg-qms-surface/)
+  assert.match(header.props.className, /bg-qms-table-head/)
   assert.doesNotMatch(header.props.className, /bg-qms-dark/)
   assert.match(dialog.props.children[1].props.className, /flex min-h-0 flex-1 flex-col overflow-hidden/)
 
@@ -487,7 +501,7 @@ test('la confirmación de cambios usa un diálogo compacto claro y bloquea el ci
   assert.equal(titleGroup.props.children[0], undefined)
   assert.equal(titleGroup.props.children[1].props.children, 'Expediente')
   assert.match(titleGroup.props.children[1].props.className, /\btext-lg\b/)
-  assert.match(header.props.className, /\bbg-white\b/)
+  assert.match(header.props.className, /\bbg-qms-table-head\b/)
   assert.equal(actions.props.children.at(-1).props['aria-label'], 'Cerrar Expediente')
   assert.ok(dialog.props.children.some(child => child?.props?.className === 'min-h-0 flex-1 overflow-y-auto bg-white'))
   const overlay = { getBoundingClientRect: () => ({ left: 10, top: 10, right: 100, bottom: 100 }) }

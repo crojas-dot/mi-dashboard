@@ -23,15 +23,16 @@ import { useEntityRequestGuard } from '@/hooks/useEntityRequestGuard'
 import { useQuejaNotas } from '@/hooks/useQuejaNotas'
 import { useQuejaAttachmentActions } from '@/hooks/useQuejaAttachmentActions'
 import { useQuejaAssistant } from '@/app/mis-quejas/components/useQuejaAssistant'
-import { CaseWorkspaceNavigation, CaseRequestHeader, CaseReadOnlyHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseWorkspaceNavigation, CaseReadOnlyHeader, CaseSection, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionResumen from '@/app/mis-quejas/components/QuejaInvestigacionResumen'
 import { CaseTriageSummary, CaseTriageNextStep, CaseTriageFooter } from '@/app/quejas/components/CaseTriageSummary'
 import { useQuejaDevoluciones } from '@/lib/queries/useQuejaDevoluciones'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import QuejaAnalisisPanel from '@/app/mis-quejas/components/QuejaAnalisisPanel'
-import QuejaNotasPanel, { QuejaNotasCard } from '@/components/quejas/QuejaNotasPanel'
+import QuejaNotasPanel from '@/components/quejas/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
+import QuejaClienteDropdown from '@/components/quejas/QuejaClienteDropdown'
 import { caseDate, caseDeadline, type CaseTriageNextStepData } from '@/app/quejas/components/quejaExpedienteModel'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -359,7 +360,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             : <p className="text-sm text-qms-muted">Sin propuesta registrada.</p>}
         </CaseSection>
   const lectura = cuerpoLectura && <div data-case-stage-readonly={historica ? true : undefined}
-    className="min-w-0 overflow-hidden rounded-card border border-qms-border bg-qms-surface">
+    className={isExpanded ? 'min-w-0 bg-qms-surface' : 'min-w-0 overflow-hidden rounded-card border border-qms-border bg-qms-surface'}>
     {historica && <CaseReadOnlyHeader etapa={ciclo.etapas.find(paso => paso.id === etapa)?.label ?? etapa} onReturn={() => cambiarEtapa(ciclo.actual)} />}
     {cuerpoLectura}
   </div>
@@ -401,6 +402,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     </div>}
   </CaseTriageSummary>
   const cicloMostrado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} />
+  const cicloEncabezado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} chevrons />
 
   return <>
     <Modal open onClose={panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose}
@@ -421,19 +423,28 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded}
-      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{cicloMostrado}</div></div>}
+      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="quality"
+      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} />}
+      headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{isExpanded ? cicloEncabezado : cicloMostrado}</div></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
-        cyclePlacement="header" presentation="reference" documentStyle="cards" readingLayout
-        request={<CaseRequestHeader key={queja.id} queja={queja} variant={isExpanded ? 'panel' : 'details'} reference />}
-        requestFooter={isExpanded && <div className="space-y-4">
-          {etapa === 'resolucion' && cardAdjuntos}
-          <QuejaNotasCard notas={notasInvestigacion} loading={actividadLoading} error={!!actividadError} onOpen={abrirNotas} />
+        cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn
+        requestFooter={isExpanded && <div className="space-y-2">
+          {etapa === 'resolucion' && <button type="button" data-investigation-files-card aria-label="Ver mis adjuntos" onClick={abrirAdjuntos}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Mis adjuntos <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!archivosCargando && !archivosError ? archivos.propios.length : '—'}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>}
+          <button type="button" data-investigation-notes-card onClick={abrirNotas}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Historial y notas <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!actividadLoading && !actividadError ? notasInvestigacion.length : '—'}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>
         </div>}
         compact={cicloMostrado} cycle={cicloMostrado}
         action={isExpanded && <div className="space-y-4"><section className="min-w-0">
+          <p className="mb-3 text-xs font-semibold tracking-[0.06em] text-qms-muted">ACCIONES DEL RESPONSABLE</p>
           <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold"><ClipboardCheck aria-hidden="true" className="size-4 text-qms-primary" />{historica ? 'Etapa actual' : 'Acción actual'}</h3>
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={variante}>{badgeEstado}</Badge>
@@ -452,14 +463,16 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             </Button>}
           </div>}
           {editable && errorResolucion && <p role="alert" className="mt-3 text-sm text-qms-danger">{errorResolucion}</p>}
-        </section>{avisoDevolucion}</div>}>
+        </section></div>}>
+        <div data-mis-quejas-reading-column className="mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-[#F3F6FB] px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6 lg:px-8">
         {isExpanded && lectura}
-        {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0">
+        {isExpanded && avisoDevolucion && <div className="mt-5">{avisoDevolucion}</div>}
+        {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(420px,calc(100dvh-95px),820px)] min-w-0">
           <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
             style={resolutionOverlay ?? undefined}
-            className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
+            className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-white shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-2 sm:px-5">
+          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D3DAE4] bg-[#EFF1F4] px-4 py-2 sm:px-5">
             <span className="text-sm font-medium text-qms-muted">Borrador guardado</span>
             <Button data-resolution-edit size="sm" variant="secondary"
               title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
@@ -505,7 +518,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 {resolutionOverlay ? <Minimize aria-hidden="true" className="size-5" /> : <Maximize aria-hidden="true" className="size-5" />}
               </Button>
             </div> : undefined}
-            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#f2f7fd]" /></div>
+            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#EFF1F4]" /></div>
           <div data-resolution-footer className="sticky bottom-0 z-20 flex shrink-0 min-w-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>
@@ -526,6 +539,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           </div>
           </div>
         </div>}
+        </div>
       </CaseWorkspace>
       <QuejaAdjuntosInvestigacion open={panelAdjuntos} folio={queja.folio} onClose={cerrarAdjuntos}
         adjuntos={archivos.propios} loading={archivosCargando} error={archivosError}

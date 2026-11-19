@@ -149,7 +149,7 @@ function AdjuntoPreviewVisit({ adjunto, onClose }: { adjunto: QuejaAdjunto; onCl
     onCancel={event => { event.preventDefault(); event.stopPropagation(); onClose() }}
     onMouseDown={event => { backdropDown.current = outside(event) }}
     onClick={event => { if (backdropDown.current && outside(event)) onClose(); backdropDown.current = false }}>
-    <div className="flex shrink-0 items-center gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark">
+    <div className="flex shrink-0 items-center gap-2 border-b border-qms-border bg-qms-table-head px-4 py-2.5 text-qms-dark">
       <FileText className="h-4 w-4 shrink-0 text-qms-primary" aria-hidden="true" />
       <span id={titleId} className="min-w-0 flex-1 select-text truncate text-sm font-semibold">{adjunto.nombre}</span>
       <span className="hidden whitespace-nowrap text-xs text-qms-muted sm:inline">{formatBytes(adjunto.tamano)}</span>

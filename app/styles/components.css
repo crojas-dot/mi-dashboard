@@ -89,6 +89,12 @@
   }
 }
 
+/* Mis Quejas: mismo fondo mate del panel Acciones del responsable.
+   Editor/hoja blancos y una sola barra de edición gris, sin marcos adicionales. */
+[data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
+  background: #F3F6FB;
+}
+
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
    así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
@@ -109,7 +115,8 @@
   min-height: 44px;
   flex-wrap: wrap;
   overflow: visible;
-  background: var(--color-qms-surface);
+  background: #EFF1F4;
+  border-bottom-color: #D3DAE4;
   border-start-start-radius: var(--radius-card);
   border-start-end-radius: var(--radius-card);
 }
@@ -122,6 +129,13 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  background: #FFFFFF;
+}
+
+/* Más aire para la redacción sin mover el placeholder ni modificar el
+   contenido del editor compartido con los demás módulos. */
+[data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
+  padding: 20px 24px 28px;
 }
 
 /* La barra ya tiene su propio border-bottom: no dibujar otra línea dentro
@@ -130,14 +144,15 @@
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(70ch + 4rem);
+  max-width: calc(70ch + 3rem);
   margin-inline: auto;
 }
 
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
   left: 50%;
   right: auto;
-  width: min(calc(100% - 2.5rem), 70ch);
+  width: min(calc(100% - 3rem), 70ch);
+  top: 20px;
   transform: translateX(-50%);
 }
 
@@ -147,9 +162,62 @@
   margin-inline: auto;
 }
 
+/* Quejas ampliadas: limitar únicamente párrafos, no la hoja, títulos, separadores
+   ni las cuadrículas de adjuntos. Mis quejas mantiene su ancho anterior. */
+[data-case-quality-two-columns="true"] [data-case-reading-copy] {
+  max-width: none;
+  margin-inline: 0;
+}
+[data-case-quality-two-columns="true"] [data-case-reading-text] {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 72ch;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* En la lectura de Calidad, encabezados, análisis, adjuntos y separadores
+   comparten el mismo borde de inicio. La hoja sigue ocupando toda la columna. */
+[data-case-quality-two-columns="true"] [data-case-document-section="true"] > * {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 72ch;
+  margin-inline: auto;
+}
+/* Jerarquía tipográfica de documentos de Quejas: única fuente de verdad
+   para lectura ampliada, sin cambiar tamaños de otros módulos ni controles. */
+[data-case-quality-two-columns="true"] [data-case-document-section="true"] > div:first-child h3 {
+  font-size: 1.375rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--color-qms-dark);
+}
+
+[data-case-quality-two-columns="true"] [data-case-document-section="true"] h4 {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  font-weight: 600;
+}
+
+[data-case-quality-two-columns="true"] [data-case-reading-text] {
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--color-qms-dark);
+}
+
+[data-case-quality-two-columns="true"] [data-case-reading-text] > div {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+[data-case-quality-two-columns="true"] [data-case-reading-text] :is(p, li, blockquote) {
+  line-height: 1.55;
+}
+
 @media (min-width: 640px) {
   [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
-    width: min(calc(100% - 4rem), 70ch);
+    width: min(calc(100% - 3rem), 70ch);
   }
 }
 

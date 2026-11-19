@@ -51,8 +51,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
-        <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border bg-qms-surface shadow-md">
-          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-5 sm:px-8">
+        <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border shadow-md" style={{ backgroundColor: "rgb(255 255 255 / 96%)" }}>
+          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-1.5 sm:px-8">
             <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
               <EmpresaLogo url={logo} className="size-full" />
             </div>
@@ -116,7 +116,7 @@ export default function LoginPage() {
             </form>
           </div>
 
-          <div className="rounded-b-card border-t border-qms-border bg-qms-hover-bg px-6 py-4 text-center text-sm text-qms-muted">
+          <div className="rounded-b-card border-t border-qms-border bg-transparent px-6 py-4 text-center text-sm text-qms-muted">
             ¿Necesitas acceso o recuperar tu contraseña?{' '}
             <span className="font-medium text-qms-primary">Contacta al administrador.</span>
           </div>

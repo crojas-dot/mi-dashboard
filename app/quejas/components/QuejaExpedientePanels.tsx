@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useLayoutEffect, useRef, type ReactNode } from 'react'
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Eye, Info, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, Eye, Mail, Maximize2, Minimize2, Phone, Tag, UserRound } from 'lucide-react'
 import QuejaPlazoIndicator from '@/components/quejas/QuejaPlazoIndicator'
 import Badge from '@/components/ui/Badge'
 import { varianteEstado } from '@/lib/constants/estados'
@@ -43,7 +43,7 @@ export function CaseSection({ title, children, headerActions, variant = 'panel',
   // 'plain': barras laterales silenciosas, sin tarjeta ni borde.
   // 'panel': tarjeta independiente (Actividad, revisión, Mis Quejas).
   if (variant === 'plain') return <section className="min-w-0"><h3 className="mb-3 text-xs font-semibold tracking-wide text-qms-muted uppercase">{title}</h3>{children}</section>
-  return <section className={variant === 'document' ? 'min-w-0 px-5 py-5 sm:px-8 sm:py-6' : 'ui-panel min-w-0 p-4 sm:p-5'}><div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2"><div>{source && <p className={`mb-1 text-xs font-medium ${source === 'Cliente' ? 'text-qms-muted' : 'text-qms-primary'}`}>{source}</p>}<h3 className="text-base font-semibold text-qms-dark">{title}</h3></div>{headerActions}</div>{children}</section>
+  return <section data-case-document-section={variant === 'document' || undefined} className={variant === 'document' ? 'min-w-0 px-5 py-5 sm:px-8 sm:py-6' : 'ui-panel min-w-0 p-4 sm:p-5'}><div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2"><div>{source && <p className={`mb-1 text-xs font-medium ${source === 'Cliente' ? 'text-qms-muted' : 'text-qms-primary'}`}>{source}</p>}<h3 className="text-base font-semibold text-qms-dark">{title}</h3></div>{headerActions}</div>{children}</section>
 }
 
 /** Mantiene el contacto disponible sin ocupar el espacio de lectura del documento. */
@@ -100,7 +100,7 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean }) {
+export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const centerRef = useRef<HTMLDivElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
@@ -129,10 +129,12 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
     }
   }, [presentation, expanded])
   const comfortableReading = readingLayout && expanded && presentation === 'reference'
-  const referenceColumns = comfortableReading
-    ? '@min-[1100px]:grid-cols-[240px_minmax(0,1fr)_270px] @min-[1360px]:grid-cols-[280px_minmax(0,1fr)_300px] @min-[1100px]:gap-6 @min-[1100px]:px-6'
-    : '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
-  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" data-case-reading-layout={comfortableReading || undefined} className={`@container flex min-h-0 flex-1 flex-col overflow-hidden bg-qms-hover-bg select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
+  const referenceColumns = qualityTwoColumn
+    ? '@min-[1100px]:grid-cols-[minmax(0,1fr)_360px] @min-[1100px]:gap-0 @min-[1100px]:px-0'
+    : comfortableReading
+      ? '@min-[1100px]:grid-cols-[240px_minmax(0,1fr)_270px] @min-[1360px]:grid-cols-[280px_minmax(0,1fr)_300px] @min-[1100px]:gap-6 @min-[1100px]:px-6'
+      : '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
+  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" data-case-reading-layout={comfortableReading || undefined} data-case-quality-two-columns={qualityTwoColumn || undefined} className={`@container flex min-h-0 flex-1 flex-col overflow-hidden ${qualityTwoColumn && expanded ? 'bg-white' : 'bg-qms-hover-bg'} select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
     {/* En escritorio el círculo ocupa el margen de página y su etiqueta se alinea con Descripción. */}
     {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b border-qms-border bg-qms-surface py-3 ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${comfortableReading ? 'mx-auto max-w-[1500px]' : ''} ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
     {cyclePlacement === 'header' && expanded && <div data-case-mobile-cycle className="shrink-0 border-b border-qms-border bg-qms-surface px-3 py-2 @min-[1100px]/workspace:hidden">{cycle}</div>}
@@ -140,15 +142,25 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
     {/* No desmontar las columnas ni Tiptap: ocultar el mismo árbol durante el triaje. */}
     <div data-case-frame style={!expanded && compactContent ? { display: 'none' } : undefined} className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
       {/* En escritorio la cuadrícula queda fija. En móvil se desplaza el conjunto apilado. */}
-      <div ref={scrollRef} data-case-scroll data-case-stack-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? 'bg-qms-hover-bg @min-[1100px]:overflow-clip @min-[1100px]:[will-change:auto]' : 'bg-qms-surface'}`}>
-        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} @min-[1100px]:h-full @min-[1100px]:grid-rows-[minmax(0,1fr)] ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}` : ''}`}>
-          <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : ''}`}>
+      <div ref={scrollRef} data-case-scroll data-case-stack-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? qualityTwoColumn ? 'bg-white @min-[1100px]:overflow-y-auto @min-[1100px]:[will-change:auto]' : 'bg-qms-hover-bg @min-[1100px]:overflow-clip @min-[1100px]:[will-change:auto]' : 'bg-qms-surface'}`}>
+        <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${qualityTwoColumn ? 'gap-4 p-3 sm:p-4 @min-[1100px]:gap-0 @min-[1100px]:p-0 @min-[1100px]:items-start' : comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} ${qualityTwoColumn ? '@min-[1100px]:min-h-full @min-[1100px]:py-0' : `@min-[1100px]:h-full @min-[1100px]:grid-rows-[minmax(0,1fr)] ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}`}` : ''}`}>
+          {!qualityTwoColumn && <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
-          </aside>
-          <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
-            <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`}`}>{children}</main>
+          </aside>}
+          <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? qualityTwoColumn ? '@min-[1100px]:order-none @min-[1100px]:overflow-visible' : '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
+            <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? '@min-[1100px]:min-h-[calc(100dvh-70px)] bg-white' : ''}`}`}>{children}</main>
           </div>
-          <aside data-case-action className={`order-1 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>{action}</aside>
+          <aside data-case-action className={`order-1 min-w-0 ${qualityTwoColumn ? 'bg-[#F3F6FB] p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start @min-[1100px]:overflow-visible @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5' : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
+            {action}
+            {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
+              <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTA QUEJA</p>
+              {requestFooter && <div className="mt-2 space-y-2">{requestFooter}</div>}
+              {request && <details className="mt-4 rounded-lg border border-[#DADCE0] bg-white">
+                <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-qms-dark">Datos del solicitante</summary>
+                <div className="border-t border-qms-border px-3.5 py-4">{request}</div>
+              </details>}
+            </div>}
+          </aside>
         </div>
       </div>
     </div>
@@ -189,15 +201,16 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
 }
 
 /** El progreso de lectura se reutiliza en los encabezados de Quejas y Mis Quejas. */
-export function CaseProcessHeader({ queja, selectedStage, onStageChange, disabled = false }: {
+export function CaseProcessHeader({ queja, selectedStage, onStageChange, disabled = false, chevrons = false }: {
   queja: Queja
   selectedStage?: string | null
   onStageChange?: (stage: string) => void
   disabled?: boolean
+  chevrons?: boolean
 }) {
   return <div data-case-process-header className="w-full min-w-0">
     <div className="hidden @min-[1100px]/workspace:block">
-      <CaseCycle queja={queja} process selectedStage={selectedStage} onStageChange={onStageChange} disabled={disabled} />
+      <CaseCycle queja={queja} process chevrons={chevrons} selectedStage={selectedStage} onStageChange={onStageChange} disabled={disabled} />
     </div>
   </div>
 }
@@ -226,12 +239,34 @@ export function CaseSidebarShortcut({ title, description, actionLabel, icon, onC
   </button>
 }
 
-export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, currentOnly = false, selectedStage, onStageChange, disabled = false }: {
-  queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; currentOnly?: boolean
+export function CaseCycle({ queja, audience = 'quality', compact = false, variant = 'plain', line = false, process = false, chevrons = false, currentOnly = false, selectedStage, onStageChange, disabled = false }: {
+  queja: Queja; audience?: CaseAudience; compact?: boolean; variant?: CaseSectionVariant; line?: boolean; process?: boolean; chevrons?: boolean; currentOnly?: boolean
   selectedStage?: string | null; onStageChange?: (stage: string) => void; disabled?: boolean
 }) {
   if (process) {
     const flow = getCaseProcessCycle(queja)
+    if (chevrons) return <ol data-case-chevrons aria-label={flow.label} className="flex h-9 w-full min-w-0 items-center overflow-hidden rounded-md">
+      {flow.steps.map((step, position) => {
+        const selected = selectedStage === step.id
+        const active = (step.current && !selectedStage) || selected
+        const color = active ? 'bg-[#2A61B0] font-semibold text-white' : step.current ? 'bg-[#D9E5F5] font-semibold text-[#174574]' : step.completed ? 'bg-[#E6E5E5] font-semibold text-[#1A1718]' : 'bg-white/75 text-[#4B5563]'
+        const clipPath = position === 0
+          ? 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%)'
+          : 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)'
+        const label = <span className="flex min-w-0 items-center justify-center gap-1 px-3 text-xs leading-9" title={step.label}>
+          {step.completed && <Check aria-hidden="true" className="size-3.5 shrink-0" />}
+          <span className="truncate">{step.label}</span>
+        </span>
+        return <li key={step.id} aria-current={step.current ? 'step' : undefined} className={`min-w-0 flex-1 ${position ? '-ml-2' : ''}`}>
+          {onStageChange ? <button type="button" data-case-stage={step.id} aria-label={`Consultar ${step.label} en modo solo lectura`}
+            aria-pressed={selected} disabled={disabled} title={`Consultar ${step.label} sin modificar el estado`}
+            onClick={() => onStageChange(step.id)} style={{ clipPath }}
+            className={`block h-9 w-full cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-60 ${color}`}>{label}</button>
+          : <div style={{ clipPath }} className={`h-9 w-full ${color}`}>{label}</div>}
+          {step.completed && <span className="sr-only">: completada</span>}
+        </li>
+      })}
+    </ol>
     const current = flow.steps.findIndex(step => step.current)
     const completed = flow.steps.every(step => step.completed)
     const index = current >= 0 ? current : completed ? flow.steps.length - 1 : -1
@@ -288,16 +323,11 @@ export function CaseAction({ queja, runs, children, plazoError, condensed = fals
           {deadline.vence && <QuejaPlazoIndicator deadline={deadline} className="text-xs" />}
         </div>
         {plazoError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el detalle del calendario.</p>}
-        <h4 className="mt-5 text-base font-semibold text-qms-dark">Evaluar procedencia</h4>
-        <p className="mt-2 text-sm leading-relaxed text-qms-muted">Revisa la solicitud y selecciona el resultado de la evaluación para continuar con el flujo.</p>
+        <p className="mt-2 text-xs leading-relaxed text-qms-muted">Recibida {caseDate(queja.fecha)} · Tipo: {tipoVisible(queja)}</p>
+        <h4 className="mt-4 text-base font-semibold text-qms-dark">Evaluar procedencia</h4>
+        <p className="mt-1 text-[13px] leading-snug text-qms-muted">Seleccioná el resultado para continuar.</p>
         {children && <>
-          <div className="mt-4 flex min-w-0 flex-col gap-3.5">{children}</div>
-          <div className="mt-auto pt-5">
-            <div className="flex items-start gap-2 rounded-card border border-qms-border bg-qms-primary-soft p-3 text-sm leading-relaxed text-qms-primary">
-              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              <p>Al seleccionar una opción, se abrirá el editor correspondiente para continuar con la evaluación.</p>
-            </div>
-          </div>
+          <div className="mt-3 flex min-w-0 flex-col gap-2">{children}</div>
         </>}
       </div>
     </CaseSection>

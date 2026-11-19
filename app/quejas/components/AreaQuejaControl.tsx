@@ -19,8 +19,8 @@ interface AreaQuejaControlProps {
   disabled?: boolean
 }
 
-/** Abrir muestra directamente las opciones. Elegir guarda el snapshot capturado,
- * sin cambiar revisión, oficio ni observación; el catálogo se administra aparte. */
+/** Abrir muestra directamente las opciones y la selección guarda el área.
+ * No modifica la revisión ni las decisiones de procedencia. */
 export default function AreaQuejaControl({ quejaId, area, draft, onEdit, onSave, onCancel, saving = false, disabled = false }: AreaQuejaControlProps) {
   const id = `queja-area-${quejaId}`
   const editing = Boolean(draft && draft.quejaId === quejaId)
@@ -57,13 +57,24 @@ export default function AreaQuejaControl({ quejaId, area, draft, onEdit, onSave,
       const bottomEdge = topEdge + (viewport?.height ?? window.innerHeight) - 16
       const width = Math.max(1, Math.min(300, rightEdge - leftEdge))
       const below = bottomEdge - anchor.bottom - 6, above = anchor.top - topEdge - 6
-      const useAbove = below < 200 && above > below
-      const maxHeight = Math.min(Math.max(1, bottomEdge - topEdge), 300, Math.max(80, useAbove ? above : below))
+      const inQualitySidebar = Boolean(button.closest('[data-case-quality-two-columns="true"] [data-case-action]'))
+      const roomToLeft = anchor.left - leftEdge - 10
+      // En escritorio el menú no debe tapar Procede/No procede ni
+      // "Mi trabajo en esta queja": abrirlo junto al panel, no encima.
+      const openToLeft = inQualitySidebar && roomToLeft >= width && window.innerWidth >= 1100
+      const useAbove = !openToLeft && below < 200 && above > below
+      const maxHeight = Math.min(Math.max(1, bottomEdge - topEdge), 300,
+        Math.max(80, openToLeft ? bottomEdge - Math.max(topEdge, anchor.top) : useAbove ? above : below))
       popup.style.width = `${width}px`
-      popup.style.left = `${Math.max(leftEdge, Math.min(anchor.right - width, rightEdge - width))}px`
+      popup.style.left = `${openToLeft
+        ? Math.max(leftEdge, anchor.left - width - 10)
+        : Math.max(leftEdge, Math.min(anchor.right - width, rightEdge - width))}px`
       popup.style.maxHeight = `${maxHeight}px`
       const height = Math.min(popup.scrollHeight, maxHeight)
-      popup.style.top = `${Math.max(topEdge, Math.min(useAbove ? anchor.top - height - 6 : anchor.bottom + 6, bottomEdge - height))}px`
+      popup.style.top = `${Math.max(topEdge, Math.min(
+        openToLeft ? anchor.top : useAbove ? anchor.top - height - 6 : anchor.bottom + 6,
+        bottomEdge - height))}px`
+      popup.dataset.placement = openToLeft ? 'left' : useAbove ? 'top' : 'bottom'
     }
     // El top layer evita recortar la lista en el lienzo con scroll.
     const nativePopover = typeof popup.showPopover === 'function'
