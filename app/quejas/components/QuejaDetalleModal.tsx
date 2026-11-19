@@ -655,7 +655,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
-  </> : estadoActual === 'Recibido' ? !editing && <div data-case-evaluation-choices className="flex min-w-0 flex-col gap-2">
+  </> : estadoActual === 'Recibido' ? <div data-case-evaluation-choices className="flex min-w-0 flex-col gap-2">
     <button type="button" onClick={() => openEvaluationDecision('procede')}
       disabled={workflowPending || editing}
       className="group flex h-12 w-full min-w-0 items-center gap-2.5 rounded-lg border border-qms-border bg-white px-3.5 text-left text-sm font-semibold text-qms-dark transition-colors hover:border-qms-primary hover:bg-qms-primary-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
