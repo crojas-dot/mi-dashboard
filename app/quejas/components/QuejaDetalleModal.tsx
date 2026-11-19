@@ -45,7 +45,7 @@ import {
 } from '@/lib/services/quejaWorkflowService'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
-import { ArrowRight, Upload, RotateCcw, FileText, Paperclip, Eye, Info } from 'lucide-react'
+import { ArrowRight, ChevronDown, Upload, RotateCcw, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
 import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
@@ -62,6 +62,49 @@ import { useQuejaNotas } from '@/hooks/useQuejaNotas'
 import { getQuejaAnalysis } from '@/lib/utils/quejaContent'
 import { puedeDerivarEnRevisionGC } from '@/lib/utils/quejaSacp'
 import { esNotaInvestigacion } from '@/lib/utils/quejaInvestigacionNotas'
+
+function QuejaClienteDropdown({ queja }: { queja: Queja }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => { setOpen(false) }, [queja.id])
+  useEffect(() => {
+    if (!open) return
+    const outside = (event: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [open])
+
+  return <div ref={rootRef} data-case-client-dropdown className="relative min-w-0 max-w-[250px]">
+    <button ref={buttonRef} type="button" aria-haspopup="dialog" aria-expanded={open}
+      aria-controls={open ? 'queja-cliente-datos' : undefined}
+      onClick={() => setOpen(value => !value)}
+      className="flex max-w-full items-center gap-1.5 rounded-sm text-left text-[13px] leading-5 text-white/90 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+      <span className="min-w-0 truncate">{queja.cliente_nombre || 'Solicitante sin nombre'}</span>
+      <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open && <div id="queja-cliente-datos" role="dialog" aria-label="Datos del solicitante"
+      onKeyDown={event => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.stopPropagation()
+          setOpen(false)
+          buttonRef.current?.focus()
+        }
+      }}
+      className="absolute top-full left-0 z-50 mt-3 w-[min(350px,calc(100vw-2rem))] rounded-lg border border-qms-border bg-white p-4 text-qms-dark shadow-xl">
+      <div className="mb-3 flex items-center justify-between gap-2 border-b border-qms-border pb-2.5">
+        <p className="text-sm font-semibold text-qms-dark">Datos del solicitante</p>
+        <button type="button" aria-label="Cerrar datos del solicitante" onClick={() => { setOpen(false); buttonRef.current?.focus() }}
+          className="rounded-md px-2 py-1 text-xs font-medium text-qms-muted hover:bg-qms-hover-bg">Cerrar</button>
+      </div>
+      <CaseRequestHeader queja={queja} reference variant="panel" />
+    </div>}
+  </div>
+}
 
 interface Props {
   queja: Queja | null
@@ -586,7 +629,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <div className="max-w-[780px]">
       <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-qms-dark sm:text-[30px]">Descripción del cliente</h2>
       <div data-case-reading-copy className="mt-6"><p className="whitespace-pre-wrap break-words text-base leading-[1.7]">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
-      <div className="mt-8 border-t border-qms-border pt-5">
+      <div className="mt-7 border-t border-qms-border pt-4">
         <h3 className="mb-3 text-[17px] font-semibold text-qms-primary">Adjuntos del cliente · {adjuntosCliente.length}</h3>
         {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
       </div>
@@ -612,22 +655,16 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <Button size="sm" className={reviewButtonClass} onClick={handleAprobarResolucion} loading={loading} disabled={workflowPending || editing}>Aprobar y continuar</Button>
     <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => { beginWorkflowDraft(); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); setReviewOpen(true) }} disabled={workflowPending || editing}>Devolver a investigación</Button>
     {puedeDerivarSACP && <Button size="sm" variant="secondary" className={reviewButtonClass} onClick={() => setConfirmarSACP(true)} disabled={workflowPending || editing}>Derivar a SACP</Button>}
-  </> : estadoActual === 'Recibido' ? !editing && <>
-    <button type="button" data-case-evaluation-choice="procede" onClick={() => openEvaluationDecision('procede')}
-      disabled={workflowPending || editing}
-      className="group flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-lg border border-[#CFD4DA] bg-white px-3.5 py-3 text-left transition-colors hover:border-qms-primary hover:bg-[#EAF1FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-      <span aria-hidden="true" className="mt-1 size-4 shrink-0 rounded-full border-2 border-[#9CA3AF] group-hover:border-qms-primary" />
-      <span className="min-w-0 flex-1"><strong className="block text-[15px] text-qms-dark">Procede</strong><small className="mt-1 block text-[13px] leading-snug text-qms-muted">Continúa con el flujo.</small></span>
-      <ArrowRight aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-muted" />
-    </button>
-    <button type="button" data-case-evaluation-choice="no-procede" onClick={() => openEvaluationDecision('no_procede')}
-      disabled={workflowPending || editing || !publicacionVerificada}
-      className="group flex min-h-[72px] w-full min-w-0 items-start gap-3 rounded-lg border border-[#CFD4DA] bg-white px-3.5 py-3 text-left transition-colors hover:border-qms-primary hover:bg-[#EAF1FB] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-50">
-      <span aria-hidden="true" className="mt-1 size-4 shrink-0 rounded-full border-2 border-[#9CA3AF] group-hover:border-qms-primary" />
-      <span className="min-w-0 flex-1"><strong className="block text-[15px] text-qms-dark">No procede</strong><small className="mt-1 block text-[13px] leading-snug text-qms-muted">Cierra la queja con su justificación.</small></span>
-      <ArrowRight aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-qms-muted" />
-    </button>
-  </> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
+  </> : estadoActual === 'Recibido' ? !editing && <div data-case-evaluation-choices className="grid grid-cols-2 gap-2.5">
+    <Button size="sm" className="min-h-11 w-full min-w-0 justify-center text-sm"
+      onClick={() => openEvaluationDecision('procede')} disabled={workflowPending || editing}>
+      Procede
+    </Button>
+    <Button size="sm" variant="danger" className="min-h-11 w-full min-w-0 justify-center text-sm"
+      onClick={() => openEvaluationDecision('no_procede')} disabled={workflowPending || editing || !publicacionVerificada}>
+      No procede
+    </Button>
+  </div> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
   const processSteps = getCaseProcessCycle(queja).steps
   const currentProcessStage = processSteps.find(step => step.current)?.id
@@ -717,30 +754,38 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
+      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded} headerTone="quality"
+      headerSubtitle={<QuejaClienteDropdown queja={queja} />}
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader chevrons queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
       <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn
-        request={<CaseRequestHeader key={queja.id} queja={queja} reference variant={expanded ? 'panel' : 'details'} />}
-        requestFooter={<div className="space-y-4">
+        requestFooter={<div className="space-y-2">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0">
             <Button size="sm" variant="secondary" className="min-h-11 w-full min-w-0 justify-center border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
               disabled={navigationDisabled || adjuntosLoading || !!adjuntosError} onClick={() => setInformeOpen(true)}>
               <FileText aria-hidden="true" className="size-4" />Generar expediente
             </Button>
           </div>}
-          {expanded && cardMisAdjuntos}
-          <QuejaNotasCard notas={notasManuales} loading={actividadLoading} error={!!actividadError} onOpen={() => setActivityOpen(true)} />
+          {expanded && administrarAdjuntos && <button type="button" onClick={() => setMisAdjuntosOpen(true)}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Mis adjuntos <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{misAdjuntos.length}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>}
+          <button type="button" onClick={() => setActivityOpen(true)}
+            className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
+            <span>Historial y notas <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!actividadLoading && !actividadError ? notasManuales.length : '—'}</span></span>
+            <span className="text-xs text-qms-primary">Ver ›</span>
+          </button>
         </div>}
         compact={<CaseCycle queja={queja} process currentOnly />}
         cycle={<CaseCycle queja={queja} process selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
-          {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-3">
-            <div className="min-w-0"><p className="mb-2 text-sm font-semibold text-qms-dark">Área afectada</p>{areaControl}</div>
-            <p className="mt-2 text-sm font-semibold text-qms-dark">Resultado de la evaluación</p>
+          {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-2.5">
+            <div className="min-w-0">{areaControl}</div>
+            <p className="mt-1 text-sm font-semibold text-qms-dark">Resultado de la evaluación</p>
             {workflowActions}
           </div>}
           {estadoActual !== 'Recibido' && workflowActions}
