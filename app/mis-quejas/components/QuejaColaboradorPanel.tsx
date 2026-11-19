@@ -464,13 +464,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
           </div>}
           {editable && errorResolucion && <p role="alert" className="mt-3 text-sm text-qms-danger">{errorResolucion}</p>}
         </section></div>}>
-        <div data-mis-quejas-reading-column className="mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-[#F4F7FB] px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+        <div data-mis-quejas-reading-column className="mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-white px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         {isExpanded && lectura}
         {isExpanded && avisoDevolucion && <div className="mt-5">{avisoDevolucion}</div>}
-        {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0 rounded-[16px] bg-[#F4F7FB] p-2 sm:p-3">
+        {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(360px,calc(100dvh-110px),700px)] min-w-0 rounded-[16px] border border-[rgb(172_188_205_/_0.35)] bg-[rgb(226_233_242_/_0.35)] p-2 sm:p-3">
           <div ref={resolutionContainer} data-resolution-inline data-resolution-expanded={resolutionOverlay ? 'true' : undefined}
             style={resolutionOverlay ?? undefined}
-            className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[12px] border border-[#CBD5E1] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] ${resolutionOverlay ? 'fixed z-[60] shadow-[0_18px_40px_rgba(15,23,42,0.13)]' : 'relative'}`}>
+            className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-[12px] border border-[rgb(157_175_194_/_0.55)] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] ${resolutionOverlay ? 'fixed z-[60] shadow-[0_18px_40px_rgba(15,23,42,0.13)]' : 'relative'}`}>
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
           {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-2 sm:px-5">
             <span className="text-sm font-medium text-qms-muted">Borrador guardado</span>

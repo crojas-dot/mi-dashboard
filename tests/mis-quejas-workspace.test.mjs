@@ -150,22 +150,28 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.equal(panel.nodes().some(node => node.props.role === 'tab' || node.type === 'Modal' && node.props.open && node.props.variant === 'document'), false)
 })
 
-test('la resolución usa fondo mate y tarjeta blanca, conservando scroll, editor y expansión', () => {
+test('la resolución conserva lienzo blanco y solo el marco lleva transparencia', () => {
   const panel = fixture()
   panel.select('A')
   const reading = panel.nodes().find(node => node.props['data-mis-quejas-reading-column'])
   const shell = panel.nodes().find(node => node.props['data-resolution-shell'])
   const editor = panel.nodes().find(node => node.props['data-resolution-inline'])
-  assert.ok(reading.props.className.includes('bg-[#F4F7FB]'))
+  assert.ok(reading.props.className.includes('bg-white'))
   assert.ok(shell.props.className.includes('p-2 sm:p-3'))
-  assert.ok(editor.props.className.includes('border-[#CBD5E1]'))
+  assert.ok(shell.props.className.includes('bg-[rgb(226_233_242_/_0.35)]'))
+  assert.ok(shell.props.className.includes('border-[rgb(172_188_205_/_0.35)]'))
+  assert.ok(editor.props.className.includes('border-[rgb(157_175_194_/_0.55)]'))
   assert.ok(editor.props.className.includes('bg-white'))
+  assert.ok(!editor.props.className.includes('opacity-'))
   assert.ok(editor.props.className.includes('shadow-[0_8px_24px'))
   assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
   const css = readFileSync('app/styles/components.css', 'utf8')
+  assert.ok(css.includes('[data-case-document]:has([data-mis-quejas-reading-column]) {\n  background: #FFFFFF;'))
   assert.ok(css.includes('padding: 20px 24px 28px;'))
   assert.ok(css.includes('overflow-y: auto;'))
-  assert.ok(css.includes('[data-case-document]:has([data-mis-quejas-reading-column])'))
+  assert.ok(css.includes('background: #FFFFFF;'))
+  assert.ok(panel.button('Guardar'))
+  assert.ok(panel.button('Expandir editor verticalmente'))
 })
 
 test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificiales', () => {

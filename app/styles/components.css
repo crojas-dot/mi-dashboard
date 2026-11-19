@@ -89,10 +89,10 @@
   }
 }
 
-/* Solo el documento de Mis Quejas: el editor blanco destaca sobre una
-   superficie gris azulada mate. Quejas y el formulario público no se alteran. */
+/* Mis Quejas conserva el lienzo principal blanco. Solo el marco del editor
+   recibe un tinte semitransparente; hoja, barra y botones permanecen opacos. */
 [data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
-  background: #F4F7FB;
+  background: #FFFFFF;
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
