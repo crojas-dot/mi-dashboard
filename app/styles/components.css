@@ -89,6 +89,12 @@
   }
 }
 
+/* Solo el documento de Mis Quejas: el editor blanco destaca sobre una
+   superficie gris azulada mate. Quejas y el formulario público no se alteran. */
+[data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
+  background: #F4F7FB;
+}
+
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
    así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
@@ -109,7 +115,7 @@
   min-height: 44px;
   flex-wrap: wrap;
   overflow: visible;
-  background: var(--color-qms-surface);
+  background: #F8FAFD;
   border-start-start-radius: var(--radius-card);
   border-start-end-radius: var(--radius-card);
 }
@@ -122,6 +128,13 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  background: #FFFFFF;
+}
+
+/* Más aire para la redacción sin mover el placeholder ni modificar el
+   contenido del editor compartido con los demás módulos. */
+[data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
+  padding: 20px 24px 28px;
 }
 
 /* La barra ya tiene su propio border-bottom: no dibujar otra línea dentro
@@ -130,14 +143,15 @@
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] .tiptap {
   box-sizing: border-box;
   width: 100%;
-  max-width: calc(70ch + 4rem);
+  max-width: calc(70ch + 3rem);
   margin-inline: auto;
 }
 
 [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
   left: 50%;
   right: auto;
-  width: min(calc(100% - 2.5rem), 70ch);
+  width: min(calc(100% - 3rem), 70ch);
+  top: 20px;
   transform: translateX(-50%);
 }
 
@@ -202,7 +216,7 @@
 
 @media (min-width: 640px) {
   [data-case-reading-layout="true"] .mis-quejas-resolution-editor [data-rich-text-viewport] > span[aria-hidden="true"] {
-    width: min(calc(100% - 4rem), 70ch);
+    width: min(calc(100% - 3rem), 70ch);
   }
 }
 

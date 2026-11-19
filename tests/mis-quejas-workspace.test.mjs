@@ -150,6 +150,24 @@ test('el trabajo conserva geometría, ciclo y editor integrado sin pestañas ni 
   assert.equal(panel.nodes().some(node => node.props.role === 'tab' || node.type === 'Modal' && node.props.open && node.props.variant === 'document'), false)
 })
 
+test('la resolución usa fondo mate y tarjeta blanca, conservando scroll, editor y expansión', () => {
+  const panel = fixture()
+  panel.select('A')
+  const reading = panel.nodes().find(node => node.props['data-mis-quejas-reading-column'])
+  const shell = panel.nodes().find(node => node.props['data-resolution-shell'])
+  const editor = panel.nodes().find(node => node.props['data-resolution-inline'])
+  assert.match(reading.props.className, /bg-\\[#F4F7FB\\]/)
+  assert.match(shell.props.className, /p-2 sm:p-3/)
+  assert.match(editor.props.className, /border-\\[#CBD5E1\\]/)
+  assert.match(editor.props.className, /bg-white/)
+  assert.match(editor.props.className, /shadow-\\[0_8px_24px/)
+  assert.equal(panel.nodes().filter(node => node.type === 'Editor').length, 1)
+  const css = readFileSync('app/styles/components.css', 'utf8')
+  assert.match(css, /\\.mis-quejas-resolution-editor \\[data-rich-text-viewport\\] \\.tiptap \\{[^}]*padding: 20px 24px 28px;/)
+  assert.match(css, /\\.mis-quejas-resolution-editor \\[data-rich-text-viewport\\] \\{[^}]*overflow-y: auto;/)
+  assert.match(css, /\\[data-case-document\\]:has\\(\\[data-mis-quejas-reading-column\\]\\)/)
+})
+
 test('el editor abre sin saltar el scroll exterior y no dibuja líneas artificiales', () => {
   const source = readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
   const css = readFileSync('app/styles/components.css', 'utf8')
