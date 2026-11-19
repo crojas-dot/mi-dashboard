@@ -111,8 +111,8 @@ export default function QuejaNotasPanel(props: Props) {
     return () => document.removeEventListener('pointerdown', outside, true)
   }, [menuId, onToggleMenu])
   return <Modal open={props.open} onClose={() => { setTab('notas'); setPaleta(null); props.onClose() }} title="Historial y notas" titleSuffix={props.folio}
-    variant="dialog" size="lg" fixedHeight
-    headerLeading={<NotebookPen aria-hidden="true" className="size-4 text-qms-muted" />}
+    variant="dialog" size="lg" fixedHeight headerTone="activity"
+    headerLeading={<NotebookPen aria-hidden="true" className="size-4 text-white/90" />}
     footer={props.canEdit && tab === 'notas' && <div className="relative min-w-0">
       <textarea id="investigation-note" aria-label="Nueva nota de investigación" rows={2} maxLength={props.maxLength} placeholder="Registrá un avance o comentario de tu investigación..." className="ui-textarea block h-24! min-h-0! w-full resize-none rounded-card border-qms-border bg-qms-surface p-3 pr-14 text-sm shadow-sm focus:border-qms-primary focus:outline-none focus:ring-1 focus:ring-qms-primary" value={props.nota} disabled={props.saving} onChange={event => props.onChange(event.target.value)} />
       <button type="button" aria-label="Agregar nota" title="Agregar nota" aria-busy={props.saving} onClick={props.onAdd} disabled={!props.nota.trim() || props.saving} className="absolute right-3 bottom-3 inline-flex size-9 cursor-pointer items-center justify-center rounded-button border border-qms-primary bg-qms-primary text-white shadow-sm transition-colors hover:border-qms-primary-hover hover:bg-qms-primary-hover disabled:cursor-not-allowed disabled:opacity-65">
