@@ -441,7 +441,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             <span>Historial y notas <span className="ml-1 rounded bg-qms-hover-bg px-1.5 py-0.5 text-xs">{!actividadLoading && !actividadError ? notasInvestigacion.length : '—'}</span></span>
             <span className="text-xs text-qms-primary">Ver ›</span>
           </button>
-        </div>
+        </div>}
         compact={cicloMostrado} cycle={cicloMostrado}
         action={isExpanded && <div className="space-y-4"><section className="min-w-0">
           <p className="mb-3 text-xs font-semibold tracking-[0.06em] text-qms-muted">ACCIONES DEL RESPONSABLE</p>
