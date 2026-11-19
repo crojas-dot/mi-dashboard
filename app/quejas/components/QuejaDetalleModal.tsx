@@ -629,7 +629,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     <div className="mx-auto w-full max-w-[870px]">
       <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-qms-dark sm:text-[30px]">Descripción del cliente</h2>
       <div data-case-reading-copy className="mt-6"><p data-case-reading-text className="whitespace-pre-wrap break-words text-base leading-relaxed">{queja.descripcion || 'Sin descripción registrada.'}</p></div>
-      <div className="mt-7 max-w-[760px] border-t border-qms-border pt-4">
+      <div className="mt-7 border-t border-qms-border pt-4">
         <h3 className="mb-3 text-[17px] font-semibold text-qms-primary">Adjuntos del cliente · {adjuntosCliente.length}</h3>
         {estadoActual === 'Recibido' ? files : soloLecturaFiles(adjuntosCliente)}
       </div>
