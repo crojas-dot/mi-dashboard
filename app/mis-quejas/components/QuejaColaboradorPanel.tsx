@@ -472,7 +472,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             style={resolutionOverlay ?? undefined}
             className={`flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-qms-border bg-white shadow-sm ${resolutionOverlay ? 'fixed z-[60] shadow-xl' : 'relative'}`}>
           {errorBorrador && borradorVersion === null && <div role="alert" className="flex shrink-0 flex-wrap items-center gap-2 border-b border-qms-border px-5 py-2 text-sm text-qms-muted sm:px-8"><span>No se pudo cargar el borrador guardado.</span><Button size="sm" variant="ghost" loading={cargandoBorrador} onClick={() => { void recargarBorrador() }}>Reintentar borrador</Button></div>}
-          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D3DAE4] bg-[#E7ECF3] px-4 py-2 sm:px-5">
+          {!editandoResolucion && <div data-resolution-saved-toolbar className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#D3DAE4] bg-[#E6E5E5] px-4 py-2 sm:px-5">
             <span className="text-sm font-medium text-qms-muted">Borrador guardado</span>
             <Button data-resolution-edit size="sm" variant="secondary"
               title={borradorGuardado ? `Guardado el ${caseDate(borradorGuardado.updated_at)}` : 'Editar resolución'}
@@ -518,7 +518,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
                 {resolutionOverlay ? <Minimize aria-hidden="true" className="size-5" /> : <Maximize aria-hidden="true" className="size-5" />}
               </Button>
             </div> : undefined}
-            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#E7ECF3]" /></div>
+            className="mis-quejas-resolution-editor [&_[data-rich-text-toolbar]]:bg-[#E6E5E5]" /></div>
           <div data-resolution-footer className="sticky bottom-0 z-20 flex shrink-0 min-w-0 flex-wrap items-center justify-between gap-3 border-t border-qms-border bg-qms-surface px-5 py-3 sm:px-8">
             <div className="flex min-w-0 flex-wrap items-center gap-3">
               <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-button bg-qms-primary-soft text-qms-primary"><FilePenLine className="size-4" /></span>
