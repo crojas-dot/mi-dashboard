@@ -84,8 +84,9 @@ export async function PUT(request: NextRequest) {
       ? { ancho: IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho, alto: IDENTIDAD_IMAGENES.login_fondo.procesamientoAlto }
       : { ancho: meta.ancho, alto: meta.alto }
     const image = source.autoOrient().resize(target.ancho, target.alto, {
-      fit: slot === 'login_fondo' ? 'inside' : 'cover',
+      fit: slot === 'login_fondo' ? 'inside' : 'contain',
       withoutEnlargement: slot === 'login_fondo',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     bytes = meta.formato === 'png'
       ? await image.png({ compressionLevel: 9 }).toBuffer()

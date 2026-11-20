@@ -19,7 +19,7 @@ export default function IdentidadSettings({ active }: { active: boolean }) {
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-qms-dark">Identidad del correo</h3>
-        <p className="mt-1 text-sm text-qms-muted">Logo para reemplazar la E del encabezado, junto al nombre QMS ECA. La actualización del envío real de correos se integra por separado en Apps Script.</p>
+        <p className="mt-1 text-sm text-qms-muted">Logo horizontal sin cuadro azul, junto al nombre QMS ECA. Su incorporación al envío real requiere publicar por separado el transportador de correos en Apps Script.</p>
       </div>
       <ImagenIdentidadEditor slot="correo_encabezado" url={urls?.correo_encabezado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.correo_encabezado ?? false} />
     </div>

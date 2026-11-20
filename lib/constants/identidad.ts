@@ -5,22 +5,22 @@ export const IDENTIDAD_IMAGENES = {
   correo_encabezado: {
     clave: 'org.identidad.correo_encabezado',
     titulo: 'Logo del encabezado de correos',
-    descripcion: 'Reemplaza el cuadro azul con la E, junto a «QMS ECA». No es un banner.',
-    proporcion: 1,
-    ancho: 512,
-    alto: 512,
+    descripcion: 'Reemplaza el símbolo del encabezado de correo con una marca horizontal, junto a «QMS ECA». No es un banner.',
+    proporcion: 3,
+    ancho: 900,
+    alto: 300,
     formato: 'png',
-    recomendacion: 'Imagen cuadrada de 512 × 512 px. Preferí PNG con fondo transparente y bordes nítidos; idealmente menos de 300 KB.',
+    recomendacion: 'Logo horizontal de 900 × 300 px (3:1), con PNG transparente para que los laterales no se corten. Idealmente menos de 300 KB.',
   },
   login_encabezado: {
     clave: 'org.identidad.login_encabezado',
     titulo: 'Logo del inicio de sesión',
-    descripcion: 'Se muestra junto a «QMS» sobre el azul del sistema. Si no elegís una imagen, se usa el isotipo ECA.',
-    proporcion: 1,
-    ancho: 512,
-    alto: 512,
+    descripcion: 'Se muestra como marca horizontal sin cuadro azul junto a «QMS». Si no elegís una imagen, se usa el isotipo ECA.',
+    proporcion: 3,
+    ancho: 900,
+    alto: 300,
     formato: 'png',
-    recomendacion: 'Preferí un logo claro en PNG transparente para que se vea sobre el fondo azul.',
+    recomendacion: 'Logo horizontal de 900 × 300 px (3:1). Preferí PNG transparente para mostrarlo sin marco ni recortar sus laterales.',
   },
   login_fondo: {
     clave: 'org.identidad.login_fondo',
@@ -42,7 +42,7 @@ export const IDENTIDAD_IMAGENES = {
     ancho: 900,
     alto: 300,
     formato: 'webp',
-    recomendacion: 'Logo horizontal de 900 × 300 px (3:1). Preferí PNG transparente o WebP de alta calidad; idealmente menos de 400 KB.',
+    recomendacion: 'Logo horizontal de 900 × 300 px (3:1). Preferí PNG transparente o WebP; se adapta completo sin recortar sus laterales. Idealmente menos de 400 KB.'
   },
 } as const
 

@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [logoFallido, setLogoFallido] = useState('')
   // La vista previa de credenciales de Chromium usa una fuente interna que
   // ignora el CSS. Permitir el llenado al entrar al formulario evita esa vista
   // previa al cargar, sin desactivar el gestor de contraseñas.
@@ -50,12 +51,21 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-[520px]">
         <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border shadow-md" style={{ backgroundColor: "rgb(255 255 255 / 96%)" }}>
-          <header className="flex items-center gap-3 border-b border-qms-border px-6 py-1.5 sm:px-8">
-            <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
-              <EmpresaLogo url={logo} className="size-full" />
-            </div>
+          <header className="flex items-center gap-4 border-b border-qms-border px-6 py-2 sm:px-8">
+            {logo && logoFallido !== logo ? (
+              <div className="flex h-[68px] w-[min(44%,190px)] shrink-0 items-center justify-start">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={logo} alt="Logo institucional ECA" draggable={false}
+                  className="block h-full w-full object-contain object-left"
+                  onError={() => setLogoFallido(logo)} />
+              </div>
+            ) : (
+              <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
+                <EmpresaLogo className="size-full" />
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-xl font-semibold tracking-tight text-qms-dark">QMS</p>
               <p className="mt-0.5 text-sm text-qms-muted">Gestión de Calidad</p>

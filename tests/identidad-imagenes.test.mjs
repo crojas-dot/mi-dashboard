@@ -10,7 +10,8 @@ const marcas = loadModule('lib/constants/identidad.ts')
 test('cada recurso institucional tiene clave, aspecto y nombre separados', () => {
   assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'login_encabezado', 'login_fondo', 'formulario_encabezado'])
   assert.equal(marcas.IDENTIDAD_IMAGENES.login_fondo.proporcion, 16 / 9)
-  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 1)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 3)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.login_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.formulario_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.formato, 'png')
   assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 4)
@@ -145,10 +146,10 @@ test('el endpoint no admite SVG ni claves inventadas', async () => {
   assert.equal(f.objects.size, 0)
 })
 
-test('los logos de correo y login son PNG cuadrados y el del formulario es WebP horizontal', async () => {
+test('los logos de correo, login y formulario conservan un marco horizontal con transparencia', async () => {
   for (const [slot, extension, width, height] of [
-    ['correo_encabezado', 'png', 512, 512],
-    ['login_encabezado', 'png', 512, 512],
+    ['correo_encabezado', 'png', 900, 300],
+    ['login_encabezado', 'png', 900, 300],
     ['formulario_encabezado', 'webp', 900, 300],
   ]) {
     const f = fixture()
@@ -160,6 +161,9 @@ test('los logos de correo y login son PNG cuadrados y el del formulario es WebP 
     assert.equal(meta.format, extension)
     assert.equal(meta.width, width)
     assert.equal(meta.height, height)
+    // La imagen de prueba es 3:2: debe ocupar el centro sin quedar recortada a 3:1.
+    const esquina = await sharp(f.objects.get(path)).extract({ left: 2, top: 150, width: 1, height: 1 }).ensureAlpha().raw().toBuffer()
+    assert.equal(esquina[3], 0, 'los márgenes del logo deben seguir transparentes')
     assert.equal(res.body.slot, slot)
     assert.equal(f.config.get(marcas.IDENTIDAD_IMAGENES[slot].clave), res.body.imagen)
     assert.ok(!res.body.imagen.includes('correo_pie'))

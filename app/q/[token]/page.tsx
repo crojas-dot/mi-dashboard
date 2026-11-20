@@ -103,7 +103,7 @@ function FormularioQuejaPublica({ token }: { token: string }) {
             <p className="font-semibold text-qms-dark">QMS ECA</p>
             <p className="text-xs text-qms-muted">Gestión de Calidad</p>
           </div>
-          {logoFormulario && <div className="flex h-14 w-44 max-w-[38%] shrink-0 items-center justify-end">
+          {logoFormulario && <div className="flex h-14 w-48 max-w-[42%] shrink-0 items-center justify-end">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={logoFormulario} alt="Logo institucional" className="block max-h-full max-w-full object-contain" />
           </div>}
@@ -144,7 +144,7 @@ function FormularioQuejaPublica({ token }: { token: string }) {
           <h1 className="m-0 text-xl font-semibold text-qms-dark">Registro de queja</h1>
           <p className="mt-1 text-sm text-qms-muted">{consulta.data?.nombre || 'Formulario de quejas'}</p>
         </div>
-        {logoFormulario && <div className="flex h-[72px] w-[220px] max-w-[40%] shrink-0 items-center justify-end">
+        {logoFormulario && <div className="flex h-[72px] w-[260px] max-w-[45%] shrink-0 items-center justify-end">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={logoFormulario} alt="Logo institucional" className="block max-h-full max-w-full object-contain" />
         </div>}

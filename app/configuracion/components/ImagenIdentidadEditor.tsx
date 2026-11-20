@@ -115,7 +115,7 @@ export default function ImagenIdentidadEditor({ slot, url, loading = false, conf
       </div>
     </div>
     {borrador && <LogoRecorteModal key={borrador.url} borrador={borrador} guardando={guardando}
-      aspectRatio={meta.proporcion} outputWidth={slot === 'login_fondo' ? IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho : meta.ancho} maxEncodedBytes={IDENTIDAD_MAX_BYTES} nombre={meta.titulo.toLowerCase()}
+      aspectRatio={meta.proporcion} fitMode={slot === 'login_fondo' ? 'cover' : 'contain'} outputWidth={slot === 'login_fondo' ? IDENTIDAD_IMAGENES.login_fondo.procesamientoAncho : meta.ancho} maxEncodedBytes={IDENTIDAD_MAX_BYTES} nombre={meta.titulo.toLowerCase()}
       onCerrar={() => setBorrador(null)} onGuardar={(imagen) => { void guardar(imagen) }} />}
   </section>
 }

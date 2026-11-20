@@ -662,7 +662,7 @@ test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o p
   assert.equal(value.sent.length, 1)
   const html = value.sent[0].htmlBody
   assert.ok(html.includes('<img src="' + logo))
-  assert.match(html, /width="42" height="42"/)
+  assert.match(html, /width="150" height="50"/)
   assert.equal((html.match(/<img /g) ?? []).length, 1, 'solo un logo en el encabezado')
   assert.doesNotMatch(html, /alt=""/)
   assert.equal(value.rows[1][2], 'sent')

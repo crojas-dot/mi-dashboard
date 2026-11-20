@@ -16,18 +16,19 @@ const PASO_TECLA = 4
 
 export interface BorradorLogo { archivo: File; url: string }
 
-/** Recorte reutilizable: cuadrado para logo/avatar o panorámico para identidad. */
-export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, outputWidth = LOGO_LADO, nombre = 'logo', maxEncodedBytes = Number.POSITIVE_INFINITY }: {
+/** Encuadre reutilizable: cuadrado para marca/avatar; horizontal sin recortes forzados para identidad. */
+export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuardar, aspectRatio = 1, fitMode = 'cover', outputWidth = LOGO_LADO, nombre = 'logo', maxEncodedBytes = Number.POSITIVE_INFINITY }: {
   borrador: BorradorLogo
   guardando: boolean
   onCerrar: () => void
   onGuardar: (cuadrado: Blob) => void
   aspectRatio?: number
+  fitMode?: 'cover' | 'contain'
   outputWidth?: number
   nombre?: string
   maxEncodedBytes?: number
 }) {
-  const vistaAncho = aspectRatio === 1 ? VISTA : 320
+  const vistaAncho = aspectRatio === 1 ? VISTA : 440
   const vistaAlto = Math.round(vistaAncho / aspectRatio)
   const imagen = useRef<HTMLImageElement>(null)
   const arrastre = useRef<{ id: number; x: number; y: number } | null>(null)
@@ -37,8 +38,8 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
   const [posicion, setPosicion] = useState({ x: 0, y: 0 })
   const [error, setError] = useState('')
 
-  // Escala que cubre el marco sin dejar bordes libres.
-  const base = useMemo(() => medidas ? Math.max(vistaAncho / medidas.ancho, vistaAlto / medidas.alto) : 1, [medidas, vistaAncho, vistaAlto])
+  // Las marcas se ajustan completas; el fondo y la foto cuadrada siguen usando recorte.
+  const base = useMemo(() => medidas ? (fitMode === 'contain' ? Math.min(vistaAncho / medidas.ancho, vistaAlto / medidas.alto) : Math.max(vistaAncho / medidas.ancho, vistaAlto / medidas.alto)) : 1, [medidas, vistaAncho, vistaAlto, fitMode])
   const escala = base * zoom
   const anchoPx = (medidas?.ancho ?? 0) * escala
   const altoPx = (medidas?.alto ?? 0) * escala
@@ -71,7 +72,8 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
   const alArrastrar = (event: ReactPointerEvent<HTMLDivElement>) => {
     const activo = arrastre.current
     if (!activo || activo.id !== event.pointerId) return
-    mover(event.clientX - activo.x, event.clientY - activo.y)
+    const rect = event.currentTarget.getBoundingClientRect()
+    mover((event.clientX - activo.x) * vistaAncho / rect.width, (event.clientY - activo.y) * vistaAlto / rect.height)
     arrastre.current = { ...activo, x: event.clientX, y: event.clientY }
   }
   const alSoltar = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -125,14 +127,14 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
     dismissOnEscape={!guardando}
     dismissOnBackdrop={!guardando}
     title={`Encuadrar ${nombre}`}
-    size="sm"
+    size={aspectRatio === 1 ? 'sm' : 'md'}
     footer={<div className="flex justify-end gap-2">
       <Button variant="secondary" disabled={guardando} onClick={onCerrar}>Cancelar</Button>
       <Button loading={guardando} disabled={!listo} onClick={() => void confirmar()}>Guardar imagen</Button>
     </div>}
   >
     <div className="space-y-4">
-      <p className="text-sm text-qms-muted">Arrastrá la imagen para centrarla y ajustar el encuadre. Se guarda tal como se ve en el recuadro.</p>
+      <p className="text-sm text-qms-muted">{fitMode === 'contain' ? 'El logo se ajusta completo, sin cortar los laterales. Podés acercarlo o moverlo si querés personalizar el encuadre.' : 'Arrastrá la imagen para centrarla y ajustar el encuadre. Se guarda tal como se ve en el recuadro.'}</p>
       <div
         role="application"
         tabIndex={0}
@@ -143,7 +145,7 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
         onPointerCancel={alSoltar}
         onKeyDown={alTeclear}
         className={`relative mx-auto touch-none overflow-hidden border border-qms-border bg-qms-hover-bg outline-none focus-visible:ring-2 focus-visible:ring-qms-primary ${listo ? 'cursor-move' : 'cursor-default'}`}
-        style={{ width: vistaAncho, height: vistaAlto }}
+        style={{ width: '100%', maxWidth: vistaAncho, aspectRatio: String(aspectRatio) }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -154,7 +156,7 @@ export default function LogoRecorteModal({ borrador, guardando, onCerrar, onGuar
           onLoad={event => setMedidas({ ancho: event.currentTarget.naturalWidth, alto: event.currentTarget.naturalHeight })}
           onError={() => setFallo(true)}
           className={`pointer-events-none absolute max-w-none select-none ${medidas ? '' : 'invisible'}`}
-          style={{ width: anchoPx, height: altoPx, left: izquierda, top: arriba }}
+          style={{ width: `${anchoPx / vistaAncho * 100}%`, height: `${altoPx / vistaAlto * 100}%`, left: `${izquierda / vistaAncho * 100}%`, top: `${arriba / vistaAlto * 100}%` }}
         />
         {!medidas && !fallo && <span className="absolute inset-0 flex items-center justify-center"><Spinner /></span>}
       </div>
