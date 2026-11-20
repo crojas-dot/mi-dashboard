@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Check, Copy, KeyRound, Mail, ShieldCheck, Smartphone } from 'lucide-react'
+import { Check, Copy, Eye, EyeOff, KeyRound, Mail, ShieldCheck, Smartphone, WandSparkles } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
@@ -12,16 +12,24 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/lib/store/auth-store'
 import { isLogoutPending } from '@/lib/authLogoutIntent'
 import { accessAction } from '@/lib/services/accessClient'
+import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
+import { generatePassword } from '@/lib/services/passwordGenerator'
 import type { AccessMethod, AccessStatus } from '@/lib/types/access'
 
 interface Challenge { id: string; qrCode?: string; secret?: string; maskedEmail?: string }
 export default function AccessPage() {
   const router = useRouter(), access = useAuthStore(s => s.access), identity = useAuthStore(s => s.accessIdentity), user = useAuthStore(s => s.user)
+  const { data: identidad } = useIdentidadImagenes()
+  const logo = identidad?.login_encabezado ?? ''
   const refresh = useAuthStore(s => s.refreshAccess), logout = useAuthStore(s => s.logout)
   const [invitation, setInvitation] = useState(''), [password, setPassword] = useState(''), [confirmation, setConfirmation] = useState('')
   const [method, setMethod] = useState<AccessMethod | null>(null), [email, setEmail] = useState(''), [code, setCode] = useState('')
   const [challenge, setChallenge] = useState<Challenge | null>(null), [busy, setBusy] = useState(false), [error, setError] = useState(''), [copied, setCopied] = useState(false)
   const [help, setHelp] = useState(false)
+  const [logoFallido, setLogoFallido] = useState('')
+  const [passwordGenerated, setPasswordGenerated] = useState(false)
+  const [passwordVisible, setPasswordVisible] = useState(false)
+  const [passwordCopied, setPasswordCopied] = useState(false)
   const [linkLoaded, setLinkLoaded] = useState(false)
   const working = useRef(false), automatic = useRef(''), linkInvitation = useRef<string | null>(null)
   useEffect(() => {
@@ -79,14 +87,33 @@ export default function AccessPage() {
       if(password!==confirmation)throw new Error('Las contraseñas no coinciden.')
       const owner=identity
       await accessAction({action:'password',password})
-      if(current(owner)){setPassword('');setConfirmation('');await refresh()}
+      if(current(owner)){setPassword('');setConfirmation('');setPasswordGenerated(false);setPasswordCopied(false);setPasswordVisible(false);await refresh()}
     })
+  }
+  function generarContrasena() {
+    const nueva = generatePassword(20)
+    setPassword(nueva); setConfirmation(nueva)
+    setPasswordGenerated(true); setPasswordVisible(true); setPasswordCopied(false); setError('')
+  }
+  async function copiarContrasena() {
+    try { await navigator.clipboard.writeText(password); setPasswordCopied(true) }
+    catch { setError('No se pudo copiar. Seleccioná la contraseña y guardala en tu gestor de contraseñas.') }
   }
   if (!linkLoaded) return <SessionScreen layout="neutral" />
   const title = invitation ? 'Configurá tu acceso' : access?.phase === 'password' ? 'Creá tu contraseña' : 'Protegé tu cuenta'
   return <div className="flex min-h-dvh items-center justify-center bg-qms-background px-4 py-8 text-qms-dark">
     <div className="w-full max-w-lg">
-      <div className="mb-6 flex items-center justify-center gap-3"><span className="flex size-11 items-center justify-center rounded-card bg-qms-primary text-xl font-semibold text-white">E</span><span className="text-xl font-semibold">ECA-QMS</span></div>
+      <div className="mb-6 flex h-14 items-center justify-center gap-3">
+        {logo && logoFallido !== logo ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img src={logo} alt="Logo institucional ECA" draggable={false}
+            className="block h-14 w-full max-w-[260px] object-contain object-center"
+            onError={() => setLogoFallido(logo)} />
+        ) : <>
+          <span aria-hidden="true" className="flex size-11 items-center justify-center rounded-card bg-qms-primary text-xl font-semibold text-white">E</span>
+          <span className="text-xl font-semibold">ECA-QMS</span>
+        </>}
+      </div>
       <section className="rounded-card border border-qms-border bg-qms-surface p-6 shadow-sm sm:p-8">
         <ShieldCheck className="mx-auto mb-3 size-7 text-qms-primary" aria-hidden="true" />
         <h1 className="text-center text-xl font-semibold">{title}</h1>
@@ -101,10 +128,27 @@ export default function AccessPage() {
             await refresh(); setInvitation('')
           })}>Configurar acceso</Button></div>
           : access?.phase === 'password' ? <form className="mt-5 space-y-4" onSubmit={savePassword}>
-            <p className="text-sm text-qms-muted">Elegí una contraseña propia para continuar. La contraseña temporal dejará de funcionar.</p>
-            <Field label="Nueva contraseña" id="access-password"><Input id="access-password" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={busy} value={password} onChange={e => setPassword(e.target.value)} /></Field>
+            <p className="text-sm text-qms-muted">Podés crear tu propia contraseña o generar una segura automáticamente. La podrás cambiar después desde Mi perfil.</p>
+            <Button type="button" variant="secondary" className="w-full" disabled={busy} onClick={generarContrasena}><WandSparkles className="size-4" />{passwordGenerated ? 'Generar otra contraseña' : 'Generar contraseña segura'}</Button>
+            <Field label="Nueva contraseña" id="access-password">
+              <div className="relative">
+                <Input id="access-password" type={passwordVisible ? 'text' : 'password'} autoComplete="new-password" minLength={12} maxLength={128} required disabled={busy} value={password}
+                  className="pr-20" onChange={e => { setPassword(e.target.value); setPasswordGenerated(false); setPasswordCopied(false) }} />
+                <button type="button" disabled={busy} aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  onClick={() => setPasswordVisible(v => !v)}
+                  className="absolute inset-y-0 right-2 inline-flex w-9 items-center justify-center text-qms-muted hover:text-qms-dark disabled:opacity-60">
+                  {passwordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </Field>
+            {passwordGenerated && <div className="flex items-center justify-between gap-3 rounded-button border border-qms-border bg-qms-background px-3 py-2">
+              <p className="min-w-0 text-xs leading-relaxed text-qms-muted">Guardá esta contraseña en tu gestor antes de continuar. No se enviará por correo.</p>
+              <Button type="button" variant="secondary" size="sm" disabled={busy || !password} onClick={() => void copiarContrasena()}>
+                {passwordCopied ? <Check className="size-4" /> : <Copy className="size-4" />}{passwordCopied ? 'Copiada' : 'Copiar'}
+              </Button>
+            </div>}
             <Field label="Confirmar contraseña" id="access-confirm"><Input id="access-confirm" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={busy} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></Field>
-            <p className="text-xs text-qms-muted">Usá al menos 12 caracteres.</p><Button type="submit" loading={busy} className="w-full"><KeyRound className="size-4" />Guardar y continuar</Button>
+            <p className="text-xs text-qms-muted">Mínimo 12 caracteres. Si la generás, ambos campos se completan solos.</p><Button type="submit" loading={busy} className="w-full"><KeyRound className="size-4" />Guardar y continuar</Button>
           </form>
             : access && ['enroll', 'verify'].includes(access.phase) ? <div className="mt-5 space-y-5">
               <p className="text-center text-sm text-qms-muted">{access.phase === 'enroll' ? 'Elegí un método de seguridad adicional.' : 'Confirmá tu identidad para entrar al sistema.'}</p>

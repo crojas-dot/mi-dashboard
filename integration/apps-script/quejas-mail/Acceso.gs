@@ -8,7 +8,10 @@ function qmsAccessMailPost_(e) {
   var p=request.payload;
   var fields=p.kind==='invitation'?['eventId','kind','to','url']:['eventId','kind','to','code'];
   if(p.kind==='invitation'&&p.local===true)fields.push('local');
+  if(Object.prototype.hasOwnProperty.call(p,'logo'))fields.push('logo');
   qmsMailRecord_(p,fields);
+  if(Object.prototype.hasOwnProperty.call(p,'logo')&&
+    (typeof p.logo!=='string'||!/^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/branding\/identidad\/login_encabezado\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(p.logo)))throw new Error('invalid');
   if(!qmsMailUuid_(p.eventId)||['invitation','email_otp'].indexOf(p.kind)===-1||typeof p.to!=='string'||p.to.length>254||!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(p.to))throw new Error('invalid');
   if(p.kind==='email_otp'&&(typeof p.code!=='string'||!/^\d{6}$/.test(p.code)))throw new Error('invalid');
   if(p.kind==='invitation'){
@@ -38,7 +41,10 @@ function qmsAccessMailPost_(e) {
   var detail=invitation?'<p>Elegí tu contraseña desde el enlace seguro. Vence en 24 horas y se utiliza una sola vez.</p><p><a href="'+qmsMailEscape_(p.url)+'" style="display:inline-block;padding:12px 20px;border-radius:4px;background:#024796;color:#fff;text-decoration:none">Configurar acceso</a></p>'
    :'<p>Tu código de verificación es:</p><p style="font-size:28px;font-weight:600;letter-spacing:6px;color:#024796">'+p.code+'</p><p>Vence en 10 minutos. No lo compartás.</p>';
   if(invitation&&p.local===true)detail+='<p style="font-size:12px;color:#6c757d">Invitación del entorno local de pruebas. Abrila en la misma computadora donde está abierto ECA-QMS.</p>';
-  var html='<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f4f7f6;font-family:Arial,sans-serif;color:#212529"><div style="max-width:600px;margin:auto;padding:24px;border:1px solid #dee2e6;border-radius:6px;background:#fff"><p style="font-size:18px;font-weight:600;color:#024796">ECA-QMS</p><h1 style="font-size:22px">'+subject+'</h1>'+detail+'<p style="font-size:12px;color:#6c757d">Si no solicitaste este acceso, contactá a la administración.</p></div></body></html>';
+  var branding=p.logo
+   ? '<table role="presentation" style="border-collapse:collapse"><tr><td width="180" height="60" align="left" style="width:180px;height:60px"><img src="'+qmsMailEscape_(p.logo)+'" alt="ECA" width="180" height="60" style="display:block;width:180px;height:60px;border:0"></td><td style="padding-left:12px"><div style="font-size:18px;font-weight:600;color:#024796">ECA-QMS</div><div style="font-size:13px;color:#6c757d">Gestión de Calidad</div></td></tr></table>'
+   : '<p style="font-size:18px;font-weight:600;color:#024796">ECA-QMS</p>';
+  var html='<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f4f7f6;font-family:Arial,sans-serif;color:#212529"><div style="max-width:600px;margin:auto;padding:24px;border:1px solid #dee2e6;border-radius:6px;background:#fff">'+branding+'<h1 style="font-size:22px">'+subject+'</h1>'+detail+'<p style="font-size:12px;color:#6c757d">Si no solicitaste este acceso, contactá a la administración.</p></div></body></html>';
   try {MailApp.sendEmail({to:p.to,subject:subject,body:body,htmlBody:html,name:'ECA-QMS'});cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);return reply('sent');}
   catch(_){return reply('uncertain');}
  }finally{lock.releaseLock();}

@@ -8,6 +8,7 @@ import {loadModule} from './load-module.mjs'
 const secret='synthetic-access-mail-key-'.repeat(3),machine='synthetic-service-role',origin='https://qms.example.test'
 function fixture(options={}) {
  const sent=[],requests=[],cache=new Map(),logs=[]
+ const brand='https://synthetic.supabase.co/storage/v1/object/public/branding/identidad/login_encabezado/11111111-1111-4111-8111-111111111111.png'
  const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:origin}
  const bytes=value=>Array.from(Buffer.from(value))
  const context=vm.createContext({Date,JSON,Number,Array,Object,
@@ -25,6 +26,9 @@ function fixture(options={}) {
  const env={SUPABASE_SERVICE_ROLE_KEY:machine,QUEJAS_MAIL_SIGNING_SECRET:secret,PUBLIC_TRACKING_ORIGIN:origin,SUPABASE_URL:'https://synthetic.supabase.co'}
  const api=loadModule('supabase/functions/qms-access-mailer/index.ts').createAccessMailer({env:name=>env[name],crypto:webcrypto,fetcher:async(url,settings)=>{
   requests.push(url)
+  if(url.includes('/rest/v1/configuraciones_sistema')) {
+    return options.noLogo ? Response.json([]) : Response.json([{clave:'org.identidad.login_encabezado',valor:options.brand ?? brand}])
+  }
   if(url.endsWith('qms_access_mail_transport')){
    if(settings.headers.apikey!==(options.machine??machine))return Response.json({error:'denied'},{status:401})
    return Response.json({enabled:true,endpoint:options.endpoint??'https://script.google.com/macros/s/synthetic/exec'})
@@ -34,17 +38,29 @@ function fixture(options={}) {
   return new Response(output)
  }})
  const send=(message,key=machine)=>api(new Request(origin,{method:'POST',headers:{Authorization:'Bearer '+key},body:JSON.stringify(message)}))
- return {send,sent,requests,cache,logs,context,api}
+ return {send,sent,requests,cache,logs,context,api,brand}
 }
 const invitation=()=>({eventId:randomUUID(),kind:'invitation',to:'synthetic@example.test',url:origin+'/acceso#invitacion='+'a'.repeat(43)})
 test('Edge → Apps Script usa HMAC por propósito y confirma invitación sin contraseña',async()=>{
  const f=fixture(),message=invitation()
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.match(f.sent[0].body,/24 horas/);assert.match(f.sent[0].htmlBody,/#024796/);assert.doesNotMatch(f.sent[0].body,/password:/i)
- assert.equal(f.logs.length,0);assert.equal(f.requests.length,2)
+ assert.ok(f.sent[0].htmlBody.includes('<img src="'+f.brand+'"'))
+ assert.match(f.sent[0].htmlBody,/width="180" height="60"/)
+ assert.equal(f.logs.length,0);assert.equal(f.requests.length,3)
  // El recibo idéntico no repite MailApp aunque Edge reenvíe con otro nonce.
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.doesNotMatch(JSON.stringify([...f.cache.values()]),/synthetic@example|invitacion=|123456/)
+})
+test('la identidad sin logo o con URL no confiable conserva el encabezado textual',async()=>{
+ for(const options of [{noLogo:true},{brand:'https://attacker.example.test/logo.png'}]){
+  const f=fixture(options)
+  const response=await f.send(invitation())
+  assert.equal(response.status,200)
+  assert.equal(f.sent.length,1)
+  assert.doesNotMatch(f.sent[0].htmlBody,/<img\s/i)
+  assert.match(f.sent[0].htmlBody,/>ECA-QMS<\/p>/)
+ }
 })
 test('OTP es distinto del correo de invitación y el diario temporal no almacena sus seis dígitos',async()=>{
  const f=fixture();const result=await f.send({eventId:randomUUID(),kind:'email_otp',to:'alt@example.test',code:'123456'})

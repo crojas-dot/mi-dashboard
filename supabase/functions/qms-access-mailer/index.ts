@@ -18,6 +18,26 @@ async function equal(a: string, b: string, cryptoApi: Crypto) {
   const x = new Uint8Array(await cryptoApi.subtle.digest('SHA-256', enc.encode(a))), y = new Uint8Array(await cryptoApi.subtle.digest('SHA-256', enc.encode(b)))
   let diff = 0; for (let i = 0; i < x.length; i++)diff |= x[i] ^ y[i]; return diff === 0
 }
+/** Logo institucional público y opcional; nunca depende de un dato enviado por el usuario. */
+async function accessLogo(origin: string, key: string, fetcher: typeof fetch): Promise<string | null> {
+  try {
+    const url = new URL('/rest/v1/configuraciones_sistema', origin)
+    url.search = new URLSearchParams({ select: 'clave,valor', clave: 'eq.org.identidad.login_encabezado' }).toString()
+    const res = await fetcher(url.href, {
+      method: 'GET', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(2000),
+      headers: { apikey: key, ...(key.startsWith('sb_secret_') ? {} : { Authorization: 'Bearer ' + key }) },
+    })
+    if (!res.ok) { await res.body?.cancel().catch(() => undefined); return null }
+    const rows = JSON.parse(dec.decode(await bodyBytes(res, 2048)))
+    if (!Array.isArray(rows) || rows.length !== 1 || rows[0]?.clave !== 'org.identidad.login_encabezado') return null
+    const value = rows[0].valor
+    if (typeof value !== 'string') return null
+    const image = new URL(value)
+    if (image.origin !== origin || image.username || image.password || image.search || image.hash
+      || !/^\/storage\/v1\/object\/public\/branding\/identidad\/login_encabezado\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(image.pathname)) return null
+    return image.href
+  } catch { return null }
+}
 /** Servicio de máquina separado del outbox de Quejas. No almacena código, URL ni destinatario. */
 export function createAccessMailer(deps: Dependencies) {
   const fetcher = deps.fetcher ?? fetch, cryptoApi = deps.crypto ?? crypto, now = deps.now ?? Date.now
@@ -55,7 +75,9 @@ export function createAccessMailer(deps: Dependencies) {
         const allowed=message.local===true?['http://localhost:3000','http://127.0.0.1:3000'].includes(url.origin):url.origin===origin&&url.protocol==='https:'
         if (!allowed||url.username||url.password||url.pathname !== '/acceso' || url.search || !/^#invitacion=[A-Za-z0-9_-]{43}$/.test(url.hash)) throw new Error('invalid')
       }
-      const envelope = { version: 1, purpose: 'access_delivery_request', issuedAt: Math.floor(now() / 1000), nonce: cryptoApi.randomUUID(), payload: base64(enc.encode(JSON.stringify(message))) }
+      const logo = await accessLogo(url.origin, supplied, fetcher)
+      const branded = logo ? { ...message, logo } : message
+      const envelope = { version: 1, purpose: 'access_delivery_request', issuedAt: Math.floor(now() / 1000), nonce: cryptoApi.randomUUID(), payload: base64(enc.encode(JSON.stringify(branded))) }
       const signed = { ...envelope, signature: await signature(envelope, secret, cryptoApi) }
       const response = await fetcher(endpoint.href, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(signed), signal: AbortSignal.timeout(25_000), redirect: 'follow' })
       const receipt = JSON.parse(dec.decode(await bodyBytes(response, 4096)))
