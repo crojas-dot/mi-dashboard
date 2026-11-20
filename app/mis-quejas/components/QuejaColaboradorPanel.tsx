@@ -423,13 +423,13 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="case-light"
-      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} prominent />}
+      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="case-notion"
+      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} prominent notionStyle />}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{isExpanded ? cicloEncabezado : cicloMostrado}</div></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
-        cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn
+        cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn notionStyle
         requestFooter={isExpanded && <div className="space-y-2">
           {etapa === 'resolucion' && <button type="button" data-investigation-files-card aria-label="Ver mis adjuntos" onClick={abrirAdjuntos}
             className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
