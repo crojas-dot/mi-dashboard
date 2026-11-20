@@ -91,10 +91,10 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }) {
   return <>
     <div className="hidden items-center gap-1 @min-[480px]/workspace:flex">
-      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja anterior" title="Queja anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-6" /></Button>
-      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja siguiente" title="Queja siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-6" /></Button>
+      <Button size="icon" variant="ghost" className="size-11! text-white/85! hover:bg-white/10! hover:text-white!" aria-label="Queja anterior" title="Queja anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-6" /></Button>
+      <Button size="icon" variant="ghost" className="size-11! text-white/85! hover:bg-white/10! hover:text-white!" aria-label="Queja siguiente" title="Queja siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-6" /></Button>
     </div>
-    <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} title={expanded ? 'Reducir expediente' : 'Ampliar expediente'}
+    <Button size="icon" variant="ghost" className="text-white/85! hover:bg-white/10! hover:text-white!" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} title={expanded ? 'Reducir expediente' : 'Ampliar expediente'}
       aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 aria-hidden="true" className="size-5" /> : <Maximize2 aria-hidden="true" className="size-5" />}</Button>
   </>
 }
@@ -148,7 +148,7 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
           <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
             <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded ? 'rounded-card border border-qms-border' : ''}`}`}>{children}</main>
           </div>
-          <aside data-case-action className={`order-1 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>{action}</aside>
+          <aside data-case-action className={`order-1 min-w-0 ${expanded ? 'case-action-dark p-4 @min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>{action}</aside>
         </div>
       </div>
     </div>
