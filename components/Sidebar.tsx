@@ -83,7 +83,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
   return (
     <aside
       id={id}
-      className={`flex h-full shrink-0 flex-col overflow-hidden bg-qms-workspace-panel text-white transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-16' : 'w-[250px]'} ${className}`}
+      className={`flex h-full shrink-0 flex-col overflow-hidden bg-qms-dark text-white transition-[width] duration-300 ease-in-out motion-reduce:transition-none ${collapsed ? 'w-16' : 'w-[250px]'} ${className}`}
     >
       <div className={`flex h-14 shrink-0 items-center gap-2 ${expanded ? 'border-b border-white/10' : ''}`}>
         <button type="button" onClick={expanded ? onNavigate : toggle} title={accionMarca}
