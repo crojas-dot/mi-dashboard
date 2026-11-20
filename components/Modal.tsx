@@ -45,7 +45,7 @@ export default function Modal({ open, onClose, onEscape, title, titleSuffix, emp
   const sheet = variant === 'sheet' || workspace
   const documentView = variant === 'document' || report
   const centeredWorkspaceHeader = workspace && !!headerCenter
-  const caseLightHeader = workspace && expanded && headerTone === 'case-light'
+  const caseLightHeader = workspace && headerTone === 'case-light'
   const titleId = useId()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const backdropDown = useRef(false)

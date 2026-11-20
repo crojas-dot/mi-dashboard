@@ -423,8 +423,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="quality"
-      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} />}
+      title={`Folio ${queja.folio}`} variant="workspace" expanded={isExpanded} headerTone="case-light"
+      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} prominent />}
       headerCenter={<div className={isExpanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><div className="hidden @min-[1100px]/workspace:block">{isExpanded ? cicloEncabezado : cicloMostrado}</div></div>}
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
