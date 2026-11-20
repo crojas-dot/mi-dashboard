@@ -34,6 +34,10 @@
   /* Cabeceras de tablas: fondo claro independiente del menú y de los modales. */
   --color-qms-table-head: #F0F2F5;
   --color-qms-header: #343a40;
+  /* Superficies oscuras del expediente y del menú principal. */
+  --color-qms-workspace-header: #17212f;
+  --color-qms-workspace-panel: #414c58;
+  --color-qms-workspace-control: #273544;
   --color-qms-surface: #ffffff;
   /* Gris Claro de la guía ECA, aclarado con blanco para las etiquetas de estado. */
   --color-qms-neutral-soft: color-mix(in srgb, #e6e5e5 60%, var(--color-qms-surface));
