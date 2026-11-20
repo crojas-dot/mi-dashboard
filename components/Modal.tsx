@@ -143,9 +143,8 @@ export default function Modal({ open, onClose, onEscape, title, titleSuffix, emp
     >
         {drawer ? <h2 id={titleId} className="sr-only">{title}</h2> : <div
           data-modal-header
-          data-case-workspace-header={workspace || undefined}
           data-case-header-grid={centeredWorkspaceHeader || undefined}
-          className={`${report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : fixedHeight ? 'flex shrink-0 items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-3 text-qms-dark sm:px-6 sm:py-4' : workspace ? 'flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-qms-workspace-header px-4 py-2.5 text-white' : 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark'} ${centeredWorkspaceHeader ? '@min-[1100px]/workspace:grid @min-[1100px]/workspace:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]/workspace:gap-4' : ''}`}
+          className={`${report ? 'flex h-14 min-h-14 shrink-0 flex-nowrap items-center justify-between gap-2 border-b border-qms-border bg-white px-3 text-qms-dark sm:px-4' : confirmation ? 'flex h-16 shrink-0 items-center justify-between gap-3 bg-white px-5 pt-4 text-qms-dark' : fixedHeight ? 'flex shrink-0 items-center justify-between gap-3 border-b border-qms-border bg-qms-surface px-4 py-3 text-qms-dark sm:px-6 sm:py-4' : 'flex shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-4 py-2.5 text-qms-dark'} ${centeredWorkspaceHeader ? '@min-[1100px]/workspace:grid @min-[1100px]/workspace:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]/workspace:gap-4' : ''}`}
         >
           <div className={`flex min-w-0 items-center gap-3 ${headerCenter ? 'shrink-0' : 'flex-1'} ${report ? 'gap-2' : confirmation ? 'gap-3' : ''}`}>
             {headerLeading}
@@ -154,7 +153,7 @@ export default function Modal({ open, onClose, onEscape, title, titleSuffix, emp
           {headerCenter && <div data-modal-header-center className="flex min-w-0 flex-1 items-center justify-center overflow-hidden px-2 @min-[1100px]/workspace:px-0">{headerCenter}</div>}
           <div className={`flex shrink-0 items-center gap-1 ${centeredWorkspaceHeader ? '@min-[1100px]/workspace:justify-self-end' : ''}`}>
             {headerActions}
-            <button type="button" onClick={onClose} aria-label={`Cerrar ${title}`} className={`inline-flex ${report || confirmation ? 'h-9 w-9' : 'h-10 w-10'} shrink-0 cursor-pointer items-center justify-center rounded-button border border-transparent bg-transparent ${workspace ? 'text-white/80 hover:bg-white/10 hover:text-white' : 'text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark'}`}>
+            <button type="button" onClick={onClose} aria-label={`Cerrar ${title}`} className={`inline-flex ${report || confirmation ? 'h-9 w-9' : 'h-10 w-10'} shrink-0 cursor-pointer items-center justify-center rounded-button border border-transparent bg-transparent text-qms-muted hover:bg-qms-hover-bg hover:text-qms-dark`}>
               <svg aria-hidden="true" className={workspace ? 'size-5' : 'size-4'} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
