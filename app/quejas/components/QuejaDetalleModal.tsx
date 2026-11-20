@@ -717,8 +717,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded} headerTone="quality"
-      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} />}
+      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded} headerTone={expanded ? 'case-light' : 'quality'}
+      headerSubtitle={<QuejaClienteDropdown key={queja.id} queja={queja} prominent={expanded} />}
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader chevrons queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>

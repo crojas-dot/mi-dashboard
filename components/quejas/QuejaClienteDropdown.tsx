@@ -6,7 +6,7 @@ import type { Queja } from '@/lib/types'
 import { CaseRequestHeader } from '@/app/quejas/components/QuejaExpedientePanels'
 
 /** Mismo desplegable de solicitante en Quejas y Mis quejas: sin duplicar datos en el lateral. */
-export default function QuejaClienteDropdown({ queja }: { queja: Queja }) {
+export default function QuejaClienteDropdown({ queja, prominent = false }: { queja: Queja; prominent?: boolean }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -32,7 +32,7 @@ export default function QuejaClienteDropdown({ queja }: { queja: Queja }) {
     <button ref={buttonRef} type="button" aria-haspopup="dialog" aria-expanded={open}
       aria-controls={open ? 'queja-cliente-datos' : undefined}
       onClick={() => setOpen(value => !value)}
-      className="flex max-w-full items-center gap-1.5 rounded-sm text-left text-[13px] leading-5 text-[#343A40] hover:text-[#1A1718] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2A61B0]">
+      className={`flex max-w-full items-center gap-1.5 rounded-sm text-left leading-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2A61B0] ${prominent ? 'text-[15px] font-normal text-[#4B5563] hover:text-[#111827]' : 'text-[13px] text-[#343A40] hover:text-[#1A1718]'}`}>
       <span className="min-w-0 truncate">{queja.cliente_nombre || 'Solicitante sin nombre'}</span>
       <ChevronDown aria-hidden="true" className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
