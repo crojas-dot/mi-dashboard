@@ -707,7 +707,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         handleClose()
         requestAnimationFrame(() => { if (row?.isConnected) row.focus({ preventScroll: true }) })
       }}
-      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded}
+      title={'Folio ' + queja.folio} variant="workspace" expanded={expanded} headerTone="case-light"
+      headerSubtitle={<span title={queja.cliente_nombre || 'Solicitante sin nombre'}>{queja.cliente_nombre || 'Solicitante sin nombre'}</span>}
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
