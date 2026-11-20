@@ -583,9 +583,9 @@ function qmsMailHtml_(message, identidad) {
     return '<p style="margin:0 0 12px;color:#343a40;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
   }).join('');
   var marca = identidad && identidad.encabezado
-    ? '<td width="150" height="50" align="left" style="width:150px;height:50px;vertical-align:middle">'
+    ? '<td width="180" height="60" align="left" style="width:180px;height:60px;vertical-align:middle">'
       + '<img src="' + qmsMailEscape_(identidad.encabezado)
-      + '" alt="ECA" width="150" height="50" style="display:block;width:150px;height:50px;border:0"></td>'
+      + '" alt="ECA" width="180" height="60" style="display:block;width:180px;height:60px;border:0"></td>'
     : '<td width="36" height="36" align="center" style="width:36px;height:36px;border-radius:4px;background:#024796;color:#ffffff;font-size:18px;line-height:1;font-weight:600">E</td>';
   return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
     '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
