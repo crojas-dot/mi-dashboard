@@ -53,14 +53,14 @@ export default function LoginPage() {
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
         <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border shadow-md" style={{ backgroundColor: "rgb(255 255 255 / 96%)" }}>
-          <header className="flex min-h-[120px] items-center justify-center border-b border-qms-border px-6 py-3 sm:px-8">
+          <header className="flex items-center justify-center border-b border-qms-border px-6 py-1.5 sm:px-8">
             {logo && logoFallido !== logo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={logo} alt="Logo institucional ECA" draggable={false}
-                className="block h-24 w-full max-w-[320px] object-contain object-center"
+                className="block h-14 w-full max-w-[320px] object-contain object-center"
                 onError={() => setLogoFallido(logo)} />
             ) : (
-              <div aria-hidden="true" className="size-20 overflow-hidden rounded-card bg-qms-primary p-2">
+              <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
                 <EmpresaLogo className="size-full" />
               </div>
             )}
