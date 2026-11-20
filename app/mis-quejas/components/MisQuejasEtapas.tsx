@@ -18,7 +18,7 @@ export function MisQuejasBreadcrumb({ ciclo, etapa, onChange, chevrons = false }
         const color = selected ? 'bg-[#2A61B0] font-semibold text-white'
           : paso.completa ? 'bg-[#E6E5E5] font-semibold text-[#1A1718]'
           : paso.actual ? 'bg-[#D9E5F5] font-semibold text-[#174574]'
-          : 'bg-[#F3F6FB] text-[#4B5563]'
+          : 'border-y border-[#E0E3E7] bg-[#F0F1F3] font-medium text-[#5E6673]'
         const clipPath = indice === 0
           ? 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%)'
           : 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)'
