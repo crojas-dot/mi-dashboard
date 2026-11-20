@@ -57,7 +57,7 @@ export default function LoginPage() {
             {logo && logoFallido !== logo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img src={logo} alt="Logo institucional ECA" draggable={false}
-                className="block h-14 w-full max-w-[320px] object-contain object-left"
+                className="-ml-4 block h-14 w-full max-w-[320px] object-contain object-left"
                 onError={() => setLogoFallido(logo)} />
             ) : (
               <div aria-hidden="true" className="size-14 shrink-0 overflow-hidden rounded-card bg-qms-primary p-1.5">
