@@ -13,7 +13,7 @@ export function validarUsuarioInput(input: unknown, method: 'POST' | 'PATCH'): R
     const access = body.access as Record<string, unknown>
     if (!access || typeof access !== 'object' || Array.isArray(access) || Object.keys(access).sort().join(',') !== 'id,sendByEmail'
       || typeof access.id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(access.id)
-      || typeof access.sendByEmail !== 'boolean' || body.password !== undefined || body.newPassword !== undefined) return { error: 'Configuración de acceso inválida' }
+      || access.sendByEmail !== true || body.password !== undefined || body.newPassword !== undefined) return { error: 'Configuración de acceso inválida' }
     data.access = { id: access.id.toLowerCase(), sendByEmail: access.sendByEmail }
   }
   const fields = method === 'POST'
