@@ -78,6 +78,19 @@ test('Google Apps Script rechaza el mensaje antes de MailApp con diagnóstico ex
  assert.equal(f.sent.length,0)
 })
 
+
+test('origen del login distinto en GAS da error firmado y no envía', async()=>{
+ const f=fixture({scriptOrigin:'https://different.example.test'})
+ const sample=invitation()
+ const message={eventId:sample.eventId,to:sample.to,kind:'temporary_access',
+  name:'Demo',password:'Aa1!'.repeat(6),url:origin+'/login'}
+ const r=await f.send(message)
+ assert.equal(r.status,200)
+ assert.deepEqual(await r.json(),{outcome:'failed',code:'login_origin_mismatch'})
+ assert.equal(f.sent.length,0)
+ assert.match(JSON.stringify(f.logs),/login_origin/)
+})
+
 test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
  const f=fixture(),eventId=randomUUID(),message={eventId,kind:'temporary_access',to:'synthetic@example.test',
   name:'Usuario de prueba',password:'A9!synthetic-password-2026',url:origin+'/login'}
