@@ -20,6 +20,6 @@ export default async function FormularioQuejaPublicaPage({ params, searchParams 
   </div>
 
   return <FondoIdentidad slot="login_fondo" initialUrl={fondo} initialLogo="">
-    <div className="mx-auto w-full max-w-[928px] px-4 py-3 text-qms-dark antialiased sm:flex sm:min-h-dvh sm:flex-col">{form}</div>
+    <div className="mx-auto flex min-h-dvh w-full max-w-[860px] flex-col px-4 py-4 text-qms-dark antialiased sm:py-6">{form}</div>
   </FondoIdentidad>
 }
