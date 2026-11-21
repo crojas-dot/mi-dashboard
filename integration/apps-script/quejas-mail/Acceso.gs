@@ -41,8 +41,8 @@ function qmsAccessMailPost_(e) {
   if(previous){var saved=JSON.parse(previous);return saved.hash===fingerprint?reply(saved.outcome):reply('failed','event_conflict');}
   if(MailApp.getRemainingDailyQuota()<1)return reply('retry','quota_exhausted');
   var message=qmsAccessMailContent_(p);
-  var branding=qmsMailHeader_(qmsMailBrandingIdentity_(p.identidadCorreo));
-  var html='<!doctype html><html lang="es"><body style="margin:0;padding:24px;background:#f4f7f6;font-family:Arial,sans-serif;color:#212529"><div style="max-width:600px;margin:auto;padding:24px;border:1px solid #dee2e6;border-radius:6px;background:#fff">'+branding+'<h1 style="font-size:22px">'+message.subject+'</h1>'+message.detail+'<p style="font-size:12px;color:#6c757d">'+message.footer+'</p></div></body></html>';
+  var subtitle=p.kind==='temporary_access'?'Acceso inicial al sistema':p.kind==='invitation'?'Invitación de usuario':'Verificación de seguridad';
+  var html=qmsMailFrame_(message.subject,subtitle,message.detail,message.footer,qmsMailBrandingIdentity_(p.identidadCorreo));
   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'uncertain'}),21600);
   try {MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);return reply('sent');}
   catch(_){return reply('uncertain','delivery_uncertain');}
