@@ -342,7 +342,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           {esEditar && <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso"
             aria-labelledby="usuario-tab-seguridad" hidden={tab !== 'seguridad'}
             className="mx-auto max-w-4xl space-y-5">
-            <UsuarioSeguridadAcceso usuario={usuario!} esAuto={esAuto} disabled={busy} onBegin={() => lock.begin('acceso')} onEnd={lock.finish} onChanged={() => onPasswordSaved?.()} />
+            <UsuarioSeguridadAcceso usuario={usuario!} esAuto={esAuto} active={open} disabled={busy} onBegin={() => lock.begin('acceso')} onEnd={lock.finish} onChanged={() => onPasswordSaved?.()} />
             {eliminarCuenta}
             {esAuto && <div className="flex items-start gap-2 rounded-card border border-qms-primary/20 bg-qms-primary-soft p-3">
               <ShieldAlert aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
