@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
   const identity = await getAccessIdentity(request)
   if (!identity) return json({ error: 'No autorizado' }, { status: 401 })
   try {
-    return json(await createUserWithAccess(admin, identity, { nombre: nombre!, email: email!, rol: rol!, estado }, access!), { status: 201 })
+    return json(await createUserWithAccess(admin, identity, { nombre: nombre!, email: email!, rol: rol!, estado }, access!, new URL(request.url).origin), { status: 201 })
   } catch (error) {
     const status = error instanceof AccessError ? error.status : 503
     const message = status === 409 ? 'Ya existe una cuenta con ese correo o el alta sigue en curso. Reintentá con la misma solicitud.'
