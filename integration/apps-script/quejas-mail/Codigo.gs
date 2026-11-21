@@ -5,10 +5,10 @@ function qmsMailEnableOfficialAttachments() {
   PropertiesService.getScriptProperties().setProperty('QMS_MAIL_ATTACH_OFFICIAL_DOCUMENTS', 'true');
 }
 
-function doPost(e) {
+function doPost(e, diagnostic) {
   try {
     if (e && e.postData && e.postData.contents.length <= 4096
-      && JSON.parse(e.postData.contents).purpose === 'access_delivery_request') return qmsAccessMailPost_(e);
+      && JSON.parse(e.postData.contents).purpose === 'access_delivery_request') return qmsAccessMailPost_(e, diagnostic);
     if (e && e.postData && e.postData.contents.length <= 4096
       && JSON.parse(e.postData.contents).purpose === 'queue_wake_setup_request') return qmsMailWakeSetup_(e);
     if (e && e.postData && e.postData.contents.length <= 4096
