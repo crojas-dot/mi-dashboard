@@ -51,10 +51,11 @@ function qmsAccessMailPost_(e) {
 }
 
 function qmsAccessMailButton_(url,label) {
- return '<p><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:12px 20px;border-radius:4px;background:#024796;color:#fff;text-decoration:none">'+label+'</a></p>';
+ return '<p style="margin:12px 0 8px"><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:10px 18px;border-radius:4px;background:#024796;color:#fff;font-size:15px;font-weight:600;line-height:1.4;text-decoration:none">'+label+'</a></p>';
 }
 
 function qmsAccessMailContent_(p) {
+ var para='style="margin:0 0 9px;font-size:15px;line-height:1.45;color:#343a40"';
  if(p.kind==='temporary_access'){
   var greeting='Hola, '+p.name+':';
   var expiry='Usá esta contraseña para el primer ingreso. Vence en 72 horas y el sistema te pedirá cambiarla.';
@@ -62,8 +63,10 @@ function qmsAccessMailContent_(p) {
   return {
    subject:'Tu acceso a ECA-QMS está listo', footer:footer,
    body:[greeting,'Se creó tu acceso a ECA-QMS.','Usuario: '+p.to,'Contraseña temporal: '+p.password,'Acceder a ECA-QMS: '+p.url,expiry,footer].join('\n\n'),
-   detail:'<p>'+qmsMailEscape_(greeting)+'</p><p>Se creó tu acceso a ECA-QMS.</p><p><strong>Usuario:</strong> '+qmsMailEscape_(p.to)
-    +'<br><strong>Contraseña temporal:</strong> <code>'+qmsMailEscape_(p.password)+'</code></p>'+qmsAccessMailButton_(p.url,'Acceder a ECA-QMS')+'<p>'+expiry+'</p>'
+   detail:'<p '+para+'>'+qmsMailEscape_(greeting)+' Se creó tu acceso a ECA-QMS.</p>' +
+    '<p '+para+'><strong>Usuario:</strong> '+qmsMailEscape_(p.to) +
+    '<br><strong>Contraseña temporal:</strong> <code>'+qmsMailEscape_(p.password)+'</code></p>' +
+    qmsAccessMailButton_(p.url,'Acceder a ECA-QMS')+'<p '+para+'>'+qmsMailEscape_(expiry)+'</p>'
   };
  }
  var footer='Si no solicitaste este acceso, contactá a la administración.';
@@ -72,8 +75,11 @@ function qmsAccessMailContent_(p) {
   var local=p.local===true?'Invitación del entorno local de pruebas. Abrila en la misma computadora donde está abierto ECA-QMS.':'';
   return {subject:'Configurá tu acceso a ECA-QMS',footer:footer,
    body:'Te invitaron a ECA-QMS. '+instructions+'\n\n'+p.url+(local?'\n\n'+local:''),
-   detail:'<p>'+instructions+'</p>'+qmsAccessMailButton_(p.url,'Configurar acceso')+(local?'<p style="font-size:12px;color:#6c757d">'+local+'</p>':'')};
+   detail:'<p '+para+'>'+qmsMailEscape_(instructions)+'</p>'+qmsAccessMailButton_(p.url,'Configurar acceso')+
+    (local?'<p style="margin:8px 0;font-size:12px;line-height:1.45;color:#6c757d">'+qmsMailEscape_(local)+'</p>':'')};
  }
- return {subject:'Tu código de verificación de ECA-QMS',footer:footer,body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
-  detail:'<p>Tu código de verificación es:</p><p style="font-size:28px;font-weight:600;letter-spacing:6px;color:#024796">'+p.code+'</p><p>Vence en 10 minutos. No lo compartás.</p>'};
+ return {subject:'Tu código de verificación de ECA-QMS',footer:footer,
+  body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
+  detail:'<p '+para+'>Tu código de verificación es:</p><p style="margin:0 0 8px;font-size:26px;font-weight:600;letter-spacing:5px;color:#024796">'+
+   qmsMailEscape_(p.code)+'</p><p '+para+'>Vence en 10 minutos. No lo compartás.</p>'};
 }
