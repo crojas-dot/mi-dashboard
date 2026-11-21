@@ -1,5 +1,5 @@
 export const ACCESS_MAIL_ERRORS = [
-  'disabled', 'ledger_busy', 'quota_exhausted', 'event_conflict', 'access_mail_unavailable', 'delivery_uncertain',
+  'disabled', 'ledger_busy', 'quota_exhausted', 'event_conflict', 'access_mail_unavailable', 'delivery_uncertain', 'provider_rejected',
 ] as const
 
 export type AccessMailCode = (typeof ACCESS_MAIL_ERRORS)[number]
