@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Trash2, Mail, UserPlus, UserRound, Info, ShieldAlert, Pencil, Copy, Check, Eye, EyeOff, Camera } from 'lucide-react'
+import { Trash2, Mail, UserPlus, UserRound, Info, ShieldAlert, Pencil, Check, Camera } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Select from '@/components/ui/Select'
@@ -38,12 +38,8 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [error, setError] = useState<string | null>(null)
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [tab, setTab] = useState<'detalles' | 'seguridad'>(initialTab)
-  const [createdPassword, setCreatedPassword] = useState('')
   const [createdResult, setCreatedResult] = useState<Omit<UserMutationResult, 'tempPassword'> | null>(null)
-  const [sendByEmail, setSendByEmail] = useState(true)
   const creation = useRef<{ payload: string; id: string } | null>(null)
-  const [createdVisible, setCreatedVisible] = useState(true)
-  const [createdCopied, setCreatedCopied] = useState(false)
   const filaConfirmacionEliminar = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -66,12 +62,8 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setConfirmarEliminar(false)
     setError(null)
     setTab('detalles')
-    setCreatedPassword('')
     setCreatedResult(null)
-    setSendByEmail(true)
     creation.current = null
-    setCreatedVisible(true)
-    setCreatedCopied(false)
     onClose()
   }
 
@@ -97,12 +89,11 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
       if (esEditar && usuario) {
         await mutateUsuario('PATCH', { id: usuario.id, ...perfil }, fallback)
       } else {
-        const payload = JSON.stringify({ ...perfil, sendByEmail })
+        const payload = JSON.stringify(perfil)
         if (!creation.current || creation.current.payload !== payload) creation.current = { payload, id: crypto.randomUUID() }
-        const { tempPassword, ...created } = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, sendByEmail } }, fallback)
+        const created = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, sendByEmail: true } }, fallback)
         result = created
         setCreatedResult(created)
-        setCreatedPassword(tempPassword ?? '')
       }
       if (esEditar) showSuccess('Usuario actualizado')
       try {
@@ -147,17 +138,6 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   function abrirSeguridad() {
     setTab('seguridad')
   }
-
-  async function copiarClave() {
-    if (!createdPassword) return
-    try {
-      await navigator.clipboard.writeText(createdPassword)
-      setCreatedCopied(true)
-    } catch {
-      showError(null, 'No se pudo copiar la contraseña')
-    }
-  }
-
 
   const formId = 'usuario-formulario'
   const nombreVisible = usuario?.nombre?.trim() || 'Usuario'
@@ -247,20 +227,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           {createdResult ? <section className="rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5" aria-live="polite">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-success"><Check aria-hidden="true" className="size-4" />Usuario creado</h3>
             {error && <p role="alert" className="mt-3 text-sm text-qms-danger">{error}</p>}
-            {createdPassword ? <div data-user-created-password>
-              <p className="mt-2 text-sm text-qms-muted">Copiá la contraseña temporal. Vence en 24 horas y desaparecerá al cerrar esta confirmación.</p>
-              <div className="mt-3 flex min-w-0 flex-wrap gap-2">
-                <div className="flex min-w-0 flex-1 items-center gap-2 rounded-button border border-qms-border bg-qms-surface px-3 py-2">
-                  <input aria-label="Contraseña temporal de usuario creado" type={createdVisible ? 'text' : 'password'} value={createdPassword} readOnly autoComplete="off" className="min-w-0 flex-1 bg-transparent font-mono text-sm text-qms-dark outline-none" />
-                  <button type="button" aria-label={createdVisible ? 'Ocultar contraseña temporal' : 'Mostrar contraseña temporal'} onClick={() => setCreatedVisible(v => !v)} className="text-qms-muted hover:text-qms-dark">
-                    {createdVisible ? <EyeOff aria-hidden="true" className="size-4" /> : <Eye aria-hidden="true" className="size-4" />}
-                  </button>
-                </div>
-                <Button type="button" size="sm" variant="secondary" onClick={() => void copiarClave()}>
-                  {createdCopied ? <Check aria-hidden="true" className="size-4" /> : <Copy aria-hidden="true" className="size-4" />}{createdCopied ? 'Copiada' : 'Copiar contraseña'}
-                </Button>
-              </div>
-            </div> : createdResult.accessDelivery === 'sent' ? <p className="mt-2 text-sm text-qms-muted">{CORREO_ACCESO_CONFIRMADO}</p>
+            {createdResult.accessDelivery === 'sent' ? <p className="mt-2 text-sm text-qms-muted">{CORREO_ACCESO_CONFIRMADO}</p>
               : <>
                 <p className="mt-2 text-sm text-qms-muted">
                   {createdResult.accessDelivery ? 'El usuario fue creado, pero no se pudo enviar el correo de acceso.' : 'La cuenta ya está creada. Podés reenviar el acceso si hace falta.'}
@@ -318,7 +285,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                   <div className="min-w-0 flex-1 space-y-5">{camposPerfil}</div>
                 </div>
               </section>
-              <UsuarioAccesoInicial sendByEmail={sendByEmail} disabled={busy} onChange={setSendByEmail} />
+              <UsuarioAccesoInicial />
             </>}
           </form>}
           {esEditar && <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso"
