@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
       if (!policy || policy.status === 'disabled' || policy.status === 'invite_pending' || policy.status === 'invite_expired') throw new AccessError('40001', 409)
       // La contraseña cambia bajo la política existente, pero nunca se remite al emisor.
       const result = await resetUserAccess(admin, identity, body.authId, 'reset', false)
+      if (!('tempPassword' in result) || typeof result.tempPassword !== 'string') throw new AccessError('unconfirmed_reset', 503)
       return json({ ok: true, accessDelivery: 'not_sent', tempPassword: result.tempPassword })
     }
     if (body.action === 'resend' || body.action === 'reset') {
