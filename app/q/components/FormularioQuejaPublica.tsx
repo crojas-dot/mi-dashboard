@@ -94,7 +94,7 @@ export default function FormularioQuejaPublica({ token, isEmbed, initialLogo }: 
 
   // Recibir el folio no significa que los adjuntos y la finalización hayan terminado.
   if (completed && !form.enviando && form.receipt) {
-    return <div role="status" aria-atomic="true" className={cardClass}>
+    return <div role="status" aria-atomic="true" className={`${cardClass} ${isEmbed ? '' : 'my-auto'}`}>
         {encabezado('QMS ECA', 'Gestión de Calidad')}
         <div className="py-5 sm:py-6">
           <h1 className="m-0 text-xl font-semibold text-qms-dark">Queja registrada</h1>
