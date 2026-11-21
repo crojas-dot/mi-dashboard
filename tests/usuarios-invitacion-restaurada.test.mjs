@@ -128,3 +128,35 @@ test('reenviar una invitación pendiente no restablece la contraseña del invita
   assert.equal((await response.json()).invitation, 'sent')
   assert.deepEqual(calls, ['invite'])
 })
+
+test('entrega manual de un usuario pendiente exige admin y no invoca el servicio de correo', async () => {
+  const operations = []
+  const real = loadModule('lib/server/accessService.ts', {}, { process: env })
+  const load = role => loadModule('app/api/usuarios/acceso/route.ts', {
+    'next/server': { NextResponse: { json: (value, options = {}) => Response.json(value, options) } },
+    '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'synthetic' },
+    '@/lib/server/auth': { getCurrentUser: async () => ({ rol: role }) },
+    '@/lib/server/accessIdentity': { getAccessIdentity: async () => actor },
+    '@/lib/server/supabase-admin': { createServiceClient: () => ({}) },
+    '@/lib/server/accessService': {
+      ...real,
+      accessDirectory: async () => [{ authId: otherId, status: 'password_pending', temporaryPassword: true }],
+      resetUserAccess: async (_a, _i, id, action, sendByEmail) => {
+        operations.push({ id, action, sendByEmail })
+        return { outcome: 'not_sent', tempPassword: 'synthetic!manualPassword1234' }
+      },
+    },
+  })
+  const makeRequest = () => new Request(origin + '/api/usuarios/acceso', { method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'manual', authId: otherId, confirm: true }) })
+  const unauthorized = await load('colaborador').POST(makeRequest())
+  assert.equal(unauthorized.status, 403)
+  assert.equal(operations.length, 0)
+  const authorized = await load('admin').POST(makeRequest())
+  assert.equal(authorized.status, 200)
+  const body = await authorized.json()
+  assert.equal(body.tempPassword, 'synthetic!manualPassword1234')
+  assert.equal(body.accessDelivery, 'not_sent')
+  assert.deepEqual(operations, [{ id: otherId, action: 'reset', sendByEmail: false }])
+})
