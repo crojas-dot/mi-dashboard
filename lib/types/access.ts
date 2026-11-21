@@ -9,7 +9,7 @@ export interface AccessStatus {
   blockedUntil?: string | null
   generation?: number
 }
-export interface UserAccessSetup { id: string; invite: boolean; requireMfa: boolean; sendByEmail: true }
+export interface UserAccessSetup { id: string; invite: boolean; requireMfa: boolean; sendByEmail: boolean }
 export interface UserAccessDirectory {
   authId: string; requireMfa: boolean; method: AccessMethod | null
   status: 'disabled' | 'invite_pending' | 'invite_expired' | 'password_pending' | 'password_expired' | 'mfa_pending' | 'active'
