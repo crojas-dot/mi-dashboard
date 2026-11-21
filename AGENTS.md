@@ -84,6 +84,24 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   nueva versión en la implementación existente**: GitHub y Supabase no
   actualizan automáticamente el código de Google Apps Script.
   No afirmar entrega real sin un correo de prueba controlado.
+  **Diagnóstico posterior (21 noviembre, 17:07 CR):** una prueba
+  desde Apps Script comprobó configuración, 494 bytes y HMAC correctos,
+  pero `qmsAccessMailPost_` retornó el genérico
+  `invalid_access_delivery`. En el código actualizado, después de la
+  verificación exitosa debería generar `access_delivery_receipt`
+  firmado con `invalid_access_payload` o `login_origin_mismatch`.
+  Revisar **definiciones duplicadas** del manejador (por ejemplo,
+  conservar `Acceso.gs` además del archivo completo) y que la solicitud
+  usada en el paso del handler coincida con la verificada.
+  `qmsAccessMailHealthCheck()` confirma los marcadores del manejador
+  ejecutado y el formato del dominio sin exponer su valor; 
+  `qmsAccessMailSelfTest()` firma una solicitud deliberadamente inválida
+  y comprueba **ambas rutas** sin llamar `MailApp`. Ambas rutas deben
+  devolver `signed_receipt/invalid_access_payload`.
+  El registro compartido incluyó el secreto completo; **rotar**
+  `QMS_MAIL_SECRET` y `QUEJAS_MAIL_SIGNING_SECRET` coordinadamente
+  en sus respectivas plataformas, sin registrarlos ni copiarlos
+  en GitHub o en la conversación. No rotar solo uno porque rompe firmas.
 - **Pruebas:** validar `tests/usuarios-invitacion-restaurada.test.mjs`,
   `tests/usuarios-acceso-seguro.test.mjs`, `tests/usuarios-acceso-mail.test.mjs`,
   suites de Usuarios y build/TS. Usar fixtures y buzones controlados; confirmar
