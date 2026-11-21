@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { KeyRound, Mail, ShieldCheck } from 'lucide-react'
+import { KeyRound, Mail, RotateCcw, ShieldCheck } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
 import { CORREO_ACCESO_CONFIRMADO, gestionarAccesoUsuario } from '@/lib/services/usuariosService'
@@ -16,58 +16,92 @@ interface Props {
   onEnd: () => void
   onChanged: () => void | Promise<void>
 }
+type Action = 'resend' | 'reset' | 'reset_mfa'
 
 export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBegin, onEnd, onChanged }: Props) {
-  const [confirm, setConfirm] = useState(false)
+  const [confirm, setConfirm] = useState<Action | null>(null)
   const [running, setRunning] = useState(false)
-  const [delivery, setDelivery] = useState<UserMutationResult | null>(null)
+  const [delivery, setDelivery] = useState<(UserMutationResult & { kind: 'invitation' | 'temporary' }) | null>(null)
+  const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [refreshFailed, setRefreshFailed] = useState(false)
-  const pending = usuario.access?.temporaryPassword || Boolean(delivery?.ok)
-  const expired = !delivery && usuario.access?.status === 'password_expired'
-  const action = pending ? 'resend' : 'reset'
-  const label = pending ? 'Reenviar acceso' : 'Restablecer contraseña'
+  const policy = usuario.access
+  const invited = policy?.status === 'invite_pending' || policy?.status === 'invite_expired'
+  const temporary = !!policy?.temporaryPassword
+  const pending = invited || temporary
+  const action: 'resend' | 'reset' = pending ? 'resend' : 'reset'
+  const label = invited ? 'Reenviar invitación' : temporary ? 'Reenviar acceso' : 'Restablecer contraseña'
   const unavailable = disabled || esAuto || usuario.estado !== 'activo' || !usuario.auth_id
+  const confirmLabel = confirm === 'reset_mfa' ? 'Restablecer 2FA' : confirm === 'resend' ? label : 'Restablecer contraseña'
 
   async function run() {
-    if (unavailable || !usuario.auth_id || !onBegin()) return
-    setRunning(true)
-    setError('')
-    setRefreshFailed(false)
+    const operation = confirm
+    if (!operation || unavailable || !usuario.auth_id || !onBegin()) return
+    setRunning(true); setError(''); setMessage(''); setRefreshFailed(false)
     try {
-      const result = await gestionarAccesoUsuario(usuario.auth_id, action)
-      setDelivery(result)
-      setConfirm(false)
+      const result = await gestionarAccesoUsuario(usuario.auth_id, operation)
+      if (operation === 'reset_mfa') {
+        setDelivery(null)
+        setMessage('Verificación restablecida. La cuenta deberá configurar nuevamente su segundo factor al ingresar.')
+      } else {
+        setDelivery({ ...result, kind: invited && operation === 'resend' ? 'invitation' : 'temporary' })
+      }
+      setConfirm(null)
       try { await onChanged() } catch { setRefreshFailed(true) }
     } catch (cause) {
-      setConfirm(false)
+      setConfirm(null)
       setError(cause instanceof Error ? cause.message : 'No se pudo actualizar el acceso.')
-    } finally {
-      setRunning(false)
-      onEnd()
-    }
+    } finally { setRunning(false); onEnd() }
   }
+
+  const confirmation = confirm === 'reset_mfa'
+    ? `Se eliminará la verificación actual de ${usuario.nombre}, se cerrarán sus sesiones y deberá configurar un método nuevo. La obligación de 2FA se mantiene.`
+    : confirm === 'resend' && invited
+      ? `Se enviará una nueva invitación a ${usuario.email}. El enlace anterior dejará de funcionar.`
+      : `Se enviará una nueva contraseña temporal a ${usuario.email}. La anterior dejará de funcionar.`
 
   return <section className="rounded-card border border-qms-border bg-qms-surface p-5 sm:p-6">
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0 flex-1">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-dark"><ShieldCheck aria-hidden="true" className="size-4 text-qms-primary" />Acceso a la cuenta</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-dark">
+          <ShieldCheck aria-hidden="true" className="size-4 text-qms-primary" />Configuración de acceso
+        </h3>
         <p className="mt-2 text-sm text-qms-muted">
-          {expired ? 'El acceso temporal venció.' : pending ? 'Cambio de contraseña pendiente.' : 'Enviá una contraseña temporal que deberá cambiarse al iniciar sesión.'}
+          {invited ? policy?.status === 'invite_expired' ? 'La invitación venció y puede reenviarse.' : 'El usuario todavía no ha configurado su acceso mediante la invitación.'
+            : temporary ? policy?.status === 'password_expired' ? 'La contraseña temporal venció.' : 'El usuario debe cambiar su contraseña temporal.'
+              : 'Podés restablecer la contraseña de esta cuenta mediante un correo de acceso.'}
         </p>
       </div>
-      <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm(true)}>
-        {pending ? <Mail aria-hidden="true" className="size-4" /> : <KeyRound aria-hidden="true" className="size-4" />}{label}
+      <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm(action)}>
+        {invited || temporary ? <Mail aria-hidden="true" className="size-4" /> : <KeyRound aria-hidden="true" className="size-4" />}{label}
       </Button>
     </div>
-    {delivery?.accessDelivery === 'sent' && <p role="status" className="mt-3 text-sm text-qms-success">{CORREO_ACCESO_CONFIRMADO}</p>}
-    {delivery && delivery.accessDelivery !== 'sent' && <p role="alert" className="mt-3 text-sm text-qms-danger">
-      Se generó la contraseña temporal, pero no se pudo enviar el correo de acceso. {delivery.accessDeliveryError}
+    {policy && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-qms-border pt-4">
+      <div>
+        <p className="text-sm font-medium text-qms-dark">Verificación en dos pasos</p>
+        <p className="mt-1 text-xs text-qms-muted">
+          {!policy.requireMfa ? 'No requerida para esta cuenta.'
+            : policy.method === 'totp' ? 'Aplicación autenticadora configurada.'
+              : policy.method === 'email' ? 'Correo alternativo verificado.'
+                : 'Obligatoria. Pendiente de configurar durante el primer ingreso.'}
+        </p>
+      </div>
+      {policy.requireMfa && <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm('reset_mfa')}>
+        <RotateCcw aria-hidden="true" className="size-4" />Restablecer 2FA
+      </Button>}
+    </div>}
+    {delivery?.accessDelivery === 'sent' && <p role="status" className="mt-3 text-sm text-qms-success">
+      {delivery.kind === 'invitation' ? 'Invitación enviada al servicio de correo. El enlace anterior dejó de funcionar.' : CORREO_ACCESO_CONFIRMADO}
     </p>}
+    {delivery && delivery.accessDelivery !== 'sent' && <p role="alert" className="mt-3 text-sm text-qms-danger">
+      {delivery.kind === 'invitation' ? 'La invitación se generó, pero no se confirmó su envío.' : 'Se generó una contraseña temporal, pero no se confirmó su envío.'}
+      {delivery.accessDeliveryError ? ' ' + delivery.accessDeliveryError : ' Verificá el resultado antes de reenviar.'}
+    </p>}
+    {message && <p role="status" className="mt-3 text-sm text-qms-success">{message}</p>}
     {refreshFailed && <p role="status" className="mt-2 text-sm text-qms-muted">El listado de usuarios no se pudo actualizar.</p>}
     {error && <p role="alert" className="mt-3 text-sm text-qms-danger">{error}</p>}
-    <ConfirmDialog open={confirm} title={label}
-      message={`Se enviará una nueva contraseña temporal a ${usuario.email}. La anterior dejará de funcionar.`}
-      confirmLabel={label} loading={running} onCancel={() => setConfirm(false)} onConfirm={() => void run()} />
+    <ConfirmDialog open={confirm !== null} title={confirmLabel} message={confirmation}
+      confirmLabel={confirmLabel} danger={confirm === 'reset_mfa'} loading={running}
+      onCancel={() => setConfirm(null)} onConfirm={() => void run()} />
   </section>
 }
