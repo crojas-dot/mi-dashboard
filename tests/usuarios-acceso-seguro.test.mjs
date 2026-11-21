@@ -35,7 +35,7 @@ test('SDK real transporta el Bearer de la persona en enrolamiento, desafío y va
 })
 
 test('alta reserva antes de Auth, crea una sola cuenta y conserva perfil ante fallo de correo',async()=>{
- const calls=[],setup={id:randomUUID(),invite:true,requireMfa:true}
+ const calls=[],setup={id:randomUUID(),invite:true,requireMfa:true,sendByEmail:true}
  const admin={rpc:async(action,args)=>{
   calls.push(args.p_action)
   if(args.p_action==='create_begin')return {data:{completed:false,authId:null}}
@@ -44,18 +44,18 @@ test('alta reserva antes de Auth, crea una sola cuenta y conserva perfil ante fa
  },auth:{admin:{createUser:async input=>{calls.push('auth');assert.equal(input.app_metadata.qms_creation_id,setup.id);assert.equal(input.password.length,24);return {data:{user:{id:target}}}},deleteUser:()=>assert.fail('No eliminar una cuenta ya creada')}},functions:{invoke:async()=>({error:new Error('synthetic delivery failure')})}}
  const value=await service().createUserWithAccess(admin,actor,{nombre:'Persona ficticia',email:'new@example.test',rol:'colaborador',estado:'activo'},setup)
  assert.deepEqual(calls,['create_begin','auth','create_commit','invite','invite_result'])
- assert.equal(value.created,true);assert.equal(value.userId,target);assert.equal(value.invitation,'failed');assert.equal(value.tempPassword,undefined)
+ assert.equal(value.created,true);assert.equal(value.userId,target);assert.equal(value.invitation,'uncertain');assert.equal(value.tempPassword,undefined)
 })
 test('reintento de alta completada no crea Auth, no reenvía correo ni vuelve a revelar contraseña',async()=>{
  const admin={rpc:async()=>({data:{completed:true,authId:target}}),auth:{admin:{createUser:()=>assert.fail('Duplicado')}},functions:{invoke:()=>assert.fail('Reenvío automático')}}
  const value=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:false})
  assert.equal(value.tempPassword,undefined);assert.equal(value.created,true)
 })
-test('sin invitación, la contraseña se genera en servidor y solo sale en la primera respuesta',async()=>{
+test('sin invitación, la contraseña se envía por correo sin exponerla en la API',async()=>{
  let password
- const admin={rpc:async(_,{p_action})=>({data:p_action==='create_begin'?{completed:false,authId:null}:{}}),auth:{admin:{createUser:async value=>{password=value.password;return {data:{user:{id:target}}}}}},functions:{invoke:()=>assert.fail('No enviar correo')}}
+ const admin={rpc:async(_,{p_action,p_data})=>({data:p_action==='create_begin'?{completed:false,authId:null,id:p_data.id,leaseUntil:new Date(Date.now()+90000).toISOString()}:p_action==='create_commit'?{issued:true}:{}}),auth:{admin:{createUser:async value=>{password=value.password;return {data:{user:{id:target}}}}}},functions:{invoke:async(_,{body})=>{assert.equal(body.kind,'temporary_access');assert.equal(body.password,password);return {data:{outcome:'sent'}}}}}
  const result=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:true})
- assert.equal(result.tempPassword,password);assert.match(password,/[A-Z]/);assert.match(password,/[0-9]/);assert.equal(password.length,24)
+ assert.equal(result.tempPassword,undefined);assert.equal(result.accessDelivery,'sent');assert.match(password,/[A-Z]/);assert.match(password,/[0-9]/);assert.equal(password.length,24)
 })
 test('localhost se elige únicamente en desarrollo; producción conserva HTTPS aunque cambie el Host',async()=>{
  for(const mode of ['development','production']) {
@@ -93,7 +93,7 @@ function accessApi({identity=actor,phase='enroll',command=async()=>({phase:'read
  const id=identity?{...identity,client:{auth:{mfa:native,getClaims:async()=>({data:{claims:{sub:identity.id,session_id:identity.sessionId,aal:'aal2'}}})}}}:null
  const api=loadModule('app/api/auth/acceso/route.ts',{
   ...responseMock,...guards,'@/lib/server/accessIdentity':{getAccessIdentity:async()=>id},'@/lib/server/supabase-admin':{createServiceClient:()=>({})},
-  '@/lib/server/accessService':{...s,accessStatus:async()=>({managed:true,phase}),accessCommand:async(_,who,action,payload)=>{calls.push({who,action,payload});return command(action,payload)},sendAccessMessage:async(_,message)=>{calls.push({mail:message});return mail},setOwnAccessPassword:async()=>calls.push({password:true})},
+  '@/lib/server/accessService':{...s,accessStatus:async()=>({managed:true,phase}),accessCommand:async(_,who,action,payload)=>{calls.push({who,action,payload});return command(action,payload)},sendAccessMessage:async(_,message)=>{calls.push({mail:message});return {outcome:mail}},setOwnAccessPassword:async()=>calls.push({password:true})},
  })
  return {api,calls}
 }
