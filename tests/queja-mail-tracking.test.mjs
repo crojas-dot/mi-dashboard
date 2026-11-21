@@ -179,7 +179,7 @@ test('Apps Script conserva hash legacy, integra URL en hash nuevo y solo carga e
   assert.match(html, /Consultar mi trámite/)
   assert.match(html, /sin contraseña/)
   assert.match(html, /href="https:\/\/qms\.example\.test\/q\/seguimiento#clave=/)
-  assert.match(html, /max-width:760px/)
+  assert.match(html, /max-width:900px/)
   assert.doesNotMatch(html, /Seguimiento privado:/)
   assert.doesNotMatch(html, /<(?:script|iframe|link)\b/)
   assert.equal((html.match(/<img /g) ?? []).length, 1)
