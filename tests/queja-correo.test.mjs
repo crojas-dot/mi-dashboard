@@ -76,7 +76,7 @@ test('el HTML del emisor conserva el correo editado como texto y no lo cambia po
   const message = quejaMailMessage(claimMailSnapshot({ ...snapshot, correo }))
   const html = context.qmsMailHtml_(message)
   assert.match(html, /Estimada Ana:/)
-  assert.match(html, /max-width:760px/)
+  assert.match(html, /max-width:900px/)
   assert.match(html, /Número de registro/)
   assert.match(html, /Resultado de la gestión/)
   assert.match(html, /Estos son los resultados adjuntos/)
