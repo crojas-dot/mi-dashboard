@@ -51,11 +51,11 @@ function qmsAccessMailPost_(e) {
 }
 
 function qmsAccessMailButton_(url,label) {
- return '<p style="margin:12px 0 8px"><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:10px 18px;border-radius:4px;background:#024796;color:#fff;font-size:15px;font-weight:600;line-height:1.4;text-decoration:none">'+label+'</a></p>';
+ return '<p style="margin:12px 0 8px"><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:10px 18px;border-radius:4px;background:#024796;color:#fff;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;font-weight:600;line-height:1.5;text-decoration:none">'+label+'</a></p>';
 }
 
 function qmsAccessMailContent_(p) {
- var para='style="margin:0 0 9px;font-size:15px;line-height:1.45;color:#343a40"';
+ var para='style="margin:0 0 9px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;line-height:1.5;color:#212529"';
  if(p.kind==='temporary_access'){
   var greeting='Hola, '+p.name+':';
   var expiry='Usá esta contraseña para el primer ingreso. Vence en 72 horas y el sistema te pedirá cambiarla.';
@@ -76,10 +76,10 @@ function qmsAccessMailContent_(p) {
   return {subject:'Configurá tu acceso a ECA-QMS',footer:footer,
    body:'Te invitaron a ECA-QMS. '+instructions+'\n\n'+p.url+(local?'\n\n'+local:''),
    detail:'<p '+para+'>'+qmsMailEscape_(instructions)+'</p>'+qmsAccessMailButton_(p.url,'Configurar acceso')+
-    (local?'<p style="margin:8px 0;font-size:12px;line-height:1.45;color:#6c757d">'+qmsMailEscape_(local)+'</p>':'')};
+    (local?'<p style="margin:8px 0;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#6c757d">'+qmsMailEscape_(local)+'</p>':'')};
  }
  return {subject:'Tu código de verificación de ECA-QMS',footer:footer,
   body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
-  detail:'<p '+para+'>Tu código de verificación es:</p><p style="margin:0 0 8px;font-size:26px;font-weight:600;letter-spacing:5px;color:#024796">'+
+  detail:'<p '+para+'>Tu código de verificación es:</p><p style="margin:0 0 8px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:26px;font-weight:600;letter-spacing:5px;color:#024796">'+
    qmsMailEscape_(p.code)+'</p><p '+para+'>Vence en 10 minutos. No lo compartás.</p>'};
 }
