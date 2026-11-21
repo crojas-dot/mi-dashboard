@@ -179,9 +179,10 @@ export async function createUserWithAccess(admin: SupabaseClient, identity: Sess
     }
     return { ...created, invitation: delivery.outcome, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
   }
-  const temporary = reservation as { id: string; leaseUntil: string }
+  if (!('id' in reservation) || typeof reservation.id !== 'string'
+    || !('leaseUntil' in reservation) || typeof reservation.leaseUntil !== 'string') throw new AccessError('40001', 409)
   const { issued } = await temporaryAccessCommand<{ issued: boolean }>(admin, identity, 'create_commit', {
-    id: temporary.id, authId, leaseUntil: temporary.leaseUntil,
+    id: reservation.id, authId, leaseUntil: reservation.leaseUntil,
   })
   if (!issued) return { ...created, accessDelivery: 'not_sent' }
   const delivery = await sendTemporaryAccess(admin, temporary.id, input.nombre, input.email, password)
