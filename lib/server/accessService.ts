@@ -192,7 +192,7 @@ export async function createUserWithAccess(admin: SupabaseClient, identity: Sess
   return { ...created, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
 }
 
-export async function resetUserAccess(admin: SupabaseClient, identity: SessionIdentity, authId: string, action: 'resend' | 'reset') {
+export async function resetUserAccess(admin: SupabaseClient, identity: SessionIdentity, authId: string, action: 'resend' | 'reset', sendByEmail = true) {
   const operation = await temporaryAccessCommand<{ id: string; email: string; name: string }>(admin, identity, action, { authId })
   const password = generatePassword(24)
   try {
@@ -202,6 +202,7 @@ export async function resetUserAccess(admin: SupabaseClient, identity: SessionId
     await temporaryAccessCommand(admin, identity, 'reset_release', { authId, id: operation.id }).catch(() => undefined)
     throw new AccessError('unconfirmed_reset', 503)
   }
+  if (!sendByEmail) return { outcome: 'not_sent' as const, tempPassword: password, reason: undefined }
   return sendTemporaryAccess(admin, operation.id, operation.name, operation.email, password)
 }
 
