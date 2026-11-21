@@ -45,11 +45,11 @@ test('Edge → Apps Script usa HMAC por propósito y confirma invitación sin co
  const f=fixture(),message=invitation()
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.match(f.sent[0].body,/24 horas/);assert.match(f.sent[0].htmlBody,/#024796/);assert.doesNotMatch(f.sent[0].body,/password:/i)
- assert.match(f.sent[0].htmlBody,/max-width:760px/)
+ assert.match(f.sent[0].htmlBody,/max-width:900px/)
  assert.match(f.sent[0].htmlBody,/Invitación de usuario/)
  assert.match(f.sent[0].htmlBody,/border-bottom:1px solid #dee2e6/)
  assert.ok(f.sent[0].htmlBody.includes('<img src="'+f.brand+'"'))
- assert.match(f.sent[0].htmlBody,/width="240" height="80"/)
+ assert.match(f.sent[0].htmlBody,/width="200" height="64"/)
  assert.equal(f.logs.length,0);assert.equal(f.requests.length,3)
  // El recibo idéntico no repite MailApp aunque Edge reenvíe con otro nonce.
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
