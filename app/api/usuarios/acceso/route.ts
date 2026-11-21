@@ -16,8 +16,16 @@ export async function POST(request: NextRequest) {
   if (!identity || !admin) return json({ error: 'Servicio no disponible' }, 503)
   try {
     const body = await readAccessJson(request, 512)
-    if (!accessUuid(body.authId) || typeof body.action !== 'string' || !['resend', 'reset', 'reset_mfa'].includes(body.action) || Object.keys(body).some(key => !['action', 'authId', 'confirm'].includes(key))) return json({ error: 'Solicitud inválida' }, 400)
+    if (!accessUuid(body.authId) || typeof body.action !== 'string' || !['resend', 'reset', 'reset_mfa', 'manual'].includes(body.action) || Object.keys(body).some(key => !['action', 'authId', 'confirm'].includes(key))) return json({ error: 'Solicitud inválida' }, 400)
     if (body.confirm !== true || body.authId === identity.id) return json({ error: 'La confirmación de otro administrador es obligatoria.' }, 400)
+    if (body.action === 'manual') {
+      const directory = await accessDirectory(admin, identity, [body.authId])
+      const policy = directory.find(item => item.authId === body.authId)
+      if (!policy || policy.status === 'disabled' || policy.status === 'invite_pending' || policy.status === 'invite_expired') throw new AccessError('40001', 409)
+      // La contraseña cambia bajo la política existente, pero nunca se remite al emisor.
+      const result = await resetUserAccess(admin, identity, body.authId, 'reset', false)
+      return json({ ok: true, accessDelivery: 'not_sent', tempPassword: result.tempPassword })
+    }
     if (body.action === 'resend' || body.action === 'reset') {
       if (body.action === 'resend') {
         const directory = await accessDirectory(admin, identity, [body.authId])
