@@ -185,6 +185,8 @@ export async function createUserWithAccess(admin: SupabaseClient, identity: Sess
     id: reservation.id, authId, leaseUntil: reservation.leaseUntil,
   })
   if (!issued) return { ...created, accessDelivery: 'not_sent' }
+  // Solo una entrega manual solicitada explícitamente devuelve la clave, una vez, al administrador.
+  if (!setup.sendByEmail) return { ...created, accessDelivery: 'not_sent', tempPassword: password }
   const delivery = await sendTemporaryAccess(admin, reservation.id, input.nombre, input.email, password)
   return { ...created, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
 }
