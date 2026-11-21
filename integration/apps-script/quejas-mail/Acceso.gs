@@ -160,7 +160,8 @@ function qmsAccessMailSelfTest() {
  var results={};
  steps.forEach(function(entry) {
   try {
-   var output=entry[1](request).getContent();
+   var response=entry[1](request);
+   var output=typeof response==='string'?response:response.getContent();
    if (output.length>4096) throw new Error('oversized');
    var parsed=JSON.parse(output);
    if(parsed.error){results[entry[0]]={type:'generic_rejection'};return;}
