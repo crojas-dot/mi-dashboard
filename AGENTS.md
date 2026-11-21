@@ -59,6 +59,16 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   su código; GitHub y Vercel no publican Google. Mantener URL, propiedades,
   activadores y el flujo de quejas/OTP. `Vercel READY` no demuestra recepción
   real ni garantiza que Google tenga la versión nueva.
+  **Nuevo destino aislado (21 noviembre):** migración
+  `20261121222345_acceso_correo_endpoint_independiente.sql` agrega
+  `qms_private.mail_wake_settings.access_endpoint` (nullable).
+  `qms_access_mail_transport()` usa `coalesce(access_endpoint,endpoint)`:
+  sin URL nueva, Acceso sigue apuntando al transporte anterior. Al
+  recibir una URL real `https://script.google.com/macros/s/.../exec`
+  de una **implementación nueva del mismo proyecto Apps Script**,
+  escribirla solo en `access_endpoint`; nunca reemplazar `endpoint`
+  porque lo utiliza Quejas. Conservar Script Properties, permisos, secretos
+  y triggers. Revalidar la recepción del correo real antes de afirmar éxito.
 - **Incidencia real (21 noviembre, 16:06 CR):** `qms-access-mailer` v4
   recibió la solicitud y Google Apps Script respondió
   `invalid_access_delivery` **antes de `MailApp.sendEmail`**.
