@@ -138,7 +138,7 @@ export async function createUserWithAccess(admin: SupabaseClient, identity: Sess
   })
   const created = { ok: true, created: true, userId: authId } as const
   if (!issued) return created
-  if (!setup.sendByEmail) return { ...created, accessDelivery: 'not_sent', tempPassword: password }
+  // Los accesos nuevos se entregan exclusivamente por correo institucional.
   const delivery = await sendTemporaryAccess(admin, reservation.id, input.nombre, input.email, password)
   return { ...created, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
 }
