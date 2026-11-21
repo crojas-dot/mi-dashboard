@@ -185,7 +185,7 @@ export async function createUserWithAccess(admin: SupabaseClient, identity: Sess
     id: reservation.id, authId, leaseUntil: reservation.leaseUntil,
   })
   if (!issued) return { ...created, accessDelivery: 'not_sent' }
-  const delivery = await sendTemporaryAccess(admin, temporary.id, input.nombre, input.email, password)
+  const delivery = await sendTemporaryAccess(admin, reservation.id, input.nombre, input.email, password)
   return { ...created, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
 }
 
