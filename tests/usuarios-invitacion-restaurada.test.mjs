@@ -36,6 +36,7 @@ test('POST valida dos opciones independientes y exige siempre envío seguro por 
   const { validarUsuarioInput } = loadModule('lib/server/usuarioInput.ts')
   const base = { nombre: 'Ana', email: 'ana@example.test', rol: 'colaborador', estado: 'activo' }
   for (const invite of [true, false]) for (const requireMfa of [true, false]) for (const sendByEmail of [true, false]) {
+    if (invite && !sendByEmail) continue // La invitación legacy necesita correo para entregar el vínculo.
     const access = { id: randomUUID(), invite, requireMfa, sendByEmail }
     const value = validarUsuarioInput({ ...base, access }, 'POST')
     assert.equal(value.error, undefined)
@@ -47,6 +48,7 @@ test('POST valida dos opciones independientes y exige siempre envío seguro por 
     { id: randomUUID(), invite: 'true', requireMfa: true, sendByEmail: true },
     { id: randomUUID(), invite: true, requireMfa: 'true', sendByEmail: true },
     { id: randomUUID(), invite: true, requireMfa: true, sendByEmail: 'no' },
+    { id: randomUUID(), invite: true, requireMfa: true, sendByEmail: false },
   ]) assert.equal(validarUsuarioInput({ ...base, access }, 'POST').error, 'Configuración de acceso inválida')
 })
 
