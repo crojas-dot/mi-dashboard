@@ -1,10 +1,10 @@
 /**
- * ECA-QMS — Google Apps Script completo para una implementación única.
- * Incluye Quejas, invitaciones heredadas, contraseña temporal y OTP.
- * Diagnóstico seguro de firma, UUID y handler (no envía correos).
- * Sustituir el archivo antiguo SIN duplicar funciones en otros .gs.
- * Guardar y publicar una nueva versión en la implementación /exec existente.
- * Mantener Script Properties y activadores del proyecto.
+ * ECA-QMS — Google Apps Script completo para UNA implementación.
+ * Quejas, invitaciones heredadas, contraseña temporal y OTP.
+ * Correo de acceso usa manejador versionado, sin afectar Quejas.
+ * Guardar este archivo completo y actualizar la implementación /exec.
+ * No pegar encima de otro archivo que declare estas funciones.
+ * Mantener Script Properties y los activadores existentes.
  */
 
 /** Servicio independiente de correo. No modifica el procesador de archivos. */
@@ -17,7 +17,7 @@ function qmsMailEnableOfficialAttachments() {
 function doPost(e, diagnostic) {
   try {
     if (e && e.postData && e.postData.contents.length <= 4096
-      && JSON.parse(e.postData.contents).purpose === 'access_delivery_request') return qmsAccessMailPost_(e, diagnostic);
+      && JSON.parse(e.postData.contents).purpose === 'access_delivery_request') return qmsAccessMailPostV20261121_(e, diagnostic);
     if (e && e.postData && e.postData.contents.length <= 4096
       && JSON.parse(e.postData.contents).purpose === 'queue_wake_setup_request') return qmsMailWakeSetup_(e);
     if (e && e.postData && e.postData.contents.length <= 4096
@@ -663,9 +663,9 @@ function qmsMailHtml_(message, identidad) {
 // ========= ACCESO DE USUARIOS Y OTP =========
 
 /** Envío de acceso transitorio: el recibo solo contiene identificadores y resultado. */
-function qmsAccessMailPost_(e, diagnostic) {
+function qmsAccessMailPostV20261121_(e, diagnostic) {
  var configuration,request,stage='configuration',authenticated=false;
- if (diagnostic) diagnostic.phase=stage;
+ if (diagnostic) { diagnostic.phase=stage; diagnostic.handlerVersion='2026-11-21-v2'; }
  try {
   configuration=qmsMailConfiguration_();
   stage='envelope'; if (diagnostic) diagnostic.phase=stage;
@@ -800,7 +800,7 @@ function qmsAccessMailHealthCheck() {
  var probe=qmsAccessMailSelfTest();
  var result={
   handler:'access_delivery_request/temporary_access',
-  diagnosticRevision:'2026-11-21-fases',
+  diagnosticRevision:'2026-11-21-versioned',
   secretPresent:Utilities.newBlob(secret).getBytes().length>=32,
   signingSecretConfigured:Utilities.newBlob(secret).getBytes().length>=32,
   mailEnabled:props.getProperty('QMS_MAIL_ENABLED')==='true',
@@ -826,7 +826,7 @@ function qmsAccessMailHealthCheck() {
  */
 function qmsAccessMailSelfTest() {
  var result={
-  diagnosticRevision:'2026-11-21-fases',
+  diagnosticRevision:'2026-11-21-versioned',
   eventIdValid:false,nonceValid:false,bytesUnderLimit:false,
   roundTripValid:false,roundTripEventIdMatches:false,
   direct:{type:'not_executed'},doPost:{type:'not_executed'}
@@ -855,25 +855,26 @@ function qmsAccessMailSelfTest() {
   var request={postData:{contents:raw}};
   var directTrace={preventSend:true};
   var routedTrace={preventSend:true};
-  [['direct',qmsAccessMailPost_,directTrace],['doPost',doPost,routedTrace]].forEach(function(entry){
+  [['direct',qmsAccessMailPostV20261121_,directTrace],['doPost',doPost,routedTrace]].forEach(function(entry){
    try {
     var output=entry[1](request,entry[2]);
     var text=typeof output==='string'?output:output.getContent();
     if(text.length>4096)throw new Error('oversized');
     var parsed=JSON.parse(text);
     if(parsed.error){
-     result[entry[0]]={type:'generic_rejection',phase:entry[2].phase||'unavailable',
+     result[entry[0]]={type:'generic_rejection',handlerVersion:entry[2].handlerVersion||'unavailable',phase:entry[2].phase||'unavailable',
        authenticated:entry[2].authenticated===true,eventIdValid:entry[2].eventIdValid===true};
      return;
     }
     var receipt=qmsMailVerify_(parsed,'access_delivery_receipt',configuration.secret,2048).payload;
-    result[entry[0]]={type:'signed_receipt',code:receipt.code||'',outcome:receipt.outcome||'',
+    result[entry[0]]={type:'signed_receipt',handlerVersion:entry[2].handlerVersion||'unavailable',code:receipt.code||'',outcome:receipt.outcome||'',
       phase:entry[2].phase||'unavailable'};
    }catch(_){
-    result[entry[0]]={type:'exception',phase:entry[2].phase||'unavailable'};
+    result[entry[0]]={type:'exception',handlerVersion:entry[2].handlerVersion||'unavailable',phase:entry[2].phase||'unavailable'};
    }
   });
-  result.valid=result.direct.type==='signed_receipt'&&result.direct.code==='invalid_access_payload'&&
+  result.valid=result.direct.handlerVersion==='2026-11-21-v2'&&result.doPost.handlerVersion==='2026-11-21-v2'&&
+   result.direct.type==='signed_receipt'&&result.direct.code==='invalid_access_payload'&&
    result.doPost.type==='signed_receipt'&&result.doPost.code==='invalid_access_payload';
  }catch(_){result.valid=false;result.failureStage='self_test_setup';}
  console.info('qms_access_mail_self_test',JSON.stringify(result));
