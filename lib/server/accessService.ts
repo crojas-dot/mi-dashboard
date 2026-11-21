@@ -1,5 +1,5 @@
 import 'server-only'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { AccessIdentity } from '@/lib/server/accessIdentity'
 import type { AccessStatus, UserAccessDirectory, UserAccessSetup, UserMutationResult } from '@/lib/types/access'
@@ -96,50 +96,95 @@ export async function sendAccessMessage(admin: SupabaseClient, message: Record<s
   } catch { /* Una respuesta de transporte perdida no confirma el envío. */ }
   return { outcome: 'uncertain', reason: accessMailReasons.delivery_uncertain }
 }
-async function sendTemporaryAccess(admin: SupabaseClient, eventId: string, name: string, email: string, password: string) {
+function accessOrigin(requestOrigin?: string) {
+  // Solo desarrollo local puede generar enlaces de loopback. Producción usa el origen configurado.
+  if (process.env.NODE_ENV === 'development' && ['http://localhost:3000', 'http://127.0.0.1:3000'].includes(requestOrigin ?? '')) {
+    return { origin: requestOrigin!, local: true }
+  }
   let url: URL
   try {
     url = new URL(process.env.PUBLIC_TRACKING_ORIGIN ?? '')
     if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error()
+  } catch { throw new AccessError('configuration', 503) }
+  return { origin: url.origin, local: false }
+}
+
+export async function inviteAccess(admin: SupabaseClient, identity: SessionIdentity, authId: string, requestOrigin?: string) {
+  const { origin, local } = accessOrigin(requestOrigin)
+  const token = randomBytes(32).toString('base64url')
+  const eventId = randomUUID()
+  // El vínculo no se conserva en DB: únicamente su digest SHA-256. Reenviar invalida el anterior.
+  const { email } = await accessCommand<{ email: string }>(admin, identity, 'invite', {
+    authId, id: eventId, digest: createHash('sha256').update(token).digest('hex'),
+  })
+  const delivery = await sendAccessMessage(admin, {
+    eventId, kind: 'invitation', to: email, url: origin + '/acceso#invitacion=' + token,
+    ...(local ? { local: true } : {}),
+  })
+  try {
+    await accessCommand(admin, identity, 'invite_result', { authId, id: eventId, delivery: delivery.outcome })
   } catch {
-    return { outcome: 'failed', reason: 'El enlace oficial de ingreso no está configurado.' } as const
+    // Nunca reenviar automáticamente cuando el proveedor pudo haber aceptado el correo.
+    return { outcome: 'uncertain' as const, reason: 'El resultado de la invitación no se pudo registrar. Revisá la entrega antes de reenviar.' }
   }
-  return sendAccessMessage(admin, { eventId, kind: 'temporary_access', to: email, name, password, url: `${url.origin}/login` })
+  return delivery
+}
+
+async function sendTemporaryAccess(admin: SupabaseClient, eventId: string, name: string, email: string, password: string) {
+  let origin: string
+  try { origin = accessOrigin().origin }
+  catch { return { outcome: 'failed' as const, reason: 'El enlace oficial de ingreso no está configurado.' } }
+  return sendAccessMessage(admin, { eventId, kind: 'temporary_access', to: email, name, password, url: origin + '/login' })
 }
 
 export async function createUserWithAccess(admin: SupabaseClient, identity: SessionIdentity,
-  input: { nombre: string; email: string; rol: string; estado: string }, setup: UserAccessSetup): Promise<UserMutationResult> {
-  const reservation = await temporaryAccessCommand<{ id: string; completed: boolean; authId: string | null; leaseUntil: string }>(
-    admin, identity, 'create_begin', { ...input, ...setup, temporaryAccess: true, invite: false, requireMfa: false },
-  )
+  input: { nombre: string; email: string; rol: string; estado: string }, setup: UserAccessSetup, requestOrigin?: string): Promise<UserMutationResult> {
+  if (setup.invite) accessOrigin(requestOrigin) // Validar URL antes de reservar Auth y perfil.
+  const payload = { ...input, ...setup, ...(setup.invite ? {} : { temporaryAccess: true }) }
+  const reservation = setup.invite
+    ? await accessCommand<{ completed: boolean; authId: string | null }>(admin, identity, 'create_begin', payload)
+    : await temporaryAccessCommand<{ id: string; completed: boolean; authId: string | null; leaseUntil: string }>(admin, identity, 'create_begin', payload)
   const existing = reservation.authId
   if (reservation.completed) {
     if (!existing) throw new AccessError('40001', 409)
-    return { ok: true, created: true, userId: existing }
+    // La operación ya creó la cuenta; el botón de reenvío gestiona el correo aparte.
+    return { ok: true, created: true, userId: existing, accessDelivery: 'not_sent',
+      ...(setup.invite ? { invitation: 'not_sent' as const } : {}) }
   }
-  let authId: string
   const password = generatePassword(24)
+  let authId: string
   if (existing) {
-    // El alta incompleta nunca entrega la clave original. Emitir una nueva
-    // antes de crear el perfil permite recuperar incluso una respuesta perdida.
-    const { error } = await admin.auth.admin.updateUserById(existing, { password })
-    if (error) throw new AccessError('create_auth', 503)
+    if (!setup.invite) {
+      // Una creación temporal interrumpida siempre emite otra credencial segura.
+      const { error } = await admin.auth.admin.updateUserById(existing, { password })
+      if (error) throw new AccessError('create_auth', 503)
+    }
     authId = existing
   } else {
     const { data, error } = await admin.auth.admin.createUser({
       email: input.email, password, email_confirm: true,
-      user_metadata: { nombre: input.nombre }, app_metadata: { qms_creation_id: reservation.id },
+      user_metadata: { nombre: input.nombre }, app_metadata: { qms_creation_id: setup.id },
     })
     if (error || !data.user) throw new AccessError('create_auth', error?.status && error.status < 500 ? 409 : 503)
     authId = data.user.id
   }
-  const { issued } = await temporaryAccessCommand<{ issued: boolean }>(admin, identity, 'create_commit', {
-    id: reservation.id, authId, leaseUntil: reservation.leaseUntil,
-  })
   const created = { ok: true, created: true, userId: authId } as const
-  if (!issued) return created
-  // Los accesos nuevos se entregan exclusivamente por correo institucional.
-  const delivery = await sendTemporaryAccess(admin, reservation.id, input.nombre, input.email, password)
+  if (setup.invite) {
+    await accessCommand(admin, identity, 'create_commit', { id: setup.id, authId })
+    let delivery: Awaited<ReturnType<typeof inviteAccess>>
+    try { delivery = await inviteAccess(admin, identity, authId, requestOrigin) }
+    catch {
+      // Nunca eliminar una cuenta confirmada aunque no se pueda preparar o entregar el email.
+      delivery = { outcome: 'failed', reason: 'No se pudo preparar la invitación. Podés reenviarla desde este usuario.' }
+    }
+    return { ...created, invitation: delivery.outcome, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
+  }
+  const temporary = reservation as { id: string; leaseUntil: string }
+  const { issued } = await temporaryAccessCommand<{ issued: boolean }>(admin, identity, 'create_commit', {
+    id: temporary.id, authId, leaseUntil: temporary.leaseUntil,
+  })
+  if (!issued) return { ...created, accessDelivery: 'not_sent' }
+  const delivery = await sendTemporaryAccess(admin, temporary.id, input.nombre, input.email, password)
   return { ...created, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason }
 }
 
