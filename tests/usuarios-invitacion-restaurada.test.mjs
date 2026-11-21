@@ -89,6 +89,21 @@ test('sin invitación, elige 2FA libremente y no expone la contraseña temporal 
   assert.equal(calls.some(x => x.action === 'invite'), false)
 })
 
+test('sin correo el administrador recibe la clave una única vez y el proveedor no se invoca', async () => {
+  const setup = { id: randomUUID(), invite: false, requireMfa: false, sendByEmail: false }
+  const { admin, calls } = makeAdmin(setup, 'temporary')
+  const { createUserWithAccess } = loadModule('lib/server/accessService.ts', {}, { process: env })
+  const first = await createUserWithAccess(admin, actor, {
+    nombre: 'Persona sintética', email: 'new@example.test', rol: 'colaborador', estado: 'activo',
+  }, setup)
+  assert.equal(first.accessDelivery, 'not_sent')
+  assert.equal(typeof first.tempPassword, 'string')
+  assert.equal(first.tempPassword.length, 24)
+  assert.equal(calls.find(x => x.type === 'auth').input.password, first.tempPassword)
+  assert.equal(calls.find(x => x.action === 'create_begin').data.sendByEmail, false)
+  assert.equal(calls.some(x => x.type === 'mail'), false)
+})
+
 test('reenviar una invitación pendiente no restablece la contraseña del invitado', async () => {
   const calls = []
   const s = loadModule('lib/server/accessService.ts', {}, { process: env })
