@@ -19,7 +19,7 @@ export async function getAccessIdentity(request: NextRequest) {
   if (result.error || claims?.sub !== data.user.id || typeof claims.session_id !== 'string'
     || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claims.session_id)) return null
   const passwordAuthenticated = Array.isArray(claims.amr) && claims.amr.some(entry =>
-    typeof entry === 'object' && entry !== null && entry.method === 'password'
+    entry === 'password' || (typeof entry === 'object' && entry !== null && entry.method === 'password')
   )
   return { id: data.user.id, sessionId: claims.session_id, aal: String(claims.aal ?? 'aal1'), passwordAuthenticated, email: data.user.email ?? '', token, client }
 }
