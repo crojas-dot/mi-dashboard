@@ -46,6 +46,8 @@ test('Edge → Apps Script usa HMAC por propósito y confirma invitación sin co
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.match(f.sent[0].body,/24 horas/);assert.match(f.sent[0].htmlBody,/#024796/);assert.doesNotMatch(f.sent[0].body,/password:/i)
  assert.match(f.sent[0].htmlBody,/max-width:900px/)
+ assert.match(f.sent[0].htmlBody,/<h1[^>]+font-family:Inter,Roboto,Segoe UI,Arial,sans-serif/)
+ assert.match(f.sent[0].htmlBody,/font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px/)
  assert.match(f.sent[0].htmlBody,/Invitación de usuario/)
  assert.match(f.sent[0].htmlBody,/border-bottom:1px solid #dee2e6/)
  assert.ok(f.sent[0].htmlBody.includes('<img src="'+f.brand+'"'))
