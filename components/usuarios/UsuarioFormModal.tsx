@@ -39,6 +39,8 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [confirmarEliminar, setConfirmarEliminar] = useState(false)
   const [tab, setTab] = useState<'detalles' | 'seguridad'>(initialTab)
   const [createdResult, setCreatedResult] = useState<Omit<UserMutationResult, 'tempPassword'> | null>(null)
+  const [invite, setInvite] = useState(true)
+  const [requireMfa, setRequireMfa] = useState(true)
   const creation = useRef<{ payload: string; id: string } | null>(null)
   const filaConfirmacionEliminar = useRef<HTMLDivElement>(null)
 
@@ -63,6 +65,8 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setError(null)
     setTab('detalles')
     setCreatedResult(null)
+    setInvite(true)
+    setRequireMfa(true)
     creation.current = null
     onClose()
   }
@@ -89,9 +93,9 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
       if (esEditar && usuario) {
         await mutateUsuario('PATCH', { id: usuario.id, ...perfil }, fallback)
       } else {
-        const payload = JSON.stringify(perfil)
+        const payload = JSON.stringify({ ...perfil, invite, requireMfa })
         if (!creation.current || creation.current.payload !== payload) creation.current = { payload, id: crypto.randomUUID() }
-        const created = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, sendByEmail: true } }, fallback)
+        const created = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, invite, requireMfa, sendByEmail: true } }, fallback)
         result = created
         setCreatedResult(created)
       }
@@ -230,11 +234,11 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
             {createdResult.accessDelivery === 'sent' ? <p className="mt-2 text-sm text-qms-muted">{CORREO_ACCESO_CONFIRMADO}</p>
               : <>
                 <p className="mt-2 text-sm text-qms-muted">
-                  {createdResult.accessDelivery ? 'El usuario fue creado, pero no se pudo enviar el correo de acceso.' : 'La cuenta ya está creada. Podés reenviar el acceso si hace falta.'}
+                  {createdResult.accessDelivery ? (invite ? 'El usuario fue creado, pero no se pudo confirmar el correo de invitación.' : 'El usuario fue creado, pero no se pudo confirmar el correo con la contraseña temporal.') : 'La cuenta ya está creada. Podés reenviar el acceso si hace falta.'}
                 </p>
                 {createdResult.accessDeliveryError && <p className="mt-1 text-xs text-qms-muted">{createdResult.accessDeliveryError}</p>}
                 <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={busy} loading={lock.operation === 'acceso'} onClick={() => void reenviarCreada()}>
-                  <Mail aria-hidden="true" className="size-4" />Reenviar acceso
+                  <Mail aria-hidden="true" className="size-4" />{invite ? 'Reenviar invitación' : 'Reenviar acceso'}
                 </Button>
               </>}
           </section> : <form key={usuario?.id ?? 'nuevo'} id={formId} role={esEditar ? 'tabpanel' : undefined}
@@ -285,7 +289,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                   <div className="min-w-0 flex-1 space-y-5">{camposPerfil}</div>
                 </div>
               </section>
-              <UsuarioAccesoInicial />
+              <UsuarioAccesoInicial invite={invite} requireMfa={requireMfa} disabled={busy} onInvite={setInvite} onMfa={setRequireMfa} />
             </>}
           </form>}
           {esEditar && <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso"
