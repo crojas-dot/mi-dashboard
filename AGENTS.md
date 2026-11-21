@@ -110,6 +110,22 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   Si `roundTripValid=false`, investigar firma/decodificación, no dominio
   de login. Si es `true` pero el manejador falla, utilizar `direct.phase`
   y `doPost.phase` para localizar el siguiente paso.
+  **Inconsistencia observada a las 17:33 CR:** el usuario ejecutó
+  `qmsAccessMailSelfTest`: firma, nonce y UUID correctos, pero ambos
+  manejadores devolvieron `generic_rejection` sin fase registrada.
+  En el código nuevo esa ruta debería establecer
+  `phase='configuration'` de inmediato. Para aislar cualquier desajuste
+  entre la función existente y la publicada, `doPost` ahora invoca
+  directamente al manejador **`qmsAccessMailPostV20261121_`**
+  versionado; no se modifica el transporte de Quejas.
+  La prueba requiere `direct.handlerVersion` y
+  `doPost.handlerVersion='2026-11-21-v2'`, con diagnóstico
+  `2026-11-21-versioned`. Prueba sintética: autodiagnóstico válido y
+  un correo ficticio aceptado por el simulador de MailApp; esto NO
+  certifica correo real ni ejecución actual en Google. Para aplicarlo,
+  reemplazar el único archivo Apps Script por el paquete completo y
+  publicar nueva versión en la implementación existente de Acceso,
+  sin modificar Supabase ni los correos de Quejas.
   El registro compartido incluyó el secreto completo; **rotar**
   `QMS_MAIL_SECRET` y `QUEJAS_MAIL_SIGNING_SECRET` coordinadamente
   en sus respectivas plataformas, sin registrarlos ni copiarlos
