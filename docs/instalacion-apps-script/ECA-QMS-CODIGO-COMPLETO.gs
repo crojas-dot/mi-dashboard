@@ -1,9 +1,9 @@
 /**
  * ECA-QMS — Emisor completo para un ÚNICO archivo de Google Apps Script.
- * Diseño institucional unificado: quejas, invitaciones, accesos temporales y códigos.
- * Fuente: Codigo.gs + Acceso.gs del commit de esta rama.
+ * Tarjeta institucional horizontal y compacta: quejas, invitaciones, accesos y códigos.
+ * Fuente: Codigo.gs + Acceso.gs de la rama de diseño vigente.
  * Sustituir el código anterior y eliminar cualquier Acceso.gs duplicado del proyecto.
- * Mantener las Script Properties y la implementación /exec existentes.
+ * Mantener Script Properties, activadores e implementación /exec existentes.
  */
 
 /** Servicio independiente de correo. No modifica el procesador de archivos. */
@@ -605,32 +605,32 @@ function qmsMailHeader_(identidad) {
   var style = identidad && identidad.estilo || properties.getProperty('EMAIL_LOGO_STYLE');
   var square = style === 'cuadrado' && identidad && identidad.cuadrado;
   var url = square ? identidad.cuadrado : (identidad && identidad.encabezado || (origin && origin + '/logo-email-horizontal.png'));
-  var width = square ? 64 : 240;
-  var height = square ? 64 : 80;
+  var width = square ? 60 : 200;
+  var height = square ? 60 : 64;
   var logo = url ? '<img src="' + qmsMailEscape_(url) + '" alt="ECA – Ente Costarricense de Acreditación" width="' + width + '" height="' + height +
-    '" style="display:block;margin-left:auto;border:0;outline:none;text-decoration:none;width:auto;max-width:100%;height:auto">' : '';
+    '" style="display:block;margin-left:auto;border:0;outline:none;text-decoration:none;width:auto;max-width:200px;max-height:64px;height:auto">' : '';
   return '<table role="presentation" title="QMS ECA · Gestión de Calidad" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>' +
     '<td style="vertical-align:middle;padding-right:12px"><div style="font-size:20px;line-height:1.3;font-weight:600;color:#212529">QMS ECA</div>' +
-    '<div style="padding-top:4px;font-size:14px;line-height:1.4;color:#6c757d">Gestión de Calidad</div></td>' +
-    (logo ? '<td width="44%" align="right" style="width:44%;vertical-align:middle">' + logo + '</td>' : '') +
+    '<div style="padding-top:3px;font-size:14px;line-height:1.35;color:#6c757d">Gestión de Calidad</div></td>' +
+    (logo ? '<td width="38%" align="right" style="width:38%;vertical-align:middle">' + logo + '</td>' : '') +
     '</tr></table>';
 }
 
-/** Tarjeta de correo única: reproduce encabezado, separadores, cuerpo y pie del formulario público. */
+/** Una sola tarjeta institucional: misma jerarquía que la confirmación web, compacta en correo. */
 function qmsMailFrame_(title, subtitle, content, footer, identidad, folio) {
   var subtitleText = folio
-    ? 'Número de registro <span style="padding-left:10px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(folio) + '</span>'
+    ? 'Número de registro <span style="padding-left:9px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(folio) + '</span>'
     : qmsMailEscape_(subtitle || '');
   return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-    '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
+    '<body style="margin:0;padding:8px 6px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
     '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td align="center" style="padding:0">' +
-    '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
-    '<tr><td style="padding:20px;border-bottom:1px solid #dee2e6">' + qmsMailHeader_(identidad) + '</td></tr>' +
-    '<tr><td style="padding:20px;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' +
-    '<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + qmsMailEscape_(title) + '</h1>' +
-    '<p style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.5;color:#6c757d">' + subtitleText + '</p>' +
+    '<table role="presentation" width="100%" style="width:100%;max-width:900px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
+    '<tr><td style="padding:12px 24px;border-bottom:1px solid #dee2e6">' + qmsMailHeader_(identidad) + '</td></tr>' +
+    '<tr><td style="padding:16px 24px 12px;font-size:15px;line-height:1.45;overflow-wrap:anywhere;word-break:break-word">' +
+    '<h1 style="margin:0 0 8px;font-size:21px;line-height:1.3;font-weight:600;color:#212529">' + qmsMailEscape_(title) + '</h1>' +
+    '<p style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.45;color:#6c757d">' + subtitleText + '</p>' +
     content + '</td></tr>' +
-    '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">' +
+    '<tr><td style="padding:10px 24px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.45;color:#6c757d">' +
     qmsMailEscape_(footer) + '</td></tr></table></td></tr></table></body></html>';
 }
 
@@ -648,12 +648,12 @@ function qmsMailHtml_(message, identidad) {
   var paragraphs = message.body.split(/\n\s*\n/).filter(function (paragraph) {
     return !(tracking && paragraph === 'Seguimiento privado: ' + message.trackingUrl);
   }).map(function (paragraph) {
-    return '<p style="margin:0 0 12px;color:#343a40;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
+    return '<p style="margin:0 0 9px;color:#343a40;font-size:15px;line-height:1.45;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
   }).join('');
   var action = tracking && (message.kind === 'recibido' || message.kind === 'solicitud_informacion')
-    ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">' +
+    ? '<p style="margin:14px 0 8px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:10px 18px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:15px;font-weight:600;line-height:1.4">' +
       (message.kind === 'solicitud_informacion' ? 'Responder solicitud' : 'Consultar mi trámite') + '</a></p>' +
-      '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>'
+      '<p style="margin:0;font-size:12px;line-height:1.45;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>'
     : '';
   return qmsMailFrame_(title, '', paragraphs + action,
     'Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.', identidad, message.folio);
@@ -714,10 +714,11 @@ function qmsAccessMailPost_(e) {
 }
 
 function qmsAccessMailButton_(url,label) {
- return '<p><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:12px 20px;border-radius:4px;background:#024796;color:#fff;text-decoration:none">'+label+'</a></p>';
+ return '<p style="margin:12px 0 8px"><a href="'+qmsMailEscape_(url)+'" style="display:inline-block;padding:10px 18px;border-radius:4px;background:#024796;color:#fff;font-size:15px;font-weight:600;line-height:1.4;text-decoration:none">'+label+'</a></p>';
 }
 
 function qmsAccessMailContent_(p) {
+ var para='style="margin:0 0 9px;font-size:15px;line-height:1.45;color:#343a40"';
  if(p.kind==='temporary_access'){
   var greeting='Hola, '+p.name+':';
   var expiry='Usá esta contraseña para el primer ingreso. Vence en 72 horas y el sistema te pedirá cambiarla.';
@@ -725,8 +726,10 @@ function qmsAccessMailContent_(p) {
   return {
    subject:'Tu acceso a ECA-QMS está listo', footer:footer,
    body:[greeting,'Se creó tu acceso a ECA-QMS.','Usuario: '+p.to,'Contraseña temporal: '+p.password,'Acceder a ECA-QMS: '+p.url,expiry,footer].join('\n\n'),
-   detail:'<p>'+qmsMailEscape_(greeting)+'</p><p>Se creó tu acceso a ECA-QMS.</p><p><strong>Usuario:</strong> '+qmsMailEscape_(p.to)
-    +'<br><strong>Contraseña temporal:</strong> <code>'+qmsMailEscape_(p.password)+'</code></p>'+qmsAccessMailButton_(p.url,'Acceder a ECA-QMS')+'<p>'+expiry+'</p>'
+   detail:'<p '+para+'>'+qmsMailEscape_(greeting)+' Se creó tu acceso a ECA-QMS.</p>' +
+    '<p '+para+'><strong>Usuario:</strong> '+qmsMailEscape_(p.to) +
+    '<br><strong>Contraseña temporal:</strong> <code>'+qmsMailEscape_(p.password)+'</code></p>' +
+    qmsAccessMailButton_(p.url,'Acceder a ECA-QMS')+'<p '+para+'>'+qmsMailEscape_(expiry)+'</p>'
   };
  }
  var footer='Si no solicitaste este acceso, contactá a la administración.';
@@ -735,8 +738,11 @@ function qmsAccessMailContent_(p) {
   var local=p.local===true?'Invitación del entorno local de pruebas. Abrila en la misma computadora donde está abierto ECA-QMS.':'';
   return {subject:'Configurá tu acceso a ECA-QMS',footer:footer,
    body:'Te invitaron a ECA-QMS. '+instructions+'\n\n'+p.url+(local?'\n\n'+local:''),
-   detail:'<p>'+instructions+'</p>'+qmsAccessMailButton_(p.url,'Configurar acceso')+(local?'<p style="font-size:12px;color:#6c757d">'+local+'</p>':'')};
+   detail:'<p '+para+'>'+qmsMailEscape_(instructions)+'</p>'+qmsAccessMailButton_(p.url,'Configurar acceso')+
+    (local?'<p style="margin:8px 0;font-size:12px;line-height:1.45;color:#6c757d">'+qmsMailEscape_(local)+'</p>':'')};
  }
- return {subject:'Tu código de verificación de ECA-QMS',footer:footer,body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
-  detail:'<p>Tu código de verificación es:</p><p style="font-size:28px;font-weight:600;letter-spacing:6px;color:#024796">'+p.code+'</p><p>Vence en 10 minutos. No lo compartás.</p>'};
+ return {subject:'Tu código de verificación de ECA-QMS',footer:footer,
+  body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
+  detail:'<p '+para+'>Tu código de verificación es:</p><p style="margin:0 0 8px;font-size:26px;font-weight:600;letter-spacing:5px;color:#024796">'+
+   qmsMailEscape_(p.code)+'</p><p '+para+'>Vence en 10 minutos. No lo compartás.</p>'};
 }
