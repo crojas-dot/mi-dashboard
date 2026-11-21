@@ -98,9 +98,23 @@ test('autodiagnóstico GAS comprueba propiedades sin revelar credenciales',()=>{
  assert.equal(status.ready,true)
  assert.equal(status.trackingOriginConfigured,true)
  assert.equal(status.handler,'access_delivery_request/temporary_access')
+ assert.equal(status.handlerHasSignedDiagnostics,true)
+ assert.equal(status.doPostRoutesAccess,true)
  assert.equal(status.deploymentMustBeUpdated,true)
  assert.equal(status.signingSecretConfigured,true)
  assert.equal(f.sent.length,0)
+})
+
+test('autoprueba confirma respuesta firmada en ambos manejadores sin enviar correo',()=>{
+ const f=fixture()
+ const result=f.context.qmsAccessMailSelfTest()
+ assert.equal(result.valid,true)
+ assert.equal(result.direct.type,'signed_receipt')
+ assert.equal(result.doPost.type,'signed_receipt')
+ assert.equal(result.direct.code,'invalid_access_payload')
+ assert.equal(result.doPost.code,'invalid_access_payload')
+ assert.equal(f.sent.length,0)
+ assert.doesNotMatch(JSON.stringify(f.logs),/synthetic-access-mail-key/)
 })
 
 test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
