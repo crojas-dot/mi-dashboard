@@ -91,6 +91,18 @@ test('origen del login distinto en GAS da error firmado y no envía', async()=>{
  assert.match(JSON.stringify(f.logs),/login_origin/)
 })
 
+
+test('autodiagnóstico GAS comprueba propiedades sin revelar credenciales',()=>{
+ const f=fixture()
+ const status=f.context.qmsAccessMailHealthCheck()
+ assert.equal(status.ready,true)
+ assert.equal(status.trackingOriginConfigured,true)
+ assert.equal(status.handler,'access_delivery_request/temporary_access')
+ assert.equal(status.deploymentMustBeUpdated,true)
+ assert.equal(status.signingSecretConfigured,true)
+ assert.equal(f.sent.length,0)
+})
+
 test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
  const f=fixture(),eventId=randomUUID(),message={eventId,kind:'temporary_access',to:'synthetic@example.test',
   name:'Usuario de prueba',password:'A9!synthetic-password-2026',url:origin+'/login'}
