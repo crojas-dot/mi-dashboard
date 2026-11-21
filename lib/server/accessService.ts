@@ -81,6 +81,7 @@ const accessMailReasons: Record<AccessMailCode, string> = {
   event_conflict: 'El correo de acceso no coincide con el envío registrado.',
   access_mail_unavailable: 'El servicio de correo de acceso no está disponible.',
   delivery_uncertain: 'El emisor no confirmó si el correo fue enviado.',
+  provider_rejected: 'Google Apps Script rechazó la solicitud antes de enviar. Revisá que su implementación publicada esté actualizada.',
 }
 
 export async function sendAccessMessage(admin: SupabaseClient, message: Record<string, unknown>): Promise<{ outcome: AccessMailOutcome; reason?: string }> {
