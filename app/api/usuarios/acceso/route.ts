@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/server/auth'
 import { getAccessIdentity } from '@/lib/server/accessIdentity'
 import { createServiceClient } from '@/lib/server/supabase-admin'
-import { accessCommand, accessUuid, resetUserAccess, AccessError, readAccessJson } from '@/lib/server/accessService'
+import { accessCommand, accessDirectory, accessUuid, inviteAccess, resetUserAccess, AccessError, readAccessJson } from '@/lib/server/accessService'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 
 export const runtime = 'nodejs'
@@ -19,6 +19,16 @@ export async function POST(request: NextRequest) {
     if (!accessUuid(body.authId) || typeof body.action !== 'string' || !['resend', 'reset', 'reset_mfa'].includes(body.action) || Object.keys(body).some(key => !['action', 'authId', 'confirm'].includes(key))) return json({ error: 'Solicitud inválida' }, 400)
     if (body.confirm !== true || body.authId === identity.id) return json({ error: 'La confirmación de otro administrador es obligatoria.' }, 400)
     if (body.action === 'resend' || body.action === 'reset') {
+      if (body.action === 'resend') {
+        const directory = await accessDirectory(admin, identity, [body.authId])
+        const policy = directory.find(item => item.authId === body.authId)
+        if (!policy) throw new AccessError('40001', 409)
+        if (policy.status === 'invite_pending' || policy.status === 'invite_expired') {
+          const delivery = await inviteAccess(admin, identity, body.authId, new URL(request.url).origin)
+          return json({ ok: true, invitation: delivery.outcome, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason })
+        }
+        if (!policy.temporaryPassword) throw new AccessError('40001', 409)
+      }
       const delivery = await resetUserAccess(admin, identity, body.authId, body.action)
       // La contraseña ya cambió aunque el servicio de correo no confirme el envío.
       return json({ ok: true, accessDelivery: delivery.outcome, accessDeliveryError: delivery.reason })
