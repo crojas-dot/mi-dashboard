@@ -31,6 +31,7 @@ export function createAccessMailer(deps: Dependencies) {
     const supplied = request.headers.get('apikey') ?? request.headers.get('authorization')?.replace(/^Bearer /i, '') ?? ''
     if (!supplied || supplied.length > 4096 || supplied.startsWith('sb_publishable_')) return json({ error: 'unauthorized' }, 401)
     let dispatchStarted = false
+    let phase: 'transport' | 'message' | 'identity' | 'provider' | 'receipt' = 'transport'
     try {
       // Valida la credencial con el proveedor, sin confiar en claims sin firma ni
       // comparar JWT antiguos con una copia del runtime que puede ser distinta.
@@ -49,6 +50,7 @@ export function createAccessMailer(deps: Dependencies) {
       if (!transport.enabled || endpoint.protocol !== 'https:' || endpoint.hostname !== 'script.google.com' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash || !/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(endpoint.pathname)) throw new Error('unavailable')
       const secret = deps.env('QUEJAS_MAIL_SIGNING_SECRET') ?? ''
       if (secret.length < 32) throw new Error('unavailable')
+      phase = 'message'
       const message = JSON.parse(dec.decode(await bodyBytes(request, 2048)))
       if (!message || typeof message !== 'object' || Array.isArray(message) || !uuid(message.eventId) || !['invitation', 'email_otp', 'temporary_access'].includes(message.kind)
         || typeof message.to !== 'string' || message.to.length > 254 || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(message.to)) throw new Error('invalid')
@@ -67,14 +69,23 @@ export function createAccessMailer(deps: Dependencies) {
           || typeof message.name !== 'string' || !message.name.trim() || message.name.length > 200 || /[\r\n]/.test(message.name)
           || typeof message.password !== 'string' || !/^[!-~]{14,72}$/.test(message.password)) throw new Error('invalid')
       }
+      phase = 'identity'
       const identidadCorreo = await loadEmailIdentity(url.origin, supplied, deps.env('EMAIL_LOGO_STYLE'), fetcher,
         async assetResponse => JSON.parse(dec.decode(await bodyBytes(assetResponse, 4096))))
       const branded = { ...message, identidadCorreo }
       const envelope = { version: 1, purpose: 'access_delivery_request', issuedAt: Math.floor(now() / 1000), nonce: cryptoApi.randomUUID(), payload: base64(enc.encode(JSON.stringify(branded))) }
       const signed = { ...envelope, signature: await signature(envelope, secret, cryptoApi) }
       dispatchStarted = true
+      phase = 'provider'
       const response = await fetcher(endpoint.href, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(signed), signal: AbortSignal.timeout(25_000), redirect: 'follow' })
+      phase = 'receipt'
       const receipt = JSON.parse(dec.decode(await bodyBytes(response, 4096)))
+      // Respuesta explícita de validación de Google: todavía no ejecutó MailApp.
+      // No confundirla con un timeout posterior al envío, que sí es incierto.
+      if (receipt?.error === 'invalid_access_delivery') {
+        console.warn('qms_access_mailer_rejected', { phase: 'google_validation' })
+        return json({ outcome: 'failed', code: 'provider_rejected' }, 503)
+      }
       if (!response.ok || receipt.version !== 1 || receipt.purpose !== 'access_delivery_receipt' || !uuid(receipt.nonce)
         || !Number.isSafeInteger(receipt.issuedAt) || Math.abs(receipt.issuedAt - Math.floor(now() / 1000)) > 300 || typeof receipt.payload !== 'string'
         || typeof receipt.signature !== 'string' || !await equal(receipt.signature, await signature(receipt, secret, cryptoApi), cryptoApi)) throw new Error('unavailable')
@@ -83,7 +94,10 @@ export function createAccessMailer(deps: Dependencies) {
       return json({ outcome: payload.outcome === 'retry' ? 'failed' : payload.outcome,
         ...(isAccessMailCode(payload.code) ? { code: payload.code } : {}) })
     } catch {
-      // Una respuesta perdida puede haber enviado: no reintentar el mismo código a ciegas.
+      // Los únicos campos de telemetría son etapas cerradas y estado del dispatch;
+      // nunca registrar destinatarios, claves, tokens ni contenido del mensaje.
+      console.warn('qms_access_mailer_failure', { phase, dispatchStarted })
+      // Una respuesta perdida puede haber enviado: no reintentar a ciegas.
       return json(dispatchStarted ? { outcome: 'uncertain', code: 'delivery_uncertain' }
         : { outcome: 'failed', code: 'access_mail_unavailable' }, 503)
     }
