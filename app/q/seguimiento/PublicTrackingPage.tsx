@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Link as LinkIcon, RefreshCw } from 'lucide-react'
+import { Check, Link as LinkIcon } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
@@ -16,7 +16,6 @@ export default function PublicTrackingPage({ available = true }: { available?: b
   const [error, setError] = useState('')
   const [canRetry, setCanRetry] = useState(false)
   const request = useRef<AbortController | null>(null)
-  const activeKey = useRef('')
   const initialKey = useRef('')
   const lastRequestKey = useRef('')
 
@@ -25,12 +24,10 @@ export default function PublicTrackingPage({ available = true }: { available?: b
     const controller = new AbortController()
     request.current = controller
     lastRequestKey.current = key
-    activeKey.current = ''
     setStatus(null); setLoading(true); setError(''); setCanRetry(false)
     try {
       const next = await consultarSeguimiento(key, reference, controller.signal)
       if (request.current !== controller || controller.signal.aborted) return
-      activeKey.current = key
       setStatus(next)
     } catch (failure) {
       if (!controller.signal.aborted && request.current === controller) {
@@ -50,7 +47,7 @@ export default function PublicTrackingPage({ available = true }: { available?: b
       if (!available) return
       if (key && key.length <= 1024) { void consultar(key) }
       else if (fragment) {
-        request.current?.abort(); activeKey.current = ''; lastRequestKey.current = ''
+        request.current?.abort(); lastRequestKey.current = ''
         setStatus(null); setLoading(false); setCanRetry(false)
         setError('Revisá el enlace privado recibido por correo.')
       }
@@ -58,7 +55,7 @@ export default function PublicTrackingPage({ available = true }: { available?: b
     const onHashChange = () => consumeLink()
     consumeLink(true)
     window.addEventListener('hashchange', onHashChange)
-    return () => { window.removeEventListener('hashchange', onHashChange); request.current?.abort(); activeKey.current = '' }
+    return () => { window.removeEventListener('hashchange', onHashChange); request.current?.abort() }
   }, [available])
 
   return <main className="min-h-dvh bg-qms-bg px-4 py-6 sm:py-10">
@@ -81,7 +78,6 @@ export default function PublicTrackingPage({ available = true }: { available?: b
           <div className="flex flex-wrap items-start justify-between gap-3 border-b border-qms-border pb-5"><div><p className="text-sm text-qms-muted">Número de registro</p><h2 className="mt-1 break-all font-mono text-2xl font-semibold text-qms-primary">{status.folio}</h2><p className="mt-2 text-sm text-qms-muted">Recibido el {date(status.recibido_at)}</p></div><Badge variant="neutral" className="max-w-full whitespace-normal!">{status.estado === 'Pendiente de Revisión GC' ? 'En revisión por Calidad' : status.estado}</Badge></div>
           <ol aria-label="Avance del trámite" className="grid gap-3 sm:grid-cols-2">{status.etapas.map((step, index) => <li key={`${index}-${step.nombre}`} className="flex min-w-0 items-start gap-3 rounded-card border border-qms-border bg-qms-primary-soft p-4"><span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-qms-success text-white"><Check className="size-4" aria-hidden="true" /></span><div><p className="text-base font-semibold text-qms-dark">{step.nombre}</p>{step.fecha && <p className="mt-1 text-sm text-qms-muted">{date(step.fecha)}</p>}</div></li>)}</ol>
           {status.respuesta && <section className="border-t border-qms-border pt-5"><h3 className="font-semibold">Respuesta de Gestión de Calidad</h3><p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed">{status.respuesta}</p>{status.numero_oficio && <p className="mt-4 text-sm text-qms-muted">Oficio: <span className="font-medium text-qms-dark">{status.numero_oficio}</span></p>}</section>}
-          <div className="flex flex-wrap gap-2 border-t border-qms-border pt-4"><Button size="sm" variant="secondary" onClick={() => void consultar(activeKey.current)}><RefreshCw className="size-4" aria-hidden="true" /> Actualizar estado</Button></div>
         </div>}
         {error && <p role="alert" className="mt-4 text-sm text-qms-danger">{error}</p>}
 
