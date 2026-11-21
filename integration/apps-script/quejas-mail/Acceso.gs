@@ -57,16 +57,19 @@ function qmsAccessMailButton_(url,label) {
 function qmsAccessMailContent_(p) {
  var para='style="margin:0 0 9px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;line-height:1.5;color:#212529"';
  if(p.kind==='temporary_access'){
-  var greeting='Hola, '+p.name+':';
-  var expiry='Usá esta contraseña para el primer ingreso. Vence en 72 horas y el sistema te pedirá cambiarla.';
-  var footer='Si no esperabas este acceso, comunicáte con la administración del sistema.';
+  var expiry='Válida durante 72 horas. En el primer ingreso deberás cambiar esta contraseña.';
+  var footer='Si no reconocés este acceso, contactá a la administración de ECA-QMS.';
   return {
-   subject:'Tu acceso a ECA-QMS está listo', footer:footer,
-   body:[greeting,'Se creó tu acceso a ECA-QMS.','Usuario: '+p.to,'Contraseña temporal: '+p.password,'Acceder a ECA-QMS: '+p.url,expiry,footer].join('\n\n'),
-   detail:'<p '+para+'>'+qmsMailEscape_(greeting)+' Se creó tu acceso a ECA-QMS.</p>' +
-    '<p '+para+'><strong>Usuario:</strong> '+qmsMailEscape_(p.to) +
-    '<br><strong>Contraseña temporal:</strong> <code>'+qmsMailEscape_(p.password)+'</code></p>' +
-    qmsAccessMailButton_(p.url,'Acceder a ECA-QMS')+'<p '+para+'>'+qmsMailEscape_(expiry)+'</p>'
+   subject:'Tu acceso a ECA-QMS', footer:footer,
+   body:['Usuario: '+p.to,'Contraseña temporal: '+p.password,'Iniciar sesión: '+p.url,expiry,footer].join('\n\n'),
+   detail:
+    '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;margin:0 0 6px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif">' +
+    '<tr><td style="width:165px;padding:8px 8px 8px 0;vertical-align:top;color:#6c757d;font-size:14px">Usuario</td>' +
+    '<td style="padding:8px 0;vertical-align:top;color:#212529;font-size:16px;overflow-wrap:anywhere">'+qmsMailEscape_(p.to)+'</td></tr>' +
+    '<tr><td style="width:165px;padding:8px 8px 8px 0;vertical-align:top;color:#6c757d;font-size:14px">Contraseña temporal</td>' +
+    '<td style="padding:8px 0;vertical-align:top;color:#212529;font-size:16px"><code style="font-family:Consolas,monospace;font-size:15px;overflow-wrap:anywhere">'+qmsMailEscape_(p.password)+'</code></td></tr></table>' +
+    qmsAccessMailButton_(p.url,'Iniciar sesión') +
+    '<p style="margin:6px 0 0;color:#6c757d;font-size:13px;line-height:1.5">'+qmsMailEscape_(expiry)+'</p>'
   };
  }
  var footer='Si no solicitaste este acceso, contactá a la administración.';
