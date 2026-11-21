@@ -49,20 +49,20 @@ test('guardar usuario bloquea duplicados y recupera el formulario después de fa
   modal.close()
   assert.equal(modal.closes(), 0)
   modal.render()
-  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, true)
+  assert.equal(modal.button('Crear usuario').props.loading, true)
   modal.requests[0].reject(new TypeError('Failed to fetch'))
   await pending
   modal.render()
   assert.equal(modal.errors.length, 1)
   assert.match(modal.alert(), /conectar/ )
-  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, false)
+  assert.equal(modal.button('Crear usuario').props.loading, false)
   const retry = modal.submit()
   modal.requests[1].resolve()
   await retry
   modal.render()
   assert.ok(modal.button('Listo'), 'el usuario copia su clave sin abrir otro modal')
   assert.equal(modal.successes[0].tempPassword, undefined)
-  assert.deepEqual({...modal.requests[1].args[1].access},{id:modal.requests[0].args[1].access.id,invite:true,requireMfa:true})
+  assert.deepEqual({...modal.requests[1].args[1].access},{id:modal.requests[0].args[1].access.id,invite:false,requireMfa:false,sendByEmail:true})
   assert.equal(modal.requests[1].args[1].password,undefined,'el servidor genera la contraseña, no el formulario')
 })
 
@@ -245,7 +245,7 @@ test('un formulario incompleto no genera contraseña ni inicia una escritura', a
   await modal.submit({ nombre: '   ', email: 'persona@example.test', rol: 'colaborador', estado: 'activo' })
   assert.equal(modal.requests.length, 0)
   modal.render()
-  assert.equal(modal.button('Crear usuario y enviar invitación').props.loading, false)
+  assert.equal(modal.button('Crear usuario').props.loading, false)
   assert.match(modal.alert(), /campos obligatorios/)
 })
 
