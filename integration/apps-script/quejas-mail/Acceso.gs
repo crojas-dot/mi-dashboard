@@ -115,24 +115,64 @@ function qmsAccessMailContent_(p) {
 }
 
 /**
- * Diagnóstico manual sin enviar correo. Ejecutar desde el editor Apps Script,
- * y volver a PUBLICAR la implementación /exec existente después de guardar.
- * Nunca imprime secretos ni credenciales.
+ * Diagnóstico LOCAL SIN ENVÍO. Nunca registra datos de usuarios ni secretos.
+ * Comparar el validador activo: si faltan marcadores, un archivo antiguo
+ * podría estar sobrescribiendo la definición más reciente de la función.
  */
 function qmsAccessMailHealthCheck() {
  var props=PropertiesService.getScriptProperties();
  var secret=props.getProperty('QMS_MAIL_SECRET')||'';
- var login=props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')||'';
+ var origin=props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')||'';
  var app=props.getProperty('APP_PUBLIC_URL')||'';
+ var handler=String(qmsAccessMailPost_),router=String(doPost);
  var result={
   handler:'access_delivery_request/temporary_access',
-  ready:secret.length>=32&&props.getProperty('QMS_MAIL_ENABLED')==='true',
-  signingSecretConfigured:secret.length>=32,
+  secretPresent:Utilities.newBlob(secret).getBytes().length>=32,
   mailEnabled:props.getProperty('QMS_MAIL_ENABLED')==='true',
-  trackingOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(login),
-  appOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(app),
-  deploymentMustBeUpdated:true
+  trackingOriginValid:/^https:\/\/[a-z0-9.-]+$/i.test(origin),
+  appOriginValid:!app||/^https:\/\/[a-z0-9.-]+$/i.test(app),
+  handlerHasSignedDiagnostics:handler.indexOf('login_origin_mismatch')>=0&&handler.indexOf('qms_access_mail_validation_rejected')>=0,
+  doPostRoutesAccess:router.indexOf('access_delivery_request')>=0&&router.indexOf('qmsAccessMailPost_')>=0
  };
+ result.ready=result.secretPresent&&result.mailEnabled&&result.handlerHasSignedDiagnostics&&result.doPostRoutesAccess;
  console.info('qms_access_mail_health',JSON.stringify(result));
  return result;
+}
+
+/**
+ * Prueba de contrato SIN ENVÍO.
+ * Genera una solicitud HMAC local deliberadamente inválida (nombre vacío),
+ * de manera que siempre debe detenerse antes de MailApp.sendEmail.
+ * Si la función devuelve invalid_access_delivery en vez de un recibo firmado
+ * invalid_access_payload, hay una implementación anterior/duplicada o
+ * un problema en el armado del evento que hay que inspeccionar.
+ */
+function qmsAccessMailSelfTest() {
+ var secret=qmsMailConfiguration_().secret;
+ var eventId=Utilities.getUuid();
+ var envelope=qmsMailSign_('access_delivery_request',{
+  eventId:eventId,kind:'temporary_access',to:'diagnostic@example.invalid',
+  name:'',password:'not-a-real-credential',url:'https://mi-dashboard-iota.vercel.app/login'
+ },secret);
+ var raw=JSON.stringify(envelope);
+ var request={postData:{contents:raw}};
+ var steps=[['direct',qmsAccessMailPost_],['doPost',doPost]];
+ var results={};
+ steps.forEach(function(entry) {
+  try {
+   var output=entry[1](request).getContent();
+   if (output.length>4096) throw new Error('oversized');
+   var parsed=JSON.parse(output);
+   if(parsed.error){results[entry[0]]={type:'generic_rejection'};return;}
+   var verified=qmsMailVerify_(parsed,'access_delivery_receipt',secret,2048).payload;
+   results[entry[0]]={type:'signed_receipt',code:verified.code||'',outcome:verified.outcome||''};
+  }catch(_){results[entry[0]]={type:'exception'};}
+ });
+ var summary={
+  valid:results.direct.type==='signed_receipt'&&results.direct.code==='invalid_access_payload'&&
+   results.doPost.type==='signed_receipt'&&results.doPost.code==='invalid_access_payload',
+  direct:results.direct,doPost:results.doPost
+ };
+ console.info('qms_access_mail_self_test',JSON.stringify(summary));
+ return summary;
 }
