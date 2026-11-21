@@ -158,7 +158,7 @@ test('los modales de alta y edición siguen dos diseños distintos, preservando 
   assert.match(access, /data-user-create-access/)
   assert.match(form, /Información del usuario/)
   assert.match(access, /Acceso al sistema/)
-  assert.match(access, /Enviar acceso por correo/)
+  assert.match(access, /Enviar invitación por correo/)
   assert.match(form, /Detalles del perfil/)
   assert.match(form, /Seguridad y acceso/)
   assert.match(form, /data-user-profile-layout/)
