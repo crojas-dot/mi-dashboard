@@ -59,6 +59,21 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   su código; GitHub y Vercel no publican Google. Mantener URL, propiedades,
   activadores y el flujo de quejas/OTP. `Vercel READY` no demuestra recepción
   real ni garantiza que Google tenga la versión nueva.
+- **Incidencia real (21 noviembre, 16:06 CR):** `qms-access-mailer` v4
+  recibió la solicitud y Google Apps Script respondió
+  `invalid_access_delivery` **antes de `MailApp.sendEmail`**.
+  Quejas usa un despacho diferente (`delivery_request`), por lo que sus
+  correos sí pueden funcionar. El código histórico de `Acceso.gs` aceptaba
+  invitaciones pero no `temporary_access`; otro posible rechazo es una
+  discrepancia entre el dominio de `/login` de Supabase y las propiedades
+  `QMS_PUBLIC_TRACKING_ORIGIN` / `APP_PUBLIC_URL` en GAS.
+  La validación actual de GAS acepta **solo orígenes oficiales conocidos** y
+  devuelve un recibo firmado con `login_origin_mismatch` o
+  `invalid_access_payload` tras validar HMAC, nunca detalles privados.
+  Ejecutar `qmsAccessMailHealthCheck` solo desde el editor y **publicar una
+  nueva versión en la implementación existente**: GitHub y Supabase no
+  actualizan automáticamente el código de Google Apps Script.
+  No afirmar entrega real sin un correo de prueba controlado.
 - **Pruebas:** validar `tests/usuarios-invitacion-restaurada.test.mjs`,
   `tests/usuarios-acceso-seguro.test.mjs`, `tests/usuarios-acceso-mail.test.mjs`,
   suites de Usuarios y build/TS. Usar fixtures y buzones controlados; confirmar
