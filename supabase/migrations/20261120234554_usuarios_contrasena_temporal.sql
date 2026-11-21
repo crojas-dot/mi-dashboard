@@ -27,7 +27,7 @@ begin
   phase:=case when p.reset_pending then 'reset_pending'
     when not found then 'blocked'
     when p.temporary_password_expires_at is not null and
-      (p.temporary_password_expires_at<=now() or signed_in_at<p.temporary_password_expires_at-interval '24 hours') then 'password_expired'
+      (p.temporary_password_expires_at<=now() or signed_in_at<p.temporary_password_expires_at-interval '72 hours') then 'password_expired'
     when qms_private.access_ready(p_user,p_session,p_aal) then 'ready'
     when p.password_set_at is null or p.must_change_password then 'password'
     when p.blocked_until>now() then 'locked' when p.factor_verified_at is null then 'enroll' else 'verify' end;
@@ -79,7 +79,7 @@ begin
 
   if op.session_id is null then
     insert into qms_private.access_policies(auth_id,creation_id,invited,require_mfa,temporary_password_expires_at)
-    values(new.id,op.id,false,false,clock_timestamp()+interval '24 hours')
+    values(new.id,op.id,false,false,clock_timestamp()+interval '72 hours')
     on conflict(auth_id) do update set invited=false, must_change_password=true, password_set_at=null,
       temporary_password_expires_at=excluded.temporary_password_expires_at;
     update qms_private.access_invitations set revoked_at=now()
@@ -87,7 +87,7 @@ begin
     update auth.users set raw_app_meta_data=raw_app_meta_data-'qms_password_operation' where id=new.id;
   else
     if expires_at is null or expires_at<=clock_timestamp() or not exists(select 1 from auth.sessions
-      where id=op.session_id and user_id=new.id and created_at>=expires_at-interval '24 hours') then
+      where id=op.session_id and user_id=new.id and created_at>=expires_at-interval '72 hours') then
       raise sqlstate '42501';
     end if;
     update qms_private.access_policies set must_change_password=false, password_set_at=now(),
@@ -142,7 +142,7 @@ begin
       if reservation.lease_until is distinct from (p_data->>'leaseUntil')::timestamptz
         or reservation.lease_until<=clock_timestamp() then raise sqlstate '40001'; end if;
       perform public.qms_access_command('create_commit',p_user,p_session,p_aal,p_data);
-      update qms_private.access_policies set temporary_password_expires_at=clock_timestamp()+interval '24 hours'
+      update qms_private.access_policies set temporary_password_expires_at=clock_timestamp()+interval '72 hours'
         where auth_id=auth_id_target and creation_id=operation;
       if not found then raise sqlstate '40001'; end if;
       return jsonb_build_object('issued',true);
