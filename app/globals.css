@@ -15,6 +15,10 @@ body {
   line-height: 1.5;
 }
 
+html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
+  background: transparent;
+}
+
 ::selection {
   background-color: rgba(2, 71, 150, 0.2);
 }

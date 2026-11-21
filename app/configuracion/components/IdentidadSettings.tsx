@@ -2,11 +2,26 @@
 
 import LogoEmpresaEditor from './LogoEmpresaEditor'
 import ImagenIdentidadEditor from './ImagenIdentidadEditor'
-import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import Field from '@/components/ui/Field'
+import Select from '@/components/ui/Select'
+import { showError, showSuccess } from '@/lib/services/errorToast'
+import { guardarEstiloLogoCorreo, identidadImagenesKey, useIdentidadImagenes, type ImagenesIdentidad } from '@/lib/queries/useIdentidadImagenes'
+import { emailLogoStyle } from '@/supabase/functions/_shared/emailIdentity'
 
 export default function IdentidadSettings({ active }: { active: boolean }) {
   const imagenes = useIdentidadImagenes(active)
   const urls = imagenes.data
+  const queryClient = useQueryClient()
+  const guardarEstilo = useMutation({
+    mutationFn: guardarEstiloLogoCorreo,
+    onSuccess: (_, style) => {
+      queryClient.setQueryData<ImagenesIdentidad>(identidadImagenesKey, current => current && { ...current, emailLogoStyle: style })
+      showSuccess('Estilo del logo actualizado')
+    },
+    onError: error => showError(error, 'No se pudo guardar el estilo de correo'),
+  })
+  const estilo = urls?.emailLogoStyle ?? 'horizontal'
 
   return <div className="space-y-5">
     <LogoEmpresaEditor active={active} />
@@ -19,14 +34,25 @@ export default function IdentidadSettings({ active }: { active: boolean }) {
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-qms-dark">Identidad del correo</h3>
-        <p className="mt-1 text-sm text-qms-muted">Logo horizontal sin cuadro azul, junto al nombre QMS ECA. Su incorporación al envío real requiere publicar por separado el transportador de correos en Apps Script.</p>
+      </div>
+      <div className="ui-panel space-y-2 p-4 sm:p-5">
+        <div className="max-w-xs">
+          <Field id="email-logo-style" label="Estilo del logo en correos">
+            <Select id="email-logo-style" value={guardarEstilo.isPending ? guardarEstilo.variables : estilo}
+              disabled={!urls || guardarEstilo.isPending} onChange={event => guardarEstilo.mutate(emailLogoStyle(event.target.value))}>
+              <option value="horizontal">Horizontal</option>
+              <option value="cuadrado">Cuadrado</option>
+            </Select>
+          </Field>
+        </div>
+        {estilo === 'cuadrado' && !urls?.correo_cuadrado && <p className="text-xs text-qms-muted">Se usa el logo horizontal hasta que cargués un emblema cuadrado.</p>}
       </div>
       <ImagenIdentidadEditor slot="correo_encabezado" url={urls?.correo_encabezado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.correo_encabezado ?? false} />
+      <ImagenIdentidadEditor slot="correo_cuadrado" url={urls?.correo_cuadrado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.correo_cuadrado ?? false} />
     </div>
     <div className="space-y-4">
       <div>
         <h3 className="text-base font-semibold text-qms-dark">Pantallas de acceso y formularios</h3>
-        <p className="mt-1 text-sm text-qms-muted">El fondo se aplica únicamente al inicio de sesión. El formulario externo mostrará su logo en la esquina superior derecha, sin modificar sus campos.</p>
       </div>
       <ImagenIdentidadEditor slot="login_encabezado" url={urls?.login_encabezado ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.login_encabezado ?? false} />
       <ImagenIdentidadEditor slot="login_fondo" url={urls?.login_fondo ?? ''} loading={imagenes.isPending} configurada={urls?.configuradas?.login_fondo ?? false} />

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAccessIdentity } from '@/lib/server/accessIdentity'
 import { createServiceClient } from '@/lib/server/supabase-admin'
-import { accessCommand, accessStatus, accessUuid, AccessError, sendAccessMessage, readAccessJson, setOwnAccessPassword } from '@/lib/server/accessService'
+import { accessCommand, accessStatus, accessUuid, AccessError, changeTemporaryAccessPassword, sendAccessMessage, readAccessJson, setOwnAccessPassword } from '@/lib/server/accessService'
 import { rateLimit, getClientIp } from '@/lib/server/rateLimit'
 import { randomUUID } from 'node:crypto'
+import { ACCESS_PASSWORD_MAX, ACCESS_PASSWORD_MIN, REPLACEMENT_PASSWORD_MIN, isValidReplacementPassword } from '@/lib/constants/accessPassword'
 
 export const runtime = 'nodejs'
 const json = (value: unknown, status = 200) => NextResponse.json(value, { status, headers: { 'Cache-Control': 'no-store' } })
@@ -13,8 +14,12 @@ function failure(error: unknown) {
     locked:'Demasiados intentos fallidos. Por seguridad, esperá unos minutos antes de volver a intentarlo.',
     rate_limited:'Esperá un minuto antes de solicitar otro código.',
     invalid_code:'El código no es válido o ya venció. Intentá nuevamente.',
-    delivery_failed:'No se pudo confirmar el envío del código. Solicitá uno nuevo en un minuto.',
-    invalid_password:'Elegí una contraseña nueva de al menos 12 caracteres.',
+    invalid_password:`Elegí una contraseña nueva de ${ACCESS_PASSWORD_MIN} a ${ACCESS_PASSWORD_MAX} caracteres que cumpla la política de seguridad.`,
+    invalid_replacement:`Usá al menos ${REPLACEMENT_PASSWORD_MIN} caracteres y elegí una contraseña distinta a la temporal.`,
+    password_mismatch:'Las contraseñas no coinciden.',
+    same_password:'Elegí una contraseña distinta a la temporal.',
+    password_expired:'El acceso temporal venció. Contactá a la administración para restablecerlo.',
+    password_login_required:'Iniciá sesión con tu contraseña temporal para continuar.',
     '22023':'Revisá los datos. El correo alternativo debe ser distinto al de tu cuenta.',
     '40001':'El acceso cambió. Actualizá e intentá nuevamente.',
   }
@@ -39,9 +44,15 @@ export async function POST(request: NextRequest) {
     if (Number(request.headers.get('content-length')) > 4096) throw new AccessError('invalid', 400)
     const { identity, admin, status } = await context(request)
     const body = await readAccessJson(request)
-    if (!body || typeof body !== 'object' || Array.isArray(body) || Object.keys(body).some(k => !['action', 'password', 'email', 'code', 'id'].includes(k))) throw new AccessError('invalid', 400)
+    if (Object.keys(body).some(k => !['action', 'password', 'confirmation', 'email', 'code', 'id'].includes(k))) throw new AccessError('invalid', 400)
     if (body.action === 'password') {
-      if (status.phase !== 'password' || typeof body.password !== 'string' || body.password.length < 12 || body.password.length > 128) throw new AccessError('invalid_password', 400)
+      if (status.phase === 'password_expired') throw new AccessError('password_expired', 403)
+      if (status.phase === 'password' && status.temporaryPassword) {
+        if (typeof body.password !== 'string' || !isValidReplacementPassword(body.password)) throw new AccessError('invalid_replacement')
+        if (body.password !== body.confirmation) throw new AccessError('password_mismatch')
+        return json(await changeTemporaryAccessPassword(admin, identity, body.password))
+      }
+      if (status.phase !== 'password' || typeof body.password !== 'string' || body.password.length < ACCESS_PASSWORD_MIN || body.password.length > ACCESS_PASSWORD_MAX) throw new AccessError('invalid_password', 400)
       await setOwnAccessPassword(identity, body.password)
       return json(await accessCommand(admin, identity, 'password_done'))
     }
@@ -50,8 +61,8 @@ export async function POST(request: NextRequest) {
       if (body.email !== undefined && (typeof body.email !== 'string' || body.email.length > 254)) throw new AccessError('invalid', 400)
       const challenge = await accessCommand<{ id: string; code: string; email: string; maskedEmail: string }>(admin, identity, 'email_send', { email: body.email })
       const delivery = await sendAccessMessage(admin, { eventId: challenge.id, kind: 'email_otp', to: challenge.email, code: challenge.code })
-      await accessCommand(admin, identity, 'email_sent', { id: challenge.id, sent: delivery === 'sent' })
-      if (delivery !== 'sent') throw new AccessError('delivery_failed', 503)
+      await accessCommand(admin, identity, 'email_sent', { id: challenge.id, sent: delivery.outcome === 'sent' })
+      if (delivery.outcome !== 'sent') return json({ code: 'delivery_failed', error: `${delivery.reason ?? 'No se pudo confirmar el envío del código.'} Podés solicitar otro código en un minuto.` }, 503)
       return json({ id: challenge.id, maskedEmail: challenge.maskedEmail })
     }
     if (body.action === 'email_verify') {

@@ -49,4 +49,24 @@ export async function verifyUrgentMail({ pool, service, newCase, check, rejects 
   const formId=randomUUID();await pool.query("INSERT INTO formularios_publicos(id,token,activo,modulo) VALUES($1,$2,true,'quejas')",[formId,'a'.repeat(32)]);await pool.query('INSERT INTO public_form_submissions(form_id,submission_id,payload_hash,queja_id) VALUES($1,$2,$3,$4)',[formId,randomUUID(),'a'.repeat(64),cases[4].id])
   const nonce=randomUUID(),a=await claim(2,nonce);check(a.length===2&&a.every(r=>r.tipo==='recibido'),'Urgent claim contains citizen mail only');check((await claim(2,nonce)).length===0,'Wake nonce replay cannot claim another batch');const b=await claim();check(b.length===2&&!b.some(x=>a.some(y=>x.id===y.id)),'Subsequent claim never duplicates leased mail');check((await claim()).length===0,'Unfinalized form is not delivered');await pool.query('UPDATE public_form_submissions SET finalized_at=now() WHERE queja_id=$1',[cases[4].id]);check((await claim()).length===1,'Finalization releases the receipt');
   await rejects(()=>claim(3),'22023','Urgent batch bound remains two');check((await claim(0)).length===0,'Urgent claim zero reserves nothing')
+
+  // Reproduce la referencia privada que usa la política de comunicaciones desplegada.
+  const signature = 'public.qms_mail_authorize_v2(uuid,uuid)'
+  const { definition } = (await pool.query('select pg_get_functiondef($1::regprocedure) as definition', [signature])).rows[0]
+  const deployedRule = definition.replace("or (o.tipo='recibido'", "or (o.tipo='solicitud_informacion' and qms_private.communication_delivery_eligible(o.id))\n    or (o.tipo='recibido'")
+  check(deployedRule !== definition, 'The fixture includes the installed private authorization branch')
+  await pool.query(`revoke usage on schema qms_private from public,service_role;
+    create function qms_private.communication_delivery_eligible(uuid) returns boolean language sql stable as $$select false$$;`)
+  await pool.query(deployedRule)
+  const authorize = (id, token) => service('select public.qms_mail_authorize_v2($1,$2) as allowed', [id, token])
+  await rejects(() => authorize(a[0].id, a[0].claim_token), '42501', 'The previous mail authorization fails on the private schema')
+  await pool.query(fs.readFileSync('supabase/migrations/20261120224355_qms_mail_authorize_private_rules.sql', 'utf8'))
+  check(!(await authorize(a[0].id, a[0].claim_token))[0].allowed, 'A recipient mismatch still blocks delivery')
+  await pool.query('update public.queja_mail_outbox o set destinatario=lower(btrim(q.email_cliente)) from public.quejas q where q.id=o.queja_id and o.id=$1', [a[0].id])
+  check((await authorize(a[0].id, a[0].claim_token))[0].allowed, 'A valid leased email still reaches the authorization step')
+  check(!(await authorize(a[0].id, randomUUID()))[0].allowed, 'A different claim cannot authorize delivery')
+  for (const role of ['anon', 'authenticated']) {
+    check(!(await pool.query("select has_function_privilege($1,$2,'EXECUTE') as allowed", [role, signature])).rows[0].allowed, 'The authorization RPC stays closed to ' + role)
+  }
+  check(!(await pool.query("select has_schema_privilege('service_role','qms_private','USAGE') as allowed")).rows[0].allowed, 'The private schema stays private')
 }

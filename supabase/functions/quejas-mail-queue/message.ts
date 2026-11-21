@@ -1,7 +1,9 @@
 const CITIZEN_MAIL_KINDS = ['recibido', 'final'] as const
+const INFORMATION_MAIL_KIND = 'solicitud_informacion' as const
 export const INTERNAL_MAIL_KINDS = ['interno_recibido', 'interno_evaluacion_1', 'interno_asignacion',
-  'interno_investigacion_5', 'interno_investigacion_3', 'interno_evaluacion_vencida', 'interno_investigacion_vencida'] as const
-type MailKind = (typeof CITIZEN_MAIL_KINDS)[number] | (typeof INTERNAL_MAIL_KINDS)[number]
+  'interno_investigacion_5', 'interno_investigacion_3', 'interno_evaluacion_vencida', 'interno_investigacion_vencida',
+  'interno_respuesta_cliente','interno_devolucion','interno_reapertura','interno_recordatorio_3','interno_recordatorio_1','interno_escalamiento_1','interno_fallo_entrega'] as const
+type MailKind = (typeof CITIZEN_MAIL_KINDS)[number] | (typeof INTERNAL_MAIL_KINDS)[number] | typeof INFORMATION_MAIL_KIND
 
 /** Snapshot mínimo: los destinatarios/hitos salen de DB, nunca de un body HTTP libre. */
 export interface QuejaMailSnapshot {
@@ -29,7 +31,7 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
   if (!isMailUuid(row.id) || !isMailUuid(row.claim_token)
     // El worker legacy conserva solo los dos tipos ciudadanos aunque importe este lector.
     || (!(CITIZEN_MAIL_KINDS as readonly string[]).includes(String(row.tipo))
-      && !(options.internal && (INTERNAL_MAIL_KINDS as readonly string[]).includes(String(row.tipo))))
+      && !(options.internal && (row.tipo === INFORMATION_MAIL_KIND || (INTERNAL_MAIL_KINDS as readonly string[]).includes(String(row.tipo)))))
     || !safeText(row.destinatario, 254) || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(row.destinatario)
     || !safeText(row.folio, 120) || !row.folio
     || (row.estado != null && !safeText(row.estado, 120))
@@ -38,7 +40,7 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
     throw new Error('invalid_mail_snapshot')
   }
   let tracking: QuejaMailSnapshot['public_tracking']
-  if (row.public_tracking != null && (CITIZEN_MAIL_KINDS as readonly string[]).includes(String(row.tipo))) {
+  if (row.public_tracking != null && ((CITIZEN_MAIL_KINDS as readonly string[]).includes(String(row.tipo)) || row.tipo === INFORMATION_MAIL_KIND)) {
     const candidate = row.public_tracking as Record<string, unknown>
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)
       || Object.keys(candidate).length !== 2 || Object.keys(candidate).some(key => !['queja_id', 'nonce'].includes(key))
@@ -46,7 +48,7 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
     tracking = { queja_id: candidate.queja_id.toLowerCase(), nonce: candidate.nonce.toLowerCase() }
   }
   let correo: QuejaMailSnapshot['correo']
-  if (row.correo != null && row.tipo === 'final') {
+  if (row.correo != null && row.tipo !== 'recibido') {
     const candidate = row.correo as Record<string, unknown>
     if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== 2
       || !safeText(candidate.subject, 180) || !candidate.subject.trim()
@@ -54,6 +56,7 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
       || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(candidate.body)) throw new Error('invalid_mail_snapshot')
     correo = { subject: candidate.subject, body: candidate.body }
   }
+  if (row.tipo === INFORMATION_MAIL_KIND && (!tracking || !correo)) throw new Error('invalid_mail_snapshot')
   // Un aviso interno nunca proyecta la capacidad ciudadana, ni si un RPC añade ese campo.
   // Selección explícita: un RPC futuro no puede filtrar nuevos campos mediante un spread.
   return { id: row.id, claim_token: row.claim_token, tipo: row.tipo as QuejaMailSnapshot['tipo'],
@@ -73,15 +76,24 @@ export function quejaMailMessage(row: QuejaMailSnapshot, options: { trackingUrl?
     interno_investigacion_3: { subject: `${base}: investigación por vencer`, body: `La investigación de la queja ${row.folio} vence en 3 días hábiles.\n\nRevisá su avance y completá las acciones pendientes en el sistema.` },
     interno_evaluacion_vencida: { subject: `${base}: evaluación vencida`, body: `El plazo de evaluación de la queja ${row.folio} venció.\n\nRevisá el expediente y registrá la decisión de procedencia en el sistema.` },
     interno_investigacion_vencida: { subject: `${base}: investigación vencida`, body: `El plazo de investigación de la queja ${row.folio} venció.\n\nRevisá el expediente y coordiná la conclusión de las acciones pendientes en el sistema.` },
+    solicitud_informacion: { subject: `${base}: solicitud de información`, body: 'Respondé desde tu enlace privado.' },
+    interno_respuesta_cliente: { subject: `${base}: respuesta del cliente`, body: 'Revisá la información nueva del cliente.' },
+    interno_devolucion: { subject: `${base}: corrección requerida`, body: 'Corregí la propuesta de resolución.' },
+    interno_reapertura: { subject: `${base}: reapertura`, body: 'Retomá la investigación del expediente.' },
+    interno_recordatorio_3: { subject: `${base}: plazo próximo`, body: 'El plazo vence en 3 días hábiles.' },
+    interno_recordatorio_1: { subject: `${base}: plazo urgente`, body: 'El plazo vence en 1 día hábil.' },
+    interno_escalamiento_1: { subject: `${base}: seguimiento requerido`, body: 'Calidad debe verificar el avance antes del vencimiento.' },
+    interno_fallo_entrega: { subject: `${base}: revisar destinatario`, body: 'Calidad debe verificar la entrega del aviso.' },
   }
   // Rechazar también llamadas directas con tipos retirados, sin producir un mensaje incompleto.
   if (!Object.prototype.hasOwnProperty.call(messages, row.tipo)) throw new Error('invalid_mail_snapshot')
   const message = { eventId: row.id, kind: row.tipo, folio: row.folio, to: row.destinatario, ...messages[row.tipo],
-    ...(row.tipo === 'final' && row.correo ? { subject: row.correo.subject, body: row.correo.body } : {}) }
+    ...(row.tipo !== 'recibido' && row.correo ? { subject: row.correo.subject, body: row.correo.body } : {}) }
   if ((row.tipo === 'recibido' || row.tipo === 'final') && !row.correo) message.body += '\n\nPara consultas adicionales, puede escribir a gc@eca.or.cr.'
   // El acuse conserva seguimiento; el correo final entrega el informe como adjunto
   // independiente de la capacidad ciudadana que caduca a los 30 días.
-  if (!options.trackingUrl || !row.public_tracking || row.tipo !== 'recibido') return message
+  if (row.tipo === INFORMATION_MAIL_KIND && !options.trackingUrl) throw new Error('invalid_mail_snapshot')
+  if (!options.trackingUrl || !row.public_tracking || !['recibido', INFORMATION_MAIL_KIND].includes(row.tipo)) return message
   // El generador Edge entrega una URL ya validada; no aceptar URLs libres del RPC.
   const url = new URL(options.trackingUrl)
   if (url.protocol !== 'https:' || url.username || url.password || url.port || url.search

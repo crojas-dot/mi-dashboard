@@ -80,3 +80,24 @@ se proporciona una hoja de una unidad compartida. El inicializador no modifica
 permisos ni comprueba la ACL; no añade scopes de Drive.
 
 La activación se describe en [seguridad-correos-quejas.md](../../../docs/seguridad-correos-quejas.md).
+## Identidad común del correo
+
+`qmsMailHeader_` es el encabezado de las plantillas de Quejas y de acceso. Se
+aplica al acuse, resultado final, solicitud de información, avisos internos,
+invitación y código de verificación. La cola y el correo de acceso leen el mismo
+estilo y las mismas URL en Identidad. Si falta la configuración, se usa
+`EMAIL_LOGO_STYLE=horizontal`. La imagen de respaldo es el PNG oficial incluido
+en `public/logo-email-horizontal.png`, de 480 × 160 px, mostrado a 240 × 80 px.
+La opción cuadrada muestra a 64 × 64 px el emblema PNG de 128 × 128 px cargado
+por administración. Mientras falte ese archivo se usa el logo horizontal.
+
+El emisor resuelve el respaldo con `APP_PUBLIC_URL` configurado en las
+propiedades de Apps Script. Si falta, reutiliza `QMS_PUBLIC_TRACKING_ORIGIN`.
+Publicar el sitio que sirve el PNG y el Apps Script que reconoce `identidadCorreo`
+antes de publicar las Edge Functions que añaden el campo firmado. El emisor nuevo
+acepta los sobres anteriores durante el cambio.
+
+En Quejas, un fallo confirmado antes de MailApp puede reprogramarse desde el
+expediente. El próximo poll procesa la misma fila y vuelve a autorizar su
+destinatario, publicación y reserva. Los estados `sent` y `uncertain` impiden el
+reintento. El botón no crea un correo adicional ni vuelve a publicar la respuesta.

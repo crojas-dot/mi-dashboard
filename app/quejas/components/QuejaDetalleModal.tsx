@@ -19,7 +19,7 @@ import AreaQuejaControl from '@/app/quejas/components/AreaQuejaControl'
 import QuejaPublicacionPanel from '@/app/quejas/components/QuejaPublicacionPanel'
 import QuejaInformeModal from '@/app/quejas/components/QuejaInformeModal'
 import QuejaRespuestaClienteModal from '@/app/quejas/components/QuejaRespuestaClienteModal'
-import QuejaNotasPanel, { QuejaNotasCard } from '@/components/quejas/QuejaNotasPanel'
+import QuejaNotasPanel from '@/components/quejas/QuejaNotasPanel'
 import QuejaAdjuntosInvestigacion, { QuejaAdjuntosCard } from '@/app/mis-quejas/components/QuejaAdjuntosInvestigacion'
 import QuejaCierreResumen from '@/app/quejas/components/QuejaCierreResumen'
 import QuejaInvestigacionAsignacion from '@/app/quejas/components/QuejaInvestigacionAsignacion'
@@ -48,7 +48,7 @@ import { REGISTRO_QUEJA_LIMITES } from '@/lib/constants/quejas'
 import { ArrowRight, Upload, RotateCcw, FileText, Paperclip, Eye, Info } from 'lucide-react'
 import { useQuejaActividad } from '@/lib/queries/useQuejaActividad'
 import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestigationAssignment'
-import { useQuejaPlazos, useQuejaCorreos } from '@/lib/queries/useQuejaSeguimiento'
+import { useQuejaPlazos, useQuejaCorreos, useReintentarQuejaCorreo } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
 import { CASE_ACTIONS, caseDeadline, getCaseProcessCycle, getCaseTriageNextStep } from '@/app/quejas/components/quejaExpedienteModel'
 import { CaseSection, CaseReadOnlyHeader, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseAction, CaseFinalMailStatus, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
@@ -128,6 +128,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
   const { data: usuarios = [], isLoading: usuariosLoading, error: usuariosError } = useUsuarios({ estado: 'activo' }, !!queja)
   const user = useAuthStore((s) => s.user)
+  const accessIdentity = useAuthStore((s) => s.accessIdentity)
   const scope = useEntityRequestGuard(queja?.id ?? null)
   const {
     previewAdjunto, setPreviewAdjunto, subiendoAdjunto, eliminandoAdjunto,
@@ -169,7 +170,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     })
   }, [quejaId, estadoActual, esStaff, queryClient])
   const finalizada = ['Finalizado', 'No Procede'].includes(estadoActual)
-  const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && finalizada)
+  const reintentarCorreo = useReintentarQuejaCorreo(quejaId, accessIdentity ?? undefined)
+  const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && expanded,
+    reintentarCorreo.isSuccess ? reintentarCorreo.variables : undefined)
 
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
@@ -741,8 +744,8 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             <span className="text-xs text-qms-primary">Ver ›</span>
           </button>
         </div>}
-        compact={<CaseCycle queja={queja} process currentOnly />}
-        cycle={<CaseCycle queja={queja} process selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
+        compact={<CaseCycle queja={queja} process chevrons compact />}
+        cycle={<CaseCycle queja={queja} process chevrons compact selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
         action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
@@ -752,7 +755,9 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             {workflowActions}
           </div>}
           {estadoActual !== 'Recibido' && workflowActions}
-          {esStaff && finalizada && <CaseFinalMailStatus messages={correos} loading={correosLoading} error={!!correosError} onRetry={() => { void refetchCorreos() }} />}
+          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError}
+            onRetry={() => { void refetchCorreos() }} onRetrySend={id => reintentarCorreo.mutate(id)}
+            retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} />}
           {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"
             className="min-h-10 w-full" disabled={workflowPending || editing}
             onClick={() => { beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw aria-hidden="true" className="size-4" />Reabrir queja</Button>}

@@ -85,3 +85,37 @@ BotID positivo ni implican envíos o archivos reales.
 Suite `public-quejas-client`: 23/23; lint de la página correcto. Las guías de
 seguridad y los contratos de datos siguen siendo las fuentes de los controles
 del formulario; este cambio solo altera su presentación.
+## Fondo compartido e iframe (20 de noviembre)
+
+`/q/[token]` reutiliza `FondoIdentidad` y `ui-auth-card` del login. El fondo
+configurado conserva el respaldo `#082440` y la capa negra al 10 %. Si no hay
+imagen, se usa `qms-background`. La tarjeta es `rgb(255 255 255 / 96%)`, con
+`rounded-card`, `border-qms-border` y `shadow-md`, sin desenfoque. El formulario
+usa el scroll de página. Desde `sm` muestra el título y la descripción a la
+izquierda, con el logo a la derecha y los campos en dos columnas. La descripción
+empieza con cuatro filas y se puede ampliar verticalmente.
+
+La vista `?embed=1` prescinde de la tarjeta, el fondo y el padding exterior.
+Configurar `ALLOWED_FRAME_ORIGIN` con el origen HTTPS exacto de WordPress, sin
+ruta. Solo un enlace de formulario con `embed=1` admite ese dominio en
+`frame-ancestors`. La vista de seguimiento conserva su política por separado.
+
+En WordPress, el iframe puede adoptar la altura que comunica el formulario.
+Este ejemplo usa marcadores para el dominio de QMS y el token del formulario.
+
+```html
+<iframe id="eca-formulario" title="Registro de queja"
+  src="https://qms.example.test/q/REEMPLAZAR_TOKEN?embed=1"
+  style="display:block;width:100%;height:800px;border:0" referrerpolicy="no-referrer"></iframe>
+<script>
+  const iframe = document.getElementById('eca-formulario')
+  const origen = new URL(iframe.src).origin
+  window.addEventListener('message', (event) => {
+    if (event.origin !== origen || event.source !== iframe.contentWindow) return
+    const dato = event.data
+    if (dato?.type === 'eca-height' && Number.isSafeInteger(dato.h) && dato.h > 0) {
+      iframe.style.height = dato.h + 'px'
+    }
+  })
+</script>
+```

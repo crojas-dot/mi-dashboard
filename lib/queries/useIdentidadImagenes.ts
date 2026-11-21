@@ -3,10 +3,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { IDENTIDAD_IMAGENES, IDENTIDAD_SLOTS, type ImagenIdentidad } from '@/lib/constants/identidad'
+import { emailLogoStyle, type EmailLogoStyle } from '@/supabase/functions/_shared/emailIdentity'
 
 export const identidadImagenesKey = ['identidad', 'imagenes'] as const
 export type ImagenesIdentidad = Record<ImagenIdentidad, string> & {
   configuradas?: Partial<Record<ImagenIdentidad, boolean>>
+  emailLogoStyle?: EmailLogoStyle
 }
 
 export async function fetchImagenesIdentidad(signal?: AbortSignal): Promise<ImagenesIdentidad> {
@@ -15,6 +17,7 @@ export async function fetchImagenesIdentidad(signal?: AbortSignal): Promise<Imag
   const body = await response.json() as {
     imagenes?: Record<string, unknown>
     configuradas?: Record<string, unknown>
+    emailLogoStyle?: unknown
   }
   return {
     ...Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
@@ -23,6 +26,7 @@ export async function fetchImagenesIdentidad(signal?: AbortSignal): Promise<Imag
     configuradas: Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
       slot, body.configuradas?.[slot] === true,
     ])),
+    emailLogoStyle: emailLogoStyle(body.emailLogoStyle),
   } as ImagenesIdentidad
 }
 
@@ -40,6 +44,16 @@ async function tokenAdmin() {
   const { data, error } = await supabase.auth.getSession()
   if (error || !data.session?.access_token) throw new Error('Iniciá sesión para administrar las imágenes')
   return data.session.access_token
+}
+
+export async function guardarEstiloLogoCorreo(emailLogoStyle: EmailLogoStyle) {
+  const response = await fetch('/api/configuracion/identidad', {
+    method: 'PATCH', cache: 'no-store',
+    headers: { Authorization: `Bearer ${await tokenAdmin()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ emailLogoStyle }),
+  })
+  const body = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(body?.error || 'No se pudo guardar el estilo de correo')
 }
 
 export async function guardarImagenIdentidad(slot: ImagenIdentidad, blob: Blob) {

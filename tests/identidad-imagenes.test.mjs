@@ -8,13 +8,15 @@ const UUID = '11111111-1111-4111-8111-111111111111'
 const marcas = loadModule('lib/constants/identidad.ts')
 
 test('cada recurso institucional tiene clave, aspecto y nombre separados', () => {
-  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'login_encabezado', 'login_fondo', 'formulario_encabezado'])
+  assert.deepEqual(Array.from(marcas.IDENTIDAD_SLOTS), ['correo_encabezado', 'correo_cuadrado', 'login_encabezado', 'login_fondo', 'formulario_encabezado'])
   assert.equal(marcas.IDENTIDAD_IMAGENES.login_fondo.proporcion, 16 / 9)
   assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.login_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.formulario_encabezado.proporcion, 3)
   assert.equal(marcas.IDENTIDAD_IMAGENES.correo_encabezado.formato, 'png')
-  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, 4)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_cuadrado.ancho, 128)
+  assert.equal(marcas.IDENTIDAD_IMAGENES.correo_cuadrado.alto, 128)
+  assert.equal(new Set(marcas.IDENTIDAD_SLOTS.map(slot => marcas.IDENTIDAD_IMAGENES[slot].clave)).size, marcas.IDENTIDAD_SLOTS.length)
 })
 
 test('solo se admiten URL del bucket institucional y del slot correcto', () => {
@@ -88,6 +90,21 @@ test('escritura de imágenes se rechaza para cuentas no administradoras', async 
     assert.equal((await f.api.DELETE({ signal: undefined })).status, rol ? 403 : 401)
     assert.equal(f.logs.length, 0)
   }
+})
+
+test('solo administración guarda un estilo permitido y la lectura pública tiene respaldo horizontal', async () => {
+  const request = emailLogoStyle => ({ signal: undefined, json: async () => ({ emailLogoStyle }) })
+  for (const rol of [null, 'calidad']) {
+    const denied = fixture({ rol })
+    assert.equal((await denied.api.PATCH(request('cuadrado'))).status, rol ? 403 : 401)
+    assert.equal(denied.logs.length, 0)
+  }
+  const f = fixture()
+  assert.equal((await f.api.GET({})).body.emailLogoStyle, 'horizontal')
+  assert.equal((await f.api.PATCH(request('vertical'))).status, 400)
+  assert.equal((await f.api.PATCH(request('cuadrado'))).status, 200)
+  assert.equal((await f.api.GET({})).body.emailLogoStyle, 'cuadrado')
+  assert.equal(f.logs.length, 1)
 })
 
 test('el proxy deja leer solo el GET de identidad pública y retira encabezados de identidad', async () => {

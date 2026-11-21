@@ -401,8 +401,8 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       No se pudo cargar el borrador.<Button size="sm" variant="link" onClick={() => { void recargarBorrador() }}>Reintentar</Button>
     </div>}
   </CaseTriageSummary>
-  const cicloMostrado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} />
-  const cicloEncabezado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} chevrons />
+  const cicloMostrado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} compact />
+  const cicloEncabezado = <MisQuejasBreadcrumb ciclo={ciclo} etapa={etapa} onChange={cambiarEtapa} />
 
   return <>
     <Modal open onClose={panelNotas ? cerrarNotas : panelAdjuntos ? cerrarAdjuntos : handleClose}

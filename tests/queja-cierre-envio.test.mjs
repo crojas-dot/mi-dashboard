@@ -55,3 +55,12 @@ test('la consulta observa el ACK solo mientras el envío final esté pendiente y
   assert.equal(options.refetchIntervalInBackground, false)
   assert.equal(queries.useQuejaCorreos('case', false).enabled, false)
 })
+test('el diagnóstico seguro y el botón de envío aparecen solo si el evento se puede reprogramar', () => {
+  const base = { id: 'event-synthetic', tipo: 'final', sent_at: null }
+  const safe = html(CaseFinalMailStatus, { messages: [{ ...base, status: 'retry', safe_error: 'authorization_permission_denied' }], onRetry() {}, onRetrySend() {} })
+  assert.match(safe, /Supabase rechazó el permiso del emisor/)
+  assert.match(safe, /Reintentar envío/)
+  const uncertain = html(CaseFinalMailStatus, { messages: [{ ...base, status: 'uncertain', safe_error: 'delivery_uncertain' }], onRetry() {}, onRetrySend() {} })
+  assert.match(uncertain, /Envío por comprobar/)
+  assert.doesNotMatch(uncertain, /Reintentar envío/)
+})

@@ -19,6 +19,7 @@ export const API_WITH_ROUTE_AUTH: Record<string, readonly string[]> = {
   '/api/quejas/seguimiento': ['GET', 'POST'],
   '/api/quejas/informe': ['GET', 'PUT'],
   '/api/quejas/historial': ['GET'],
+  '/api/quejas/correos/reintentar': ['POST'],
 }
 
 export function authenticatesInRoute(pathname: string, method: string): boolean {

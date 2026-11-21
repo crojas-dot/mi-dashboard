@@ -1,16 +1,27 @@
 import { LOGO_BUCKET } from '@/lib/constants/marca'
+import { EMAIL_IDENTITY_KEYS } from '@/supabase/functions/_shared/emailIdentity'
 
 /** Recursos institucionales públicos. La foto personal utiliza otro bucket privado. */
 export const IDENTIDAD_IMAGENES = {
   correo_encabezado: {
-    clave: 'org.identidad.correo_encabezado',
-    titulo: 'Logo del encabezado de correos',
-    descripcion: 'Reemplaza el símbolo del encabezado de correo con una marca horizontal, junto a «QMS ECA». No es un banner.',
+    clave: EMAIL_IDENTITY_KEYS.encabezado,
+    titulo: 'Logo horizontal para correos',
+    descripcion: 'El logo se muestra arriba del nombre QMS ECA. También se utiliza cuando falta una versión cuadrada.',
     proporcion: 3,
     ancho: 900,
     alto: 300,
     formato: 'png',
     recomendacion: 'Logo horizontal de 900 × 300 px (3:1), con PNG transparente para que los laterales no se corten. Idealmente menos de 300 KB.',
+  },
+  correo_cuadrado: {
+    clave: EMAIL_IDENTITY_KEYS.cuadrado,
+    titulo: 'Logo cuadrado para correos',
+    descripcion: 'El emblema se muestra a la izquierda del nombre QMS ECA.',
+    proporcion: 1,
+    ancho: 128,
+    alto: 128,
+    formato: 'png',
+    recomendacion: 'PNG transparente de 128 × 128 px con el emblema oficial. Se muestra a 64 × 64 px.',
   },
   login_encabezado: {
     clave: 'org.identidad.login_encabezado',
@@ -24,8 +35,8 @@ export const IDENTIDAD_IMAGENES = {
   },
   login_fondo: {
     clave: 'org.identidad.login_fondo',
-    titulo: 'Fondo del inicio de sesión',
-    descripcion: 'Imagen de fondo de la pantalla donde los usuarios ingresan al sistema.',
+    titulo: 'Fondo de login y formularios',
+    descripcion: 'Imagen de fondo para el inicio de sesión y la vista normal del formulario externo.',
     proporcion: 16 / 9,
     ancho: 1600,
     alto: 900,
@@ -37,7 +48,7 @@ export const IDENTIDAD_IMAGENES = {
   formulario_encabezado: {
     clave: 'org.identidad.formulario_encabezado',
     titulo: 'Logo del formulario externo',
-    descripcion: 'Se muestra en la esquina superior derecha del encabezado, sin cubrir los campos.',
+    descripcion: 'Se muestra a la derecha del encabezado y se centra en pantallas pequeñas.',
     proporcion: 3,
     ancho: 900,
     alto: 300,

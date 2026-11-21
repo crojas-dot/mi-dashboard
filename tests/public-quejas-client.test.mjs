@@ -393,10 +393,10 @@ function pageHarness(query, form = {}) {
   let token = TOKEN
   const effects = [], focusCalls = [], toasts = []
   const api = client(() => { throw new Error('La vista no debe llamar red directamente') })
-  const { default: Page } = loadModule('app/q/[token]/page.tsx', {
+  const { default: Form } = loadModule('app/q/components/FormularioQuejaPublica.tsx', {
     react: { useRef: value => ({ current: value }), useEffect: effect => effects.push(effect) },
     sonner: { toast: { error: (message, options) => toasts.push({ message, options }) } },
-    'next/navigation': { useParams: () => ({ token }) },
+    '@/lib/queries/useIdentidadImagenes': { useIdentidadImagenes: () => ({ data: undefined }) },
     '@/lib/queries/useFormularioPublico': { useFormularioPublico: () => query },
     '@/app/q/components/usePublicQuejaForm': { usePublicQuejaForm: () => ({ archivos: [], draft: DRAFT, ...form }) },
     '@/lib/services/publicQuejasClient': api,
@@ -413,26 +413,61 @@ function pageHarness(query, form = {}) {
     scrollIntoView: options => focusCalls.push({ action: 'scroll', id, options }),
     reportValidity: () => focusCalls.push({ action: 'report', id }),
   }) } })
-  return { api, query, Page, focusCalls, toasts, setToken(next) { token = next }, render() {
-    const root = Page()
-    const rendered = root.type(root.props)
+  const { default: Page } = loadModule('app/q/[token]/page.tsx', {
+    '@/app/q/components/FormularioQuejaPublica': { default: Form },
+    '@/app/q/components/PublicFormFrameHeight': { default: 'FrameHeight' },
+    '@/components/identidad/FondoIdentidad': { default: 'FondoIdentidad' },
+    '@/lib/server/identidad-publica': { identidadFormularioInicial: async () => ({}) },
+  }, { process: { env: { ALLOWED_FRAME_ORIGIN: 'https://wordpress.example.test' } } })
+  return { api, query, Form, focusCalls, toasts, setToken(next) { token = next }, page(embed) {
+    return Page({ params: Promise.resolve({ token }), searchParams: Promise.resolve({ embed }) })
+  }, render() {
+    const rendered = Form({ token, isEmbed: false })
     for (const effect of effects.splice(0)) effect()
     return rendered
   } }
 }
 
-test('503 muestra un estado de servicio limpio y un token nuevo remonta otra visita', () => {
+test('503 muestra un estado de servicio limpio y un token nuevo remonta otra visita', async () => {
   const view = pageHarness({ isPending: false, data: undefined, isFetching: false })
   view.query.error = new view.api.PublicRequestError(503)
   const rendered = textContent(view.render())
   assert.match(rendered, /Servicio no disponible/)
   assert.match(rendered, /Reintentar/)
   assert.doesNotMatch(rendered, /Correo electrónico|Registro de queja|Seleccionar categoría/)
-  const firstVisit = view.Page()
+  const firstVisit = findElement(await view.page(), element => element.type === view.Form)
   view.setToken('another-synthetic-form')
-  const nextVisit = view.Page()
+  const nextVisit = findElement(await view.page(), element => element.type === view.Form)
   assert.notEqual(firstVisit.key, nextVisit.key)
   assert.equal(nextVisit.props.token, 'another-synthetic-form')
+})
+
+test('solo embed=1 elimina el fondo y activa la altura para el origen configurado', async () => {
+  const view = pageHarness({})
+  const embedded = await view.page('1')
+  assert.equal(embedded.props['data-public-form-embed'], true)
+  assert.match(embedded.props.className, /max-w-3xl/)
+  assert.equal(findElement(embedded, element => element.type === 'FrameHeight').props.origin, 'https://wordpress.example.test')
+  assert.equal(findElement(embedded, element => element.type === view.Form).props.isEmbed, true)
+  for (const value of [undefined, '0', ['1', '1']]) assert.equal((await view.page(value)).type, 'FondoIdentidad')
+})
+
+test('los headers habilitan solamente el origen HTTPS configurado y la vista embebida del formulario', async () => {
+  const headersFor = origin => loadModule('next.config.ts', {
+    'botid/next/config': { withBotId: config => config },
+  }, { process: { env: { ALLOWED_FRAME_ORIGIN: origin } } }).default.headers()
+  for (const invalid of [undefined, '*', 'http://wordpress.example.test', 'https://wordpress.example.test/ruta', 'https://wordpress.example.test;frame-src']) {
+    const headers = await headersFor(invalid)
+    assert.equal(headers.length, 1)
+    assert.equal(headers[0].source, '/q/:path*')
+    assert.equal(headers[0].headers[0].value, "frame-ancestors 'self'")
+  }
+  const headers = await headersFor('https://wordpress.example.test/')
+  assert.equal(headers.length, 2)
+  assert.equal(headers[1].source, '/q/:token([0-9a-f]{32})')
+  assert.equal(headers[1].has[0].key, 'embed')
+  assert.equal(headers[1].has[0].value, '1')
+  assert.equal(headers[1].headers[0].value, "frame-ancestors 'self' https://wordpress.example.test")
 })
 
 

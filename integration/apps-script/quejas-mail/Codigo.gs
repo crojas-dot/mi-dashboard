@@ -169,7 +169,9 @@ function qmsMailReceipt_(secret, request, outcome, code, delay) {
 
 function qmsMailInternalKind_(kind) {
   return ['interno_recibido', 'interno_evaluacion_1', 'interno_asignacion', 'interno_investigacion_5',
-    'interno_investigacion_3', 'interno_evaluacion_vencida', 'interno_investigacion_vencida'].indexOf(kind) !== -1;
+    'interno_investigacion_3', 'interno_evaluacion_vencida', 'interno_investigacion_vencida',
+    'interno_respuesta_cliente', 'interno_devolucion', 'interno_reapertura', 'interno_recordatorio_3',
+    'interno_recordatorio_1', 'interno_escalamiento_1', 'interno_fallo_entrega'].indexOf(kind) !== -1;
 }
 
 /** Dominio institucional fijado en propiedades; nunca seguir URLs arbitrarias del lote. */
@@ -184,7 +186,7 @@ function qmsMailValidMessage_(payload, allowInternal) {
   qmsMailRecord_(payload, ['eventId', 'kind', 'to', 'subject', 'body', 'folio', 'trackingUrl']);
   return typeof payload.eventId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(payload.eventId)
     && (['recibido', 'final'].indexOf(payload.kind) !== -1
-      || allowInternal === true && qmsMailInternalKind_(payload.kind))
+      || allowInternal === true && (qmsMailInternalKind_(payload.kind) || payload.kind === 'solicitud_informacion'))
     && typeof payload.folio === 'string' && payload.folio.length > 0 && payload.folio.length <= 120 && !/[\u0000-\u001f\u007f]/.test(payload.folio)
     && typeof payload.to === 'string' && payload.to.length <= 254 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(payload.to)
     && typeof payload.subject === 'string' && payload.subject.length > 0 && payload.subject.length <= 180 && !/[\u0000-\u001f\u007f]/.test(payload.subject)
@@ -250,27 +252,30 @@ function qmsMailDeliver_(configuration, payload, officialDocument, identidad) {
     var sheet;
     try { sheet = qmsMailLedger_(configuration); }
     catch (_) { return result('retry', 'ledger_unavailable'); }
-    var recorded = qmsMailRecordedDelivery_(sheet, payload);
+    var recorded;
+    try { recorded = qmsMailRecordedDelivery_(sheet, payload); }
+    catch (_) { return result('retry', 'ledger_unavailable'); }
     if (recorded) return recorded;
     // Un resultado final nuevo nunca se entrega sin su documento físico.
     // El diario se comprueba primero para no reenviar una entrega histórica.
-    if (payload.kind === 'final' && !officialDocument) return result('retry', 'authorization_unavailable');
-    if (MailApp.getRemainingDailyQuota() < 1) return result('retry', 'quota_exhausted', 86400);
+    if (payload.kind === 'final' && !officialDocument) return result('retry', 'official_document_missing');
+    try { if (MailApp.getRemainingDailyQuota() < 1) return result('retry', 'quota_exhausted', 86400); }
+    catch (_) { return result('retry', 'quota_unavailable'); }
     var mail = { to: payload.to, subject: payload.subject, body: payload.body,
       name: configuration.senderName, htmlBody: qmsMailHtml_(payload, identidad) };
     if (officialDocument) {
       // Descargar antes de escribir attempting: un fallo de Drive no es una entrega incierta.
       try {
         var document = DriveApp.getFileById(officialDocument.driveId);
-        if (document.isTrashed() || document.getSize() !== officialDocument.size || document.getMimeType() !== officialDocument.mime) throw new Error('document_changed');
+        if (document.isTrashed() || document.getSize() !== officialDocument.size || document.getMimeType() !== officialDocument.mime) return result('retry', 'official_document_changed');
         var blob = document.getBlob().setName(officialDocument.name);
-        if (blob.getBytes().length !== officialDocument.size) throw new Error('document_changed');
+        if (blob.getBytes().length !== officialDocument.size) return result('retry', 'official_document_changed');
         mail.attachments = [blob];
-      } catch (_) { return result('retry', 'authorization_unavailable', 300); }
+      } catch (_) { return result('retry', 'official_document_unavailable'); }
     }
     if (configuration.replyTo) {
       if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(configuration.replyTo) || configuration.replyTo.length > 254) {
-        return result('retry', 'ledger_unavailable');
+        return result('retry', 'invalid_reply_to');
       }
       mail.replyTo = configuration.replyTo;
     }
@@ -368,7 +373,15 @@ function qmsMailQueueRequest_(configuration, purpose, payload, receiptPurpose) {
     method: 'post', contentType: 'application/json', payload: JSON.stringify(envelope),
     followRedirects: false, muteHttpExceptions: true
   });
-  if (response.getResponseCode() !== 200) throw new Error('queue_unavailable');
+  if (response.getResponseCode() !== 200) {
+    if (purpose === 'authorize_request') {
+      var failure = response.getContentText();
+      var code;
+      try { if (failure.length <= 512) code = JSON.parse(failure).error; } catch (_) { /* Conservar el código genérico. */ }
+      if (['authorization_permission_denied', 'official_document_missing', 'official_document_changed'].indexOf(code) !== -1) throw new Error(code);
+    }
+    throw new Error('queue_unavailable');
+  }
   var text = response.getContentText();
   if (!text || text.length > 65536 || Utilities.newBlob(text).getBytes().length > 65536) throw new Error('invalid_queue_receipt');
   var receipt = qmsMailVerify_(JSON.parse(text), receiptPurpose, configuration.secret, 65536);
@@ -392,6 +405,16 @@ function qmsMailBrandingUrl_(slot, value) {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(value.slice(expected.length));
 }
 
+function qmsMailBrandingIdentity_(value) {
+  var identity = {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return identity;
+  identity.estilo = value.estilo === 'cuadrado' ? 'cuadrado' : 'horizontal';
+  ['encabezado', 'cuadrado'].forEach(function (slot) {
+    if (qmsMailBrandingUrl_(slot, value[slot])) identity[slot] = value[slot];
+  });
+  return identity;
+}
+
 function qmsMailClaimReceipt_(payload, limit) {
   qmsMailRecord_(payload, ['requestNonce', 'leaseUntil', 'messages', 'identidadCorreo']);
   if (!qmsMailUuid_(payload.requestNonce) || typeof payload.leaseUntil !== 'string'
@@ -410,15 +433,7 @@ function qmsMailClaimReceipt_(payload, limit) {
     seen[message.eventId.toLowerCase()] = true;
     return { message: message, claimToken: value.claimToken };
   });
-  var identidad = null;
-  if (Object.prototype.hasOwnProperty.call(payload, 'identidadCorreo')) {
-    identidad = qmsMailRecord_(payload.identidadCorreo, ['encabezado']);
-    if (Object.keys(identidad).length === 0) throw new Error('invalid_queue_receipt');
-    if (Object.keys(identidad).some(function (slot) {
-      return !qmsMailBrandingUrl_(slot, identidad[slot]);
-    })) throw new Error('invalid_queue_receipt');
-  }
-  return { messages: messages, expires: expires, identidad: identidad };
+  return { messages: messages, expires: expires, identidad: qmsMailBrandingIdentity_(payload.identidadCorreo) };
 }
 
 function qmsMailAck_(configuration, entry, result) {
@@ -463,13 +478,15 @@ function qmsMailAuthorizeInternal_(configuration, entry) {
           || typeof file.mime !== 'string' || file.mime.length > 127 || !/^[A-Za-z0-9][A-Za-z0-9.+_-]*\/[A-Za-z0-9][A-Za-z0-9.+_-]*$/.test(file.mime)
           || !Number.isSafeInteger(file.size) || file.size < 1 || file.size > 4194304) throw new Error('invalid_queue_receipt');
       }
-      if (file === null) throw new Error('official_document_required');
+      if (file === null) throw new Error('official_document_missing');
       entry.officialDocument = file;
     }
     return receipt.authorized ? null : { outcome: 'skipped', code: 'obsolete_notice', retryAfterSeconds: 300 };
-  } catch (_) {
+  } catch (error) {
     // No se llamó a MailApp: solo este fallo anterior al envío permite reintentar sin incertidumbre.
-    return { outcome: 'retry', code: 'authorization_unavailable', retryAfterSeconds: 300 };
+    var code = error && error.message;
+    var known = ['authorization_permission_denied', 'official_document_missing', 'official_document_changed'];
+    return { outcome: 'retry', code: known.indexOf(code) !== -1 ? code : 'authorization_unavailable', retryAfterSeconds: 300 };
   }
 }
 
@@ -532,7 +549,7 @@ function qmsMailPollDirect_(configuration, citizenOnly) {
       // Reservar 30 s al final del lease/budget para no empezar una entrega tarde.
       var canStart = Date.now() - started < 210000 && batch.expires - Date.now() > 30000;
       var result = !canStart ? { outcome: 'retry', code: 'batch_not_started', retryAfterSeconds: 300 }
-        : qmsMailInternalKind_(entry.message.kind) || entry.message.kind === 'final'
+        : qmsMailInternalKind_(entry.message.kind) || entry.message.kind === 'final' || entry.message.kind === 'solicitud_informacion'
           ? qmsMailAuthorizeInternal_(configuration, entry) : null;
       if (!result) {
         // El HTTP de autorización también consume lease y presupuesto de ejecución.
@@ -569,11 +586,38 @@ function qmsMailEscape_(value) {
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character];
   });
 }
+
+/** Encabezado único para Quejas, invitaciones y códigos de verificación. */
+function qmsMailHeader_(identidad) {
+  var properties = PropertiesService.getScriptProperties();
+  var origin = [properties.getProperty('APP_PUBLIC_URL'), properties.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')].find(function(value) {
+    return /^https:\/\/(?:[a-z0-9-]+\.)+[a-z]{2,}\/?$/i.test(value) && !/\.localhost\/?$/i.test(value);
+  }) || '';
+  origin = origin.replace(/\/$/, '');
+  var style = identidad && identidad.estilo || properties.getProperty('EMAIL_LOGO_STYLE');
+  // Hasta disponer del emblema oficial cuadrado, el archivo horizontal es el respaldo.
+  var square = style === 'cuadrado' && identidad && identidad.cuadrado;
+  var url = square ? identidad.cuadrado : (identidad && identidad.encabezado || (origin && origin + '/logo-email-horizontal.png'));
+  var width = square ? 64 : 240;
+  var height = square ? 64 : 80;
+  var logo = url ? '<img src="' + qmsMailEscape_(url) + '" alt="ECA – Ente Costarricense de Acreditación" width="' + width + '" height="' + height
+    + '" style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;">' : '';
+  var caption = 'font-size:13px;line-height:1.4;color:#6c757d';
+  var cells = square
+    ? '<tr><td width="64" style="width:64px;vertical-align:middle">' + logo + '</td><td style="padding-left:12px;vertical-align:middle">'
+      + '<div style="font-size:16px;line-height:1.4;font-weight:600;color:#212529">QMS ECA</div><div style="' + caption + '">Gestión de Calidad</div></td></tr>'
+    : (logo ? '<tr><td align="left">' + logo + '</td></tr>' : '') + '<tr><td style="' + caption + (logo ? ';padding-top:8px' : '') + '">QMS ECA · Gestión de Calidad</td></tr>';
+  return '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse">' + cells + '</table>';
+}
+
 function qmsMailHtml_(message, identidad) {
   var title = {recibido:'Registro recibido',final:'Resultado de la gestión',
     interno_recibido:'Nueva queja recibida',interno_evaluacion_1:'Evaluación por vencer',interno_asignacion:'Investigación asignada',
     interno_investigacion_5:'Investigación por vencer',interno_investigacion_3:'Investigación por vencer',
-    interno_evaluacion_vencida:'Evaluación vencida',interno_investigacion_vencida:'Investigación vencida'}[message.kind];
+    interno_evaluacion_vencida:'Evaluación vencida',interno_investigacion_vencida:'Investigación vencida',
+    solicitud_informacion:'Solicitud de información',interno_respuesta_cliente:'Información nueva del cliente',
+    interno_devolucion:'Corrección requerida',interno_reapertura:'Queja reabierta',interno_recordatorio_3:'Vencimiento próximo',
+    interno_recordatorio_1:'Vencimiento urgente',interno_escalamiento_1:'Seguimiento preventivo',interno_fallo_entrega:'Verificar entrega'}[message.kind];
   if (typeof title !== 'string') throw new Error('invalid_mail_request');
   var tracking = Object.prototype.hasOwnProperty.call(message, 'trackingUrl');
   if (tracking && (qmsMailInternalKind_(message.kind) || !qmsMailTrackingUrl_(message.trackingUrl))) throw new Error('invalid_mail_request');
@@ -582,23 +626,16 @@ function qmsMailHtml_(message, identidad) {
   }).map(function (paragraph) {
     return '<p style="margin:0 0 12px;color:#343a40;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
   }).join('');
-  var marca = identidad && identidad.encabezado
-    ? '<td width="150" height="50" align="left" style="width:150px;height:50px;vertical-align:middle">'
-      + '<img src="' + qmsMailEscape_(identidad.encabezado)
-      + '" alt="ECA" width="150" height="50" style="display:block;width:150px;height:50px;border:0"></td>'
-    : '<td width="36" height="36" align="center" style="width:36px;height:36px;border-radius:4px;background:#024796;color:#ffffff;font-size:18px;line-height:1;font-weight:600">E</td>';
   return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
     '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
     '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td align="center" style="padding:0">' +
     '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
     '<tr><td style="padding:16px 20px;border-bottom:1px solid #dee2e6">' +
-    '<table role="presentation" style="border-collapse:collapse"><tr>' + marca +
-    '<td style="padding-left:12px"><div style="font-size:16px;line-height:1.4;font-weight:600;color:#212529">QMS ECA</div>' +
-    '<div style="font-size:13px;line-height:1.4;color:#6c757d">Gestión de Calidad</div></td></tr></table></td></tr>' +
+    qmsMailHeader_(identidad) + '</td></tr>' +
     '<tr><td style="padding:20px"><h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + title + '</h1>' +
     '<p style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.5;color:#6c757d;overflow-wrap:anywhere;word-break:break-word">Número de registro ' +
     '<span style="margin-left:8px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(message.folio) + '</span></p>' + paragraphs +
-    (tracking && message.kind === 'recibido' ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">Consultar mi trámite</a></p>' +
+    (tracking && (message.kind === 'recibido' || message.kind === 'solicitud_informacion') ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">' + (message.kind === 'solicitud_informacion' ? 'Responder solicitud' : 'Consultar mi trámite') + '</a></p>' +
       '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>' : '') + '</td></tr>' +
     '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.</td></tr>' +
     '</table></td></tr></table></body></html>';

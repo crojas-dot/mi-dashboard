@@ -8,8 +8,8 @@ import {loadModule} from './load-module.mjs'
 const secret='synthetic-access-mail-key-'.repeat(3),machine='synthetic-service-role',origin='https://qms.example.test'
 function fixture(options={}) {
  const sent=[],requests=[],cache=new Map(),logs=[]
- const brand='https://synthetic.supabase.co/storage/v1/object/public/branding/identidad/login_encabezado/11111111-1111-4111-8111-111111111111.png'
- const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:origin}
+ const brand='https://synthetic.supabase.co/storage/v1/object/public/branding/identidad/correo_encabezado/11111111-1111-4111-8111-111111111111.png'
+ const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:origin,QMS_MAIL_QUEUE_URL:'https://synthetic.supabase.co/functions/v1/quejas-mail-queue'}
  const bytes=value=>Array.from(Buffer.from(value))
  const context=vm.createContext({Date,JSON,Number,Array,Object,
   console:{warn:(...args)=>logs.push(args),info:(...args)=>logs.push(args)},
@@ -19,7 +19,7 @@ function fixture(options={}) {
    computeHmacSha256Signature:(value,key)=>bytes(createHmac('sha256',key).update(value).digest()),computeDigest:(_,value)=>bytes(createHash('sha256').update(value).digest())},
   LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock(){}})},
   CacheService:{getScriptCache:()=>({get:key=>cache.get(key),put:(key,value)=>cache.set(key,value)})},
-  MailApp:{getRemainingDailyQuota:()=>100,sendEmail:mail=>{sent.push(mail);if(options.uncertain)throw new Error('synthetic mail failure')}},
+  MailApp:{getRemainingDailyQuota:()=>options.quota??100,sendEmail:mail=>{sent.push(mail);if(options.uncertain)throw new Error('synthetic mail failure')}},
   ContentService:{MimeType:{JSON:'application/json'},createTextOutput:text=>({setMimeType:()=>text})},
  })
  vm.runInContext(fs.readFileSync('integration/apps-script/quejas-mail/Codigo.gs','utf8')+'\n'+fs.readFileSync('integration/apps-script/quejas-mail/Acceso.gs','utf8'),context)
@@ -27,7 +27,7 @@ function fixture(options={}) {
  const api=loadModule('supabase/functions/qms-access-mailer/index.ts').createAccessMailer({env:name=>env[name],crypto:webcrypto,fetcher:async(url,settings)=>{
   requests.push(url)
   if(url.includes('/rest/v1/configuraciones_sistema')) {
-    return options.noLogo ? Response.json([]) : Response.json([{clave:'org.identidad.login_encabezado',valor:options.brand ?? brand}])
+    return options.noLogo ? Response.json([]) : Response.json([{clave:'org.identidad.correo_encabezado',valor:options.brand ?? brand}])
   }
   if(url.endsWith('qms_access_mail_transport')){
    if(settings.headers.apikey!==(options.machine??machine))return Response.json({error:'denied'},{status:401})
@@ -46,21 +46,29 @@ test('Edge → Apps Script usa HMAC por propósito y confirma invitación sin co
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.match(f.sent[0].body,/24 horas/);assert.match(f.sent[0].htmlBody,/#024796/);assert.doesNotMatch(f.sent[0].body,/password:/i)
  assert.ok(f.sent[0].htmlBody.includes('<img src="'+f.brand+'"'))
- assert.match(f.sent[0].htmlBody,/width="180" height="60"/)
+ assert.match(f.sent[0].htmlBody,/width="240" height="80"/)
  assert.equal(f.logs.length,0);assert.equal(f.requests.length,3)
  // El recibo idéntico no repite MailApp aunque Edge reenvíe con otro nonce.
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)
  assert.doesNotMatch(JSON.stringify([...f.cache.values()]),/synthetic@example|invitacion=|123456/)
 })
-test('la identidad sin logo o con URL no confiable conserva el encabezado textual',async()=>{
+test('la identidad sin logo o con URL no confiable conserva el logo institucional incluido',async()=>{
  for(const options of [{noLogo:true},{brand:'https://attacker.example.test/logo.png'}]){
   const f=fixture(options)
   const response=await f.send(invitation())
   assert.equal(response.status,200)
   assert.equal(f.sent.length,1)
-  assert.doesNotMatch(f.sent[0].htmlBody,/<img\s/i)
-  assert.match(f.sent[0].htmlBody,/>ECA-QMS<\/p>/)
+  assert.ok(f.sent[0].htmlBody.includes(`${origin}/logo-email-horizontal.png`))
+  assert.doesNotMatch(f.sent[0].htmlBody,/attacker\.example/)
+  assert.match(f.sent[0].htmlBody,/QMS ECA · Gestión de Calidad/)
  }
+})
+
+test('la cuota de acceso agotada devuelve el diagnóstico previo a MailApp', async () => {
+ const f=fixture({quota:0})
+ assert.deepEqual(await (await f.send(invitation())).json(), {outcome:'failed',code:'quota_exhausted'})
+ assert.equal(f.sent.length,0)
+ assert.equal(f.cache.size,0)
 })
 test('OTP es distinto del correo de invitación y el diario temporal no almacena sus seis dígitos',async()=>{
  const f=fixture();const result=await f.send({eventId:randomUUID(),kind:'email_otp',to:'alt@example.test',code:'123456'})

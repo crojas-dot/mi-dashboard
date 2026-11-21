@@ -1,4 +1,11 @@
 /* Tailwind v4: recetas compartidas, sin Bootstrap ni plugins de runtime. */
+
+/* Fondo de login y formularios. La superficie conserva la transparencia del login. */
+@utility ui-auth-card {
+  @apply rounded-card border border-qms-border shadow-md;
+  background-color: rgb(255 255 255 / 96%);
+}
+
 @utility ui-button {
   @apply inline-flex shrink-0 items-center justify-center gap-2 rounded-card border text-sm font-medium no-underline select-none;
   min-height: 2.5rem;

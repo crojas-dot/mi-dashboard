@@ -27,6 +27,7 @@ function invitationPage({token='a'.repeat(43),admin=true,response}={}) {
   'next/navigation':{useRouter:()=>router},'next/image':{default:'Image'},
   '@/components/ui/Button':{default:'Button'},'@/components/ui/Input':{default:'Input'},
   '@/components/ui/Field':{default:'Field'},'@/components/SessionScreen':{default:'SessionScreen'},
+  '@/lib/queries/useIdentidadImagenes':{useIdentidadImagenes:()=>({data:undefined})},
   '@/lib/store/auth-store':{useAuthStore},'@/lib/authLogoutIntent':{isLogoutPending:()=>logoutPending},
   '@/lib/services/accessClient':{accessAction:async()=>{throw new Error('unexpected action')}},
   '@/lib/supabase':{supabase:{auth:{setSession:async session=>{sessions.push(session);return {error:null}}}}},
@@ -107,4 +108,30 @@ test('sin invitación, una cuenta ya configurada vuelve al inicio después de le
  assert.deepEqual(page.redirects,[])
  page.flushFrames();page.render();page.flushEffects()
  assert.deepEqual(page.redirects,['/'])
+})
+test('la contraseña inicial acepta ocho caracteres y rechaza siete antes de escribir', async () => {
+  const saved = []
+  class AccessError extends Error {
+    constructor(code, status = 400) { super(code); this.code = code; this.status = status }
+  }
+  const route = loadModule('app/api/auth/acceso/route.ts', {
+    'next/server': { NextResponse: { json: Response.json } },
+    '@/lib/server/accessIdentity': { getAccessIdentity: async () => ({ id: 'fixture-auth' }) },
+    '@/lib/server/supabase-admin': { createServiceClient: () => ({}) },
+    '@/lib/server/rateLimit': { rateLimit: () => true, getClientIp: () => 'fixture' },
+    '@/lib/server/accessService': {
+      AccessError, accessStatus: async () => ({ phase: 'password' }),
+      readAccessJson: async request => request.json(), accessCommand: async () => ({ phase: 'ready' }),
+      setOwnAccessPassword: async (_, password) => saved.push(password),
+    },
+  })
+  const post = password => route.POST(new Request('https://qms.example.test/api/auth/acceso', {
+    method: 'POST', body: JSON.stringify({ action: 'password', password }),
+  }))
+  const invalid = await post('A1-bcde')
+  assert.equal(invalid.status, 400)
+  assert.match((await invalid.json()).error, /8 a 128 caracteres/)
+  assert.deepEqual(saved, [])
+  assert.equal((await post('A1-bcdef')).status, 200)
+  assert.deepEqual(saved, ['A1-bcdef'])
 })

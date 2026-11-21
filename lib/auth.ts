@@ -28,7 +28,9 @@ export async function signIn(email: string, password: string): Promise<LoginResu
     password,
   })
 
-  if (error) return { error: `Error de conexión (${error.message})` }
+  if (error) return { error: error.status === 429 ? 'Esperá un momento antes de volver a intentar.'
+    : error.code === 'invalid_credentials' ? 'Revisá el correo y la contraseña.'
+      : 'No se pudo iniciar sesión. Si tu contraseña temporal venció, contactá a la administración.' }
 
   const access=await fetchAccessStatus()
   if(access.phase==='blocked')return {error:'Tu cuenta está inactiva. Contactá al administrador.'}

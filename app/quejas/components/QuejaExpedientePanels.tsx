@@ -10,6 +10,7 @@ import type { Queja } from '@/lib/types'
 import type { QuejaPlazoRun, QuejaCorreoEstado } from '@/lib/queries/useQuejaSeguimiento'
 import { CASE_ACTIONS, caseDate, caseDeadline, getCaseRoleCycle, getCaseProcessCycle, type CaseAudience } from '@/app/quejas/components/quejaExpedienteModel'
 import { tipoVisible } from '@/lib/constants/quejas'
+import { quejaMailCanRetry, quejaMailError } from '@/lib/utils/quejaMailStatus'
 
 export type CaseSectionVariant = 'panel' | 'document' | 'plain'
 
@@ -25,16 +26,53 @@ export function CaseCompletionDate({ queja }: { queja: Queja }) {
   return <p className="mt-2 text-sm text-qms-muted">{queja.estado === 'No Procede' ? 'Cerrada' : 'Finalizada'} el <time dateTime={queja.fecha_cierre}>{caseDate(queja.fecha_cierre)}</time></p>
 }
 
-/** Solo metadatos del envío final; nunca destinatarios, contenido ni claims. */
-export function CaseFinalMailStatus({ messages, loading, error, onRetry }: { messages: QuejaCorreoEstado[]; loading?: boolean; error?: boolean; onRetry: () => void }) {
-  const message = messages.find(item => item.tipo === 'final')
-  const states: Record<string, string> = { pending: 'En cola de envío', leased: 'Enviando', retry: 'Reintento automático pendiente', sent: 'Enviado', uncertain: 'Envío por comprobar', failed: 'No se pudo enviar', skipped: 'Envío omitido' }
-  return <div className="mt-4 border-t border-qms-border pt-3" aria-live="polite">
-    <p className="text-xs text-qms-muted">Correo al interesado</p>
-    {loading ? <p className="mt-1 text-sm text-qms-muted">Consultando envío…</p> : error ? <div role="alert"><p className="mt-1 text-sm text-qms-danger">No se pudo consultar el envío.</p><Button variant="link" size="sm" className="mt-1" onClick={onRetry}>Actualizar estado</Button></div> : <>
-      <p className="mt-1 break-words text-sm">{message ? states[message.status] ?? 'Estado por comprobar' : 'Sin correo final registrado'}</p>
-      {message?.status === 'sent' && message.sent_at && <time className="mt-1 block text-xs text-qms-muted" dateTime={message.sent_at}>{caseDate(message.sent_at)}</time>}
-    </>}
+const mailStates: Record<string, string> = { pending: 'En cola de envío', leased: 'Enviando', retry: 'Reintento automático pendiente', sent: 'Enviado', uncertain: 'Envío por comprobar', failed: 'No se pudo enviar', skipped: 'Envío omitido' }
+const mailNames: Record<QuejaCorreoEstado['tipo'], string> = {
+  recibido: 'Acuse de recibo', final: 'Correo al interesado', investigacion: 'Investigación',
+  solicitud_informacion: 'Solicitud de información', interno_recibido: 'Nueva queja', interno_evaluacion_1: 'Plazo de evaluación',
+  interno_asignacion: 'Asignación', interno_investigacion_5: 'Plazo de investigación', interno_investigacion_3: 'Plazo de investigación',
+  interno_evaluacion_vencida: 'Evaluación vencida', interno_investigacion_vencida: 'Investigación vencida',
+  interno_respuesta_cliente: 'Respuesta del cliente', interno_devolucion: 'Devolución para corregir', interno_reapertura: 'Reapertura',
+  interno_recordatorio_3: 'Recordatorio de plazo', interno_recordatorio_1: 'Recordatorio urgente',
+  interno_escalamiento_1: 'Seguimiento preventivo', interno_fallo_entrega: 'Aviso de entrega',
+}
+
+/** Muestra el diagnóstico guardado por el emisor y la acción permitida para ese evento. */
+export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry }: {
+  messages: QuejaCorreoEstado[]; finalizada?: boolean; loading?: boolean; error?: boolean; onRetry: () => void
+  onRetrySend?: (eventId: string) => void
+  retry?: { id?: string; pending: boolean; error?: string; succeeded: boolean }
+}) {
+  const final = finalizada ? messages.find(item => item.tipo === 'final') : undefined
+  const otherIssues = messages.filter(item => item.tipo !== 'final' && (
+    ['retry', 'failed', 'uncertain'].includes(item.status) || (!!retry?.id && item.id === retry.id)))
+
+  if (!finalizada && !error && otherIssues.length === 0) return null
+  if (error || loading) return <div className="mt-4 border-t border-qms-border pt-3" aria-live="polite">
+    <p className="text-xs text-qms-muted">{finalizada ? 'Correo al interesado' : 'Correos del expediente'}</p>
+    {error ? <div role="alert"><p className="mt-1 text-sm text-qms-danger">No se pudo consultar el envío.</p><Button variant="link" size="sm" className="mt-1" onClick={onRetry}>Actualizar estado</Button></div>
+      : <p className="mt-1 text-sm text-qms-muted">Consultando envío…</p>}
+  </div>
+
+  const status = (item: QuejaCorreoEstado) => {
+    const reason = ['retry', 'failed', 'uncertain', 'skipped'].includes(item.status) && quejaMailError(item.safe_error)
+    const retryResult = retry?.id === item.id ? retry : undefined
+    return <div key={item.id} className="mt-4 border-t border-qms-border pt-3">
+      <p className="text-xs text-qms-muted">{mailNames[item.tipo] ?? 'Correo del expediente'}</p>
+      <p className="mt-1 break-words text-sm">{mailStates[item.status] ?? 'Estado por comprobar'}</p>
+      {item.status === 'sent' && item.sent_at && <time className="mt-1 block text-xs text-qms-muted" dateTime={item.sent_at}>{caseDate(item.sent_at)}</time>}
+      {reason && <p className="mt-1 break-words text-xs text-qms-muted">{reason}</p>}
+      {retryResult?.error && <p role="alert" className="mt-2 text-xs text-qms-danger">{retryResult.error}</p>}
+      {retryResult?.succeeded && ['pending', 'leased'].includes(item.status) && <p className="mt-1 text-xs text-qms-muted">El mismo correo quedó en cola para el próximo envío.</p>}
+      {onRetrySend && quejaMailCanRetry(item) && <Button variant="secondary" size="sm" className="mt-2" disabled={retry?.pending}
+        loading={retryResult?.pending} onClick={() => onRetrySend(item.id)}>Reintentar envío</Button>}
+    </div>
+  }
+  return <div aria-live="polite">
+    {final ? status(final) : finalizada && <div className="mt-4 border-t border-qms-border pt-3">
+      <p className="text-xs text-qms-muted">Correo al interesado</p><p className="mt-1 text-sm">Sin correo final registrado</p>
+    </div>}
+    {otherIssues.map(status)}
   </div>
 }
 
@@ -245,7 +283,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
 }) {
   if (process) {
     const flow = getCaseProcessCycle(queja)
-    if (chevrons) return <ol data-case-chevrons aria-label={flow.label} className="flex h-9 w-full min-w-0 items-center overflow-hidden rounded-md">
+    if (chevrons) return <ol data-case-chevrons data-case-stepper-compact={compact || undefined} aria-label={flow.label} className={`flex w-full min-w-0 items-center overflow-hidden rounded-md ${compact ? 'h-8' : 'h-9'}`}>
       {flow.steps.map((step, position) => {
         const selected = selectedStage === step.id
         const active = (step.current && !selectedStage) || selected
@@ -253,16 +291,17 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
         const clipPath = position === 0
           ? 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%)'
           : 'polygon(0 0,calc(100% - 12px) 0,100% 50%,calc(100% - 12px) 100%,0 100%,12px 50%)'
-        const label = <span className="flex min-w-0 items-center justify-center gap-1 px-3 text-xs leading-9" title={step.label}>
-          {step.completed && <Check aria-hidden="true" className="size-3.5 shrink-0" />}
-          <span className="truncate">{step.label}</span>
+        const compactLabel = step.id === 'evaluation' ? 'Eval.' : step.id === 'investigation' ? 'Invest.' : step.id === 'quality_review' ? 'Rev. GC' : ''
+        const label = <span className={`flex min-w-0 items-center justify-center gap-1 text-xs ${compact ? 'px-2.5 leading-8' : 'px-3 leading-9'}`} title={step.label}>
+          {step.completed && <Check aria-hidden="true" className={`size-3.5 shrink-0 ${compact ? 'hidden @min-[420px]/workspace:block' : ''}`} />}
+          {compact && compactLabel ? <><span className="sr-only">{step.label}</span><span aria-hidden="true" className="truncate @min-[420px]/workspace:hidden">{compactLabel}</span><span aria-hidden="true" className="hidden truncate @min-[420px]/workspace:inline">{step.label}</span></> : <span className="truncate">{step.label}</span>}
         </span>
         return <li key={step.id} aria-current={step.current ? 'step' : undefined} className={`min-w-0 flex-1 ${position ? '-ml-2' : ''}`}>
           {onStageChange ? <button type="button" data-case-stage={step.id} aria-label={`Consultar ${step.label} en modo solo lectura`}
             aria-pressed={selected} disabled={disabled} title={`Consultar ${step.label} sin modificar el estado`}
             onClick={() => onStageChange(step.id)} style={{ clipPath }}
-            className={`block h-9 w-full cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-60 ${color}`}>{label}</button>
-          : <div style={{ clipPath }} className={`h-9 w-full ${color}`}>{label}</div>}
+            className={`block w-full cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-qms-primary disabled:cursor-not-allowed disabled:opacity-60 ${compact ? 'h-8' : 'h-9'} ${color}`}>{label}</button>
+          : <div style={{ clipPath }} className={`w-full ${compact ? 'h-8' : 'h-9'} ${color}`}>{label}</div>}
           {step.completed && <span className="sr-only">: completada</span>}
         </li>
       })}

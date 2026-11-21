@@ -6,6 +6,7 @@ import { rateLimit } from '@/lib/server/rateLimit'
 import { LOGO_BUCKET } from '@/lib/constants/marca'
 import { urlPublicaIdentidad } from '@/lib/server/identidad-publica'
 import { IDENTIDAD_ACCEPT, IDENTIDAD_IMAGENES, IDENTIDAD_MAX_BYTES, IDENTIDAD_SLOTS, IDENTIDAD_STORED_BYTES, esImagenIdentidad, rutaImagenIdentidad, urlIdentidadValida, type ImagenIdentidad } from '@/lib/constants/identidad'
+import { EMAIL_IDENTITY_KEYS, emailLogoStyle } from '@/supabase/functions/_shared/emailIdentity'
 
 export const runtime = 'nodejs'
 
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
   const admin = createServiceClient(request.signal)
   if (!admin) return fail('Servicio de imágenes no disponible', 503)
   const { data, error } = await admin.from('configuraciones_sistema')
-    .select('clave,valor').in('clave', IDENTIDAD_SLOTS.map(slot => IDENTIDAD_IMAGENES[slot].clave))
+    .select('clave,valor').in('clave', [...IDENTIDAD_SLOTS.map(slot => IDENTIDAD_IMAGENES[slot].clave), EMAIL_IDENTITY_KEYS.estilo])
   if (error) return fail('No se pudieron consultar las imágenes', 503)
   const imagenes = Object.fromEntries(IDENTIDAD_SLOTS.map(slot => [
     slot, urlPublicaIdentidad(admin, slot, data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor),
@@ -54,7 +55,26 @@ export async function GET(request: NextRequest) {
     const value = data?.find(item => item.clave === IDENTIDAD_IMAGENES[slot].clave)?.valor
     return [slot, typeof value === 'string' && value.trim().length > 0]
   }))
-  return json({ imagenes, configuradas })
+  const estilo = data?.find(item => item.clave === EMAIL_IDENTITY_KEYS.estilo)
+  return json({ imagenes, configuradas, emailLogoStyle: emailLogoStyle(estilo ? estilo.valor : process.env.EMAIL_LOGO_STYLE) })
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const context = await accesoAdmin(request)
+    if ('error' in context) return context.error
+    if (!rateLimit(context.user.id, 10, 60_000, 'identidad-imagenes')) return fail('Demasiados cambios. Intentá de nuevo en un minuto', 429)
+    const body = await request.json().catch(() => null)
+    const style = body?.emailLogoStyle
+    if (!body || Object.keys(body).length !== 1 || (style !== 'horizontal' && style !== 'cuadrado')) {
+      return fail('Elegí un estilo de logo válido', 400)
+    }
+    const { error } = await context.admin.from('configuraciones_sistema').upsert({
+      clave: EMAIL_IDENTITY_KEYS.estilo, categoria: 'identidad', descripcion: 'Estilo del logo en correos', valor: style,
+    }, { onConflict: 'clave' })
+    if (error) return fail('No se pudo guardar el estilo de correo', 503)
+    return json({ emailLogoStyle: style })
+  } catch { return fail('No se pudo guardar el estilo de correo', 503) }
 }
 
 export async function PUT(request: NextRequest) {

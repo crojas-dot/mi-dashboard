@@ -71,7 +71,7 @@ No cargar todos los documentos para una modificación aislada.
 | Validación de bytes de evidencias públicas | lib/server/publicForms/files.ts; límites y tipos en lib/constants/publicForms.ts |
 | Validación ciudadana idéntica en cliente/API | lib/utils/publicQuejaValidation.ts; códigos de campo cerrados, sin diagnósticos remotos; nombre solo letras y teléfono solo dígitos/signos, con límites aplicados en cliente y API, sin textos de ayuda permanentes |
 | Seguimiento privado y publicación final | app/q/seguimiento/; lib/server/publicTracking.ts; app/quejas/components/QuejaPublicacionPanel.tsx |
-| Correos de Quejas: mensaje / transporte / apariencia | supabase/functions/quejas-mail-queue/message.ts / index.ts; integration/apps-script/quejas-mail/Codigo.gs |
+| Correo: plantillas, identidad, entregas y reintentos | supabase/functions/quejas-mail-queue/, qms-access-mailer/ y _shared/emailIdentity.ts; qmsMailHeader_ en integration/apps-script/quejas-mail/Codigo.gs; app/api/quejas/correos/reintentar/route.ts y useQuejaSeguimiento.ts |
 | DB aplicada y evidencia | supabase/migrations/ y supabase/backups/ |
 
 Stack local: Next 16.4.6, React 19.2.4, Supabase JS 2.111.0, TanStack Query 5 y Zustand 5.
@@ -205,6 +205,16 @@ Detalle: [sesión y permisos](docs/arquitectura/sesion-y-permisos.md).
   personalizada. Identidad administra «Logo del inicio de sesión» por separado.
   Su recuadro conserva 56 px y el fondo azul del sistema. El servidor lee fondo
   y logo del login en una sola consulta. El cliente consulta si esa lectura falla.
+- Fondo de login y formularios: `FondoIdentidad` y `.ui-auth-card` comparten
+  el fondo, blanco al 96 %, borde y sombra. El formulario en `/q/[token]`
+  usa scroll de página. Solo `?embed=1` permite la vista transparente y
+  comunica su altura al origen WordPress configurado por `ALLOWED_FRAME_ORIGIN`.
+- Los paneles contraído y ampliado de Quejas y Mis Quejas usan el mismo
+  stepper de chevrones. Bajo 420 px de ancho de panel se abrevian las etiquetas.
+- El diagnóstico de correo usa códigos públicos; «Reintentar envío» reprograma
+  la misma fila del outbox si el fallo fue previo a MailApp. El poll existente
+  conserva autorización, reserva y deduplicación. La migración local
+  `20261120224355` corrige el acceso de máquina a la regla privada de autorización.
 - Agenda: RPC invoker de Quejas/Auditorías, permisos y fechas CR, máximo 20 y un
   motivo prioritario por registro. Caché de cinco minutos por perfil, sin canal
   Realtime adicional ni hover. Los avisos existentes invalidan también Agenda.

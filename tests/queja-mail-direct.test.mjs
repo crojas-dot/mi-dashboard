@@ -197,7 +197,8 @@ test('Drive inaccesible o metadata alterada falla antes de attempting/MailApp y 
     value.poll()
     assert.equal(value.sent.length, 0); assert.equal(value.rows.length, 1)
     const ack = value.requests.find(request => request.purpose === 'ack_request').decoded
-    assert.equal(ack.outcome, 'retry'); assert.equal(ack.code, 'authorization_unavailable')
+    assert.equal(ack.outcome, 'retry')
+    assert.equal(ack.code, { missing: 'official_document_unavailable', size: 'official_document_changed', mime: 'official_document_changed', receipt: 'authorization_unavailable' }[bad])
     assert.doesNotMatch(JSON.stringify(value.logs), /private account detail/)
   }
 })
@@ -662,7 +663,9 @@ test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o p
   assert.equal(value.sent.length, 1)
   const html = value.sent[0].htmlBody
   assert.ok(html.includes('<img src="' + logo))
-  assert.match(html, /width="150" height="50"/)
+  assert.match(html, /width="240" height="80"/)
+  assert.match(html, /QMS ECA · Gestión de Calidad/)
+  assert.doesNotMatch(html, />E<\/td>/)
   assert.equal((html.match(/<img /g) ?? []).length, 1, 'solo un logo en el encabezado')
   assert.doesNotMatch(html, /alt=""/)
   assert.equal(value.rows[1][2], 'sent')
@@ -672,12 +675,24 @@ test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o p
     logo.replace('.png', '.webp'),
     logo.replace('/correo_encabezado/', '/correo_pie/'),
   ]) {
-    const forged = fixture({ response(request, { defaultResponse }) {
+    const forged = fixture({ properties: { APP_PUBLIC_URL: 'https://qms.example.test' }, response(request, { defaultResponse }) {
       const payload = defaultResponse(request)
       return request.purpose === 'claim_request'
         ? { ...payload, identidadCorreo: { encabezado: invalid } } : payload
     } })
     forged.poll()
-    assert.equal(forged.sent.length, 0)
+    assert.equal(forged.sent.length, 1)
+    assert.match(forged.sent[0].htmlBody, /https:\/\/qms\.example\.test\/logo-email-horizontal\.png/)
+    assert.ok(!forged.sent[0].htmlBody.includes(invalid))
   }
+})
+
+test('un logo cuadrado explícito usa 64 px y deja espacio flexible para el texto', () => {
+  const value = fixture({ properties: { APP_PUBLIC_URL: 'https://qms.example.test' } })
+  const square = 'https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_cuadrado/11111111-1111-4111-8111-111111111111.png'
+  const html = value.context.qmsMailHeader_(value.context.qmsMailBrandingIdentity_({ estilo: 'cuadrado', cuadrado: square }))
+  assert.match(html, /width="64" height="64"/)
+  assert.match(html, /padding-left:12px;vertical-align:middle/)
+  assert.ok(html.includes(square))
+  assert.match(value.context.qmsMailHeader_({ estilo: 'cuadrado' }), /logo-email-horizontal\.png/)
 })

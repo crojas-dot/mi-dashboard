@@ -6,11 +6,9 @@ import { completarUltimoAcceso } from '@/lib/server/ultimoAcceso'
 import { logger } from '@/lib/utils/logger'
 import { validarUsuarioInput } from '@/lib/server/usuarioInput'
 import { containsPattern } from '@/lib/utils/postgrest'
-import { generatePassword } from '@/lib/services/passwordGenerator'
 import { getUserError } from '@/lib/errors/userError'
 import { getAccessIdentity } from '@/lib/server/accessIdentity'
-import { accessCommand, createUserWithAccess, AccessError } from '@/lib/server/accessService'
-import type { UserAccessDirectory } from '@/lib/types/access'
+import { accessCommand, accessDirectory, createUserWithAccess, AccessError } from '@/lib/server/accessService'
 import {eliminarCuentaUsuario,UsuarioDeletionError} from '@/lib/server/usuarioDeletion'
 
 export const runtime = 'nodejs'
@@ -75,8 +73,9 @@ export async function GET(request: NextRequest) {
       const identity=await getAccessIdentity(request)
       if(!identity)return json({error:'No autorizado'},{status:401})
       try {
-        const access=await accessCommand<UserAccessDirectory[]>(admin,identity,'directory',{ids:rows.map(row=>row.auth_id).filter(Boolean)})
-        return json(rows.map(row=>({...row,access:access.find(item=>item.authId===row.auth_id)})))
+        const access = await accessDirectory(admin, identity, rows.map(row => row.auth_id).filter(Boolean))
+        const byId = new Map(access.map(item => [item.authId, item]))
+        return json(rows.map(row => ({ ...row, access: byId.get(row.auth_id) })))
       }catch(error){if(!(error instanceof AccessError)||!['PGRST202','42883'].includes(error.code))throw error}
     }
     return json(rows, { headers: { 'Cache-Control': 'no-store' } })
@@ -102,54 +101,23 @@ export async function POST(request: NextRequest) {
 
   const validation = validarUsuarioInput(await parseBody(request), 'POST')
   if (validation.error) return json({ error: validation.error }, { status: 400 })
-  const { nombre, email, rol, estado = 'activo', password } = validation.data!
-  const tempPassword = password ?? generatePassword()
-
+  const { nombre, email, rol, estado = 'activo', access } = validation.data!
   const admin = createServiceClient()
   if (!admin) {
     return json({ error: 'Servidor mal configurado' }, { status: 500 })
   }
 
-  if(validation.data!.access) {
-    const identity=await getAccessIdentity(request)
-    if(!identity)return json({error:'No autorizado'},{status:401})
-    try {
-      return json(await createUserWithAccess(admin,identity,{nombre:nombre!,email:email!,rol:rol!,estado},validation.data!.access,new URL(request.url).origin),{status:201})
-    }catch(error){
-      const status=error instanceof AccessError?error.status:503
-      return json({error:status===409?'Ya existe una cuenta con ese correo o el alta sigue en curso. Reintentá con la misma solicitud.':'No se pudo completar el alta. Se conserva la misma solicitud para reintentar.'},{status})
-    }
+  const identity = await getAccessIdentity(request)
+  if (!identity) return json({ error: 'No autorizado' }, { status: 401 })
+  try {
+    return json(await createUserWithAccess(admin, identity, { nombre: nombre!, email: email!, rol: rol!, estado }, access!), { status: 201 })
+  } catch (error) {
+    const status = error instanceof AccessError ? error.status : 503
+    const message = status === 409 ? 'Ya existe una cuenta con ese correo o el alta sigue en curso. Reintentá con la misma solicitud.'
+      : status === 403 ? 'No tenés permiso para crear usuarios.'
+        : 'No se pudo confirmar el alta. Reintentá con los mismos datos.'
+    return json({ error: message }, { status })
   }
-
-  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
-    email,
-    password: tempPassword,
-    email_confirm: true,
-    user_metadata: { nombre },
-  })
-
-  if (authError) {
-    return falloSeguro(authError, 'create_auth', 'No se pudo crear la cuenta.', 400)
-  }
-  const newUserId = authUser.user.id
-
-  const { error: insertError } = await admin.from('usuarios').insert([
-    {
-      auth_id: newUserId,
-      email,
-      nombre,
-      rol,
-      estado,
-      ultimo_acceso: null,
-    },
-  ])
-
-  if (insertError) {
-    await admin.auth.admin.deleteUser(newUserId)
-    return falloSeguro(insertError, 'create_profile', 'No se pudo crear el perfil.', 500)
-  }
-
-  return json({ ok: true, userId: newUserId, tempPassword: tempPassword }, { status: 201 })
 }
 
 export async function PATCH(request: NextRequest) {

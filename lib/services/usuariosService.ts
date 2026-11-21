@@ -19,8 +19,11 @@ export async function mutateUsuario(
   throw createHttpError(response.status, data?.error, fallback)
 }
 
-export async function gestionarAccesoUsuario(authId:string,action:'resend'|'reset_mfa',confirm=false) {
-  const response=await apiFetch('/api/usuarios/acceso',{method:'POST',body:JSON.stringify({authId,action,confirm})})
-  const value=await response.json().catch(()=>null)
-  if(!response.ok)throw createHttpError(response.status,value?.error,'No se pudo actualizar el acceso')
+export const CORREO_ACCESO_CONFIRMADO = 'Correo enviado al servicio de entrega.'
+
+export async function gestionarAccesoUsuario(authId: string, action: 'resend' | 'reset'): Promise<UserMutationResult> {
+  const response = await apiFetch('/api/usuarios/acceso', { method: 'POST', body: JSON.stringify({ authId, action, confirm: true }) })
+  const value = await response.json().catch(() => null)
+  if (!response.ok) throw createHttpError(response.status, value?.error, 'No se pudo actualizar el acceso')
+  return value ?? {}
 }

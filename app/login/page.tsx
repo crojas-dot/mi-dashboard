@@ -45,14 +45,14 @@ export default function LoginPage() {
     const result = await login(email, password)
     if (result.error) {
       setError(result.error)
-    }
+    } else setPassword('')
     setLoading(false)
   }
 
   return (
     <div className="flex min-h-dvh items-center justify-center px-4 py-10 text-qms-dark antialiased">
       <div className="w-full max-w-md">
-        <section aria-labelledby="login-title" className="overflow-hidden rounded-card border border-qms-border shadow-md" style={{ backgroundColor: "rgb(255 255 255 / 96%)" }}>
+        <section aria-labelledby="login-title" className="ui-auth-card overflow-hidden">
           <header className="flex items-center justify-start border-b border-qms-border px-6 py-1.5 sm:px-8">
             {logo && logoFallido !== logo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
@@ -115,14 +115,14 @@ export default function LoginPage() {
               {error && <p id="login-error" role="alert" className="text-sm text-qms-danger">{error}</p>}
 
               <Button type="submit" loading={loading} loadingLabel="Ingresando…" size="lg" className="w-full">
-                {loading ? 'Ingresando…' : 'Ingresar'}
+                {loading ? 'Ingresando…' : 'Iniciar sesión'}
               </Button>
             </form>
           </div>
 
           <div className="rounded-b-card border-t border-qms-border bg-transparent px-6 py-4 text-center text-sm text-qms-muted">
-            ¿Necesitas acceso o recuperar tu contraseña?{' '}
-            <span className="font-medium text-qms-primary">Contacta al administrador.</span>
+            <p className="font-medium text-qms-dark">¿Olvidaste tu contraseña?</p>
+            <p className="mt-1">Contactá a la administración para restablecer tu acceso.</p>
           </div>
         </section>
 

@@ -2,6 +2,8 @@
 import { claimMailSnapshot, isMailUuid, quejaMailMessage } from './message.ts'
 // @ts-expect-error La extensión es necesaria en Deno; el servidor web reutiliza el contrato Web Crypto.
 import { buildPublicTrackingUrl, mintPublicTrackingCapability, validatePublicTrackingSecret } from '../_shared/publicTrackingCapability.ts'
+// @ts-expect-error Deno requiere la extensión.
+import { loadEmailIdentity } from '../_shared/emailIdentity.ts'
 
 type QueuePurpose = 'claim_request' | 'claim_receipt' | 'authorize_request' | 'authorize_receipt'
   | 'ack_request' | 'ack_receipt' | 'health_request' | 'health_receipt'
@@ -18,7 +20,8 @@ const REQUEST_BYTES = 8_192
 const RESPONSE_BYTES = 65_536
 const OUTCOME_CODES: Record<string, readonly string[]> = {
   sent: ['sent', 'already_sent'],
-  retry: ['quota_exhausted', 'ledger_busy', 'ledger_unavailable', 'disabled', 'batch_not_started', 'authorization_unavailable'],
+  retry: ['quota_exhausted', 'quota_unavailable', 'ledger_busy', 'ledger_unavailable', 'disabled', 'batch_not_started', 'authorization_unavailable',
+    'authorization_permission_denied', 'official_document_missing', 'official_document_unavailable', 'official_document_changed', 'invalid_reply_to'],
   uncertain: ['delivery_uncertain'],
   failed: ['event_conflict', 'invalid_delivery', 'invalid_mail_snapshot'],
   skipped: ['obsolete_notice'],
@@ -147,54 +150,11 @@ async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_cl
   if (!result.ok || !isJson(result.headers)
     || Number(result.headers.get('content-length')) > RESPONSE_BYTES) {
     await result.body?.cancel().catch(() => undefined)
+    if (name === 'qms_mail_authorize_v2' && [401, 403].includes(result.status)) throw new QueueError(503, 'authorization_permission_denied')
     throw new QueueError(503, 'mail_queue_unavailable')
   }
   try { return await readJson(result.body, RESPONSE_BYTES) }
   catch { throw new QueueError(503, 'mail_queue_unavailable') }
-}
-
-/** Consulta opcional: el contenido del correo sigue firmado e inmutable.
- * Solo transporta URL públicas verificadas del bucket institucional.
- * Un fallo de identidad no bloquea ni reintenta los correos pendientes.
- */
-async function correoIdentidad(config: ReturnType<typeof databaseConfig>, fetcher: typeof fetch) {
-  const keys = {
-    encabezado: 'org.identidad.correo_encabezado',
-  } as const
-  const url = new URL('/rest/v1/configuraciones_sistema', config.url)
-  url.search = new URLSearchParams({
-    select: 'clave,valor',
-    clave: `in.(${Object.values(keys).join(',')})`,
-  }).toString()
-  try {
-    const response = await fetcher(url.toString(), {
-      method: 'GET', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(5_000),
-      headers: { Accept: 'application/json', apikey: config.key,
-        ...(config.legacyJwt ? { Authorization: `Bearer ${config.key}` } : {}) },
-    })
-    if (!response.ok || !isJson(response.headers)) {
-      await response.body?.cancel().catch(() => undefined)
-      return null
-    }
-    const rows = await readJson(response.body, 4096)
-    if (!Array.isArray(rows) || rows.length > 1) return null
-    const result: { encabezado?: string } = {}
-    for (const [slot, key] of Object.entries(keys)) {
-      const candidate = rows.find(row => row?.clave === key)?.valor
-      if (typeof candidate !== 'string') continue
-      const expected = new URL(config.url.origin)
-      try {
-        const asset = new URL(candidate)
-        const prefix = `/storage/v1/object/public/branding/identidad/correo_${slot}/`
-        const name = asset.pathname.startsWith(prefix) ? asset.pathname.slice(prefix.length) : ''
-        if (asset.origin === expected.origin && !asset.search && !asset.hash
-          && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.png$/i.test(name)) {
-          result[slot as keyof typeof result] = asset.toString()
-        }
-      } catch { /* Se descarta una URL incorrecta. */ }
-    }
-    return Object.keys(result).length ? result : null
-  } catch { return null }
 }
 
 /** Solo un evento final autorizado puede revelar su único documento publicado al emisor HMAC. */
@@ -212,20 +172,30 @@ async function officialDocument(config: ReturnType<typeof databaseConfig>, id: s
     if (!Array.isArray(rows) || rows.length > 1) throw new QueueError(503, 'mail_queue_unavailable')
     return rows[0] as Record<string, unknown> | undefined
   }
-  const event = await read('queja_mail_outbox', { select: 'queja_id,tipo,lease_until,queja:quejas(estado)', id: 'eq.' + id, claim_token: 'eq.' + claim, status: 'eq.leased', limit: '1' })
+  const event = await read('queja_mail_outbox', { select: 'queja_id,tipo,lease_until,created_at,publicacion_revision,queja:quejas(estado)', id: 'eq.' + id, claim_token: 'eq.' + claim, status: 'eq.leased', limit: '1' })
   const state = (event?.queja as Record<string, unknown> | null)?.estado
   if (!event || event.tipo !== 'final' || typeof event.lease_until !== 'string'
     || !Number.isFinite(Date.parse(event.lease_until)) || Date.parse(event.lease_until) <= now
     || !['Resuelto', 'Finalizado', 'No Procede'].includes(String(state))) return { authorized: false, document: null }
   if (!isMailUuid(event.queja_id)) throw new QueueError(503, 'mail_queue_unavailable')
-  const publication = await read('queja_public_resolutions', { select: 'adjunto:queja_adjuntos(queja_id,storage_path,nombre,tipo_mime,tamano)', queja_id: 'eq.' + event.queja_id, limit: '1' })
+  const publicationParams: Record<string, string> = { select: 'adjunto:queja_adjuntos(queja_id,storage_path,nombre,tipo_mime,tamano)', queja_id: 'eq.' + event.queja_id, limit: '1' }
+  // Vincular también la segunda lectura a la publicación autorizada. Una reapertura
+  // concurrente nunca permite adjuntar otro documento con el texto del correo anterior.
+  if (event.publicacion_revision != null) {
+    if (!Number.isSafeInteger(event.publicacion_revision) || Number(event.publicacion_revision) < 1) throw new QueueError(503, 'mail_queue_unavailable')
+    publicationParams.source_revision = 'eq.' + event.publicacion_revision
+  } else {
+    if (typeof event.created_at !== 'string' || event.created_at.length > 64 || !Number.isFinite(Date.parse(event.created_at))) throw new QueueError(503, 'mail_queue_unavailable')
+    publicationParams.publicado_at = 'lte.' + new Date(event.created_at).toISOString()
+  }
+  const publication = await read('queja_public_resolutions', publicationParams)
   // El adjunto se obtiene del expediente, sin depender del enlace que caduca.
-  if (!publication) throw new QueueError(503, 'mail_queue_unavailable')
+  if (!publication) throw new QueueError(503, 'official_document_missing')
   const file = publication.adjunto as Record<string, unknown> | null
   if (!file || file.queja_id !== event.queja_id || typeof file.storage_path !== 'string' || !/^[A-Za-z0-9_-]{10,200}$/.test(file.storage_path)
     || typeof file.nombre !== 'string' || !file.nombre.trim() || file.nombre.length > 255 || /[\u0000-\u001f\u007f/\\]/.test(file.nombre)
     || typeof file.tipo_mime !== 'string' || file.tipo_mime.length > 127 || !/^[A-Za-z0-9][A-Za-z0-9.+_-]*\/[A-Za-z0-9][A-Za-z0-9.+_-]*$/.test(file.tipo_mime)
-    || !Number.isSafeInteger(file.tamano) || Number(file.tamano) < 1 || Number(file.tamano) > 4194304) throw new QueueError(503, 'mail_queue_unavailable')
+    || !Number.isSafeInteger(file.tamano) || Number(file.tamano) < 1 || Number(file.tamano) > 4194304) throw new QueueError(503, 'official_document_changed')
   return { authorized: true, document: { driveId: file.storage_path, name: file.nombre, mime: file.tipo_mime, size: file.tamano } }
 }
 
@@ -293,7 +263,7 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
           const row = claimMailSnapshot(value, { internal: true })
           if (ids.has(row.id)) throw new QueueError(503, 'mail_queue_unavailable')
           ids.add(row.id)
-          const trackingUrl = trackingEnabled && row.public_tracking && row.tipo === 'recibido'
+          const trackingUrl = trackingEnabled && row.public_tracking && ['recibido','solicitud_informacion'].includes(row.tipo)
             ? buildPublicTrackingUrl(trackingOrigin!, await mintPublicTrackingCapability({
               quejaId: row.public_tracking.queja_id, nonce: row.public_tracking.nonce,
             }, trackingSecret!, { crypto: cryptoApi })) : undefined
@@ -303,8 +273,9 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
         const leaseUntilMillis = Math.floor(startedAt / 1000) * 1000 + 540_000
         if (now() >= leaseUntilMillis) throw new QueueError(503, 'mail_queue_unavailable')
         const leaseUntil = new Date(leaseUntilMillis).toISOString()
-        const identidadCorreo = messages.length > 0 && dependencies.env('QMS_MAIL_BRANDING_ENABLED') === 'true'
-          ? await correoIdentidad(database, fetcher) : null
+        const identidadCorreo = messages.length > 0
+          ? await loadEmailIdentity(database.url.origin, database.key, dependencies.env('EMAIL_LOGO_STYLE'), fetcher,
+            assetResponse => readJson(assetResponse.body, 4096)) : null
         return response(await signQueueEnvelope('claim_receipt', {
           requestNonce: envelope.nonce, leaseUntil, messages,
           ...(identidadCorreo ? { identidadCorreo } : {}),

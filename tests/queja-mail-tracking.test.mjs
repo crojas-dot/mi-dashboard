@@ -166,7 +166,7 @@ test('todos los avisos internos omiten tracking aunque la DB lo incluya', async 
   }
 })
 
-test('Apps Script conserva hash legacy, integra URL en hash nuevo y muestra botón sin recursos remotos', async () => {
+test('Apps Script conserva hash legacy, integra URL en hash nuevo y solo carga el logo institucional', async () => {
   const script = appsScript(), result = await claim([snapshot()]), message = result.receipt.messages[0]
   delete message.claimToken
   const legacy = { ...message }; delete legacy.trackingUrl
@@ -181,7 +181,9 @@ test('Apps Script conserva hash legacy, integra URL en hash nuevo y muestra bot�
   assert.match(html, /href="https:\/\/qms\.example\.test\/q\/seguimiento#clave=/)
   assert.match(html, /max-width:760px/)
   assert.doesNotMatch(html, /Seguimiento privado:/)
-  assert.doesNotMatch(html, /<(?:script|iframe|img|link)\b/)
+  assert.doesNotMatch(html, /<(?:script|iframe|link)\b/)
+  assert.equal((html.match(/<img /g) ?? []).length, 1)
+  assert.match(html, /src="https:\/\/qms\.example\.test\/logo-email-horizontal\.png"/)
 })
 
 test('URLs maliciosas, origen distinto, propiedad ausente o links internos se rechazan antes de envío', async () => {

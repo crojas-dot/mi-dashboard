@@ -64,10 +64,11 @@ test('adjunto oficial opt-in solo sale del documento publicado tras autorizar el
       if (url.pathname.endsWith('/queja_mail_outbox')) {
         assert.equal(url.searchParams.get('claim_token'), 'eq.' + claimToken)
         assert.equal(url.searchParams.get('status'), 'eq.leased')
-        return Response.json([{ tipo: 'final', queja_id: caseId, lease_until: new Date(clock + 600000).toISOString(), queja: { estado: 'Finalizado' } }])
+        return Response.json([{ tipo: 'final', queja_id: caseId, lease_until: new Date(clock + 600000).toISOString(), publicacion_revision: 21, queja: { estado: 'Finalizado' } }])
       }
       assert.equal(url.pathname, '/rest/v1/queja_public_resolutions')
       assert.equal(url.searchParams.get('queja_id'), 'eq.' + caseId)
+      assert.equal(url.searchParams.get('source_revision'), 'eq.21')
       return Response.json([{ adjunto: file }])
     } })
     const result = await receipt(await f.handler(request(envelope('authorize_request', { eventId: id, claimToken,
@@ -234,7 +235,7 @@ test('claim0 conserva el tick DB y exige respuesta vacía sin reservar entregas 
   assert.equal((await unexpected.handler(request(envelope('claim_request', { limit: 0 })))).status, 503)
 })
 
-test('claim usa solo RPC fijo, nonce original, lease600 y servicio después de HMAC', async () => {
+test('claim usa RPC fijo, nonce original, lease600 e identidad pública después de HMAC', async () => {
   const row = snapshot({ notas: 'DO_NOT_EXPOSE_INTERNAL_TEXT', extra: { private: true } })
   const f = fixture({ rows: [row] })
   const input = envelope('claim_request', { limit: 5 })
@@ -247,12 +248,22 @@ test('claim usa solo RPC fijo, nonce original, lease600 y servicio después de H
   assert.equal(result.messages[0].to, row.destinatario)
   assert.match(result.messages[0].body, /ECA-GC-2026-001/)
   assert.equal(JSON.stringify(result).includes('DO_NOT_EXPOSE_INTERNAL_TEXT'), false)
-  assert.equal(f.calls.length, 1)
+  assert.equal(f.calls.length, 2)
+  assert.equal(new URL(f.calls[1].url).pathname, '/rest/v1/configuraciones_sistema')
+  assert.deepEqual(result.identidadCorreo, { estilo: 'horizontal' })
   const call = f.calls[0]
   assert.equal(call.url, `${url}/rest/v1/rpc/qms_mail_claim_batch_v4`)
   assert.equal(call.redirect, 'error')
   assert.equal(call.headers.Authorization, 'Bearer synthetic-service-role-for-tests')
   assert.deepEqual(call.args, { p_limit: 2, p_lease_seconds: 600, p_run_nonce: input.nonce, p_issued_at: seconds })
+})
+
+test('403 de la validación del lease se informa con un código seguro antes de leer el oficio', async () => {
+  const f = fixture({ transport: () => Response.json({ message: 'permission denied for schema qms_private' }, { status: 403 }) })
+  const response = await f.handler(request(envelope('authorize_request', { eventId: randomUUID(), claimToken: randomUUID(), includeOfficialDocument: true })))
+  assert.equal(response.status, 503)
+  assert.deepEqual(await response.json(), { error: 'authorization_permission_denied' })
+  assert.equal(f.calls.length, 1)
 })
 
 test('claim replay conserva nonce DB y no entrega un segundo lote reservado', async () => {

@@ -15,6 +15,8 @@ import { accessAction } from '@/lib/services/accessClient'
 import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
 import { generatePassword } from '@/lib/services/passwordGenerator'
 import type { AccessMethod, AccessStatus } from '@/lib/types/access'
+import { ACCESS_PASSWORD_MAX, ACCESS_PASSWORD_MIN, REPLACEMENT_PASSWORD_MIN, isValidReplacementPassword } from '@/lib/constants/accessPassword'
+import { showSuccess } from '@/lib/services/errorToast'
 
 interface Challenge { id: string; qrCode?: string; secret?: string; maskedEmail?: string }
 export default function AccessPage() {
@@ -31,6 +33,9 @@ export default function AccessPage() {
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [passwordCopied, setPasswordCopied] = useState(false)
   const [linkLoaded, setLinkLoaded] = useState(false)
+  const temporary = access?.temporaryPassword === true
+  const passwordMin = temporary ? REPLACEMENT_PASSWORD_MIN : ACCESS_PASSWORD_MIN
+  const showInvitation = !!invitation && !temporary
   const working = useRef(false), automatic = useRef(''), linkInvitation = useRef<string | null>(null)
   useEffect(() => {
     // StrictMode limpia y repite este efecto: conservar primero el token en
@@ -85,9 +90,14 @@ export default function AccessPage() {
     event.preventDefault()
     await run(async()=>{
       if(password!==confirmation)throw new Error('Las contraseñas no coinciden.')
+      if (temporary && !isValidReplacementPassword(password)) throw new Error(`Usá al menos ${REPLACEMENT_PASSWORD_MIN} caracteres y una contraseña distinta de la temporal.`)
       const owner=identity
-      await accessAction({action:'password',password})
-      if(current(owner)){setPassword('');setConfirmation('');setPasswordGenerated(false);setPasswordCopied(false);setPasswordVisible(false);await refresh()}
+      await accessAction({ action: 'password', password, ...(temporary ? { confirmation } : {}) })
+      if (current(owner)) {
+        setPassword('');setConfirmation('');setPasswordGenerated(false);setPasswordCopied(false);setPasswordVisible(false)
+        if (temporary) showSuccess('Contraseña actualizada correctamente.')
+        await refresh()
+      }
     })
   }
   function generarContrasena() {
@@ -99,8 +109,11 @@ export default function AccessPage() {
     try { await navigator.clipboard.writeText(password); setPasswordCopied(true) }
     catch { setError('No se pudo copiar. Seleccioná la contraseña y guardala en tu gestor de contraseñas.') }
   }
-  if (!linkLoaded) return <SessionScreen layout="neutral" />
-  const title = invitation ? 'Configurá tu acceso' : access?.phase === 'password' ? 'Creá tu contraseña' : 'Protegé tu cuenta'
+  if (!linkLoaded && !temporary) return <SessionScreen layout="neutral" />
+  const title = showInvitation ? 'Configurá tu acceso'
+    : access?.phase === 'password_expired' ? 'Acceso temporal vencido'
+    : temporary ? 'Creá tu nueva contraseña'
+    : access?.phase === 'password' ? 'Creá tu contraseña' : 'Protegé tu cuenta'
   return <div className="flex min-h-dvh items-center justify-center bg-qms-background px-4 py-8 text-qms-dark">
     <div className="w-full max-w-lg">
       <div className="mb-6 flex h-14 items-center justify-center gap-3">
@@ -117,7 +130,7 @@ export default function AccessPage() {
       <section className="rounded-card border border-qms-border bg-qms-surface p-6 shadow-sm sm:p-8">
         <ShieldCheck className="mx-auto mb-3 size-7 text-qms-primary" aria-hidden="true" />
         <h1 className="text-center text-xl font-semibold">{title}</h1>
-        {invitation ? <div className="mt-5 space-y-5"><p className="text-sm leading-relaxed text-qms-muted">Usá esta invitación para elegir tu contraseña y completar la configuración de seguridad. El enlace se utiliza una sola vez.</p>
+        {showInvitation ? <div className="mt-5 space-y-5"><p className="text-sm leading-relaxed text-qms-muted">Usá esta invitación para elegir tu contraseña y completar la configuración de seguridad. El enlace se utiliza una sola vez.</p>
           {user && <p className="rounded-button bg-qms-background px-3 py-2 text-sm leading-relaxed text-qms-muted">Tenés una sesión abierta como <span className="font-medium text-qms-dark">{user.nombre}</span>. Al continuar cambiarás a la cuenta invitada en este navegador.</p>}
           <Button className="w-full" loading={busy} onClick={() => void run(async () => {
             const previous = useAuthStore.getState().accessIdentity
@@ -127,28 +140,32 @@ export default function AccessPage() {
             const result = await supabase.auth.setSession(value.session); if (result.error) throw new Error('No se pudo abrir la sesión.')
             await refresh(); setInvitation('')
           })}>Configurar acceso</Button></div>
+          : access?.phase === 'password_expired' ? <p className="mt-5 text-center text-sm text-qms-muted">Contactá a la administración para restablecer tu acceso.</p>
           : access?.phase === 'password' ? <form className="mt-5 space-y-4" onSubmit={savePassword}>
-            <p className="text-sm text-qms-muted">Podés crear tu propia contraseña o generar una segura automáticamente. La podrás cambiar después desde Mi perfil.</p>
-            <Button type="button" variant="secondary" className="w-full" disabled={busy} onClick={generarContrasena}><WandSparkles className="size-4" />{passwordGenerated ? 'Generar otra contraseña' : 'Generar contraseña segura'}</Button>
+            {!temporary && <>
+              <p className="text-sm text-qms-muted">Podés crear tu propia contraseña o generar una segura automáticamente. La podrás cambiar después desde Mi perfil.</p>
+              <Button type="button" variant="secondary" className="w-full" disabled={busy} onClick={generarContrasena}><WandSparkles className="size-4" />{passwordGenerated ? 'Generar otra contraseña' : 'Generar contraseña segura'}</Button>
+            </>}
             <Field label="Nueva contraseña" id="access-password">
               <div className="relative">
-                <Input id="access-password" type={passwordVisible ? 'text' : 'password'} autoComplete="new-password" minLength={12} maxLength={128} required disabled={busy} value={password}
+                <Input id="access-password" type={passwordVisible ? 'text' : 'password'} autoComplete="new-password" minLength={passwordMin} maxLength={ACCESS_PASSWORD_MAX} aria-describedby="access-password-rules" required disabled={busy} value={password}
                   className="pr-20" onChange={e => { setPassword(e.target.value); setPasswordGenerated(false); setPasswordCopied(false) }} />
                 <button type="button" disabled={busy} aria-label={passwordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                  onClick={() => setPasswordVisible(v => !v)}
+                  aria-pressed={passwordVisible} onClick={() => setPasswordVisible(v => !v)}
                   className="absolute inset-y-0 right-2 inline-flex w-9 items-center justify-center text-qms-muted hover:text-qms-dark disabled:opacity-60">
                   {passwordVisible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
               </div>
             </Field>
-            {passwordGenerated && <div className="flex items-center justify-between gap-3 rounded-button border border-qms-border bg-qms-background px-3 py-2">
+            {!temporary && passwordGenerated && <div className="flex items-center justify-between gap-3 rounded-button border border-qms-border bg-qms-background px-3 py-2">
               <p className="min-w-0 text-xs leading-relaxed text-qms-muted">Guardá esta contraseña en tu gestor antes de continuar. No se enviará por correo.</p>
               <Button type="button" variant="secondary" size="sm" disabled={busy || !password} onClick={() => void copiarContrasena()}>
                 {passwordCopied ? <Check className="size-4" /> : <Copy className="size-4" />}{passwordCopied ? 'Copiada' : 'Copiar'}
               </Button>
             </div>}
-            <Field label="Confirmar contraseña" id="access-confirm"><Input id="access-confirm" type="password" autoComplete="new-password" minLength={12} maxLength={128} required disabled={busy} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></Field>
-            <p className="text-xs text-qms-muted">Mínimo 12 caracteres. Si la generás, ambos campos se completan solos.</p><Button type="submit" loading={busy} className="w-full"><KeyRound className="size-4" />Guardar y continuar</Button>
+            <Field label="Confirmar contraseña" id="access-confirm"><Input id="access-confirm" type={temporary && passwordVisible ? 'text' : 'password'} autoComplete="new-password" minLength={passwordMin} maxLength={ACCESS_PASSWORD_MAX} required disabled={busy} value={confirmation} onChange={e => setConfirmation(e.target.value)} /></Field>
+            <p id="access-password-rules" className="text-xs text-qms-muted">Mínimo {passwordMin} caracteres. {temporary ? 'Elegí una contraseña distinta de la temporal.' : 'Si la generás, ambos campos se completan solos.'}</p>
+            <Button type="submit" loading={busy} className="w-full"><KeyRound aria-hidden="true" className="size-4" />Guardar y continuar</Button>
           </form>
             : access && ['enroll', 'verify'].includes(access.phase) ? <div className="mt-5 space-y-5">
               <p className="text-center text-sm text-qms-muted">{access.phase === 'enroll' ? 'Elegí un método de seguridad adicional.' : 'Confirmá tu identidad para entrar al sistema.'}</p>
@@ -181,7 +198,7 @@ export default function AccessPage() {
                   : <div className="mt-5 space-y-4"><p className="text-sm text-qms-muted">{user ? 'Tu acceso está configurado.' : 'Abrí tu invitación o iniciá sesión para continuar.'}</p><Button className="w-full" onClick={() => router.replace(user ? '/' : '/login')}>{user ? 'Ir al sistema' : 'Iniciar sesión'}</Button></div>}
         {error && <p role="alert" className="mt-4 text-sm text-qms-danger">{error}</p>}
       </section>
-      {!invitation && identity && <div className="mt-4 text-center"><Button variant="link" size="sm" disabled={busy} onClick={() => void logout()}>Cerrar sesión</Button></div>}
+      {!showInvitation && identity && <div className="mt-4 text-center"><Button variant="link" size="sm" disabled={busy} onClick={() => void logout()}>Cerrar sesión</Button></div>}
     </div>
   </div>
 }

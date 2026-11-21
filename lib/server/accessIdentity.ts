@@ -18,6 +18,7 @@ export async function getAccessIdentity(request: NextRequest) {
   const claims = result.data?.claims
   if (result.error || claims?.sub !== data.user.id || typeof claims.session_id !== 'string'
     || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claims.session_id)) return null
-  return { id: data.user.id, sessionId: claims.session_id, aal: String(claims.aal ?? 'aal1'), email: data.user.email ?? '', token, client }
+  const passwordAuthenticated = Array.isArray(claims.amr) && claims.amr.some(entry => entry.method === 'password')
+  return { id: data.user.id, sessionId: claims.session_id, aal: String(claims.aal ?? 'aal1'), passwordAuthenticated, email: data.user.email ?? '', token, client }
 }
 export type AccessIdentity = NonNullable<Awaited<ReturnType<typeof getAccessIdentity>>>
