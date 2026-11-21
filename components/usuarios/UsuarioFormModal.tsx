@@ -8,7 +8,7 @@ import Select from '@/components/ui/Select'
 import Input from '@/components/ui/Input'
 import Field from '@/components/ui/Field'
 import { showError, showSuccess } from '@/lib/services/errorToast'
-import { CORREO_ACCESO_CONFIRMADO, gestionarAccesoUsuario, mutateUsuario } from '@/lib/services/usuariosService'
+import { gestionarAccesoUsuario, mutateUsuario } from '@/lib/services/usuariosService'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
 import { getUserError } from '@/lib/errors/userError'
 import { getRoleLabel, ROLES_GESTIONABLES } from '@/lib/constants/roles'
@@ -231,7 +231,10 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           {createdResult ? <section className="rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5" aria-live="polite">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-success"><Check aria-hidden="true" className="size-4" />Usuario creado</h3>
             {error && <p role="alert" className="mt-3 text-sm text-qms-danger">{error}</p>}
-            {createdResult.accessDelivery === 'sent' ? <p className="mt-2 text-sm text-qms-muted">{CORREO_ACCESO_CONFIRMADO}</p>
+            {createdResult.accessDelivery === 'sent' ? <p role="status" className="mt-2 text-sm text-qms-success">
+                {invite ? 'Invitación enviada al servicio de correo. El enlace personal vence en 24 horas.' : 'Correo de acceso enviado al servicio de entrega. La contraseña temporal vence en 72 horas.'}
+                {requireMfa && ' Al ingresar, también se le solicitará configurar la verificación en dos pasos.'}
+              </p>
               : <>
                 <p className="mt-2 text-sm text-qms-muted">
                   {createdResult.accessDelivery ? (invite ? 'El usuario fue creado, pero no se pudo confirmar el correo de invitación.' : 'El usuario fue creado, pero no se pudo confirmar el correo con la contraseña temporal.') : 'La cuenta ya está creada. Podés reenviar el acceso si hace falta.'}
