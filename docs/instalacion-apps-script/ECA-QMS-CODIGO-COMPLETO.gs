@@ -792,11 +792,14 @@ function qmsAccessMailHealthCheck() {
  var result={
   handler:'access_delivery_request/temporary_access',
   secretPresent:Utilities.newBlob(secret).getBytes().length>=32,
+  signingSecretConfigured:Utilities.newBlob(secret).getBytes().length>=32,
   mailEnabled:props.getProperty('QMS_MAIL_ENABLED')==='true',
+  trackingOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(origin),
   trackingOriginValid:/^https:\/\/[a-z0-9.-]+$/i.test(origin),
   appOriginValid:!app||/^https:\/\/[a-z0-9.-]+$/i.test(app),
   handlerHasSignedDiagnostics:handler.indexOf('login_origin_mismatch')>=0&&handler.indexOf('qms_access_mail_validation_rejected')>=0,
-  doPostRoutesAccess:router.indexOf('access_delivery_request')>=0&&router.indexOf('qmsAccessMailPost_')>=0
+  doPostRoutesAccess:router.indexOf('access_delivery_request')>=0&&router.indexOf('qmsAccessMailPost_')>=0,
+  deploymentMustBeUpdated:true
  };
  result.ready=result.secretPresent&&result.mailEnabled&&result.handlerHasSignedDiagnostics&&result.doPostRoutesAccess;
  console.info('qms_access_mail_health',JSON.stringify(result));
