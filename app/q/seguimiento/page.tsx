@@ -4,6 +4,9 @@ import { publicTrackingAvailable } from '@/lib/server/publicTracking'
 import FondoIdentidad from '@/components/identidad/FondoIdentidad'
 import { identidadFormularioInicial } from '@/lib/server/identidad-publica'
 
+// La marca se lee al abrir la pantalla, no durante el build de Vercel.
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'Seguimiento de tu trámite | QMS ECA',
   robots: { index: false, follow: false },
