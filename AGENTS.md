@@ -21,9 +21,10 @@ No cargar todos los documentos para una modificación aislada.
 volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
 
 - **Alta de usuario:** `UsuarioFormModal.tsx` envía un único `POST` con
-  `access: { id, invite: false, requireMfa, sendByEmail: true }`. No hay
-  interruptor de invitación para altas nuevas; `requireMfa` es el único
-  interruptor de seguridad, **opcional y desactivado por defecto**.
+  `access: { id, invite: false, requireMfa, sendByEmail }`. Hay **dos casillas**:
+  «Enviar invitación por correo» (envía credenciales, activada por defecto) y
+  «Requerir 2FA» (opcional, desactivada por defecto). No se crea un enlace
+  extra de aceptación en las altas temporales.
   Validar `invite/requireMfa/sendByEmail` en `lib/server/usuarioInput.ts`
   y no aceptar secretos enviados arbitrariamente desde el navegador.
 - **Correo inicial sencillo:** `accessService.ts` genera en servidor una
@@ -31,14 +32,19 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   confirma la política y vigencia de **72 horas**. El correo `temporary_access`
   muestra **Usuario = email**, **Contraseña temporal** y botón
   **«Iniciar sesión»** a `/login`. No crear un enlace de aceptación adicional.
-  Nunca devolver, copiar o mostrar la contraseña temporal en el modal de
-  administración, en respuestas API o en logs. No conservar texto plano en DB.
+  Con correo activado **nunca** devolver ni mostrar la contraseña al admin.
+  Solo si se desactiva explícitamente el correo, devolverla una única vez al
+  administrador autorizado y mostrarla temporalmente para entrega manual;
+  borrarla del estado al cerrar. Nunca registrarla en logs ni en DB en claro.
 - **Primer ingreso:** login con credenciales temporales → **cambio obligatorio**
   de contraseña → configurar/verificar 2FA solo si `requireMfa=true`.
   Simplificar la UI sin suprimir ese cambio de seguridad. La contraseña vencida
   requiere restablecimiento administrativo; no habilitar recuperación pública
   genérica inadvertidamente. No migrar automáticamente cuentas previas.
-- **Reenvíos:** `resetUserAccess` gira la credencial de acceso temporal bajo
+- **Reenvíos:** si el servicio informa `failed` o `uncertain`, mostrar fallo
+  sin presentar la entrega como exitosa ni repetirla automáticamente. Antes
+  de reenviar por acción explícita, confirmar que se invalidará la clave
+  anterior. `resetUserAccess` gira la credencial de acceso temporal bajo
   autorización de admin, invalidando la anterior. Conservar idempotencia del alta
   y resultados `sent/failed/uncertain`; envío incierto nunca implica reintento
   automático. Si MailApp falla, preservar Auth y perfil creados. Para **cuentas
@@ -905,8 +911,9 @@ validado sin abrir una segunda ventana. El botón «Restablecer contraseña» de
 menú abre directamente esa pestaña. No renderizar `PasswordModal` ni
 `ResetPasswordModal` desde `/usuarios`; ambos componentes legacy permanecen
 en el repositorio solo por compatibilidad hasta su eventual retiro.
-La invitación no es opción del alta nueva: solo 2FA es interruptor opcional,
-desactivado por defecto. La recuperación genérica y la gestión general de
+La invitación **por correo** y 2FA son dos interruptores independientes:
+el correo está activado y 2FA desactivado por defecto; la cuenta nueva usa
+siempre credenciales temporales, no enlaces de aceptación. La recuperación genérica y la gestión general de
 sesiones permanecen deshabilitadas; reset 2FA sí revoca sesiones.
 La tabla sigue el orden Usuario, Rol, Estado,
 Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
@@ -953,10 +960,11 @@ en repositorio no implica que se hayan ejecutado las pruebas ni que esté public
 - **Mismo tamaño y distinto contenido:** alta y gestión usan `Modal` document
   `size="mail" height="fill"`, ancho máximo 896 px. Cabecera y pie fijos;
   el contenido tiene **un único scroll**; responsive, legibilidad y foco accesibles.
-- **Alta:** una vista con perfil y acceso temporal por correo; un solo `POST`
-  con `invite:false`, `sendByEmail:true` y `requireMfa` opcional. El servidor
-  genera la contraseña y el modal **no la recibe ni la muestra**. Tras crear,
-  bloquear la repetición del alta, presentar resultado del correo y «Listo»;
+- **Alta:** una vista con perfil y acceso temporal; un solo `POST` con
+  `invite:false`, `sendByEmail` booleano y `requireMfa` opcional. El servidor
+  genera la contraseña. **Si se solicitó correo, no retornarla al modal**;
+  si se desactivó, entregarla una sola vez al admin y descartarla al cerrar.
+  Tras crear, bloquear la repetición del alta y mostrar el estado del correo;
   un fallo de refresco no debe crear otra cuenta.
 - **Gestión:** «Detalles del perfil» y «Seguridad y acceso». Preservar el
   `FormData` de nombre/correo/rol/estado sin desmontarlo entre tabs; la propia
@@ -1015,8 +1023,9 @@ a clientes, cuenta propia prohibida y último admin protegido. La migración
 Consultar [usuarios-acceso-inicial-mfa-2026-11-17.md](docs/usuarios-acceso-inicial-mfa-2026-11-17.md).
 Invitación legacy: enlace personal de 24h y un uso; error de envío conserva Auth
  y perfil, y el reenvío invalida el enlace anterior. Para altas nuevas se genera
- una contraseña temporal en el servidor y se envía **solo por correo**, con
- cambio obligatorio en el primer ingreso. Ninguna migración masiva de cuentas.
+ una contraseña temporal en el servidor; va al correo cuando está marcado
+ o se muestra una sola vez al admin cuando se desactiva el envío. En ambos
+ casos el primer ingreso obliga a cambiarla. Ninguna migración masiva de cuentas.
 
 App autenticadora usa TOTP nativo y AAL2 real. Correo alternativo usa verificación
 propia autorizada por el usuario: **no elevar ni presentar su JWT como AAL2**.
