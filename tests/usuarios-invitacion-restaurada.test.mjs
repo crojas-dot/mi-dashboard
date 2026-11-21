@@ -35,17 +35,18 @@ function makeAdmin(setup, mode) {
 test('POST valida dos opciones independientes y exige siempre envío seguro por correo', () => {
   const { validarUsuarioInput } = loadModule('lib/server/usuarioInput.ts')
   const base = { nombre: 'Ana', email: 'ana@example.test', rol: 'colaborador', estado: 'activo' }
-  for (const invite of [true, false]) for (const requireMfa of [true, false]) {
-    const access = { id: randomUUID(), invite, requireMfa, sendByEmail: true }
+  for (const invite of [true, false]) for (const requireMfa of [true, false]) for (const sendByEmail of [true, false]) {
+    const access = { id: randomUUID(), invite, requireMfa, sendByEmail }
     const value = validarUsuarioInput({ ...base, access }, 'POST')
     assert.equal(value.error, undefined)
     assert.equal(value.data.access.invite, invite)
     assert.equal(value.data.access.requireMfa, requireMfa)
+    assert.equal(value.data.access.sendByEmail, sendByEmail)
   }
   for (const access of [
     { id: randomUUID(), invite: 'true', requireMfa: true, sendByEmail: true },
     { id: randomUUID(), invite: true, requireMfa: 'true', sendByEmail: true },
-    { id: randomUUID(), invite: true, requireMfa: true, sendByEmail: false },
+    { id: randomUUID(), invite: true, requireMfa: true, sendByEmail: 'no' },
   ]) assert.equal(validarUsuarioInput({ ...base, access }, 'POST').error, 'Configuración de acceso inválida')
 })
 
