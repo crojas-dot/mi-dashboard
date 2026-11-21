@@ -40,6 +40,11 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   const [tab, setTab] = useState<'detalles' | 'seguridad'>(initialTab)
   const [createdResult, setCreatedResult] = useState<Omit<UserMutationResult, 'tempPassword'> | null>(null)
   const [requireMfa, setRequireMfa] = useState(false)
+  const [sendByEmail, setSendByEmail] = useState(true)
+  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [createdEmail, setCreatedEmail] = useState('')
+  const [passwordCopied, setPasswordCopied] = useState(false)
+  const [confirmResend, setConfirmResend] = useState(false)
   const creation = useRef<{ payload: string; id: string } | null>(null)
   const filaConfirmacionEliminar = useRef<HTMLDivElement>(null)
 
@@ -65,6 +70,11 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
     setTab('detalles')
     setCreatedResult(null)
     setRequireMfa(false)
+    setSendByEmail(true)
+    setTempPassword(null)
+    setCreatedEmail('')
+    setPasswordCopied(false)
+    setConfirmResend(false)
     creation.current = null
     onClose()
   }
@@ -91,11 +101,15 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
       if (esEditar && usuario) {
         await mutateUsuario('PATCH', { id: usuario.id, ...perfil }, fallback)
       } else {
-        const payload = JSON.stringify({ ...perfil, invite: false, requireMfa })
+        const payload = JSON.stringify({ ...perfil, invite: false, requireMfa, sendByEmail })
         if (!creation.current || creation.current.payload !== payload) creation.current = { payload, id: crypto.randomUUID() }
-        const created = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, invite: false, requireMfa, sendByEmail: true } }, fallback)
-        result = created
-        setCreatedResult(created)
+        const created = await mutateUsuario('POST', { ...perfil, access: { id: creation.current.id, invite: false, requireMfa, sendByEmail } }, fallback)
+        const { tempPassword: issuedPassword, ...safeResult } = created
+        if (!sendByEmail && typeof issuedPassword === 'string') setTempPassword(issuedPassword)
+        setCreatedEmail(email)
+        setPasswordCopied(false)
+        result = safeResult
+        setCreatedResult(safeResult)
       }
       if (esEditar) showSuccess('Usuario actualizado')
       try {
@@ -126,6 +140,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
 
   async function reenviarCreada() {
     if (!createdResult?.userId || !lock.begin('acceso')) return
+    setConfirmResend(false)
     setError(null)
     try {
       const delivery = await gestionarAccesoUsuario(createdResult.userId, 'resend')
@@ -136,6 +151,14 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
   }
 
 
+
+  async function copiarPassword() {
+    if (!tempPassword) return
+    try {
+      await navigator.clipboard.writeText(tempPassword)
+      setPasswordCopied(true)
+    } catch { setError('No se pudo copiar la contraseña. Podés seleccionarla y copiarla manualmente.') }
+  }
 
   function abrirSeguridad() {
     setTab('seguridad')
@@ -229,19 +252,42 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
           {createdResult ? <section className="rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5" aria-live="polite">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-qms-success"><Check aria-hidden="true" className="size-4" />Usuario creado</h3>
             {error && <p role="alert" className="mt-3 text-sm text-qms-danger">{error}</p>}
-            {createdResult.accessDelivery === 'sent' ? <p role="status" className="mt-2 text-sm text-qms-success">
-                Correo de acceso enviado al servicio de entrega. La contraseña temporal vence en 72 horas.
-                {requireMfa && ' Al ingresar, también se le solicitará configurar la verificación en dos pasos.'}
-              </p>
-              : <>
-                <p className="mt-2 text-sm text-qms-muted">
-                  {createdResult.accessDelivery ? 'El usuario fue creado, pero no se pudo confirmar el correo con la contraseña temporal.' : 'La cuenta ya está creada. Podés reenviar el acceso si hace falta.'}
-                </p>
-                {createdResult.accessDeliveryError && <p className="mt-1 text-xs text-qms-muted">{createdResult.accessDeliveryError}</p>}
-                <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={busy} loading={lock.operation === 'acceso'} onClick={() => void reenviarCreada()}>
-                  <Mail aria-hidden="true" className="size-4" />Reenviar acceso
+            {tempPassword ? <>
+              <p className="mt-3 text-sm text-qms-muted">No se solicitó el envío por correo. Esta contraseña temporal se mostrará solo aquí, hasta cerrar el formulario.</p>
+              <div className="mt-3 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
+                <div><p className="text-xs text-qms-muted">Usuario</p><p className="select-text break-all text-sm font-medium text-qms-dark">{createdEmail}</p></div>
+                <div><p className="text-xs text-qms-muted">Contraseña temporal · 72 horas</p>
+                  <code className="block select-all break-all text-sm font-semibold text-qms-dark">{tempPassword}</code></div>
+                <Button type="button" size="sm" variant="secondary" onClick={() => void copiarPassword()}>
+                  {passwordCopied ? 'Contraseña copiada' : 'Copiar contraseña'}
                 </Button>
-              </>}
+              </div>
+              <p className="mt-3 text-xs text-qms-muted">Entregala por un canal seguro. El usuario deberá cambiarla en el primer ingreso.</p>
+            </> : createdResult.accessDelivery === 'sent' ? <p role="status" className="mt-3 text-sm text-qms-success">
+              El servicio confirmó el envío del correo de acceso. La contraseña temporal vence en 72 horas.
+              {requireMfa && ' Al ingresar deberá configurar 2FA.'}
+              <span className="mt-1 block text-xs text-qms-muted">La confirmación del emisor no garantiza recepción en la bandeja de entrada.</span>
+            </p> : <>
+              <p role="alert" className="mt-3 text-sm text-qms-danger">
+                {createdResult.accessDelivery === 'uncertain'
+                  ? 'El usuario fue creado, pero el servicio no confirmó si entregó el correo. No se reenviará automáticamente.'
+                  : 'El usuario fue creado, pero no se confirmó el envío del correo con la contraseña temporal.'}
+              </p>
+              {createdResult.accessDeliveryError && <p className="mt-2 text-xs text-qms-muted">{createdResult.accessDeliveryError}</p>}
+              {!confirmResend ? <Button type="button" variant="secondary" size="sm" className="mt-3" disabled={busy}
+                onClick={() => setConfirmResend(true)}>
+                <Mail aria-hidden="true" className="size-4" />Generar nueva contraseña y reenviar
+              </Button> : <div className="mt-3 rounded-card border border-qms-border p-3">
+                <p className="text-xs leading-relaxed text-qms-muted">
+                  Se invalidará la contraseña temporal anterior. Si el primer correo llegó, dejará de funcionar. ¿Confirmás el reenvío?
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" size="sm" disabled={busy} onClick={() => setConfirmResend(false)}>Cancelar</Button>
+                  <Button type="button" size="sm" disabled={busy} loading={lock.operation === 'acceso'}
+                    onClick={() => void reenviarCreada()}>Confirmar reenvío</Button>
+                </div>
+              </div>}
+            </>}
           </section> : <form key={usuario?.id ?? 'nuevo'} id={formId} role={esEditar ? 'tabpanel' : undefined}
             aria-label={esEditar ? 'Detalles del perfil' : 'Crear nuevo usuario'}
             aria-labelledby={esEditar ? 'usuario-tab-detalles' : undefined}
@@ -290,7 +336,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
                   <div className="min-w-0 flex-1 space-y-5">{camposPerfil}</div>
                 </div>
               </section>
-              <UsuarioAccesoInicial requireMfa={requireMfa} disabled={busy} onMfa={setRequireMfa} />
+              <UsuarioAccesoInicial sendByEmail={sendByEmail} requireMfa={requireMfa} disabled={busy} onEmail={setSendByEmail} onMfa={setRequireMfa} />
             </>}
           </form>}
           {esEditar && <div id="usuario-panel-seguridad" role="tabpanel" aria-label="Seguridad y acceso"
