@@ -1,16 +1,20 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, Link as LinkIcon } from 'lucide-react'
+import { Check } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Badge from '@/components/ui/Badge'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { consultarSeguimiento } from '@/lib/services/publicTrackingClient'
 import type { PublicTrackingStatus } from '@/lib/types/publicTracking'
+import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
+import PublicQmsHeader from '@/app/q/components/PublicQmsHeader'
 
 const date = (value: string) => new Date(value).toLocaleDateString('es-CR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Costa_Rica' })
 
-export default function PublicTrackingPage({ available = true }: { available?: boolean } = {}) {
+export default function PublicTrackingPage({ available = true, initialLogo }: { available?: boolean; initialLogo?: string } = {}) {
+  const { data: identidad } = useIdentidadImagenes(initialLogo === undefined)
+  const logoFormulario = initialLogo ?? identidad?.formulario_encabezado ?? ''
   const [status, setStatus] = useState<PublicTrackingStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -58,31 +62,49 @@ export default function PublicTrackingPage({ available = true }: { available?: b
     return () => { window.removeEventListener('hashchange', onHashChange); request.current?.abort() }
   }, [available])
 
-  return <main className="min-h-dvh bg-qms-bg px-4 py-6 sm:py-10">
-    <div className="mx-auto min-w-0 max-w-3xl space-y-5 [overflow-wrap:anywhere]">
-      <header className="flex items-center gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-button bg-qms-primary font-semibold text-white">E</span><div><p className="font-semibold text-qms-dark">QMS ECA</p><p className="text-sm text-qms-muted">Gestión de Calidad</p></div></header>
-      <section className="ui-panel p-5 sm:p-6">
-        <div className="mb-5"><h1 className="text-xl font-semibold text-qms-dark">Seguimiento de tu trámite</h1><p className="mt-2 text-sm leading-relaxed text-qms-muted">Consultá el avance y la respuesta de Gestión de Calidad desde tu enlace de seguimiento.</p></div>
-        {!available ? <div role="status" className="space-y-3 rounded-card bg-qms-hover-bg p-4 text-sm leading-relaxed text-qms-muted">
-          <p className="font-medium text-qms-dark">La consulta en línea todavía no está habilitada.</p>
-          <p>Esto no afecta el registro de tu queja. Conservá tu consecutivo para consultar con Gestión de Calidad.</p>
-        </div> : !status && !loading && <div className="space-y-5">
-          <div className="flex items-start gap-3 rounded-card bg-qms-hover-bg p-4">
-            <LinkIcon className="mt-0.5 size-5 shrink-0 text-qms-primary" aria-hidden="true" />
-            <div className="space-y-2 text-sm leading-relaxed"><p className="font-medium text-qms-dark">Abrí el enlace de tu correo de confirmación</p><p className="text-qms-muted">El botón «Consultar mi trámite» abre tu expediente automáticamente. No necesitás crear una cuenta ni ingresar una contraseña.</p><p className="text-xs text-qms-muted">Si recargaste esta página, volvé a abrir el enlace del correo o el que guardaste al enviar tu queja.</p></div>
-          </div>
-          {error && canRetry && <Button variant="secondary" className="w-full sm:w-auto" onClick={() => void consultar(lastRequestKey.current)}>Reintentar consulta</Button>}
-        </div>}
-        {loading && <LoadingSkeleton variant="list" label="Consultando tu trámite…" framed={false} />}
-        {status && <div className="space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-3 border-b border-qms-border pb-5"><div><p className="text-sm text-qms-muted">Número de registro</p><h2 className="mt-1 break-all font-mono text-2xl font-semibold text-qms-primary">{status.folio}</h2><p className="mt-2 text-sm text-qms-muted">Recibido el {date(status.recibido_at)}</p></div><Badge variant="neutral" className="max-w-full whitespace-normal!">{status.estado === 'Pendiente de Revisión GC' ? 'En revisión por Calidad' : status.estado}</Badge></div>
-          <ol aria-label="Avance del trámite" className="grid gap-3 sm:grid-cols-2">{status.etapas.map((step, index) => <li key={`${index}-${step.nombre}`} className="flex min-w-0 items-start gap-3 rounded-card border border-qms-border bg-qms-primary-soft p-4"><span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-qms-success text-white"><Check className="size-4" aria-hidden="true" /></span><div><p className="text-base font-semibold text-qms-dark">{step.nombre}</p>{step.fecha && <p className="mt-1 text-sm text-qms-muted">{date(step.fecha)}</p>}</div></li>)}</ol>
-          {status.respuesta && <section className="border-t border-qms-border pt-5"><h3 className="font-semibold">Respuesta de Gestión de Calidad</h3><p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed">{status.respuesta}</p>{status.numero_oficio && <p className="mt-4 text-sm text-qms-muted">Oficio: <span className="font-medium text-qms-dark">{status.numero_oficio}</span></p>}</section>}
-        </div>}
-        {error && <p role="alert" className="mt-4 text-sm text-qms-danger">{error}</p>}
+  return <main className="ui-auth-card my-auto min-w-0 p-4 sm:px-8 [overflow-wrap:anywhere]">
+    <PublicQmsHeader title="QMS ECA" subtitle="Gestión de Calidad" logo={logoFormulario} />
+    <div className="py-5 sm:py-6">
+      <h1 className="m-0 text-xl font-semibold text-qms-dark">Seguimiento de tu trámite</h1>
 
-      </section>
-      <p className="text-center text-xs leading-relaxed text-qms-muted">El acceso vence 30 días naturales después del cierre. El informe de respuesta se envía adjunto a tu correo. Para consultas: gc@eca.or.cr.</p>
+      {!available ? <div role="status" className="mt-4 space-y-2 text-base leading-relaxed">
+        <p className="font-medium text-qms-dark">La consulta en línea todavía no está habilitada.</p>
+        <p className="text-qms-muted">Esto no afecta el registro de tu queja. Conservá tu consecutivo para consultar con Gestión de Calidad.</p>
+      </div> : status ? <>
+        <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-qms-border pb-4 text-sm text-qms-muted">
+          <span>Número de registro</span>
+          <strong className="min-w-0 select-text break-all text-lg font-semibold text-qms-primary">{status.folio}</strong>
+          <Badge variant="neutral" className="ml-auto max-w-full whitespace-normal!">{status.estado === 'Pendiente de Revisión GC' ? 'En revisión por Calidad' : status.estado}</Badge>
+        </div>
+        <p className="mt-5 text-base text-qms-dark">Tu solicitud fue recibida el {date(status.recibido_at)}.</p>
+        <h2 className="mt-5 text-base font-semibold text-qms-dark">Avance del trámite</h2>
+        <ol aria-label="Avance del trámite" className="mt-3 divide-y divide-qms-border border-y border-qms-border">
+          {status.etapas.map((step, index) => <li key={`${index}-${step.nombre}`} className="flex min-w-0 items-center gap-3 py-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-qms-success text-white">
+              <Check className="size-4" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-base font-medium text-qms-dark">{step.nombre}</p>
+              {step.fecha && <p className="mt-0.5 text-sm text-qms-muted">{date(step.fecha)}</p>}
+            </div>
+          </li>)}
+        </ol>
+        {status.respuesta && <section className="mt-5" aria-label="Respuesta de Gestión de Calidad">
+          <h2 className="font-semibold text-qms-dark">Respuesta de Gestión de Calidad</h2>
+          <p className="mt-3 whitespace-pre-wrap break-words text-base leading-relaxed text-qms-dark">{status.respuesta}</p>
+          {status.numero_oficio && <p className="mt-3 text-sm text-qms-muted">Oficio: <span className="font-medium text-qms-dark">{status.numero_oficio}</span></p>}
+        </section>}
+      </> : loading ? <div className="mt-5"><LoadingSkeleton variant="list" label="Consultando tu trámite…" framed={false} /></div> :
+        <div className="mt-4 space-y-3 text-base leading-relaxed">
+          <p className="text-qms-dark">Ingresá desde el botón «Consultar mi trámite» del correo de confirmación. El enlace abre tu trámite directamente, sin contraseña.</p>
+          <p className="text-sm text-qms-muted">Si recargaste esta página, volvé a abrir el enlace del correo o el que guardaste al registrar la queja.</p>
+          {canRetry && <Button variant="secondary" className="min-h-11 w-full sm:w-auto" onClick={() => void consultar(lastRequestKey.current)}>Reintentar consulta</Button>}
+        </div>}
+      {error && <p role="alert" className="mt-4 text-sm text-qms-danger">{error}</p>}
     </div>
+    <footer className="space-y-1 border-t border-qms-border pt-3 text-xs leading-relaxed text-qms-muted">
+      <p>El acceso vence 30 días naturales después del cierre. El informe de respuesta se envía adjunto a tu correo.</p>
+      <p>Para consultas: <a className="text-qms-primary underline underline-offset-2" href="mailto:gc@eca.or.cr">gc@eca.or.cr</a>.</p>
+    </footer>
   </main>
 }
