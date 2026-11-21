@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { KeyRound, Mail, RotateCcw, ShieldCheck } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -11,20 +11,25 @@ import type { UserMutationResult } from '@/lib/types/access'
 interface Props {
   usuario: Usuario
   esAuto?: boolean
+  active?: boolean
   disabled: boolean
   onBegin: () => boolean
   onEnd: () => void
   onChanged: () => void | Promise<void>
 }
-type Action = 'resend' | 'reset' | 'reset_mfa'
+type Action = 'resend' | 'reset' | 'reset_mfa' | 'manual'
 
-export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBegin, onEnd, onChanged }: Props) {
+export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true, disabled, onBegin, onEnd, onChanged }: Props) {
   const [confirm, setConfirm] = useState<Action | null>(null)
   const [running, setRunning] = useState(false)
   const [delivery, setDelivery] = useState<(UserMutationResult & { kind: 'invitation' | 'temporary' }) | null>(null)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [refreshFailed, setRefreshFailed] = useState(false)
+  const [manualPassword, setManualPassword] = useState<string | null>(null)
+  const [manualCopied, setManualCopied] = useState(false)
+  useEffect(() => { if (!active) { setManualPassword(null); setManualCopied(false) } }, [active])
+  useEffect(() => { setManualPassword(null); setManualCopied(false) }, [usuario.auth_id])
   const policy = usuario.access
   const invited = policy?.status === 'invite_pending' || policy?.status === 'invite_expired'
   const temporary = !!policy?.temporaryPassword
@@ -32,17 +37,22 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBe
   const action: 'resend' | 'reset' = pending ? 'resend' : 'reset'
   const label = invited ? 'Reenviar invitación' : temporary ? 'Reenviar acceso' : 'Restablecer contraseña'
   const unavailable = disabled || esAuto || usuario.estado !== 'activo' || !usuario.auth_id
-  const confirmLabel = confirm === 'reset_mfa' ? 'Restablecer 2FA' : confirm === 'resend' ? label : 'Restablecer contraseña'
+  const confirmLabel = confirm === 'manual' ? 'Generar contraseña manual' : confirm === 'reset_mfa' ? 'Restablecer 2FA' : confirm === 'resend' ? label : 'Restablecer contraseña'
 
   async function run() {
     const operation = confirm
     if (!operation || unavailable || !usuario.auth_id || !onBegin()) return
     setRunning(true); setError(''); setMessage(''); setRefreshFailed(false)
+    setManualPassword(null); setManualCopied(false)
     try {
       const result = await gestionarAccesoUsuario(usuario.auth_id, operation)
       if (operation === 'reset_mfa') {
         setDelivery(null)
         setMessage('Verificación restablecida. La cuenta deberá configurar nuevamente su segundo factor al ingresar.')
+      } else if (operation === 'manual') {
+        if (typeof result.tempPassword !== 'string') throw new Error('El servicio no confirmó la contraseña manual.')
+        setDelivery(null)
+        setManualPassword(result.tempPassword)
       } else {
         setDelivery({ ...result, kind: invited && operation === 'resend' ? 'invitation' : 'temporary' })
       }
@@ -56,6 +66,8 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBe
 
   const confirmation = confirm === 'reset_mfa'
     ? `Se eliminará la verificación actual de ${usuario.nombre}, se cerrarán sus sesiones y deberá configurar un método nuevo. La obligación de 2FA se mantiene.`
+    : confirm === 'manual'
+      ? `Se generará una contraseña temporal para ${usuario.nombre} y se mostrará una sola vez. La anterior dejará de funcionar. No se enviará correo.`
     : confirm === 'resend' && invited
       ? `Se enviará una nueva invitación a ${usuario.email}. El enlace anterior dejará de funcionar.`
       : `Se enviará una nueva contraseña temporal a ${usuario.email}. La anterior dejará de funcionar.`
@@ -72,9 +84,14 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBe
               : 'Podés restablecer la contraseña de esta cuenta mediante un correo de acceso.'}
         </p>
       </div>
-      <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm(action)}>
-        {invited || temporary ? <Mail aria-hidden="true" className="size-4" /> : <KeyRound aria-hidden="true" className="size-4" />}{label}
-      </Button>
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        {!invited && policy && <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm('manual')}>
+          <KeyRound aria-hidden="true" className="size-4" />Generar acceso manual
+        </Button>}
+        <Button type="button" size="sm" variant="secondary" disabled={unavailable} onClick={() => setConfirm(action)}>
+          {invited || temporary ? <Mail aria-hidden="true" className="size-4" /> : <KeyRound aria-hidden="true" className="size-4" />}{label}
+        </Button>
+      </div>
     </div>
     {policy && <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-qms-border pt-4">
       <div>
@@ -97,6 +114,18 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, disabled, onBe
       {delivery.kind === 'invitation' ? 'La invitación se generó, pero no se confirmó su envío.' : 'Se generó una contraseña temporal, pero no se confirmó su envío.'}
       {delivery.accessDeliveryError ? ' ' + delivery.accessDeliveryError : ' Verificá el resultado antes de reenviar.'}
     </p>}
+    {manualPassword && <div role="status" className="mt-4 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
+      <p className="text-sm font-medium text-qms-dark">Contraseña temporal generada · válida durante 72 horas</p>
+      <div><p className="text-xs text-qms-muted">Usuario</p><p className="break-all text-sm text-qms-dark">{usuario.email}</p></div>
+      <div><p className="text-xs text-qms-muted">Contraseña temporal</p>
+        <code className="block select-all break-all text-sm font-semibold text-qms-dark">{manualPassword}</code>
+      </div>
+      <Button type="button" variant="secondary" size="sm" onClick={() => void navigator.clipboard.writeText(manualPassword)
+        .then(() => setManualCopied(true)).catch(() => setError('No se pudo copiar; seleccioná la contraseña manualmente.'))}>
+        {manualCopied ? 'Contraseña copiada' : 'Copiar contraseña'}
+      </Button>
+      <p className="text-xs leading-relaxed text-qms-muted">Entregala por un canal seguro. Se borrará de esta pantalla al cerrar y el usuario deberá cambiarla al iniciar sesión.</p>
+    </div>}
     {message && <p role="status" className="mt-3 text-sm text-qms-success">{message}</p>}
     {refreshFailed && <p role="status" className="mt-2 text-sm text-qms-muted">El listado de usuarios no se pudo actualizar.</p>}
     {error && <p role="alert" className="mt-3 text-sm text-qms-danger">{error}</p>}
