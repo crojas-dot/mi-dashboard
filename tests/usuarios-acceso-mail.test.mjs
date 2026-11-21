@@ -9,7 +9,7 @@ const secret='synthetic-access-mail-key-'.repeat(3),machine='synthetic-service-r
 function fixture(options={}) {
  const sent=[],requests=[],cache=new Map(),logs=[]
  const brand='https://synthetic.supabase.co/storage/v1/object/public/branding/identidad/correo_encabezado/11111111-1111-4111-8111-111111111111.png'
- const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:origin,QMS_MAIL_QUEUE_URL:'https://synthetic.supabase.co/functions/v1/quejas-mail-queue'}
+ const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:options.scriptOrigin??origin,QMS_MAIL_QUEUE_URL:'https://synthetic.supabase.co/functions/v1/quejas-mail-queue'}
  const bytes=value=>Array.from(Buffer.from(value))
  const context=vm.createContext({Date,JSON,Number,Array,Object,
   console:{warn:(...args)=>logs.push(args),info:(...args)=>logs.push(args)},
