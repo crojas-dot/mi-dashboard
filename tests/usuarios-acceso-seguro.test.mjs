@@ -48,13 +48,13 @@ test('alta reserva antes de Auth, crea una sola cuenta y conserva perfil ante fa
 })
 test('reintento de alta completada no crea Auth, no reenvía correo ni vuelve a revelar contraseña',async()=>{
  const admin={rpc:async()=>({data:{completed:true,authId:target}}),auth:{admin:{createUser:()=>assert.fail('Duplicado')}},functions:{invoke:()=>assert.fail('Reenvío automático')}}
- const value=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:false})
+ const value=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:false,sendByEmail:true})
  assert.equal(value.tempPassword,undefined);assert.equal(value.created,true)
 })
 test('sin invitación, la contraseña se envía por correo sin exponerla en la API',async()=>{
  let password
  const admin={rpc:async(_,{p_action,p_data})=>({data:p_action==='create_begin'?{completed:false,authId:null,id:p_data.id,leaseUntil:new Date(Date.now()+90000).toISOString()}:p_action==='create_commit'?{issued:true}:{}}),auth:{admin:{createUser:async value=>{password=value.password;return {data:{user:{id:target}}}}}},functions:{invoke:async(_,{body})=>{assert.equal(body.kind,'temporary_access');assert.equal(body.password,password);return {data:{outcome:'sent'}}}}}
- const result=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:true})
+ const result=await service().createUserWithAccess(admin,actor,{nombre:'X',email:'x@example.test',rol:'colaborador',estado:'activo'},{id:randomUUID(),invite:false,requireMfa:true,sendByEmail:true})
  assert.equal(result.tempPassword,undefined);assert.equal(result.accessDelivery,'sent');assert.match(password,/[A-Z]/);assert.match(password,/[0-9]/);assert.equal(password.length,24)
 })
 test('localhost se elige únicamente en desarrollo; producción conserva HTTPS aunque cambie el Host',async()=>{
