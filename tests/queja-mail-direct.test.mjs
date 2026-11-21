@@ -536,7 +536,7 @@ test('cada aviso interno autoriza justo antes de MailApp y conserva HTML compact
     assert.deepEqual(value.requests.map(request => request.purpose), ['claim_request', 'authorize_request', 'ack_request'])
     assert.deepEqual(value.requests[1].decoded, { eventId: message.eventId, claimToken: message.claimToken })
     assert.equal(value.sent.length, 1)
-    assert.match(value.sent[0].htmlBody, /max-width:760px/)
+    assert.match(value.sent[0].htmlBody, /max-width:900px/)
     assert.doesNotMatch(value.sent[0].htmlBody, /undefined|<(script|img|iframe)\b/)
     assert.equal(value.requests[2].decoded.outcome, 'sent')
     assert.equal(value.rows[1][2], 'sent')
@@ -663,7 +663,7 @@ test('logo del correo reemplaza solo la E del encabezado y nunca crea banner o p
   assert.equal(value.sent.length, 1)
   const html = value.sent[0].htmlBody
   assert.ok(html.includes('<img src="' + logo))
-  assert.match(html, /width="240" height="80"/)
+  assert.match(html, /width="200" height="64"/)
   assert.match(html, /QMS ECA · Gestión de Calidad/)
   assert.doesNotMatch(html, />E<\/td>/)
   assert.equal((html.match(/<img /g) ?? []).length, 1, 'solo un logo en el encabezado')
@@ -691,7 +691,7 @@ test('un logo cuadrado explícito usa 64 px y deja espacio flexible para el text
   const value = fixture({ properties: { APP_PUBLIC_URL: 'https://qms.example.test' } })
   const square = 'https://fykhrrpeoehwqznccmfp.supabase.co/storage/v1/object/public/branding/identidad/correo_cuadrado/11111111-1111-4111-8111-111111111111.png'
   const html = value.context.qmsMailHeader_(value.context.qmsMailBrandingIdentity_({ estilo: 'cuadrado', cuadrado: square }))
-  assert.match(html, /width="64" height="64"/)
+  assert.match(html, /width="60" height="60"/)
   assert.match(html, /padding-left:12px;vertical-align:middle/)
   assert.ok(html.includes(square))
   assert.match(value.context.qmsMailHeader_({ estilo: 'cuadrado' }), /logo-email-horizontal\.png/)
