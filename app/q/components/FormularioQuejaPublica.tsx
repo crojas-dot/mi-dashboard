@@ -13,6 +13,7 @@ import { CATEGORIAS_PUBLICAS, PUBLIC_FILE_ACCEPT, MAX_PUBLIC_FILES, PublicReques
 import { PUBLIC_QUEJA_LIMITES, publicQuejaFieldMessage } from '@/lib/utils/publicQuejaValidation'
 import { usePublicQuejaForm } from '@/app/q/components/usePublicQuejaForm'
 import { useIdentidadImagenes } from '@/lib/queries/useIdentidadImagenes'
+import PublicQmsHeader from '@/app/q/components/PublicQmsHeader'
 
 function PublicField({ field, label, error, children, className }: {
   field: PublicQuejaField; label: string; error?: string; children: ReactNode; className?: string
@@ -79,18 +80,8 @@ export default function FormularioQuejaPublica({ token, isEmbed, initialLogo }: 
   const completed = !!form.receipt && form.finalized && uploaded === form.archivos.length
   const fileStatus = { pendiente: form.receipt ? 'Pendiente' : 'Seleccionado', subiendo: 'Subiendo…', subido: 'Adjuntado', fallido: 'No adjuntado' }
 
-  const encabezado = (title: string, subtitle: string, Title: 'h1' | 'p' = 'p') => (
-    <header className="flex flex-col items-center gap-2 border-b border-qms-border pb-3 text-center sm:flex-row sm:justify-between sm:gap-6 sm:text-left">
-      <div className="order-last min-w-0 break-words sm:order-none">
-        <Title className="text-xl font-semibold text-qms-dark">{title}</Title>
-        <p className="mt-1 text-sm text-qms-muted">{subtitle}</p>
-      </div>
-      {logoFormulario && <div className="flex h-[72px] w-[260px] max-w-full items-center justify-center sm:max-w-[45%] sm:shrink-0 sm:justify-end">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoFormulario} alt="Logo institucional" className="block max-h-full max-w-full object-contain sm:object-right" />
-      </div>}
-    </header>
-  )
+  const encabezado = (title: string, subtitle: string, Title: 'h1' | 'p' = 'p') =>
+    <PublicQmsHeader title={title} subtitle={subtitle} logo={logoFormulario} Title={Title} />
 
   // Recibir el folio no significa que los adjuntos y la finalización hayan terminado.
   if (completed && !form.enviando && form.receipt) {
