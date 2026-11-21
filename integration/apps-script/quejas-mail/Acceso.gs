@@ -57,7 +57,7 @@ function qmsAccessMailButton_(url,label) {
 function qmsAccessMailContent_(p) {
  if(p.kind==='temporary_access'){
   var greeting='Hola, '+p.name+':';
-  var expiry='Usá esta contraseña para el primer ingreso. Vence en 24 horas y el sistema te pedirá cambiarla.';
+  var expiry='Usá esta contraseña para el primer ingreso. Vence en 72 horas y el sistema te pedirá cambiarla.';
   var footer='Si no esperabas este acceso, comunicáte con la administración del sistema.';
   return {
    subject:'Tu acceso a ECA-QMS está listo', footer:footer,
