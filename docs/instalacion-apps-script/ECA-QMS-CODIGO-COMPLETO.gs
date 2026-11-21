@@ -1,8 +1,10 @@
 /**
- * ECA-QMS — Emisor completo para un ÚNICO archivo de Google Apps Script.
- * Correo de acceso sencillo: usuario, contraseña temporal (72 horas) y botón Iniciar sesión.
- * Fuente: Codigo.gs + Acceso.gs. Mantener Script Properties y /exec existentes.
- * Sustituir el código anterior y eliminar cualquier Acceso.gs duplicado del proyecto.
+ * ECA-QMS — Google Apps Script completo para una implementación única.
+ * Soporta Quejas, invitaciones heredadas, contraseña temporal y OTP.
+ * Acceso temporal: dominio institucional permitido + diagnóstico firmado de errores.
+ * Al actualizar: reemplazar el archivo anterior y publicar NUEVA VERSIÓN
+ * en la misma implementación web /exec. No duplicar Acceso.gs en el proyecto.
+ * No modificar Script Properties, activadores ni URL del servicio.
  */
 
 /** Servicio independiente de correo. No modifica el procesador de archivos. */
@@ -658,15 +660,18 @@ function qmsMailHtml_(message, identidad) {
     'Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.', identidad, message.folio);
 }
 
-// ========== ACCESO TEMPORAL Y VERIFICACION ==========
+// ========= ACCESO DE USUARIOS Y OTP =========
 
 /** Envío de acceso transitorio: el recibo solo contiene identificadores y resultado. */
 function qmsAccessMailPost_(e) {
- var configuration,request;
+ var configuration,request,stage='configuration',authenticated=false;
  try {
   configuration=qmsMailConfiguration_();
+  stage='envelope';
   if(!e||!e.postData||Utilities.newBlob(e.postData.contents).getBytes().length>4096)throw new Error('invalid');
   request=qmsMailVerify_(JSON.parse(e.postData.contents),'access_delivery_request',configuration.secret,2048);
+  authenticated=true;
+  stage='payload';
   var p=request.payload;
   var fields=['eventId','kind','to'].concat(p.kind==='temporary_access'?['name','password','url']:p.kind==='invitation'?['url']:['code']);
   if(p.kind==='invitation'&&p.local===true)fields.push('local');
@@ -686,11 +691,35 @@ function qmsAccessMailPost_(e) {
    }else if(!origin||typeof p.url!=='string'||p.url.indexOf(prefix)!==0||!/^[A-Za-z0-9_-]{43}$/.test(p.url.slice(prefix.length)))throw new Error('invalid');
   }
   if(p.kind==='temporary_access'){
-   var loginOrigin=PropertiesService.getScriptProperties().getProperty('QMS_PUBLIC_TRACKING_ORIGIN');
-   if(!/^https:\/\/[^/?#]+$/.test(loginOrigin||'')||p.url!==loginOrigin+'/login'||typeof p.name!=='string'||!p.name.trim()||p.name.length>200||/[\r\n]/.test(p.name)
+   // Las URLs de acceso están limitadas a orígenes administrados; no aceptar enlaces
+   // externos aun cuando el cuerpo HMAC sea válido. El fallback corresponde al
+   // dominio de producción de este mismo proyecto ECA-QMS.
+   stage='login_origin';
+   var props=PropertiesService.getScriptProperties();
+   var origins=[props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN'),props.getProperty('APP_PUBLIC_URL'),
+     'https://mi-dashboard-iota.vercel.app','https://mi-dashboard-eca-s-projects2.vercel.app'];
+   var approved=typeof p.url==='string'&&origins.some(function(origin) {
+    return typeof origin==='string'&&/^https:\/\/[a-z0-9.-]+$/i.test(origin.replace(/\/$/,''))&&
+      p.url===origin.replace(/\/$/,'')+'/login';
+   });
+   if(!approved)throw new Error('invalid');
+   stage='credential_validation';
+   if(typeof p.name!=='string'||!p.name.trim()||p.name.length>200||/[\r\n]/.test(p.name)
      ||typeof p.password!=='string'||!/^[!-~]{14,72}$/.test(p.password))throw new Error('invalid');
   }
- }catch(_){return ContentService.createTextOutput(JSON.stringify({error:'invalid_access_delivery'})).setMimeType(ContentService.MimeType.JSON);}
+ }catch(_){
+  // Únicamente registrar la fase. NUNCA registrar destinatario, contraseña,
+  // HMAC, nonce o URL en las ejecuciones de Apps Script.
+  console.warn('qms_access_mail_validation_rejected',JSON.stringify({stage:stage,authenticated:authenticated}));
+  if(authenticated&&request&&request.payload&&qmsMailUuid_(request.payload.eventId)){
+   var failureCode=stage==='login_origin'?'login_origin_mismatch':'invalid_access_payload';
+   return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('access_delivery_receipt',{
+    eventId:request.payload.eventId,requestNonce:request.envelope.nonce,
+    outcome:'failed',code:failureCode
+   },configuration.secret))).setMimeType(ContentService.MimeType.JSON);
+  }
+  return ContentService.createTextOutput(JSON.stringify({error:'invalid_access_delivery'})).setMimeType(ContentService.MimeType.JSON);
+ }
  function reply(outcome,code){return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('access_delivery_receipt',{eventId:p.eventId,requestNonce:request.envelope.nonce,outcome:outcome,...(code?{code:code}:{})},configuration.secret))).setMimeType(ContentService.MimeType.JSON);}
  if(!configuration.enabled)return reply('retry','disabled');
  var lock=LockService.getScriptLock();if(!lock.tryLock(5000))return reply('retry','ledger_busy');
@@ -747,4 +776,27 @@ function qmsAccessMailContent_(p) {
   body:'Tu código de verificación es '+p.code+'. Vence en 10 minutos. No lo compartás.',
   detail:'<p '+para+'>Tu código de verificación es:</p><p style="margin:0 0 8px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:26px;font-weight:600;letter-spacing:5px;color:#024796">'+
    qmsMailEscape_(p.code)+'</p><p '+para+'>Vence en 10 minutos. No lo compartás.</p>'};
+}
+
+/**
+ * Diagnóstico manual sin enviar correo. Ejecutar desde el editor Apps Script,
+ * y volver a PUBLICAR la implementación /exec existente después de guardar.
+ * Nunca imprime secretos ni credenciales.
+ */
+function qmsAccessMailHealthCheck() {
+ var props=PropertiesService.getScriptProperties();
+ var secret=props.getProperty('QMS_MAIL_SECRET')||'';
+ var login=props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')||'';
+ var app=props.getProperty('APP_PUBLIC_URL')||'';
+ var result={
+  handler:'access_delivery_request/temporary_access',
+  ready:secret.length>=32&&props.getProperty('QMS_MAIL_ENABLED')==='true',
+  signingSecretConfigured:secret.length>=32,
+  mailEnabled:props.getProperty('QMS_MAIL_ENABLED')==='true',
+  trackingOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(login),
+  appOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(app),
+  deploymentMustBeUpdated:true
+ };
+ console.info('qms_access_mail_health',JSON.stringify(result));
+ return result;
 }
