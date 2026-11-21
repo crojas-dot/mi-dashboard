@@ -587,31 +587,47 @@ function qmsMailEscape_(value) {
   });
 }
 
-/** Encabezado único para Quejas, invitaciones y códigos de verificación. */
+/** Identidad compartida: texto institucional a la izquierda y logo a la derecha. */
 function qmsMailHeader_(identidad) {
-  var properties = PropertiesService.getScriptProperties();
-  var origin = [properties.getProperty('APP_PUBLIC_URL'), properties.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')].find(function(value) {
+  var properties = typeof PropertiesService !== 'undefined' ? PropertiesService.getScriptProperties() : { getProperty: function () { return ''; } };
+  var origin = [properties.getProperty('APP_PUBLIC_URL'), properties.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')].find(function (value) {
     return /^https:\/\/(?:[a-z0-9-]+\.)+[a-z]{2,}\/?$/i.test(value) && !/\.localhost\/?$/i.test(value);
   }) || '';
   origin = origin.replace(/\/$/, '');
   var style = identidad && identidad.estilo || properties.getProperty('EMAIL_LOGO_STYLE');
-  // Hasta disponer del emblema oficial cuadrado, el archivo horizontal es el respaldo.
   var square = style === 'cuadrado' && identidad && identidad.cuadrado;
   var url = square ? identidad.cuadrado : (identidad && identidad.encabezado || (origin && origin + '/logo-email-horizontal.png'));
   var width = square ? 64 : 240;
   var height = square ? 64 : 80;
-  var logo = url ? '<img src="' + qmsMailEscape_(url) + '" alt="ECA – Ente Costarricense de Acreditación" width="' + width + '" height="' + height
-    + '" style="display:block;border:0;outline:none;text-decoration:none;max-width:100%;height:auto;">' : '';
-  var caption = 'font-size:13px;line-height:1.4;color:#6c757d';
-  var cells = square
-    ? '<tr><td width="64" style="width:64px;vertical-align:middle">' + logo + '</td><td style="padding-left:12px;vertical-align:middle">'
-      + '<div style="font-size:16px;line-height:1.4;font-weight:600;color:#212529">QMS ECA</div><div style="' + caption + '">Gestión de Calidad</div></td></tr>'
-    : (logo ? '<tr><td align="left">' + logo + '</td></tr>' : '') + '<tr><td style="' + caption + (logo ? ';padding-top:8px' : '') + '">QMS ECA · Gestión de Calidad</td></tr>';
-  return '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse">' + cells + '</table>';
+  var logo = url ? '<img src="' + qmsMailEscape_(url) + '" alt="ECA – Ente Costarricense de Acreditación" width="' + width + '" height="' + height +
+    '" style="display:block;margin-left:auto;border:0;outline:none;text-decoration:none;width:auto;max-width:100%;height:auto">' : '';
+  return '<table role="presentation" title="QMS ECA · Gestión de Calidad" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr>' +
+    '<td style="vertical-align:middle;padding-right:12px"><div style="font-size:20px;line-height:1.3;font-weight:600;color:#212529">QMS ECA</div>' +
+    '<div style="padding-top:4px;font-size:14px;line-height:1.4;color:#6c757d">Gestión de Calidad</div></td>' +
+    (logo ? '<td width="44%" align="right" style="width:44%;vertical-align:middle">' + logo + '</td>' : '') +
+    '</tr></table>';
+}
+
+/** Tarjeta de correo única: reproduce encabezado, separadores, cuerpo y pie del formulario público. */
+function qmsMailFrame_(title, subtitle, content, footer, identidad, folio) {
+  var subtitleText = folio
+    ? 'Número de registro <span style="padding-left:10px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(folio) + '</span>'
+    : qmsMailEscape_(subtitle || '');
+  return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
+    '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
+    '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td align="center" style="padding:0">' +
+    '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
+    '<tr><td style="padding:20px;border-bottom:1px solid #dee2e6">' + qmsMailHeader_(identidad) + '</td></tr>' +
+    '<tr><td style="padding:20px;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' +
+    '<h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + qmsMailEscape_(title) + '</h1>' +
+    '<p style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.5;color:#6c757d">' + subtitleText + '</p>' +
+    content + '</td></tr>' +
+    '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">' +
+    qmsMailEscape_(footer) + '</td></tr></table></td></tr></table></body></html>';
 }
 
 function qmsMailHtml_(message, identidad) {
-  var title = {recibido:'Registro recibido',final:'Resultado de la gestión',
+  var title = {recibido:'Queja registrada',final:'Resultado de la gestión',
     interno_recibido:'Nueva queja recibida',interno_evaluacion_1:'Evaluación por vencer',interno_asignacion:'Investigación asignada',
     interno_investigacion_5:'Investigación por vencer',interno_investigacion_3:'Investigación por vencer',
     interno_evaluacion_vencida:'Evaluación vencida',interno_investigacion_vencida:'Investigación vencida',
@@ -626,17 +642,11 @@ function qmsMailHtml_(message, identidad) {
   }).map(function (paragraph) {
     return '<p style="margin:0 0 12px;color:#343a40;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' + qmsMailEscape_(paragraph).replace(/\n/g,'<br>') + '</p>';
   }).join('');
-  return '<!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>' +
-    '<body style="margin:0;padding:16px 8px;background:#f4f7f6;font-family:Arial,Helvetica,sans-serif;color:#212529">' +
-    '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse;table-layout:fixed"><tr><td align="center" style="padding:0">' +
-    '<table role="presentation" width="100%" style="width:100%;max-width:760px;table-layout:fixed;border:1px solid #dee2e6;border-radius:6px;background:#ffffff;border-spacing:0">' +
-    '<tr><td style="padding:16px 20px;border-bottom:1px solid #dee2e6">' +
-    qmsMailHeader_(identidad) + '</td></tr>' +
-    '<tr><td style="padding:20px"><h1 style="margin:0 0 10px;font-size:22px;line-height:1.3;font-weight:600;color:#212529">' + title + '</h1>' +
-    '<p style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #dee2e6;font-size:14px;line-height:1.5;color:#6c757d;overflow-wrap:anywhere;word-break:break-word">Número de registro ' +
-    '<span style="margin-left:8px;font-size:18px;font-weight:600;color:#024796">' + qmsMailEscape_(message.folio) + '</span></p>' + paragraphs +
-    (tracking && (message.kind === 'recibido' || message.kind === 'solicitud_informacion') ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">' + (message.kind === 'solicitud_informacion' ? 'Responder solicitud' : 'Consultar mi trámite') + '</a></p>' +
-      '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>' : '') + '</td></tr>' +
-    '<tr><td style="padding:12px 20px;border-top:1px solid #dee2e6;font-size:12px;line-height:1.5;color:#6c757d">Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.</td></tr>' +
-    '</table></td></tr></table></body></html>';
+  var action = tracking && (message.kind === 'recibido' || message.kind === 'solicitud_informacion')
+    ? '<p style="margin:18px 0 10px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:12px 20px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-size:16px;font-weight:600;line-height:1.4">' +
+      (message.kind === 'solicitud_informacion' ? 'Responder solicitud' : 'Consultar mi trámite') + '</a></p>' +
+      '<p style="margin:0;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>'
+    : '';
+  return qmsMailFrame_(title, '', paragraphs + action,
+    'Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.', identidad, message.folio);
 }
