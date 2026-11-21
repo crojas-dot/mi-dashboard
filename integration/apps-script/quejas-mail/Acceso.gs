@@ -1,13 +1,14 @@
 /** Envío de acceso transitorio: el recibo solo contiene identificadores y resultado. */
-function qmsAccessMailPost_(e) {
+function qmsAccessMailPost_(e, diagnostic) {
  var configuration,request,stage='configuration',authenticated=false;
+ if (diagnostic) diagnostic.phase=stage;
  try {
   configuration=qmsMailConfiguration_();
-  stage='envelope';
+  stage='envelope'; if (diagnostic) diagnostic.phase=stage;
   if(!e||!e.postData||Utilities.newBlob(e.postData.contents).getBytes().length>4096)throw new Error('invalid');
   request=qmsMailVerify_(JSON.parse(e.postData.contents),'access_delivery_request',configuration.secret,2048);
   authenticated=true;
-  stage='payload';
+  stage='payload'; if (diagnostic) diagnostic.phase=stage;
   var p=request.payload;
   var fields=['eventId','kind','to'].concat(p.kind==='temporary_access'?['name','password','url']:p.kind==='invitation'?['url']:['code']);
   if(p.kind==='invitation'&&p.local===true)fields.push('local');
@@ -30,7 +31,7 @@ function qmsAccessMailPost_(e) {
    // Las URLs de acceso están limitadas a orígenes administrados; no aceptar enlaces
    // externos aun cuando el cuerpo HMAC sea válido. El fallback corresponde al
    // dominio de producción de este mismo proyecto ECA-QMS.
-   stage='login_origin';
+   stage='login_origin'; if (diagnostic) diagnostic.phase=stage;
    var props=PropertiesService.getScriptProperties();
    var origins=[props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN'),props.getProperty('APP_PUBLIC_URL'),
      'https://mi-dashboard-iota.vercel.app','https://mi-dashboard-eca-s-projects2.vercel.app'];
@@ -39,11 +40,13 @@ function qmsAccessMailPost_(e) {
       p.url===origin.replace(/\/$/,'')+'/login';
    });
    if(!approved)throw new Error('invalid');
-   stage='credential_validation';
+   stage='credential_validation'; if (diagnostic) diagnostic.phase=stage;
    if(typeof p.name!=='string'||!p.name.trim()||p.name.length>200||/[\r\n]/.test(p.name)
      ||typeof p.password!=='string'||!/^[!-~]{14,72}$/.test(p.password))throw new Error('invalid');
   }
  }catch(_){
+  if (diagnostic) { diagnostic.phase=stage; diagnostic.authenticated=authenticated;
+    diagnostic.eventIdValid=!!(request&&request.payload&&qmsMailUuid_(request.payload.eventId)); }
   // Únicamente registrar la fase. NUNCA registrar destinatario, contraseña,
   // HMAC, nonce o URL en las ejecuciones de Apps Script.
   console.warn('qms_access_mail_validation_rejected',JSON.stringify({stage:stage,authenticated:authenticated}));
@@ -57,6 +60,12 @@ function qmsAccessMailPost_(e) {
   return ContentService.createTextOutput(JSON.stringify({error:'invalid_access_delivery'})).setMimeType(ContentService.MimeType.JSON);
  }
  function reply(outcome,code){return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('access_delivery_receipt',{eventId:p.eventId,requestNonce:request.envelope.nonce,outcome:outcome,...(code?{code:code}:{})},configuration.secret))).setMimeType(ContentService.MimeType.JSON);}
+ // Prueba local protegida: aunque la validación fallara en detectar datos inválidos,
+ // nunca se permite a la autoprueba llegar a MailApp ni a la cola.
+ if (diagnostic && diagnostic.preventSend===true) {
+  diagnostic.phase='unexpected_validation_success';
+  return reply('failed','event_conflict');
+ }
  if(!configuration.enabled)return reply('retry','disabled');
  var lock=LockService.getScriptLock();if(!lock.tryLock(5000))return reply('retry','ledger_busy');
  try {
@@ -115,68 +124,94 @@ function qmsAccessMailContent_(p) {
 }
 
 /**
- * Diagnóstico LOCAL SIN ENVÍO. Nunca registra datos de usuarios ni secretos.
- * Comparar el validador activo: si faltan marcadores, un archivo antiguo
- * podría estar sobrescribiendo la definición más reciente de la función.
+ * Diagnóstico local seguro de acceso: NO envía correos ni imprime secretos.
+ * Verifica funcionamiento real, no String(función), que no es un test fiable
+ * para comprobar las implementaciones de Google Apps Script.
  */
 function qmsAccessMailHealthCheck() {
  var props=PropertiesService.getScriptProperties();
  var secret=props.getProperty('QMS_MAIL_SECRET')||'';
  var origin=props.getProperty('QMS_PUBLIC_TRACKING_ORIGIN')||'';
  var app=props.getProperty('APP_PUBLIC_URL')||'';
- var handler=String(qmsAccessMailPost_),router=String(doPost);
+ var probe=qmsAccessMailSelfTest();
  var result={
   handler:'access_delivery_request/temporary_access',
+  diagnosticRevision:'2026-11-21-fases',
   secretPresent:Utilities.newBlob(secret).getBytes().length>=32,
   signingSecretConfigured:Utilities.newBlob(secret).getBytes().length>=32,
   mailEnabled:props.getProperty('QMS_MAIL_ENABLED')==='true',
   trackingOriginConfigured:/^https:\/\/[a-z0-9.-]+$/i.test(origin),
   trackingOriginValid:/^https:\/\/[a-z0-9.-]+$/i.test(origin),
   appOriginValid:!app||/^https:\/\/[a-z0-9.-]+$/i.test(app),
-  handlerHasSignedDiagnostics:handler.indexOf('login_origin_mismatch')>=0&&handler.indexOf('qms_access_mail_validation_rejected')>=0,
-  doPostRoutesAccess:router.indexOf('access_delivery_request')>=0&&router.indexOf('qmsAccessMailPost_')>=0,
+  selfSignedEnvelopeValid:probe.roundTripValid,
+  handlerHasSignedDiagnostics:probe.direct.type==='signed_receipt'&&probe.direct.code==='invalid_access_payload',
+  doPostRoutesAccess:probe.doPost.type==='signed_receipt'&&probe.doPost.code==='invalid_access_payload',
   deploymentMustBeUpdated:true
  };
- result.ready=result.secretPresent&&result.mailEnabled&&result.handlerHasSignedDiagnostics&&result.doPostRoutesAccess;
+ result.ready=result.secretPresent&&result.mailEnabled&&result.trackingOriginValid&&
+  result.handlerHasSignedDiagnostics&&result.doPostRoutesAccess;
  console.info('qms_access_mail_health',JSON.stringify(result));
  return result;
 }
 
 /**
- * Prueba de contrato SIN ENVÍO.
- * Genera una solicitud HMAC local deliberadamente inválida (nombre vacío),
- * de manera que siempre debe detenerse antes de MailApp.sendEmail.
- * Si la función devuelve invalid_access_delivery en vez de un recibo firmado
- * invalid_access_payload, hay una implementación anterior/duplicada o
- * un problema en el armado del evento que hay que inspeccionar.
+ * Autoprueba local de un mensaje firmado con datos deliberadamente inválidos.
+ * Un indicador distinto de valid=true señala el punto concreto del fallo.
+ * Recibe un segundo parámetro privado que impide llegar a MailApp aun cuando
+ * un futuro cambio accidental omita la validación de credenciales.
  */
 function qmsAccessMailSelfTest() {
- var secret=qmsMailConfiguration_().secret;
- var eventId=Utilities.getUuid();
- var envelope=qmsMailSign_('access_delivery_request',{
-  eventId:eventId,kind:'temporary_access',to:'diagnostic@example.invalid',
-  name:'',password:'not-a-real-credential',url:'https://mi-dashboard-iota.vercel.app/login'
- },secret);
- var raw=JSON.stringify(envelope);
- var request={postData:{contents:raw}};
- var steps=[['direct',qmsAccessMailPost_],['doPost',doPost]];
- var results={};
- steps.forEach(function(entry) {
-  try {
-   var response=entry[1](request);
-   var output=typeof response==='string'?response:response.getContent();
-   if (output.length>4096) throw new Error('oversized');
-   var parsed=JSON.parse(output);
-   if(parsed.error){results[entry[0]]={type:'generic_rejection'};return;}
-   var verified=qmsMailVerify_(parsed,'access_delivery_receipt',secret,2048).payload;
-   results[entry[0]]={type:'signed_receipt',code:verified.code||'',outcome:verified.outcome||''};
-  }catch(_){results[entry[0]]={type:'exception'};}
- });
- var summary={
-  valid:results.direct.type==='signed_receipt'&&results.direct.code==='invalid_access_payload'&&
-   results.doPost.type==='signed_receipt'&&results.doPost.code==='invalid_access_payload',
-  direct:results.direct,doPost:results.doPost
+ var result={
+  diagnosticRevision:'2026-11-21-fases',
+  eventIdValid:false,nonceValid:false,bytesUnderLimit:false,
+  roundTripValid:false,roundTripEventIdMatches:false,
+  direct:{type:'not_executed'},doPost:{type:'not_executed'}
  };
- console.info('qms_access_mail_self_test',JSON.stringify(summary));
- return summary;
+ try {
+  var configuration=qmsMailConfiguration_();
+  var eventId=Utilities.getUuid();
+  result.eventIdValid=qmsMailUuid_(eventId);
+  var envelope=qmsMailSign_('access_delivery_request',{
+   eventId:eventId,kind:'temporary_access',to:'diagnostic@example.invalid',
+   name:'',password:'not-a-real-credential',url:'https://mi-dashboard-iota.vercel.app/login'
+  },configuration.secret);
+  result.nonceValid=qmsMailUuid_(envelope.nonce);
+  var raw=JSON.stringify(envelope);
+  result.bytesUnderLimit=Utilities.newBlob(raw).getBytes().length<=4096;
+  try {
+   var decoded=qmsMailVerify_(JSON.parse(raw),'access_delivery_request',configuration.secret,2048);
+   result.roundTripValid=true;
+   result.roundTripEventIdMatches=decoded.payload.eventId===eventId;
+  }catch(_){ result.failureStage='self_signed_envelope_verification'; }
+  if(!result.roundTripValid||!result.roundTripEventIdMatches||!result.eventIdValid||!result.nonceValid||!result.bytesUnderLimit){
+   result.valid=false;
+   console.info('qms_access_mail_self_test',JSON.stringify(result));
+   return result;
+  }
+  var request={postData:{contents:raw}};
+  var directTrace={preventSend:true};
+  var routedTrace={preventSend:true};
+  [['direct',qmsAccessMailPost_,directTrace],['doPost',doPost,routedTrace]].forEach(function(entry){
+   try {
+    var output=entry[1](request,entry[2]);
+    var text=typeof output==='string'?output:output.getContent();
+    if(text.length>4096)throw new Error('oversized');
+    var parsed=JSON.parse(text);
+    if(parsed.error){
+     result[entry[0]]={type:'generic_rejection',phase:entry[2].phase||'unavailable',
+       authenticated:entry[2].authenticated===true,eventIdValid:entry[2].eventIdValid===true};
+     return;
+    }
+    var receipt=qmsMailVerify_(parsed,'access_delivery_receipt',configuration.secret,2048).payload;
+    result[entry[0]]={type:'signed_receipt',code:receipt.code||'',outcome:receipt.outcome||'',
+      phase:entry[2].phase||'unavailable'};
+   }catch(_){
+    result[entry[0]]={type:'exception',phase:entry[2].phase||'unavailable'};
+   }
+  });
+  result.valid=result.direct.type==='signed_receipt'&&result.direct.code==='invalid_access_payload'&&
+   result.doPost.type==='signed_receipt'&&result.doPost.code==='invalid_access_payload';
+ }catch(_){result.valid=false;result.failureStage='self_test_setup';}
+ console.info('qms_access_mail_self_test',JSON.stringify(result));
+ return result;
 }
