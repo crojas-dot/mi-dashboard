@@ -98,6 +98,18 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   `qmsAccessMailSelfTest()` firma una solicitud deliberadamente inválida
   y comprueba **ambas rutas** sin llamar `MailApp`. Ambas rutas deben
   devolver `signed_receipt/invalid_access_payload`.
+  **Revisión del archivo realmente utilizado:** el código completo compartido
+  por el administrador tiene 846 líneas, una sola función `doPost` y una sola
+  `qmsAccessMailPost_`. El indicador que comparaba
+  `String(qmsAccessMailPost_)` era insuficiente y podía dar un falso negativo;
+  **no diagnosticar duplicados basándose únicamente en ese indicador**.
+  El diagnóstico `2026-11-21-fases` comprueba el sobre firmado mediante
+  `qmsMailVerify_` y reporta formatos de UUID, longitud y fase concreta
+  del rechazo desde ambos manejadores. Usa una solicitud intencionalmente
+  inválida y una barrera `preventSend` para no llamar a MailApp durante QA.
+  Si `roundTripValid=false`, investigar firma/decodificación, no dominio
+  de login. Si es `true` pero el manejador falla, utilizar `direct.phase`
+  y `doPost.phase` para localizar el siguiente paso.
   El registro compartido incluyó el secreto completo; **rotar**
   `QMS_MAIL_SECRET` y `QUEJAS_MAIL_SIGNING_SECRET` coordinadamente
   en sus respectivas plataformas, sin registrarlos ni copiarlos
