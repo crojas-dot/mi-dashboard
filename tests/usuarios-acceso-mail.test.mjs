@@ -34,6 +34,7 @@ function fixture(options={}) {
    return Response.json({enabled:true,endpoint:options.endpoint??'https://script.google.com/macros/s/synthetic/exec'})
   }
   const output=context.doPost({postData:{contents:settings.body}})
+  if(options.rejectBeforeMail)return Response.json({error:'invalid_access_delivery'})
   if(options.forge){const parsed=JSON.parse(output);parsed.signature='0'.repeat(64);return Response.json(parsed)}
   return new Response(output)
  }})
@@ -67,6 +68,14 @@ test('la identidad sin logo o con URL no confiable conserva el logo instituciona
   assert.doesNotMatch(f.sent[0].htmlBody,/attacker\.example/)
   assert.match(f.sent[0].htmlBody,/QMS ECA · Gestión de Calidad/)
  }
+})
+
+test('Google Apps Script rechaza el mensaje antes de MailApp con diagnóstico explícito, sin reintento ciego',async()=>{
+ const f=fixture({rejectBeforeMail:true})
+ const r=await f.send({eventId:randomUUID(),kind:'temporary_access',to:'synthetic@example.test',name:'Usuario sintético',password:'Test!SyntheticPassword123456',url:origin+'/login'})
+ assert.equal(r.status,503)
+ assert.deepEqual(await r.json(),{outcome:'failed',code:'provider_rejected'})
+ assert.equal(f.sent.length,0)
 })
 
 test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
