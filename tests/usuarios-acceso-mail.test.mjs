@@ -64,6 +64,23 @@ test('la identidad sin logo o con URL no confiable conserva el logo instituciona
  }
 })
 
+test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
+ const f=fixture(),eventId=randomUUID(),message={eventId,kind:'temporary_access',to:'synthetic@example.test',
+  name:'Usuario de prueba',password:'A9!synthetic-password-2026',url:origin+'/login'}
+ const response=await f.send(message)
+ assert.equal(response.status,200)
+ assert.equal((await response.json()).outcome,'sent')
+ assert.equal(f.sent.length,1)
+ assert.match(f.sent[0].body,/Usuario: synthetic@example\\.test/)
+ assert.match(f.sent[0].body,/Contraseña temporal:/)
+ assert.match(f.sent[0].body,/72 horas/)
+ assert.match(f.sent[0].body,/cambiarla/)
+ assert.match(f.sent[0].htmlBody,/Acceder a ECA-QMS/)
+ assert.equal((await (await f.send(message)).json()).outcome,'sent')
+ assert.equal(f.sent.length,1)
+ assert.doesNotMatch(JSON.stringify([...f.cache.values()]),/synthetic@example|synthetic-password/)
+})
+
 test('la cuota de acceso agotada devuelve el diagnóstico previo a MailApp', async () => {
  const f=fixture({quota:0})
  assert.deepEqual(await (await f.send(invitation())).json(), {outcome:'failed',code:'quota_exhausted'})
