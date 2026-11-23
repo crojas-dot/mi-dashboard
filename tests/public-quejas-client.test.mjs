@@ -517,7 +517,7 @@ test('todos los adjuntos y la finalización confirmados muestran la tarjeta fina
   });
   const rendered = view.render();
   assert.equal(elementsOfType(rendered, 'form').length, 0);
-  assert.match(textContent(rendered), /Queja registrada/);
+  assert.match(textContent(rendered), /Solicitud registrada/);
   assert.match(textContent(rendered), /Q-SYNTHETIC-001/);
   assert.match(textContent(rendered), /Evidencias adjuntadas:\s+1\s+de\s+1/);
   assert.match(textContent(rendered), /Gestión de Calidad revisará tu queja/);
@@ -530,7 +530,7 @@ test('un folio confirmado permanece visible aunque falle la siguiente lectura de
     receipt: receipt({ submissionId: 'synthetic-submission' }), finalized: true, enviando: false, error: '',
   })
   const rendered = textContent(view.render())
-  assert.match(rendered, /Queja registrada/)
+  assert.match(rendered, /Solicitud registrada/)
   assert.match(rendered, /Q-SYNTHETIC-001/)
   assert.match(rendered, /Conservalo para tus consultas/)
   assert.doesNotMatch(rendered, /Servicio no disponible/)
