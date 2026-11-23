@@ -124,6 +124,7 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
                 <Link
                   key={link.href}
                   href={link.href}
+                  prefetch={false}
                   title={link.label}
                   aria-label={link.label}
                   aria-current={isActive ? 'page' : undefined}

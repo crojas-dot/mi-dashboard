@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState, useMemo, useRef, useDeferredValue, useCallback } from 'react'
+import { Suspense, useState, useMemo, useRef, useCallback } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Queja } from '@/lib/types'
@@ -20,6 +20,7 @@ import QuejaDetalleModal from './components/QuejaDetalleModal'
 import QuejasToolbar from './components/QuejasToolbar'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useHoverPrefetch, type PrefetchConfig } from '@/hooks/useHoverPrefetch'
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { fetchRespuestaCliente, respuestaClienteKey } from '@/lib/queries/useQuejaRespuestaCliente'
 import { fetchQuejaInforme, quejaInformeKey } from '@/lib/queries/useQuejaInforme'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
@@ -32,7 +33,7 @@ import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 
 export default function QuejasPage() {
   const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
+  const { search: term, ready: searchReady } = useDebouncedSearch(search)
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroPlazo, setFiltroPlazo] = useState('')
   const [nuevaOpen, setNuevaOpen] = useState(false)
@@ -48,10 +49,10 @@ export default function QuejasPage() {
   const { data, isLoading: loading, isFetching, error, refetch } = useQuejas({
     page,
     pageSize,
-    search: deferredSearch,
+    search: term,
     estado: filtroEstado,
     plazo: filtroPlazo,
-  })
+  }, searchReady)
   const quejas = useMemo(() => data?.data ?? [], [data?.data])
   const totalCount = data?.count ?? 0
   const queryClient = useQueryClient()
@@ -116,7 +117,7 @@ export default function QuejasPage() {
       <PageHeader title="Quejas" />
 
       <QuejasToolbar search={search} estado={filtroEstado} plazo={filtroPlazo} plazoDisabled={data?.origen === 'legacy'} estados={estadosDisponibles} noVistas={noVistasCount}
-        onSearch={value => { setSearch(value); setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }} onPlazo={value => { setFiltroPlazo(value); setPage(0) }}
+        onSearch={value => { setSearch(value); if (value.trim() !== term) setPage(0) }} onEstado={value => { setFiltroEstado(value); setPage(0) }} onPlazo={value => { setFiltroPlazo(value); setPage(0) }}
         onMarcarVistas={() => marcarTodasVistas(quejaIds)} onNueva={() => setNuevaOpen(true)} />
 
       {/* Reservar solo la ventana de la tabla: sus columnas y la barra de filtros no se recomponen. */}

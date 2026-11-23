@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useDeferredValue, useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
 import { useQueryClient } from '@tanstack/react-query'
 import { Plus, Search } from 'lucide-react'
@@ -30,13 +30,14 @@ import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
 import { estadoQuejaEnTabla } from '@/lib/utils/quejaBandeja'
 import QuejaFechaIngreso from '@/components/quejas/QuejaFechaIngreso'
 import { useQuejasVistas } from '@/hooks/useQuejasVistas'
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { showError } from '@/lib/services/errorToast'
 export default function MisQuejasPage() {
   const user = useAuthStore((s) => s.user)
   const permisos = useAuthStore((s) => s.permisos)
   const puedeCrear = tienePermiso(permisos, 'quejas', false, user?.rol)
   const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
+  const { search: term, ready: searchReady } = useDebouncedSearch(search)
   const [filtroEstado, setFiltroEstado] = useState('')
   const [nuevaOpen, setNuevaOpen] = useState(false)
   const { data: estados = [] } = useCatalogoTipo('estado_queja', 'quejas')
@@ -56,11 +57,11 @@ export default function MisQuejasPage() {
       page,
       pageSize,
       responsableId: user?.id,
-      search: deferredSearch,
+      search: term,
       soloFolio: true,
       estado: filtroEstado,
     },
-    !!user?.id,
+    !!user?.id && searchReady,
   )
   useRealtimeSubscription({ table: data?.origen === 'legacy' ? 'quejas' : 'queja_bandeja_actividad', invalidateKeys: [[...queryKeys.quejas], [...queryKeys.dashboard]] })
   const quejas = data?.data ?? []
@@ -98,7 +99,7 @@ export default function MisQuejasPage() {
         <div role="group" aria-label="Buscar y filtrar mis quejas" className="grid grid-cols-2 items-center gap-3 @min-[720px]:grid-cols-[minmax(180px,1fr)_180px_auto]">
           <div className="relative col-span-2 min-w-0 @min-[720px]:col-span-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-qms-muted" aria-hidden="true" />
-            <input aria-label="Buscar folio" placeholder="Buscar folio..." className="ui-field h-11 pl-10 pr-4 @min-[720px]:h-10" value={search} onChange={event => { setSearch(event.target.value); setPage(0) }} />
+            <input aria-label="Buscar folio" placeholder="Buscar folio..." className="ui-field h-11 pl-10 pr-4 @min-[720px]:h-10" value={search} onChange={event => { const value = event.target.value; setSearch(value); if (value.trim() !== term) setPage(0) }} />
           </div>
           <Select aria-label="Estado" className="h-11 @min-[720px]:h-10" value={filtroEstado} onChange={event => { setFiltroEstado(event.target.value); setPage(0) }}>
             <option value="">Estados</option>{estadosDisponibles.map(option => <option key={option.valor} value={option.valor}>{option.etiqueta}</option>)}

@@ -287,13 +287,21 @@ test('un seguimiento activo con configuración incompleta no anuncia compatibili
   assert.deepEqual(await response.json(), { enabled: false })
 })
 
-test('la página pública solo recibe disponibilidad y nunca secretos de configuración', () => {
+test('la página pública solo recibe disponibilidad y nunca secretos de configuración', async () => {
   for (const available of [false, true]) {
+    const initialLogo = '/imagen-de-prueba.webp'
     const page = loadModule('app/q/seguimiento/page.tsx', {
       '@/lib/server/publicTracking': { publicTrackingAvailable: () => available },
+      '@/lib/server/identidad-publica': {
+        identidadFormularioInicial: async () => ({ formulario_encabezado: initialLogo, login_fondo: '' }),
+      },
+      '@/components/identidad/FondoIdentidad': { default: 'FondoIdentidad' },
       '@/app/q/seguimiento/PublicTrackingPage': { default: 'PublicTrackingPage' },
     })
-    assert.deepEqual(JSON.parse(JSON.stringify(page.default().props)), { available })
+    const tree = await page.default()
+    const tracking = tree.props.children.props.children
+    assert.equal(tracking.type, 'PublicTrackingPage')
+    assert.deepEqual(JSON.parse(JSON.stringify(tracking.props)), { available, initialLogo })
   }
   for (const env of [{}, { PUBLIC_TRACKING_ENABLED: 'true' }, { PUBLIC_TRACKING_ENABLED: 'false' }]) {
     const trackingModule = loadModule('lib/server/publicTracking.ts', {}, { process: { env } })

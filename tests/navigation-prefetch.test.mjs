@@ -21,6 +21,7 @@ function navigation(permisos, id = 'perfil-propio') {
 test('hover, foco y tacto precargan Mis Quejas con la misma clave y el responsable propio', async () => {
   const fixture = navigation([{ modulo: 'mis_quejas', leer: true, escribir: false }])
   const link = fixture.links.find(element => element.props.href === '/mis-quejas')
+  assert.equal(link.props.prefetch, false)
   for (const event of ['onMouseEnter', 'onFocus', 'onTouchStart']) link.props[event]()
   assert.equal(fixture.preloads.length, 3)
   for (const config of fixture.preloads) {

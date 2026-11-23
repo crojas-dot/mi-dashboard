@@ -1,6 +1,6 @@
 'use client'
 
-import { useDeferredValue, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus, Search } from 'lucide-react'
 import RolesAccesos from './components/RolesAccesos'
 import UsuarioAccionesMenu from './components/UsuarioAccionesMenu'
@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/auth-store'
 import { showError, showSuccess } from '@/lib/services/errorToast'
 import { mutateUsuario } from '@/lib/services/usuariosService'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
+import { useDebouncedSearch } from '@/hooks/useDebouncedSearch'
 import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
 import Badge from '@/components/ui/Badge'
 import EmptyState from '@/components/ui/EmptyState'
@@ -36,7 +37,7 @@ export default function UsuariosPage() {
   const invalidateUsuarios = () => queryClient.invalidateQueries({ queryKey: usuariosKey }, { throwOnError: true })
 
   const [search, setSearch] = useState('')
-  const deferredSearch = useDeferredValue(search)
+  const { search: term, ready: searchReady } = useDebouncedSearch(search)
   const [filtroRol, setFiltroRol] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
   const [tab, setTab] = useState<'usuarios' | 'roles'>('usuarios')
@@ -57,10 +58,10 @@ export default function UsuariosPage() {
   }, [user, initialized, router])
 
   const { data: usuarios = [], isLoading, isError } = useUsuarios({
-    search: deferredSearch,
+    search: term,
     rol: filtroRol || undefined,
     estado: filtroEstado || undefined,
-  }, initialized && user?.rol === 'admin')
+  }, initialized && user?.rol === 'admin' && searchReady)
 
   if (!initialized || user?.rol !== 'admin') {
     return <LoadingSkeleton label="Verificando acceso…" />
@@ -155,7 +156,7 @@ export default function UsuariosPage() {
             aria-label="Buscar por nombre o correo"
             className="ui-field h-11 pl-9 pr-3 lg:h-10"
             value={search}
-            onChange={(e) => { setSearch(e.target.value); setPagina(1) }}
+            onChange={event => { const value = event.target.value; setSearch(value); if (value.trim() !== term) setPagina(1) }}
           />
         </div>
         <Select aria-label="Rol" className="h-11 lg:h-10" value={filtroRol} onChange={(e) => { setFiltroRol(e.target.value); setPagina(1) }}>

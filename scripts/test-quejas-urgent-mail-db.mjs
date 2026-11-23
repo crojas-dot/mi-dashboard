@@ -60,7 +60,7 @@ export async function verifyUrgentMail({ pool, service, newCase, check, rejects 
   await pool.query(deployedRule)
   const authorize = (id, token) => service('select public.qms_mail_authorize_v2($1,$2) as allowed', [id, token])
   await rejects(() => authorize(a[0].id, a[0].claim_token), '42501', 'The previous mail authorization fails on the private schema')
-  await pool.query(fs.readFileSync('supabase/migrations/20261120224355_qms_mail_authorize_private_rules.sql', 'utf8'))
+  await pool.query(fs.readFileSync('supabase/migrations/20261121190136_qms_mail_authorize_private_rules.sql', 'utf8'))
   check(!(await authorize(a[0].id, a[0].claim_token))[0].allowed, 'A recipient mismatch still blocks delivery')
   await pool.query('update public.queja_mail_outbox o set destinatario=lower(btrim(q.email_cliente)) from public.quejas q where q.id=o.queja_id and o.id=$1', [a[0].id])
   check((await authorize(a[0].id, a[0].claim_token))[0].allowed, 'A valid leased email still reaches the authorization step')

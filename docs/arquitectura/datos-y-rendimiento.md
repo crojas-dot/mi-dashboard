@@ -33,7 +33,7 @@ en Supabase está pendiente con la migración del avatar y la autoría de notas.
 | Configuración, catálogos, SLA, permisos | 10 min | 30 min |
 
 - Global: `refetchOnWindowFocus=false`, `refetchOnMount=true` y `refetchOnReconnect=true` (solo obsoletos), `retryRead` con máximo un reintento recuperable y ninguno para 401/403/validación; mutaciones sin retry.
-- Quejas/listado y estadísticas conservan `refetchOnMount:'always'` y focus=true. Notificaciones hacen polling cada 60 s y pueden deshabilitar la consulta por preferencias.
+- La bandeja de Quejas y Mis Quejas reutiliza páginas frescas durante 30 s. Refresca al montar, enfocarse o reconectar si la página está obsoleta. El RPC de estadísticas usa `refetchOnMount:'always'`. Notificaciones hacen polling cada 60 s y pueden deshabilitar la consulta por preferencias.
 - Hooks analíticos no montados actualmente y zona horaria tienen TTL propios de 5 min; no asumir que el TTL global reemplaza cada override.
 - `pagination.ts`: páginas de 25, count exacto, filtro de estado antes de range, orden principal descendente + `id` ascendente. Se usa en Auditorías, Documentos, Procesos, Reuniones, Riesgos y SACP.
 - Quejas: filtros folio/cliente, estado, prioridad, responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
@@ -67,6 +67,8 @@ en Supabase está pendiente con la migración del avatar y la autoría de notas.
 - Usuarios comparte `lib/services/apiClient.ts` (Bearer/signal), `usuariosService.ts` (mutación HTTP sin reintento) y `lib/hooks/useOperationLock.ts` (ref síncrono y estado visual). Alta/edición, delete, reset y cambio de estado recuperan la carga ante fallo; la propia cuenta omite rol/estado disabled. Un error de refresco posterior a una escritura confirmada no vuelve a enviar la mutación. Los errores de escritura conservan el borrador.
 
 ### Reglas de rendimiento que deben conservarse
+
+La [auditoría del 23 de noviembre](../auditoria-rendimiento-2026-11-23.md) registra los planes y las mediciones locales. El menú y los indicadores desactivan el prefetch automático de rutas de Next. La precarga de TanStack Query se activa por intención.
 
 - Mostrar caché fresca al volver a un módulo y refrescar según sus reglas; no borrar datos globalmente al navegar. Cambiar de usuario/rol real/vista sí cambia el ámbito y vacía la caché anterior.
 - Compartir claves y queryFn entre precarga y vista: el dashboard usa cuatro recursos compartidos para indicadores/tareas, frente a seis lecturas anteriores. Estadísticas de Quejas y actividad son consultas adicionales independientes; no afirmar que toda la página hace únicamente cuatro requests.

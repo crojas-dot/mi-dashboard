@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/services/apiClient'
 import { queryKeys } from './queryKeys'
 import type { UserAccessDirectory } from '@/lib/types/access'
@@ -26,10 +26,11 @@ export async function fetchUsuarios(params?: {
   rol?: string
   estado?: string
 }, signal?: AbortSignal): Promise<Usuario[]> {
+  const { search, rol, estado } = normalizeUsuariosParams(params)
   const qs = new URLSearchParams()
-  if (params?.search) qs.set('search', params.search)
-  if (params?.rol) qs.set('rol', params.rol)
-  if (params?.estado) qs.set('estado', params.estado)
+  if (search) qs.set('search', search)
+  if (rol) qs.set('rol', rol)
+  if (estado) qs.set('estado', estado)
   const res = await apiFetch(`/api/usuarios?${qs.toString()}`, { signal })
   if (!res.ok) throw Object.assign(new Error('No se pudo cargar el listado de usuarios'), { status: res.status })
   return (await res.json()) as Usuario[]
@@ -41,7 +42,7 @@ function normalizeUsuariosParams(params?: {
   estado?: string
 }) {
   return {
-    search: params?.search ?? '',
+    search: params?.search?.trim() ?? '',
     rol: params?.rol ?? '',
     estado: params?.estado ?? '',
   }
@@ -58,6 +59,7 @@ export function useUsuarios(
   return useQuery({
     queryKey: usuariosQueryKey(params),
     queryFn: ({ signal }) => fetchUsuarios(params, signal),
+    placeholderData: keepPreviousData,
     enabled,
     refetchOnWindowFocus: true,
   })

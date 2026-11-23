@@ -536,7 +536,7 @@ test('instrumentación fija Basic en los cinco POST y config usa rewrites oficia
   let configured
   loadModule('instrumentation-client.ts', { 'botid/client/core': { initBotId: options => { configured = options } } })
   assert.deepEqual(JSON.parse(JSON.stringify(configured.protect)), ['/api/public/quejas','/api/drive/upload-public','/api/public/quejas/finalizar','/api/public/seguimiento','/api/public/seguimiento/documento'].map(path => ({ path, method: 'POST', advancedOptions: { checkLevel: 'basic' } })))
-  const config = loadModule('next.config.ts').default
+  const config = loadModule('next.config.ts', {}, { process: { env: {} } }).default
   const rewrites = await config.rewrites()
   assert.equal(rewrites.length, 2)
   assert.ok(rewrites.every(rule => rule.destination.startsWith('https://api.vercel.com/bot-protection/')))

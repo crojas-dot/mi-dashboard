@@ -21,7 +21,7 @@ function normalizeQuejasParams(params: QuejasParams = {}): Required<QuejasParams
   return {
     page: params.page ?? 0,
     pageSize: params.pageSize ?? 25,
-    search: params.search ?? '',
+    search: params.search?.trim() ?? '',
     estado: params.estado ?? '',
     prioridad: params.prioridad ?? '',
     responsableId: params.responsableId ?? '',
@@ -87,7 +87,6 @@ export function useQuejas(params: QuejasParams = {}, enabled = true) {
     queryFn: ({ signal }) => fetchQuejas(params, signal),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
-    refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     enabled,
   })

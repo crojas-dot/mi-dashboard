@@ -61,7 +61,7 @@ function IndicadoresBlock() {
         <h2 id="dashboard-modulos-title" className="mb-4 text-lg font-semibold text-qms-dark">Seguimiento por módulo</h2>
         <div className="space-y-4">
         {indicadores.map((ind) => (
-          <Link key={ind.label} href={ind.url} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-sm text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[190px_minmax(0,1fr)_48px]">
+          <Link key={ind.label} href={ind.url} prefetch={false} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-sm text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[190px_minmax(0,1fr)_48px]">
             <span>{ind.label}</span>
             <div aria-hidden="true" className="order-3 col-span-2 h-5 overflow-hidden rounded-sm bg-gray-100 sm:order-none sm:col-span-1">
               <div className={`h-full ${indicatorBg[ind.color] || 'bg-qms-primary'}`} style={{ width: `${Math.max(0, ind.valor) / maxIndicador * 100}%` }} />
