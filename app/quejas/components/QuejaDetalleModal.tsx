@@ -773,7 +773,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           </div>}
           {!expanded && estadoActual !== 'Recibido' && workflowActions}
           {!expanded && mailAlerts}
-          {!expanded && reopenAction}}
+          {!expanded && reopenAction}
         </CaseAction>}>
             {readOnlyStage ? readOnlyDocument : qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
