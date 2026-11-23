@@ -42,7 +42,7 @@ export async function signIn(email: string, password: string): Promise<LoginResu
     return { error: 'Tu cuenta está inactiva. Contacta al administrador.' }
   }
 
-  return { user, authId: data.user.id,accessManaged:access.managed }
+  return { user, authId: data.user.id, access, accessManaged: access.managed }
 }
 
 export async function signOut(): Promise<void> {
