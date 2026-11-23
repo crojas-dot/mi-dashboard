@@ -177,7 +177,7 @@ test('Apps Script conserva hash legacy, integra URL en hash nuevo y solo carga e
   assert.equal(script.qmsMailValidMessage_(message, true), true)
   const html = script.qmsMailHtml_(message)
   assert.match(html, /Consultar mi trámite/)
-  assert.match(html, /sin contraseña/)
+  assert.match(html, /Enlace personal/)
   assert.match(html, /href="https:\/\/qms\.example\.test\/q\/seguimiento#clave=/)
   assert.match(html, /max-width:900px/)
   assert.doesNotMatch(html, /Seguimiento privado:/)
