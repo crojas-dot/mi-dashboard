@@ -102,10 +102,10 @@
   background: #F3F6FB;
 }
 
-/* Quejas ampliadas: transparencia original de CoreUI al 10% con azul ECA sobre el gris del lienzo.
+/* Quejas ampliadas: fondo gris original con velo azul ECA (estilo CoreUI).
    Sin marco ni esquinas redondeadas: mismo panel rectangular de main. */
 [data-case-coreui-docs-panel="true"] {
-  background-color: color-mix(in srgb, var(--color-qms-primary) 10%, transparent);
+  background: linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB;
   border: 0;
   border-radius: 0;
   box-shadow: none;
