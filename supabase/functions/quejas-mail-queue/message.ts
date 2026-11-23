@@ -65,21 +65,21 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
 }
 
 export function quejaMailMessage(row: QuejaMailSnapshot, options: { trackingUrl?: string } = {}) {
-  const base = `Queja ${row.folio}`
+  const base = `Solicitud ${row.folio}`
   const messages = {
-    recibido: { subject: `${base}: recibido`, body: `Recibimos tu queja con el número ${row.folio}.\n\nGestión de Calidad revisará su procedencia dentro del plazo de 3 días hábiles. Conservá este número para dar seguimiento.` },
-    final: { subject: `${base}: comunicación final`, body: `La revisión de tu queja ${row.folio} concluyó con el estado: ${row.estado}.${row.numero_oficio ? `\n\nNúmero de oficio: ${row.numero_oficio}.` : ''}\n\nPara consultar la comunicación de resolución, contactá a Gestión de Calidad indicando ese número de queja.` },
-    interno_recibido: { subject: `${base}: nueva recepción`, body: `Se recibió la queja ${row.folio}.\n\nGestión de Calidad dispone de 3 días hábiles para evaluar su procedencia. Revisá el expediente y registrá la decisión en el sistema.` },
-    interno_evaluacion_1: { subject: `${base}: evaluación por vencer`, body: `La evaluación de la queja ${row.folio} vence en 1 día hábil.\n\nRevisá el expediente y registrá la decisión de procedencia en el sistema.` },
-    interno_asignacion: { subject: `${base}: investigación asignada`, body: `Se te asignó la investigación de la queja ${row.folio}.\n\nEl plazo de investigación es de 15 días hábiles desde la decisión de procedencia. Revisá el expediente y registrá el trabajo en el sistema.` },
-    interno_investigacion_5: { subject: `${base}: investigación por vencer`, body: `La investigación de la queja ${row.folio} vence en 5 días hábiles.\n\nRevisá su avance y coordiná las acciones pendientes en el sistema.` },
-    interno_investigacion_3: { subject: `${base}: investigación por vencer`, body: `La investigación de la queja ${row.folio} vence en 3 días hábiles.\n\nRevisá su avance y completá las acciones pendientes en el sistema.` },
-    interno_evaluacion_vencida: { subject: `${base}: evaluación vencida`, body: `El plazo de evaluación de la queja ${row.folio} venció.\n\nRevisá el expediente y registrá la decisión de procedencia en el sistema.` },
-    interno_investigacion_vencida: { subject: `${base}: investigación vencida`, body: `El plazo de investigación de la queja ${row.folio} venció.\n\nRevisá el expediente y coordiná la conclusión de las acciones pendientes en el sistema.` },
-    solicitud_informacion: { subject: `${base}: solicitud de información`, body: 'Respondé desde tu enlace privado.' },
-    interno_respuesta_cliente: { subject: `${base}: respuesta del cliente`, body: 'Revisá la información nueva del cliente.' },
-    interno_devolucion: { subject: `${base}: corrección requerida`, body: 'Corregí la propuesta de resolución.' },
-    interno_reapertura: { subject: `${base}: reapertura`, body: 'Retomá la investigación del expediente.' },
+    recibido: { subject: `${base}: recepción confirmada`, body: `Confirmamos la recepción de su solicitud, folio ${row.folio}.\n\nGestión de Calidad realizará la evaluación inicial en un plazo de 3 días hábiles.` },
+    final: { subject: `${base}: comunicación final`, body: `La evaluación de su solicitud, folio ${row.folio}, ha concluido.${row.numero_oficio ? `\n\nNúmero de oficio: ${row.numero_oficio}.` : ''}\n\nLa comunicación de respuesta contiene el resultado de la gestión.` },
+    interno_recibido: { subject: `${base}: nueva recepción`, body: `Se recibió la solicitud ${row.folio}.\n\nGestión de Calidad dispone de 3 días hábiles para evaluar su procedencia. Revise el expediente y registre la decisión en el sistema.` },
+    interno_evaluacion_1: { subject: `${base}: evaluación por vencer`, body: `La evaluación del expediente ${row.folio} vence en 1 día hábil.\n\nRevise el expediente y registre la decisión de procedencia en el sistema.` },
+    interno_asignacion: { subject: `${base}: investigación asignada`, body: `Se le asignó la investigación del expediente ${row.folio}.\n\nEl plazo de investigación es de 15 días hábiles desde la decisión de procedencia. Revise el expediente y registre el trabajo en el sistema.` },
+    interno_investigacion_5: { subject: `${base}: investigación por vencer`, body: `La investigación del expediente ${row.folio} vence en 5 días hábiles.\n\nRevise su avance y coordine las acciones pendientes en el sistema.` },
+    interno_investigacion_3: { subject: `${base}: investigación por vencer`, body: `La investigación del expediente ${row.folio} vence en 3 días hábiles.\n\nRevise su avance y complete las acciones pendientes en el sistema.` },
+    interno_evaluacion_vencida: { subject: `${base}: evaluación vencida`, body: `El plazo de evaluación del expediente ${row.folio} venció.\n\nRevise el expediente y registre la decisión de procedencia en el sistema.` },
+    interno_investigacion_vencida: { subject: `${base}: investigación vencida`, body: `El plazo de investigación del expediente ${row.folio} venció.\n\nRevise el expediente y coordine la conclusión de las acciones pendientes en el sistema.` },
+    solicitud_informacion: { subject: `${base}: solicitud de información`, body: 'Responda mediante su enlace privado.' },
+    interno_respuesta_cliente: { subject: `${base}: respuesta del cliente`, body: 'Revise la información nueva del cliente.' },
+    interno_devolucion: { subject: `${base}: corrección requerida`, body: 'Corrija la propuesta de resolución.' },
+    interno_reapertura: { subject: `${base}: reapertura`, body: 'Retome la investigación del expediente.' },
     interno_recordatorio_3: { subject: `${base}: plazo próximo`, body: 'El plazo vence en 3 días hábiles.' },
     interno_recordatorio_1: { subject: `${base}: plazo urgente`, body: 'El plazo vence en 1 día hábil.' },
     interno_escalamiento_1: { subject: `${base}: seguimiento requerido`, body: 'Calidad debe verificar el avance antes del vencimiento.' },
