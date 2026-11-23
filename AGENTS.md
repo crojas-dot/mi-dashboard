@@ -148,7 +148,7 @@ de correo de acceso; los correos ya enviados no cambian retroactivamente.
 
 - Respetar el working tree y consultar el AGENTS.md del subdirectorio aplicable.
 - Leer la guía local de Next instalada antes de escribir código Next. Usar proxy.ts; no añadir middleware.ts junto a él.
-- Apariencia: leer [docs/visual-patterns.md](docs/visual-patterns.md). El kit activo es Tailwind v4 sin prefijo, sin CoreUI/Bootstrap.
+- Apariencia: leer [docs/visual-patterns.md](docs/visual-patterns.md). El kit activo es Tailwind v4 sin prefijo, sin CoreUI/Bootstrap. Respetar las superficies/tarjetas existentes; no añadir adornos, barras verticales de color, `border-l-4` ni contenedores anidados que cambien el ancho y la jerarquía. En correos solo destacar la credencial con borde uniforme sutil.
 - Supabase: leer .agents/skills/supabase/SKILL.md. Para SQL/esquema/RLS/índices, leer también supabase-postgres-best-practices y las referencias pertinentes.
 - Antes de cambiar DB, consultar esquema, policies y grants efectivos. SQL histórico y documentación son referencias; RLS habilitada no demuestra autorización correcta.
 - No copiar .env, claves, tokens, contraseñas ni datos privados a logs, documentación, prompts o fixtures. Documentar nombres, nunca valores secretos.
@@ -179,7 +179,7 @@ de correo de acceso; los correos ya enviados no cambian retroactivamente.
 | Ciclo de trabajo en Mis Quejas | app/mis-quejas/components/MisQuejasEtapas.tsx y etapasResponsable.ts; QuejaColaboradorPanel.tsx; lectura por expediente en useQuejaAsignada.ts |
 | Historial y notas en ambos módulos | components/quejas/QuejaNotasPanel.tsx y QuejaHistorial.tsx; hooks/useQuejaNotas.ts; useQuejaHistorial.ts y GET /api/quejas/historial |
 | Mis adjuntos en Evaluación y Resolución | app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx; autor y vínculos de oficio/devolución en etapasResponsable.ts, selección de oficio en QuejaDetalleModal.tsx y de PDF en QuejaRespuestaClienteModal.tsx |
-| Foto personal | components/perfil/MiPerfilModal.tsx, lib/queries/useFotoPerfil.ts y app/api/perfil/avatar/route.ts; bucket privado qms-avatars en la migración 20261117223249, preparada para activar |
+| Mi perfil / seguridad personal / foto | components/perfil/MiPerfilModal.tsx (contraseña, generador, mostrar/copiar, datos personales), lib/services/accessClient.ts y lib/services/passwordGenerator.ts; lib/queries/useFotoPerfil.ts y app/api/perfil/avatar/route.ts; bucket privado qms-avatars en la migración 20261117223249, preparada para activar |
 | Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición |
 | Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente |
 | Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts |
@@ -1163,11 +1163,13 @@ fallos previos de informe/paginación y auditorías conservan su fecha y alcance
 [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-- **Web (verificada el 21 noviembre de 2026):** rama productiva `main`, dominio
-  `mi-dashboard-iota.vercel.app`, estado `READY`, commit
-  `e235dfeac9472d36d0a634b6a2e1ef5a42e0e931` según consulta de
-  Vercel en ese corte. Incluye acceso temporal de 72h, 2FA opcional y diseño
-  público actualizado. No equivale a prueba de entrega de Google Apps Script.
+- **Web (verificada el 23 noviembre de 2026, corte funcional):** rama
+  productiva `main`, dominio `mi-dashboard-iota.vercel.app`, estado `READY`,
+  commit `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`, despliegue
+  `dpl_2xHeJWY7bvPJrkA42NhH7xHkW5Wz`. Incluye acceso inmediato con
+  `phase='ready'`, gracia de 3 días hábiles, aviso en Header, cambio en Mi
+  perfil, correo compacto preparado en GitHub y 2FA opcional. El deploy
+  web NO publica automáticamente la plantilla GAS ni constituye E2E real.
 - **Web (verificada el 14 noviembre de 2026; corte histórico):** `mi-dashboard` en Vercel,
   rama productiva `main`, dominio `mi-dashboard-iota.vercel.app`, despliegue
   `dpl_ADVuq52xdGjNfMhAfYqLiuexgQU5`, estado `READY`, commit
@@ -1178,17 +1180,25 @@ benchmark autenticado con miles de filas ni garantía universal de servicios ext
   Drive o envío real. Volver a consultar alias, SHA y estado de Vercel ante
   cualquier entrega posterior; el valor aquí es un corte histórico. Publicar
   solo con autorización expresa y sin cambios destructivos de DB.
-- **Backend:** DB/Edge/Apps Script del correo por evento activos según evidencia
-  fechada del 10 noviembre; su activación es independiente del deploy web verificado
-  el 14 noviembre y no equivale a una auditoría remota recién ejecutada.
-  No reabrir accesos legacy o restaurar clientes incompatibles.
+- **Backend (verificado el 23 noviembre):** Supabase aplica la migración
+  `20261123153151`, RPC de gracia y destino independiente de acceso;
+  `qms-access-mailer` v5 `ACTIVE`. La entrega de correos reales fue
+  confirmada por el propietario, pero los últimos ajustes HTML en GitHub
+  aún exigen comprobar una nueva versión publicada de Apps Script.
+  El correo de Quejas tiene evidencia histórica de activación del
+  10 noviembre, independiente del cambio de acceso. No reabrir accesos
+  legacy ni restaurar clientes incompatibles.
 - **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
   feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
   o subidas inciertos; contraste de las barras internas de Google Drive.
-- **Límites de seguridad:** alta y 2FA opcional integradas en web/DB, aceptación real del correo y primer login pendiente; sin antivirus, portal ciudadano completo,
-  telemetría persistida/retención anual ni Seguridad y Estado terminados. La auditoría
-  npm documentada tras fijar Next 16.4.6 registró cero críticas/altas y seis moderadas
-  indirectas pendientes; no presentarla como una auditoría nueva ni seguridad total.
+- **Límites de seguridad:** alta, 2FA opcional, plazo de gracia y login
+  directo integrados en web/DB; el propietario comprobó recepción de correo
+  real. Siguen pendientes la rotación coordinada de secretos de correo
+  expuestos, el E2E automatizado del ciclo completo (inicio, reemplazo,
+  vencimiento, reenvío y factores), antivirus, portal ciudadano completo,
+  telemetría persistida/retención anual y Seguridad y Estado.
+  La auditoría npm histórica tras fijar Next 16.4.6 registró cero
+  críticas/altas y seis moderadas indirectas; no presentarla como nueva.
 
 Para Quejas/Mis Quejas consultar también el
 [checklist con alcance real y pruebas pendientes](docs/quejas-checklist-aceptacion-2026-11-13.md).
