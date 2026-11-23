@@ -20,7 +20,7 @@ test('correo y sobre de recepción conservan ceros, año e históricos del folio
     const mensaje = quejaMailMessage(claimMailSnapshot({ ...snapshot, tipo: 'recibido', folio }))
     assert.equal(mensaje.folio, folio)
     assert.ok(mensaje.subject.includes(folio))
-    assert.ok(mensaje.body.includes(folio))
+    assert.ok(!mensaje.body.includes(folio), 'el folio ya está en el asunto y encabezado')
   }
 })
 
@@ -63,7 +63,7 @@ test('el asunto y cuerpo editados son los del sobre final; el destino siempre sa
 test('un sobre histórico sin correo editable utiliza la plantilla neutral', () => {
   const mail = quejaMailMessage(claimMailSnapshot(snapshot))
   assert.equal(mail.subject, 'Solicitud 2026-001: comunicación final')
-  assert.match(mail.body, /La evaluación de su solicitud, folio 2026-001, ha concluido/)
+  assert.match(mail.body, /La gestión de su solicitud ha concluido/)
   const receipt = claimMailSnapshot({ ...snapshot, tipo: 'recibido', estado: 'Recibido', correo: { subject: 'No usar', body: 'Privado' } })
   assert.equal(receipt.correo, undefined)
   assert.doesNotMatch(quejaMailMessage(receipt).body, /Privado/)
