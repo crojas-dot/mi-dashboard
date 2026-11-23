@@ -36,11 +36,22 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   Solo si se desactiva explícitamente el correo, devolverla una única vez al
   administrador autorizado y mostrarla temporalmente para entrega manual;
   borrarla del estado al cerrar. Nunca registrarla en logs ni en DB en claro.
-- **Primer ingreso:** login con credenciales temporales → **cambio obligatorio**
-  de contraseña → configurar/verificar 2FA solo si `requireMfa=true`.
-  Simplificar la UI sin suprimir ese cambio de seguridad. La contraseña vencida
-  requiere restablecimiento administrativo; no habilitar recuperación pública
-  genérica inadvertidamente. No migrar automáticamente cuentas previas.
+- **Primer ingreso (23 noviembre):** la contraseña recibida por correo sigue
+  siendo temporal y debe reemplazarse por una segunda. **No se fuerza el cambio
+  antes de ingresar**: hay un plazo de 3 días hábiles (lunes a viernes, hora
+  Costa Rica) desde su emisión. Durante el plazo, `phase='ready'` cuando
+  `requireMfa=false`; con 2FA requerido se conserva el enrolamiento y la
+  verificación. `Header` muestra un recordatorio con «Más tarde» y «Cambiar
+  en Mi perfil», que abre la pestaña «Seguridad». El usuario puede escribir
+  su nueva clave o generar una aleatoria de 20 caracteres, verla y copiarla
+  antes de guardarla. El cambio temporal pasa siempre por
+  `POST /api/auth/acceso` con confirmación y operación correlacionada,
+  **no** por la actualización genérica de Auth. La migración
+  `20261123093000_acceso_temporal_tres_dias_habiles.sql` aplica el plazo
+  en `access_ready`, `access_summary`, RPC y el trigger de Auth; no
+  basta con cambiar el UI. Al vencer, se bloquea por servidor/RLS y
+  se requiere restablecimiento administrativo. No hay cambio para cuentas
+  legacy ni se omite 2FA. La rotación previa de claves de correo sigue pendiente.
 - **Reenvíos:** si el servicio informa `failed` o `uncertain`, mostrar fallo
   sin presentar la entrega como exitosa ni repetirla automáticamente. Antes
   de reenviar por acción explícita, confirmar que se invalidará la clave
