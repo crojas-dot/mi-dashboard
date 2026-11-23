@@ -96,13 +96,13 @@
   }
 }
 
-/* Mis Quejas: mismo fondo mate del panel Acciones del responsable.
-   Editor/hoja blancos y una sola barra de edición gris, sin marcos adicionales. */
+/* Mis Quejas: mismo gris exterior de Quejas; el editor conserva su ancho
+   y su única tarjeta blanca. La lectura tiene su propia hoja centrada. */
 [data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
-  background: #F3F6FB;
+  background: var(--color-qms-background);
 }
 
-/* Quejas ampliadas: fondo gris original con velo azul ECA (estilo CoreUI).
+/* Quejas y Mis Quejas ampliadas: fondo gris original con velo azul ECA (estilo CoreUI).
    Sin marco ni esquinas redondeadas: mismo panel rectangular de main. */
 [data-case-coreui-docs-panel="true"] {
   background: linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB;
