@@ -147,7 +147,12 @@ test('la contraseña temporal se entrega en un único correo con enlace al login
  assert.doesNotMatch(f.sent[0].htmlBody,/background:#f4f7fb/)
  assert.match(f.sent[0].htmlBody,/font-size:16px;line-height:1\.6;font-weight:600/)
 
- assert.match(f.sent[0].htmlBody,/Seleccioná y copiá la contraseña/)
+ assert.match(f.sent[0].htmlBody,/No compartás esta contraseña\./)
+ assert.doesNotMatch(f.sent[0].htmlBody,/Acceso inicial al sistema/)
+ assert.doesNotMatch(f.sent[0].htmlBody,/Seleccioná y copiá la contraseña/)
+ assert.doesNotMatch(f.sent[0].htmlBody,/\(lunes a viernes\)/)
+ assert.match(f.sent[0].htmlBody,/max-width:340px/)
+ assert.doesNotMatch(f.sent[0].body,/\(lunes a viernes\)/)
  assert.ok(f.sent[0].htmlBody.includes(message.password))
   assert.ok(f.sent[0].htmlBody.includes('>Usuario</td>'))
   assert.ok(f.sent[0].htmlBody.includes('>Contraseña temporal</td>'))
