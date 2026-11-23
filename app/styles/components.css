@@ -102,47 +102,111 @@
   background: #F3F6FB;
 }
 
-/* Quejas ampliadas: mismo gris oscuro del menú principal, solo en el panel de Calidad.
-   La hoja A4, el gris exterior y Mis Quejas mantienen sus colores originales. */
+/* Quejas ampliadas: panel de Calidad en grises graduados y contraste revisado.
+   El alcance es solo el expediente ampliado; Mis Quejas y la hoja A4 no cambian. */
 [data-case-dark-panel="true"] {
-  background: var(--color-qms-dark);
+  background: linear-gradient(180deg, #2E3339 0%, #262B31 100%);
   color: #FFFFFF;
 }
+
 [data-case-dark-panel="true"] :is(h3, h4, .text-qms-dark) {
   color: #FFFFFF;
 }
+
+/* La información secundaria se mantiene visible sin competir con los títulos. */
 [data-case-dark-panel="true"] .text-qms-muted {
-  color: #D2D6DA;
+  color: #D2D7DD;
 }
+
+[data-case-dark-panel="true"] [data-queja-deadline] {
+  color: #E9EDF2;
+}
+
+/* Separación discreta del bloque de herramientas, sin volver al negro plano. */
 [data-case-dark-panel="true"] [data-case-quality-tools] {
-  border-top-color: rgb(255 255 255 / 24%);
+  margin-inline: -8px;
+  padding: 14px 8px 8px;
+  border-top-color: rgb(255 255 255 / 18%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 5%);
 }
+
 [data-case-dark-panel="true"] [data-case-quality-tools] > p {
-  color: #E3E6E9;
+  color: #E3E7EB;
 }
-[data-case-dark-panel="true"] :is(.ui-button-secondary, .ui-button-ghost, .ui-button-link) {
+
+/* Los botones de fondo claro deben tener texto oscuro, incluso cuando el
+   contenedor utiliza texto blanco: esto corrige "Procede / No procede". */
+[data-case-dark-panel="true"] [data-case-evaluation-choices] > button {
+  background: #FFFFFF;
+  color: #212529;
+  border-color: #D7DCE2;
+}
+
+[data-case-dark-panel="true"] [data-case-evaluation-choices] > button:hover:not(:disabled) {
+  background: #F2F5F8;
+  color: #212529;
+  border-color: #B9C5D2;
+}
+
+[data-case-dark-panel="true"] [data-case-evaluation-choices] > button svg {
+  color: #728196;
+}
+
+[data-case-dark-panel="true"] [data-case-evaluation-choices] > button:hover svg {
+  color: #024796;
+}
+
+[data-case-dark-panel="true"] [data-case-evaluation-choices] > button:disabled {
+  opacity: .7;
+}
+
+/* El selector de área afectada y los botones secundarios también quedan legibles. */
+[data-case-dark-panel="true"] :is(.ui-button-secondary, .ui-button-ghost) {
   color: #212529;
 }
+
 [data-case-dark-panel="true"] [data-case-evaluation-fields] .ui-button-ghost {
-  color: #5A6B81;
+  background: #FFFFFF;
+  border-color: #D7DCE2;
+  color: #46576B;
 }
+
+[data-case-dark-panel="true"] [data-case-evaluation-fields] .ui-button-ghost:hover:not(:disabled) {
+  background: #F2F5F8;
+  color: #212529;
+}
+
+[data-case-dark-panel="true"] .ui-button-link {
+  color: #DCE9FA;
+}
+
+[data-case-dark-panel="true"] .ui-button-link:hover:not(:disabled) {
+  color: #FFFFFF;
+  background: rgb(255 255 255 / 10%);
+}
+
 [data-case-dark-panel="true"] [data-case-quality-tools] button {
-  color: #213047;
+  color: #212529;
 }
-[data-case-dark-panel="true"] details {
-  color: var(--color-qms-dark);
-}
-[data-case-dark-panel="true"] details :is(.text-qms-dark, h3, h4) {
-  color: var(--color-qms-dark);
-}
-[data-case-dark-panel="true"] details .text-qms-muted {
-  color: var(--color-qms-muted);
-}
+
+/* Tarjetas y menús desplegables claros: su tipografía no hereda el blanco. */
+[data-case-dark-panel="true"] details,
 [data-case-dark-panel="true"] [data-area-queja-control] {
-  color: var(--color-qms-dark);
+  color: #212529;
 }
+
+[data-case-dark-panel="true"] details :is(.text-qms-dark, h3, h4) {
+  color: #212529;
+}
+
+[data-case-dark-panel="true"] details .text-qms-muted,
 [data-case-dark-panel="true"] [data-area-queja-control] .text-qms-muted {
-  color: var(--color-qms-muted);
+  color: #6C757D;
+}
+
+[data-case-dark-panel="true"] details .ui-button-link {
+  color: #024796;
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
