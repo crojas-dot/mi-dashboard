@@ -314,6 +314,47 @@ test('login autorizado valida identidad y permisos; una identidad diferente no m
   }
 })
 
+test('login listo publica inmediatamente usuario y permisos, también con contraseña temporal', async () => {
+ for (const temporaryPassword of [false, true]) {
+  let identityChecks = 0, permissionReads = 0
+  const access = { managed: true, phase: 'ready', temporaryPassword,
+   ...(temporaryPassword ? { temporaryPasswordExpiresAt: '2026-11-26T15:00:00Z' } : {}) }
+  const fixture = storeFixture({
+   login: async () => ({ user, authId: 'auth-a', access, accessManaged: true }),
+   getUser: async () => { identityChecks++; return { data: { user: { id: 'auth-a' } }, error: null } },
+   rpc: async () => { permissionReads++; return { data: permissions, error: null } },
+  })
+  const result = await fixture.store.getState().login('prueba@example.test', 'contraseña-ficticia')
+  const state = fixture.store.getState()
+  assert.equal(result.error, undefined)
+  assert.equal(state.user?.id, user.id, 'el login debe publicar el usuario en su misma respuesta')
+  assert.equal(state.permisos.length, 1)
+  assert.equal(state.loading, false)
+  assert.equal(state.initialized, true)
+  assert.equal(state.accessManaged, true)
+  assert.equal(state.access?.temporaryPassword === true, temporaryPassword)
+  assert.equal(authRoute('/login', state).redirect, '/')
+  assert.equal(authRoute('/', state).view, 'private')
+  assert.equal(identityChecks, 1)
+  assert.equal(permissionReads, 1)
+ }
+})
+
+test('login de acceso pendiente mantiene la ruta de seguridad sin cargar el dashboard', async () => {
+ let permissionReads = 0
+ const fixture = storeFixture({
+  login: async () => ({ authId: 'auth-a', access: { managed: true, phase: 'enroll', requireMfa: true } }),
+  rpc: async () => { permissionReads++; return { data: permissions, error: null } },
+ })
+ const result = await fixture.store.getState().login('prueba@example.test', 'contraseña-ficticia')
+ const state = fixture.store.getState()
+ assert.equal(result.error, undefined)
+ assert.equal(state.user, null)
+ assert.equal(state.access?.phase, 'enroll')
+ assert.equal(authRoute('/', state).redirect, '/acceso')
+ assert.equal(permissionReads, 0)
+})
+
 test('logout cancela también un login que todavía esperaba su respuesta', async () => {
   const pendingLogin = deferred()
   const fixture = storeFixture({ login: () => pendingLogin.promise })
