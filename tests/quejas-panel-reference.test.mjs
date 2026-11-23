@@ -77,6 +77,31 @@ test('el escritorio ampliado separa el scroll del lienzo de los laterales', () =
   assert.doesNotMatch(result, /data-case-top-cycle/)
 })
 
+test('Quejas ampliado deja la lectura blanca con gris institucional solo fuera de la hoja', () => {
+  const props = {
+    documentKey: 'case:gray-gutters', presentation: 'reference', qualityTwoColumn: true,
+    compact: null, cycle: null, action: createElement('div', null, 'Acciones'),
+    children: createElement('p', null, 'Lectura sin cambios'),
+  }
+  const quejas = html(CaseWorkspace, { ...props, expanded: true, qualityGrayGutters: true })
+  const contraido = html(CaseWorkspace, { ...props, expanded: false, qualityGrayGutters: true })
+  const misQuejas = html(CaseWorkspace, { ...props, expanded: true })
+  assert.match(quejas, /data-case-gray-gutters="true"/)
+  assert.match(quejas, /data-case-workspace[^>]*bg-qms-background/)
+  assert.match(quejas, /data-case-document-scroll[^>]*@min-\\[1100px\\]:bg-qms-background/)
+  assert.match(quejas, /data-case-document[^>]*bg-white[^>]*@min-\\[1100px\\]:max-w-\\[1100px\\]/)
+  assert.match(quejas, /data-case-action[^>]*bg-qms-background/)
+  assert.equal((quejas.match(/data-case-document class=/g) || []).length, 1)
+  assert.doesNotMatch(contraido, /data-case-gray-gutters="true"|max-w-\\[1100px\\]/)
+  assert.doesNotMatch(misQuejas, /data-case-gray-gutters="true"|max-w-\\[1100px\\]/)
+  assert.match(misQuejas, /data-case-action[^>]*bg-\\[#F3F6FB\\]/)
+  const source = readFileSync('app/quejas/components/QuejaDetalleModal.tsx', 'utf8')
+  const misQuejasSource = readFileSync('app/mis-quejas/components/QuejaColaboradorPanel.tsx', 'utf8')
+  assert.match(source, /readingLayout qualityTwoColumn qualityGrayGutters notionStyle/)
+  assert.doesNotMatch(misQuejasSource, /qualityGrayGutters/)
+  assert.match(readFileSync('app/styles/theme.css', 'utf8'), /--color-qms-background:\\s*#f4f7f6/i)
+})
+
 test('Quejas y Mis Quejas recuperan los cuatro segmentos al contraer el modal', () => {
   for (const expanded of [false, true]) {
     const result = html(CaseWorkspace, {
