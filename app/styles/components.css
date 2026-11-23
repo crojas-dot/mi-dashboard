@@ -102,66 +102,67 @@
   background: #F3F6FB;
 }
 
-/* Réplica del DocsComponents.jsx de CoreUI (bg-primary bg-opacity-10,
-   border-2 border-primary rounded), adaptada al lateral vertical de Quejas.
-   CoreUI primary: #5856D6; sobre #F3F4F7 equivale a #E3E4F4.
-   Se conserva el tamaño del panel y la hoja A4 de lectura. */
+/* Quejas ampliadas: fondo gris original con velo azul ECA (estilo CoreUI).
+   Sin marco ni esquinas redondeadas: mismo panel rectangular de main. */
 [data-case-coreui-docs-panel="true"] {
-  background-color: rgb(88 86 214 / 10%);
-  border: 2px solid #5856D6;
-  border-radius: 6px;
+  background: linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB;
+  border: 0;
+  border-radius: 0;
   box-shadow: none;
-  color: #1F2937;
+  color: var(--color-qms-dark);
 }
 
-/* En CoreUI los títulos se leen en oscuro sobre la superficie violeta. */
 [data-case-coreui-docs-panel="true"] :is(h3, h4, .text-qms-dark) {
-  color: #1F2937;
-}
-[data-case-coreui-docs-panel="true"] .text-qms-muted {
-  color: #4B5563;
-}
-[data-case-coreui-docs-panel="true"] [data-case-quality-tools] {
-  border-top-color: rgb(88 86 214 / 22%);
+  color: var(--color-qms-dark);
 }
 
-/* Botones clave: mismo contraste y colores de los dos CTA de DocsComponents.
-   No cambia ninguna acción, permisos ni estado deshabilitado. */
+[data-case-coreui-docs-panel="true"] .text-qms-muted {
+  color: #566474;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-quality-tools] {
+  border-top-color: rgb(2 71 150 / 18%);
+}
+
+/* Decisiones con el azul y rojo oficiales de ECA, conservando sus permisos. */
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child {
-  background: #5856D6;
-  border-color: #5856D6;
+  background: var(--color-qms-primary);
+  border-color: var(--color-qms-primary);
   color: #FFFFFF;
 }
+
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child:hover:not(:disabled) {
-  background: #4745BA;
-  border-color: #4745BA;
+  background: var(--color-qms-primary-dark);
+  border-color: var(--color-qms-primary-dark);
   color: #FFFFFF;
 }
+
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2) {
-  background: #E55353;
-  border-color: #E55353;
+  background: var(--color-qms-brand-red);
+  border-color: var(--color-qms-brand-red);
   color: #FFFFFF;
 }
+
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2):hover:not(:disabled) {
-  background: #CD4545;
-  border-color: #CD4545;
+  background: #BD3437;
+  border-color: #BD3437;
   color: #FFFFFF;
 }
-[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button svg {
-  color: #FFFFFF;
-}
+
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button svg,
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:hover svg {
   color: #FFFFFF;
 }
 
-/* Los controles no decisorios permanecen blancos y legibles. */
+/* Los demás controles permanecen blancos y bien contrastados. */
 [data-case-coreui-docs-panel="true"] [data-case-evaluation-fields] > div button {
   background: #FFFFFF;
-  color: #374151;
-  border-color: #B7B8D8;
+  color: var(--color-qms-dark);
+  border-color: #CBD5E1;
 }
+
 [data-case-coreui-docs-panel="true"] [data-case-quality-tools] button {
-  border-color: #C2C3DB;
+  border-color: #D1DAE4;
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
