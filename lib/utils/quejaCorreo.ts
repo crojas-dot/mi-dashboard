@@ -5,7 +5,7 @@ export function crearCorreoAcompanamiento(queja: { cliente_nombre: string; folio
   const nombre = queja.cliente_nombre.trim() || 'persona interesada'
   return {
     asunto: `Respuesta a su solicitud - Folio ${queja.folio}`,
-    cuerpo: `Estimado(a) ${nombre}:\n\nReciba un cordial saludo.\n\nEn atención a su solicitud registrada con el folio ${queja.folio}, le remitimos adjunto el informe de respuesta emitido por el Ente Costarricense de Acreditación (ECA).\n\n${noProcede ? 'Su solicitud fue evaluada como no procedente. Los fundamentos de esta decisión se detallan en el informe adjunto.' : 'Los resultados del análisis y la resolución se encuentran en el informe adjunto.'} Le agradecemos revisar su contenido.\n\nPara consultas adicionales, puede escribir a gc@eca.or.cr.\n\nAtentamente,\nGestión de Calidad\nEnte Costarricense de Acreditación (ECA)`,
+    cuerpo: `Estimado(a) ${nombre}:\n\n${noProcede ? `En relación con su solicitud, folio ${queja.folio}, le informamos que fue declarada no procedente. Los fundamentos se detallan en el informe adjunto.` : `En respuesta a su solicitud, folio ${queja.folio}, remitimos el informe adjunto con los resultados del análisis y la resolución.`}\n\nPara consultas adicionales, puede escribir a gc@eca.or.cr.\n\nAtentamente,\nGestión de Calidad\nEnte Costarricense de Acreditación (ECA)`,
   }
 }
 
