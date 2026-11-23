@@ -77,7 +77,7 @@ function qmsAccessMailPostV20261121_(e, diagnostic) {
   if(previous){var saved=JSON.parse(previous);return saved.hash===fingerprint?reply(saved.outcome):reply('failed','event_conflict');}
   if(MailApp.getRemainingDailyQuota()<1)return reply('retry','quota_exhausted');
   var message=qmsAccessMailContent_(p);
-  var subtitle=p.kind==='temporary_access'?'Acceso inicial al sistema':p.kind==='invitation'?'Invitación de usuario':'Verificación de seguridad';
+  var subtitle=p.kind==='temporary_access'?'':p.kind==='invitation'?'Invitación de usuario':'Verificación de seguridad';
   var html=qmsMailFrame_(message.subject,subtitle,message.detail,message.footer,qmsMailBrandingIdentity_(p.identidadCorreo));
   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'uncertain'}),21600);
   try {MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);return reply('sent');}
@@ -93,7 +93,7 @@ function qmsAccessMailButton_(url,label) {
 function qmsAccessMailContent_(p) {
  var para='style="margin:0 0 9px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;line-height:1.5;color:#212529"';
  if(p.kind==='temporary_access'){
-  var expiry='Válida durante 3 días hábiles desde su emisión (lunes a viernes). Podés ingresar al sistema y cambiarla desde Mi perfil > Seguridad antes del vencimiento.';
+  var expiry='Válida durante 3 días hábiles desde su emisión. Podés ingresar al sistema y cambiarla desde Mi perfil > Seguridad antes del vencimiento.';
   var footer='Si no reconocés este acceso, contactá a la administración de ECA-QMS.';
   return {
    subject:'Tu acceso a ECA-QMS', footer:footer,
@@ -101,12 +101,12 @@ function qmsAccessMailContent_(p) {
    detail:
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif">' +
     '<tr><td style="padding:0 0 5px;font-size:13px;line-height:1.5;font-weight:600;color:#586777">Usuario</td></tr>' +
-    '<tr><td style="padding:0 0 18px;font-size:15px;line-height:1.5;color:#212529;overflow-wrap:anywhere">'+qmsMailEscape_(p.to)+'</td></tr>' +
+    '<tr><td style="padding:0 0 18px;font-size:16px;line-height:1.5;font-weight:600;color:#024796;overflow-wrap:anywhere">'+qmsMailEscape_(p.to)+'</td></tr>' +
     '<tr><td style="padding:0 0 7px;font-size:13px;line-height:1.5;font-weight:600;color:#586777">Contraseña temporal</td></tr>' +
     '<tr><td style="padding:0 0 7px">' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #e2e6eb;border-radius:6px;background:#f8fafc">' +
-    '<tr><td style="padding:11px 13px;font-family:Consolas,Monaco,monospace;font-size:16px;line-height:1.6;font-weight:600;color:#263747;overflow-wrap:anywhere;word-break:break-all">'+qmsMailEscape_(p.password)+'</td></tr></table></td></tr>' +
-    '<tr><td style="padding:1px 0 0;font-size:12px;line-height:1.5;color:#6c757d">Seleccioná y copiá la contraseña para iniciar sesión. No la compartás.</td></tr></table>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:340px;border-collapse:separate;border-spacing:0;border:1px solid #e2e6eb;border-radius:6px;background:#f8fafc">' +
+    '<tr><td style="padding:10px 14px;font-family:Consolas,Monaco,monospace;font-size:16px;line-height:1.6;font-weight:600;color:#263747;overflow-wrap:anywhere;word-break:break-all">'+qmsMailEscape_(p.password)+'</td></tr></table></td></tr>' +
+    '<tr><td style="padding:1px 0 0;font-size:12px;line-height:1.5;color:#6c757d">No compartás esta contraseña.</td></tr></table>' +
     qmsAccessMailButton_(p.url,'Iniciar sesión') +
     '<p style="margin:6px 0 0;color:#6c757d;font-size:13px;line-height:1.5">'+qmsMailEscape_(expiry)+'</p>'
   };
