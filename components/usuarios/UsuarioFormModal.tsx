@@ -256,7 +256,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
               <p className="mt-3 text-sm text-qms-muted">No se solicitó el envío por correo. Esta contraseña temporal se mostrará solo aquí, hasta cerrar el formulario.</p>
               <div className="mt-3 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
                 <div><p className="text-xs text-qms-muted">Usuario</p><p className="select-text break-all text-sm font-medium text-qms-dark">{createdEmail}</p></div>
-                <div><p className="text-xs text-qms-muted">Contraseña temporal · 72 horas</p>
+                <div><p className="text-xs text-qms-muted">Contraseña temporal · 3 días hábiles</p>
                   <div className="mt-2 rounded-md border border-qms-border border-l-4 border-l-qms-primary bg-qms-surface px-3 py-3">
                     <code className="block select-all break-all font-mono text-base font-semibold leading-relaxed text-qms-dark">{tempPassword}</code>
                   </div></div>
@@ -266,7 +266,7 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
               </div>
               <p className="mt-3 text-xs text-qms-muted">Entregala por un canal seguro. El usuario deberá cambiarla en el primer ingreso.</p>
             </> : createdResult.accessDelivery === 'sent' ? <p role="status" className="mt-3 text-sm text-qms-success">
-              El servicio confirmó el envío del correo de acceso. La contraseña temporal vence en 72 horas.
+              El servicio confirmó el envío del correo de acceso. La contraseña temporal vence en 3 días hábiles.
               {requireMfa && ' Al ingresar deberá configurar 2FA.'}
               <span className="mt-1 block text-xs text-qms-muted">La confirmación del emisor no garantiza recepción en la bandeja de entrada.</span>
             </p> : <>
