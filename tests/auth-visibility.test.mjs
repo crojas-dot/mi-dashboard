@@ -21,6 +21,17 @@ test('una ruta privada nunca autoriza hijos al iniciar, sin sesión ni durante r
   assert.equal(authRoute('/q/token-publico', ready).view, 'public')
 })
 
+test('una contraseña temporal vigente permite entrar, pero una vencida conserva el bloqueo de acceso', () => {
+  const session = { ...ready, user, permisos: permissions }
+  assert.equal(authRoute('/', { ...session, access: { phase: 'ready', temporaryPassword: true } }).view, 'private')
+  const expired = authRoute('/', { ...session, access: { phase: 'password_expired', temporaryPassword: true } })
+  assert.equal(expired.view, 'pending')
+  assert.equal(expired.redirect, '/acceso')
+  const mfaPending = authRoute('/', { ...session, access: { phase: 'enroll', temporaryPassword: true } })
+  assert.equal(mfaPending.view, 'pending')
+  assert.equal(mfaPending.redirect, '/acceso')
+})
+
 test('permisos ausentes bloquean el contenido sin bucles entre rutas', () => {
   assert.equal(authRoute('/', { ...ready, user }).view, 'denied')
   assert.equal(authRoute('/quejas', { ...ready, user, permisos: permissions }).redirect, '/')
