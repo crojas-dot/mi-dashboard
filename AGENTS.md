@@ -14,146 +14,134 @@ Revisión: **21 de noviembre de 2026**. Esta entrada contiene reglas siempre apl
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
 
-## Contrato vigente — acceso de usuarios y correo (21 noviembre 2026)
+## Contrato vigente — acceso, sesión, 2FA y correo (23 noviembre 2026)
 
-**Prevalece sobre los relatos históricos del 15 y 17 noviembre.** Código de
-`main` verificado en el commit `e235dfeac9472d36d0a634b6a2e1ef5a42e0e931`;
-volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
+**Este bloque prevalece sobre los relatos históricos del 15, 17 y 21 noviembre.**
+Corte funcional de `main` verificado en producción: `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`,
+Vercel `READY`, alias `mi-dashboard-iota.vercel.app` (23-11-2026).
+Cualquier commit posterior exige volver a comprobar alias, SHA y estado. Un build
+correcto no es una prueba funcional completa ni publica Google Apps Script.
 
-- **Alta de usuario:** `UsuarioFormModal.tsx` envía un único `POST` con
-  `access: { id, invite: false, requireMfa, sendByEmail }`. Hay **dos casillas**:
-  «Enviar invitación por correo» (envía credenciales, activada por defecto) y
-  «Requerir 2FA» (opcional, desactivada por defecto). No se crea un enlace
-  extra de aceptación en las altas temporales.
-  Validar `invite/requireMfa/sendByEmail` en `lib/server/usuarioInput.ts`
-  y no aceptar secretos enviados arbitrariamente desde el navegador.
-- **Correo inicial sencillo:** `accessService.ts` genera en servidor una
-  contraseña temporal aleatoria de **24 caracteres**. `qms_temporary_access_command`
-  confirma la política y vigencia de **3 días hábiles**. El correo `temporary_access`
-  muestra **Usuario = email**, **Contraseña temporal** y botón
-  **«Iniciar sesión»** a `/login`. No crear un enlace de aceptación adicional.
-  Con correo activado **nunca** devolver ni mostrar la contraseña al admin.
-  Solo si se desactiva explícitamente el correo, devolverla una única vez al
-  administrador autorizado y mostrarla temporalmente para entrega manual;
-  borrarla del estado al cerrar. Nunca registrarla en logs ni en DB en claro.
-- **Primer ingreso (23 noviembre):** la contraseña recibida por correo sigue
-  siendo temporal y debe reemplazarse por una segunda. **No se fuerza el cambio
-  antes de ingresar**: hay un plazo de 3 días hábiles (lunes a viernes, hora
-  Costa Rica) desde su emisión. Durante el plazo, `phase='ready'` cuando
-  `requireMfa=false`; con 2FA requerido se conserva el enrolamiento y la
-  verificación. `Header` muestra un recordatorio con «Más tarde» y «Cambiar
-  en Mi perfil», que abre la pestaña «Seguridad». El usuario puede escribir
-  su nueva clave o generar una aleatoria de 20 caracteres, verla y copiarla
-  antes de guardarla. El cambio temporal pasa siempre por
-  `POST /api/auth/acceso` con confirmación y operación correlacionada,
-  **no** por la actualización genérica de Auth. La migración
-  `20261123153151_acceso_temporal_tres_dias_habiles_20261123.sql` aplica el plazo
-  en `access_ready`, `access_summary`, RPC y el trigger de Auth; no
-  basta con cambiar el UI. Al vencer, se bloquea por servidor/RLS y
-  se requiere restablecimiento administrativo. No hay cambio para cuentas
-  legacy ni se omite 2FA. La rotación previa de claves de correo sigue pendiente.
-- **Reenvíos:** si el servicio informa `failed` o `uncertain`, mostrar fallo
-  sin presentar la entrega como exitosa ni repetirla automáticamente. Antes
-  de reenviar por acción explícita, confirmar que se invalidará la clave
-  anterior. `resetUserAccess` gira la credencial de acceso temporal bajo
-  autorización de admin, invalidando la anterior. Conservar idempotencia del alta
-  y resultados `sent/failed/uncertain`; envío incierto nunca implica reintento
-  automático. Si MailApp falla, preservar Auth y perfil creados. Para **cuentas
-  legacy invitadas** conservar `inviteAccess`, canje en `/acceso` y reenvío
-  de invitación de 24h sin cambiarles la contraseña silenciosamente.
-  Reset 2FA exige admin/confirmación y mantiene la obligación configurada.
-- **Emisor:** API Next → Supabase Edge `qms-access-mailer` → Google Apps
-  Script `/exec` → MailApp. Fuentes `Codigo.gs` y `Acceso.gs` en
-  `integration/apps-script/quejas-mail/`; copia integral:
-  `docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs`.
-  Actualizar la **implementación existente de Google Apps Script** al cambiar
-  su código; GitHub y Vercel no publican Google. Mantener URL, propiedades,
-  activadores y el flujo de quejas/OTP. `Vercel READY` no demuestra recepción
-  real ni garantiza que Google tenga la versión nueva.
-  **Nuevo destino aislado (21 noviembre):** migración
-  `20261121222345_acceso_correo_endpoint_independiente.sql` agrega
-  `qms_private.mail_wake_settings.access_endpoint` (nullable).
-  `qms_access_mail_transport()` usa `coalesce(access_endpoint,endpoint)`:
-  sin URL nueva, Acceso sigue apuntando al transporte anterior. Al
-  recibir una URL real `https://script.google.com/macros/s/.../exec`
-  de una **implementación nueva del mismo proyecto Apps Script**,
-  escribirla solo en `access_endpoint`; nunca reemplazar `endpoint`
-  porque lo utiliza Quejas. Conservar Script Properties, permisos, secretos
-  y triggers. Revalidar la recepción del correo real antes de afirmar éxito.
-- **Incidencia real (21 noviembre, 16:06 CR):** `qms-access-mailer` v4
-  recibió la solicitud y Google Apps Script respondió
-  `invalid_access_delivery` **antes de `MailApp.sendEmail`**.
-  Quejas usa un despacho diferente (`delivery_request`), por lo que sus
-  correos sí pueden funcionar. El código histórico de `Acceso.gs` aceptaba
-  invitaciones pero no `temporary_access`; otro posible rechazo es una
-  discrepancia entre el dominio de `/login` de Supabase y las propiedades
-  `QMS_PUBLIC_TRACKING_ORIGIN` / `APP_PUBLIC_URL` en GAS.
-  La validación actual de GAS acepta **solo orígenes oficiales conocidos** y
-  devuelve un recibo firmado con `login_origin_mismatch` o
-  `invalid_access_payload` tras validar HMAC, nunca detalles privados.
-  Ejecutar `qmsAccessMailHealthCheck` solo desde el editor y **publicar una
-  nueva versión en la implementación existente**: GitHub y Supabase no
-  actualizan automáticamente el código de Google Apps Script.
-  No afirmar entrega real sin un correo de prueba controlado.
-  **Diagnóstico posterior (21 noviembre, 17:07 CR):** una prueba
-  desde Apps Script comprobó configuración, 494 bytes y HMAC correctos,
-  pero `qmsAccessMailPost_` retornó el genérico
-  `invalid_access_delivery`. En el código actualizado, después de la
-  verificación exitosa debería generar `access_delivery_receipt`
-  firmado con `invalid_access_payload` o `login_origin_mismatch`.
-  Revisar **definiciones duplicadas** del manejador (por ejemplo,
-  conservar `Acceso.gs` además del archivo completo) y que la solicitud
-  usada en el paso del handler coincida con la verificada.
-  `qmsAccessMailHealthCheck()` confirma los marcadores del manejador
-  ejecutado y el formato del dominio sin exponer su valor; 
-  `qmsAccessMailSelfTest()` firma una solicitud deliberadamente inválida
-  y comprueba **ambas rutas** sin llamar `MailApp`. Ambas rutas deben
-  devolver `signed_receipt/invalid_access_payload`.
-  **Revisión del archivo realmente utilizado:** el código completo compartido
-  por el administrador tiene 846 líneas, una sola función `doPost` y una sola
-  `qmsAccessMailPost_`. El indicador que comparaba
-  `String(qmsAccessMailPost_)` era insuficiente y podía dar un falso negativo;
-  **no diagnosticar duplicados basándose únicamente en ese indicador**.
-  El diagnóstico `2026-11-21-fases` comprueba el sobre firmado mediante
-  `qmsMailVerify_` y reporta formatos de UUID, longitud y fase concreta
-  del rechazo desde ambos manejadores. Usa una solicitud intencionalmente
-  inválida y una barrera `preventSend` para no llamar a MailApp durante QA.
-  Si `roundTripValid=false`, investigar firma/decodificación, no dominio
-  de login. Si es `true` pero el manejador falla, utilizar `direct.phase`
-  y `doPost.phase` para localizar el siguiente paso.
-  **Inconsistencia observada a las 17:33 CR:** el usuario ejecutó
-  `qmsAccessMailSelfTest`: firma, nonce y UUID correctos, pero ambos
-  manejadores devolvieron `generic_rejection` sin fase registrada.
-  En el código nuevo esa ruta debería establecer
-  `phase='configuration'` de inmediato. Para aislar cualquier desajuste
-  entre la función existente y la publicada, `doPost` ahora invoca
-  directamente al manejador **`qmsAccessMailPostV20261121_`**
-  versionado; no se modifica el transporte de Quejas.
-  La prueba requiere `direct.handlerVersion` y
-  `doPost.handlerVersion='2026-11-21-v2'`, con diagnóstico
-  `2026-11-21-versioned`. Prueba sintética: autodiagnóstico válido y
-  un correo ficticio aceptado por el simulador de MailApp; esto NO
-  certifica correo real ni ejecución actual en Google. Para aplicarlo,
-  reemplazar el único archivo Apps Script por el paquete completo y
-  publicar nueva versión en la implementación existente de Acceso,
-  sin modificar Supabase ni los correos de Quejas.
-  El registro compartido incluyó el secreto completo; **rotar**
-  `QMS_MAIL_SECRET` y `QUEJAS_MAIL_SIGNING_SECRET` coordinadamente
-  en sus respectivas plataformas, sin registrarlos ni copiarlos
-  en GitHub o en la conversación. No rotar solo uno porque rompe firmas.
-- **Pruebas:** validar `tests/usuarios-invitacion-restaurada.test.mjs`,
-  `tests/usuarios-acceso-seguro.test.mjs`, `tests/usuarios-acceso-mail.test.mjs`,
-  suites de Usuarios y build/TS. Usar fixtures y buzones controlados; confirmar
-  recepción real, primer login, cambio obligatorio y 2FA activada/desactivada
-  antes de declarar un E2E completo. No enviar a terceros ni crear cuentas de
-  producción como sustituto de tests.
+- **Alta de usuarios:** `UsuarioFormModal.tsx` crea mediante un solo `POST`
+  con `access: { id, invite:false, requireMfa, sendByEmail }`. Las casillas
+  de envío por correo y 2FA son independientes: correo activado y 2FA
+  desactivado por defecto. `lib/server/usuarioInput.ts` valida la entrada.
+  El servidor genera una contraseña temporal aleatoria de **24 caracteres**;
+  con correo activado **nunca** se retorna al administrador. Solo si este
+  desactiva expresamente el envío, se muestra al admin autorizado **una vez**
+  para entrega manual, con copia, y se elimina del estado al cerrar.
+  Un fallo del correo no deshace la cuenta creada; no repetir el alta.
+- **Plazo real y seguridad:** contraseña temporal válida durante **3 días
+  hábiles** desde la emisión, contando lunes a viernes en zona
+  `America/Costa_Rica`, conservando la hora. El cálculo
+  `qms_private.three_business_days_after` no incorpora feriados
+  institucionales adicionales. Migración aplicada:
+  `supabase/migrations/20261123153151_acceso_temporal_tres_dias_habiles_20261123.sql`.
+  `temporary_password_issued_at` y `temporary_password_expires_at` están
+  en `qms_private.access_policies`. `access_ready`, `access_summary`,
+  `qms_temporary_access_command`, `qms_access_command` y el trigger de
+  contraseña hacen cumplir plazo, sesión posterior a emisión, perfil activo
+  y 2FA cuando procede. Verificado en DB remota el 23 noviembre. Al vencer,
+  el servidor/RLS bloquea el acceso y se requiere restablecimiento por admin:
+  no hacer desbloqueo meramente visual ni crear recuperación pública.
+- **Inicio de sesión sin esperas artificiales:** `lib/auth.ts` comprueba
+  `fetchAccessStatus()`; `lib/store/auth-store.ts` publica usuario y
+  permisos **en la misma operación de login** si `phase==='ready'`, incluso
+  cuando `temporaryPassword===true`. La condición correcta para enviar a
+  `/acceso` es `result.access && result.access.phase !== 'ready'`.
+  No enviar al usuario autorizado a la pantalla de «Creá tu nueva contraseña»
+  ni depender de un evento posterior de Auth para terminar de entrar.
+  `lib/authRoute.ts` y `AuthShell` mantienen el guard en sesión, login y
+  rutas privadas; `/acceso` sigue sirviendo **2FA pendiente, acceso temporal
+  vencido y canje de invitaciones heredadas**. Conservar verificación de
+  identidad remota, permisos, revisión de sesión, revocación/cierre y RLS.
+  Corrección inmediata publicada en el commit `8dba9dac`.
+- **Cambio diferido desde Mi perfil:** mientras la clave temporal esté vigente,
+  permitir trabajar normalmente y mostrar en `components/Header.tsx` un
+  aviso no bloqueante con vencimiento y acciones «Cambiar en Mi perfil» y
+  «Más tarde». El acceso a `components/perfil/MiPerfilModal.tsx` abre
+  `Seguridad`. El titular puede escribir una **segunda contraseña** o
+  generarla con `generatePassword(20)` (Web Crypto); el generador llena
+  contraseña y confirmación, ofrece **ojo para mostrar/ocultar** y botón
+  **Copiar contraseña** para guardarla antes de pulsar Actualizar.
+  Para sustituir una temporal: mínimo **12 caracteres**, máximo **72 bytes**,
+  distinta de la anterior, `POST /api/auth/acceso` con
+  `{action:'password',password,confirmation}` y operación correlacionada.
+  No usar el cambio genérico de Supabase Auth para esa primera sustitución.
+  Al completarla, `refreshAccess()` retira el aviso. Para una contraseña
+  ordinaria, el perfil conserva su ruta existente y mínimo de 8 caracteres.
+  «Más tarde» solo oculta el aviso, **no** prorroga el vencimiento.
+- **2FA independiente:** si `requireMfa=true`, mantener enrolamiento y
+  verificación en `/acceso`, incluso durante la gracia. TOTP nativo requiere
+  AAL2 real; OTP alternativo por correo no debe fingir AAL2. No suprimir
+  factor, políticas ni guards al facilitar el primer ingreso.
+- **Reenvío, idempotencia y cuentas legacy:** conservar estados
+  `sent/failed/uncertain`; nunca marcar `uncertain` como éxito ni reenviar
+  automáticamente. Un reenvío/reset autorizado gira la contraseña temporal
+  e invalida la anterior; evitar recrear usuarios ya creados. Invitaciones
+  heredadas siguen con token personal de 24 horas, canje y reenvío separados;
+  no migrar masivamente ni cambiar contraseñas heredadas en silencio. Reset
+  2FA requiere admin y confirmación.
+- **Emisor y destinos separados:** Next API → Supabase Edge
+  `qms-access-mailer` **v5 ACTIVE** → Google Apps Script → MailApp;
+  `qms_private.mail_wake_settings.access_endpoint` almacena el destino
+  exclusivo de acceso, separado de `endpoint` para Quejas. El RPC
+  `qms_access_mail_transport()` devuelve `coalesce(access_endpoint,endpoint)`.
+  Esta separación y la activación se verificaron en Supabase el 23 noviembre.
+  No sobrescribir el transporte de Quejas ni exponer secretos. El correo de
+  Quejas utiliza `delivery_request`; acceso usa `access_delivery_request`.
+- **Apps Script actual:** fuentes `integration/apps-script/quejas-mail/Codigo.gs`
+  y `Acceso.gs`; archivo íntegro para copiar/publicar:
+  `docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs`. La entrada
+  `doPost` enruta acceso al manejador versionado
+  `qmsAccessMailPostV20261121_`; el autodiagnóstico
+  `qmsAccessMailSelfTest()` debe indicar `valid:true`, recepción firmada,
+  `handlerVersion:'2026-11-21-v2'`, y rechazo simulado
+  `invalid_access_payload` **sin enviar correo**. Un diagnóstico previo
+  basado en `String(función)` causó falsos indicios de código duplicado:
+  no inferir duplicados sin comprobar el proyecto real.
+  El usuario confirmó correos de acceso reales recibidos en Gmail, pero
+  **no** presupone que la última plantilla de GitHub esté publicada en GAS.
+  Tras cambiar `.gs`, actualizar la **versión de implementación web existente
+  /exec** en Google; Vercel no lo hace por sí solo. No crear ni rotar URL sin
+  necesidad y no confundir éxito simulado con recepción real.
+- **Correo de acceso (diseño aprobado):** título «Tu acceso a ECA-QMS»,
+  sin subtítulo redundante «Acceso inicial al sistema». Mostrar **Usuario**
+  de manera visible y **Contraseña temporal** en un único bloque compacto
+  de `max-width:340px`, fondo suave, borde fino uniforme y tipografía
+  monoespaciada. Texto inferior solo «No compartás esta contraseña.»,
+  botón «Iniciar sesión» a `/login`, y vigencia «3 días hábiles» sin
+  «(lunes a viernes)». Evitar líneas azules verticales `border-left`,
+  tarjetas enormes anidadas y ayudas repetitivas; conservar el logo, la
+  cabecera y las plantillas de invitación/OTP/Quejas. El HTML usa estilos
+  inline y caracteres escapados por compatibilidad con Gmail/Outlook.
+- **Seguridad pendiente:** en pruebas anteriores se expuso un valor de
+  `QMS_MAIL_SECRET` en un registro. **Rotar coordinadamente**
+  `QMS_MAIL_SECRET` (Google Apps Script) y
+  `QUEJAS_MAIL_SIGNING_SECRET` (Supabase) comprobando su relación con
+  los demás envíos; no rotar unilateralmente ni publicar valores.
+  La rotación no está confirmada. No escribir credenciales, tokens,
+  correo personal o contraseñas temporales en AGENTS, logs o tests.
 
-**Diseño público:** `/q/seguimiento` y la confirmación de queja comparten
+**Evidencia y límites:** correo de acceso real confirmado visualmente por
+el propietario; autodiagnóstico GAS y verificaciones con mocks anteriores
+pasaron. La plantilla reducida más reciente necesita comprobar su publicación
+en GAS. El login con `phase='ready'` tuvo corrección de condición y build
+`READY` en Vercel; falta E2E automatizado y aceptación completa de sesiones,
+plazo vencido, reenvíos y factores. Referencias de regresión:
+`tests/auth-visibility.test.mjs`,
+`tests/usuarios-acceso-mail.test.mjs`,
+`tests/usuarios-acceso-seguro.test.mjs`,
+`tests/usuarios-invitacion-restaurada.test.mjs`,
+`tests/mi-perfil.test.mjs`. Ejecutar los tests realmente antes de
+declararlos aprobados; la mera existencia de fixtures no certifica
+entrega real o comportamiento en navegador.
+
+**Diseño público:** `/q/seguimiento` y confirmación de Queja comparten
 `FondoIdentidad`, `PublicQmsHeader`, tarjeta blanca centrada y pie interno.
-No hay botón «Actualizar estado». Formulario público ancho máximo 860px;
-plantilla institucional HTML de correo máximo 900px, más compacta, con fuentes
-de respaldo porque Gmail puede sustituir Inter. El correo ya entregado no
-cambia retroactivamente.
+Sin botón «Actualizar estado». Formulario público máximo 860 px; correo
+institucional máximo 900 px. No cambiar la estructura de Quejas por ajustes
+de correo de acceso; los correos ya enviados no cambian retroactivamente.
 
 
 ## Antes de editar
