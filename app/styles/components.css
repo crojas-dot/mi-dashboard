@@ -105,7 +105,7 @@
 /* Quejas ampliadas: tema azul solo del panel de acciones de Calidad.
    La hoja A4, el gris exterior y Mis Quejas mantienen sus colores originales. */
 [data-case-blue-panel="true"] {
-  background: linear-gradient(180deg, #1F508D 0%, #19477F 100%);
+  background: linear-gradient(180deg, rgb(31 80 141 / 82%) 0%, rgb(25 71 127 / 82%) 100%);
   color: #FFFFFF;
 }
 [data-case-blue-panel="true"] :is(h3, h4, .text-qms-dark) {
