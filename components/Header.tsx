@@ -47,8 +47,9 @@ export default function Header({
   const refreshAccess = useAuthStore((s) => s.refreshAccess)
   const [menuAbierto, setMenuAbierto] = useState<'agenda' | 'notif' | 'user' | null>(null)
   const [perfilTab, setPerfilTab] = useState<'detalles' | 'seguridad' | 'notificaciones' | null>(null)
-  const [avisoOmitido, setAvisoOmitido] = useState(false)
-  useEffect(() => { setAvisoOmitido(false) }, [user?.id])
+  const [aviso, setAviso] = useState({ userId: user?.id, omitido: false })
+  if (aviso.userId !== user?.id) setAviso({ userId: user?.id, omitido: false })
+  const avisoOmitido = aviso.userId === user?.id && aviso.omitido
   const avisoTemporal = access?.phase === 'ready' && access.temporaryPassword === true && !avisoOmitido
   const fechaLimite = access?.temporaryPasswordExpiresAt
     ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
@@ -219,7 +220,7 @@ export default function Header({
         Tu contraseña es temporal. Tenés 3 días hábiles para cambiarla{fechaLimite ? ` (hasta el ${fechaLimite})` : ''}. Podés seguir utilizando el sistema mientras tanto.
       </p>
       <button type="button" onClick={() => setPerfilTab('seguridad')} className="shrink-0 font-semibold text-qms-primary underline underline-offset-2 hover:text-qms-dark">Cambiar en Mi perfil</button>
-      <button type="button" onClick={() => setAvisoOmitido(true)} className="shrink-0 text-qms-muted hover:text-qms-dark" aria-label="Ocultar recordatorio de contraseña">Más tarde</button>
+      <button type="button" onClick={() => setAviso({ userId: user?.id, omitido: true })} className="shrink-0 text-qms-muted hover:text-qms-dark" aria-label="Ocultar recordatorio de contraseña">Más tarde</button>
     </div>}
     {perfilTab && <MiPerfilModal open fotoUrl={fotoUrl} initialTab={perfilTab} onClose={() => setPerfilTab(null)} />}
     </>
