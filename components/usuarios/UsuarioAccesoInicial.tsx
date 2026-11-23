@@ -20,7 +20,7 @@ export default function UsuarioAccesoInicial({ sendByEmail, requireMfa, disabled
         <div className="min-w-0 flex-1">
           <h4 id="access-email-label" className="text-sm font-semibold text-qms-dark">Enviar invitación por correo</h4>
           <p id="access-email-help" className="mt-1 text-xs leading-relaxed text-qms-muted">
-            Envía el usuario, la contraseña temporal de 72 horas y el botón para iniciar sesión. No requiere aceptar otra invitación.
+            Envía el usuario, la contraseña temporal de 3 días hábiles y el botón para iniciar sesión. No requiere aceptar otra invitación.
           </p>
         </div>
         <Switch aria-labelledby="access-email-label" aria-describedby="access-email-help" checked={sendByEmail} onChange={onEmail} disabled={disabled} />
