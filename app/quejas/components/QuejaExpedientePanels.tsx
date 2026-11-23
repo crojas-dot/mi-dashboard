@@ -38,14 +38,69 @@ const mailNames: Record<QuejaCorreoEstado['tipo'], string> = {
 }
 
 /** Muestra el diagnóstico guardado por el emisor y la acción permitida para ese evento. */
-export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry }: {
+export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry, compact = false }: {
   messages: QuejaCorreoEstado[]; finalizada?: boolean; loading?: boolean; error?: boolean; onRetry: () => void
   onRetrySend?: (eventId: string) => void
   retry?: { id?: string; pending: boolean; error?: string; succeeded: boolean }
+  compact?: boolean
 }) {
   const final = finalizada ? messages.find(item => item.tipo === 'final') : undefined
   const otherIssues = messages.filter(item => item.tipo !== 'final' && (
     ['retry', 'failed', 'uncertain'].includes(item.status) || (!!retry?.id && item.id === retry.id)))
+
+  if (compact) {
+    if (!finalizada && !error && otherIssues.length === 0) return null
+    const items = [...(final ? [final] : []), ...otherIssues]
+    const issueCount = items.filter(item => ['failed', 'retry', 'uncertain'].includes(item.status)).length
+
+    if (error || loading) return <div className="mt-3 border-t border-qms-border pt-2" aria-live="polite">
+      <p className="text-xs font-semibold text-qms-muted">Correos del expediente</p>
+      {error ? <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+        <p role="alert" className="text-xs text-qms-danger">No se pudo consultar el envío.</p>
+        <Button variant="secondary" size="sm" onClick={onRetry}>Actualizar</Button>
+      </div> : <p className="mt-1 text-xs text-qms-muted">Consultando envío…</p>}
+    </div>
+
+    const compactStatus = (item: QuejaCorreoEstado) => {
+      const name = mailNames[item.tipo] ?? 'Correo del expediente'
+      const issue = ['failed', 'uncertain'].includes(item.status)
+      const reason = ['retry', 'failed', 'uncertain', 'skipped'].includes(item.status) && quejaMailError(item.safe_error)
+      const retryResult = retry?.id === item.id ? retry : undefined
+      return <div key={item.id} className="min-w-0 border-b border-qms-border/70 py-2 last:border-b-0">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-xs font-medium text-qms-muted">{name}</p>
+            <p className={`mt-0.5 break-words text-sm font-medium ${issue ? 'text-qms-danger' : item.status === 'sent' ? 'text-qms-success' : 'text-qms-dark'}`}>
+              {item.status === 'retry' ? 'Reintento pendiente' : mailStates[item.status] ?? 'Estado por comprobar'}
+            </p>
+          </div>
+          {onRetrySend && quejaMailCanRetry(item) && <Button variant="secondary" size="sm" className="shrink-0"
+            aria-label={`Reintentar envío: ${name}`} disabled={retry?.pending}
+            loading={retryResult?.pending} onClick={() => onRetrySend(item.id)}>Reintentar</Button>}
+        </div>
+        {item.status === 'sent' && item.sent_at && <time className="mt-0.5 block text-xs text-qms-muted" dateTime={item.sent_at}>{caseDate(item.sent_at)}</time>}
+        {retryResult?.error && <p role="alert" className="mt-1 text-xs font-medium text-qms-danger">No se pudo reintentar.</p>}
+        {retryResult?.succeeded && ['pending', 'leased'].includes(item.status) && <p className="mt-1 text-xs text-qms-muted">Correo en cola de envío.</p>}
+        {(reason || retryResult?.error) && <details className="mt-1 min-w-0">
+          <summary className="w-fit cursor-pointer text-xs font-medium text-qms-primary">Ver motivo</summary>
+          <div className="mt-1 max-h-28 min-w-0 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-qms-muted [overflow-wrap:anywhere]">
+            {reason && <p>{reason}</p>}
+            {retryResult?.error && <p className="mt-1">{retryResult.error}</p>}
+          </div>
+        </details>}
+      </div>
+    }
+
+    return <div data-case-mail-compact className="mt-3 min-w-0 border-t border-qms-border pt-2" aria-live="polite">
+      <p className="text-xs font-semibold text-qms-muted">Correos{issueCount > 0 && <span className="ml-1 text-qms-danger"> · {issueCount} {issueCount === 1 ? 'incidencia' : 'incidencias'}</span>}</p>
+      {finalizada && !final && <p className="mt-1 text-xs text-qms-muted">Sin correo final registrado.</p>}
+      {items.slice(0, 2).map(compactStatus)}
+      {items.length > 2 && <details className="mt-1 min-w-0">
+        <summary className="cursor-pointer py-1 text-xs font-medium text-qms-primary">Ver {items.length - 2} {items.length === 3 ? 'correo más' : 'correos más'}</summary>
+        <div className="max-h-56 min-w-0 overflow-y-auto overscroll-contain">{items.slice(2).map(compactStatus)}</div>
+      </details>}
+    </div>
+  }
 
   if (!finalizada && !error && otherIssues.length === 0) return null
   if (error || loading) return <div className="mt-4 border-t border-qms-border pt-3" aria-live="polite">
@@ -141,10 +196,12 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false, qualitySideGutters = false, notionStyle = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean; qualitySideGutters?: boolean; notionStyle?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const centerRef = useRef<HTMLDivElement>(null)
+  const qualityPanelRef = useRef<HTMLElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     if (centerRef.current) centerRef.current.scrollTop = 0
+    if (qualityPanelRef.current) qualityPanelRef.current.scrollTop = 0
   }, [documentKey])
   // Igualar el ancho del ciclo en la cabecera con el ancho *útil* del editor:
   // el scrollport reserva un gutter de scrollbar que la cabecera no tiene.
@@ -189,7 +246,7 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
           <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? qualityTwoColumn ? `@min-[1100px]:order-none @min-[1100px]:overflow-visible ${showQualitySideGutters ? '@min-[1100px]:px-6 @min-[1100px]:pt-6' : ''}` : '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
             <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? `@min-[1100px]:min-h-[calc(100dvh-70px)] bg-white ${showQualitySideGutters ? '@min-[1100px]:mx-auto @min-[1100px]:w-full @min-[1100px]:max-w-[210mm] @min-[1100px]:border @min-[1100px]:border-qms-border @min-[1100px]:shadow-sm' : ''}` : ''}`}`}>{children}</main>
           </div>
-          <aside data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start @min-[1100px]:overflow-visible @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
+          <aside ref={showQualitySideGutters ? qualityPanelRef : undefined} data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start ${showQualitySideGutters ? '@min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[scrollbar-width:thin]' : '@min-[1100px]:overflow-visible'} @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
             {action}
             {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
               <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTA QUEJA</p>
