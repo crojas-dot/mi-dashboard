@@ -29,7 +29,7 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   y no aceptar secretos enviados arbitrariamente desde el navegador.
 - **Correo inicial sencillo:** `accessService.ts` genera en servidor una
   contraseña temporal aleatoria de **24 caracteres**. `qms_temporary_access_command`
-  confirma la política y vigencia de **72 horas**. El correo `temporary_access`
+  confirma la política y vigencia de **3 días hábiles**. El correo `temporary_access`
   muestra **Usuario = email**, **Contraseña temporal** y botón
   **«Iniciar sesión»** a `/login`. No crear un enlace de aceptación adicional.
   Con correo activado **nunca** devolver ni mostrar la contraseña al admin.
