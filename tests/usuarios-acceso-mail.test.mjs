@@ -128,7 +128,7 @@ test('autoprueba confirma respuesta firmada en ambos manejadores sin enviar corr
  assert.doesNotMatch(JSON.stringify(f.logs),/synthetic-access-mail-key/)
 })
 
-test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 72 horas',async()=>{
+test('la contraseña temporal se entrega en un único correo con enlace al login y vigencia de 3 días hábiles',async()=>{
  const f=fixture(),eventId=randomUUID(),message={eventId,kind:'temporary_access',to:'synthetic@example.test',
   name:'Usuario de prueba',password:'A9!synthetic-password-2026',url:origin+'/login'}
  const response=await f.send(message)
@@ -137,7 +137,7 @@ test('la contraseña temporal se entrega en un único correo con enlace al login
  assert.equal(f.sent.length,1)
  assert.match(f.sent[0].body,/Usuario: synthetic@example\\.test/)
  assert.match(f.sent[0].body,/Contraseña temporal:/)
- assert.match(f.sent[0].body,/72 horas/)
+ assert.match(f.sent[0].body,/3 días hábiles/)
  assert.match(f.sent[0].body,/cambiarla/)
  assert.match(f.sent[0].htmlBody,/Iniciar sesión/)
  assert.match(f.sent[0].htmlBody,/background:#f4f7fb/)
