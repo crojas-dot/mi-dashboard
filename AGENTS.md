@@ -47,7 +47,7 @@ volver a consultar GitHub y el alias de Vercel si cambia el repositorio.
   antes de guardarla. El cambio temporal pasa siempre por
   `POST /api/auth/acceso` con confirmación y operación correlacionada,
   **no** por la actualización genérica de Auth. La migración
-  `20261123093000_acceso_temporal_tres_dias_habiles.sql` aplica el plazo
+  `20261123153151_acceso_temporal_tres_dias_habiles_20261123.sql` aplica el plazo
   en `access_ready`, `access_summary`, RPC y el trigger de Auth; no
   basta con cambiar el UI. Al vencer, se bloquea por servidor/RLS y
   se requiere restablecimiento administrativo. No hay cambio para cuentas
