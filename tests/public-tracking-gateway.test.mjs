@@ -287,6 +287,29 @@ test('un seguimiento activo con configuración incompleta no anuncia compatibili
   assert.deepEqual(await response.json(), { enabled: false })
 })
 
+test('la tarjeta de seguimiento no crece según las etapas ni la longitud de la respuesta', () => {
+  const visit = (node) => Array.isArray(node) ? node.flatMap(visit) : node?.props ? [node, ...visit(node.props.children)] : []
+  const render = data => {
+    let index = 0
+    const {default: Page} = loadModule('app/q/seguimiento/PublicTrackingPage.tsx', {
+      react: { useState: initial => [index++ === 0 ? data : initial, () => {}], useEffect() {}, useRef: value => ({current:value}) },
+      '@/lib/queries/useIdentidadImagenes': {useIdentidadImagenes: () => ({data: undefined})},
+      '@/lib/services/publicTrackingClient': {consultarSeguimiento: async () => {throw new Error('sin red')}},
+    })
+    return Page({initialLogo: ''})
+  }
+  const first = render({...status, estado:'Recibido', respuesta:null, numero_oficio:null})
+  const final = render({...status, estado:'Finalizado', respuesta:'Respuesta '.repeat(500),
+    etapas:['Recepción','Investigación','Respuesta','Cierre'].map(nombre => ({nombre, fecha:status.recibido_at}))})
+  assert.equal(first.props.className, final.props.className)
+  assert.match(first.props.className, /sm:h-/)
+  for (const tree of [first, final]) {
+    const nodes = visit(tree)
+    assert.equal(nodes.filter(node => node.type === 'li').length, 4)
+    assert.match(nodes.find(node => node.props['data-public-tracking-scroll']).props.className, /overflow-y-auto/)
+  }
+})
+
 test('la página pública solo recibe disponibilidad y nunca secretos de configuración', async () => {
   for (const available of [false, true]) {
     const initialLogo = '/imagen-de-prueba.webp'

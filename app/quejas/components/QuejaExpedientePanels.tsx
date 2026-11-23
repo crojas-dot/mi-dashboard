@@ -29,7 +29,7 @@ export function CaseCompletionDate({ queja }: { queja: Queja }) {
 const mailStates: Record<string, string> = { pending: 'En cola de envío', leased: 'Enviando', retry: 'Reintento automático pendiente', sent: 'Enviado', uncertain: 'Envío por comprobar', failed: 'No se pudo enviar', skipped: 'Envío omitido' }
 const mailNames: Record<QuejaCorreoEstado['tipo'], string> = {
   recibido: 'Acuse de recibo', final: 'Correo al interesado', investigacion: 'Investigación',
-  solicitud_informacion: 'Solicitud de información', interno_recibido: 'Nueva queja', interno_evaluacion_1: 'Plazo de evaluación',
+  solicitud_informacion: 'Solicitud de información', interno_recibido: 'Nueva solicitud', interno_evaluacion_1: 'Plazo de evaluación',
   interno_asignacion: 'Asignación', interno_investigacion_5: 'Plazo de investigación', interno_investigacion_3: 'Plazo de investigación',
   interno_evaluacion_vencida: 'Evaluación vencida', interno_investigacion_vencida: 'Investigación vencida',
   interno_respuesta_cliente: 'Respuesta del cliente', interno_devolucion: 'Devolución para corregir', interno_reapertura: 'Reapertura',
@@ -184,8 +184,8 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }) {
   return <>
     <div className="hidden items-center gap-1 @min-[480px]/workspace:flex">
-      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja anterior" title="Queja anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-6" /></Button>
-      <Button size="icon" variant="ghost" className="size-11!" aria-label="Queja siguiente" title="Queja siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-6" /></Button>
+      <Button size="icon" variant="ghost" className="size-11!" aria-label="Expediente anterior" title="Expediente anterior" disabled={!onPrevious || disabled} onClick={onPrevious}><ChevronLeft aria-hidden="true" className="size-6" /></Button>
+      <Button size="icon" variant="ghost" className="size-11!" aria-label="Expediente siguiente" title="Expediente siguiente" disabled={!onNext || disabled} onClick={onNext}><ChevronRight aria-hidden="true" className="size-6" /></Button>
     </div>
     <Button size="icon" variant="ghost" aria-label={expanded ? 'Reducir expediente' : 'Ampliar expediente'} title={expanded ? 'Reducir expediente' : 'Ampliar expediente'}
       aria-pressed={expanded} onClick={onToggleExpanded}>{expanded ? <Minimize2 aria-hidden="true" className="size-5" /> : <Maximize2 aria-hidden="true" className="size-5" />}</Button>
@@ -251,7 +251,7 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
           <aside ref={showQualitySideGutters ? qualityPanelRef : undefined} data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start ${showQualitySideGutters ? '@min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[scrollbar-width:thin]' : '@min-[1100px]:overflow-visible'} @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
             {action}
             {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
-              <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTA QUEJA</p>
+              <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTE EXPEDIENTE</p>
               {requestFooter && <div className="mt-2 space-y-2">{requestFooter}</div>}
               {request && <details className="mt-4 rounded-lg border border-[#DADCE0] bg-white">
                 <summary className="cursor-pointer px-3.5 py-3 text-sm font-semibold text-qms-dark">Datos del solicitante</summary>

@@ -627,12 +627,12 @@ function qmsMailFrame_(title, subtitle, content, footer, identidad, folio) {
 }
 
 function qmsMailHtml_(message, identidad) {
-  var title = {recibido:'Queja registrada',final:'Resultado de la gestión',
-    interno_recibido:'Nueva queja recibida',interno_evaluacion_1:'Evaluación por vencer',interno_asignacion:'Investigación asignada',
+  var title = {recibido:'Solicitud recibida',final:'Resultado de la gestión',
+    interno_recibido:'Nueva solicitud',interno_evaluacion_1:'Evaluación por vencer',interno_asignacion:'Investigación asignada',
     interno_investigacion_5:'Investigación por vencer',interno_investigacion_3:'Investigación por vencer',
     interno_evaluacion_vencida:'Evaluación vencida',interno_investigacion_vencida:'Investigación vencida',
     solicitud_informacion:'Solicitud de información',interno_respuesta_cliente:'Información nueva del cliente',
-    interno_devolucion:'Corrección requerida',interno_reapertura:'Queja reabierta',interno_recordatorio_3:'Vencimiento próximo',
+    interno_devolucion:'Corrección requerida',interno_reapertura:'Expediente reabierto',interno_recordatorio_3:'Vencimiento próximo',
     interno_recordatorio_1:'Vencimiento urgente',interno_escalamiento_1:'Seguimiento preventivo',interno_fallo_entrega:'Verificar entrega'}[message.kind];
   if (typeof title !== 'string') throw new Error('invalid_mail_request');
   var tracking = Object.prototype.hasOwnProperty.call(message, 'trackingUrl');
@@ -645,8 +645,8 @@ function qmsMailHtml_(message, identidad) {
   var action = tracking && (message.kind === 'recibido' || message.kind === 'solicitud_informacion')
     ? '<p style="margin:14px 0 8px"><a href="' + qmsMailEscape_(message.trackingUrl) + '" rel="noreferrer" style="display:inline-block;max-width:100%;box-sizing:border-box;padding:10px 18px;border-radius:4px;background:#024796;color:#ffffff;text-decoration:none;text-align:center;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;font-weight:600;line-height:1.5">' +
       (message.kind === 'solicitud_informacion' ? 'Responder solicitud' : 'Consultar mi trámite') + '</a></p>' +
-      '<p style="margin:0;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#6c757d">El botón abre tu trámite directamente, sin contraseña. El enlace es personal: conservá este correo y evitá compartirlo.</p>'
+      '<p style="margin:0;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#6c757d">Enlace personal. Por seguridad, no lo comparta.</p>'
     : '';
   return qmsMailFrame_(title, '', paragraphs + action,
-    'Notificación automática de QMS ECA. Conservá este número para consultas con Gestión de Calidad.', identidad, message.folio);
+    'Notificación automática · QMS ECA.', identidad, message.folio);
 }

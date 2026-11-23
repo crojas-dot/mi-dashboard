@@ -303,7 +303,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       }
     } catch (error) {
       if (operation.isCurrent()) showError(error, confirmed
-        ? 'La queja se guardó, pero no se pudo actualizar la vista'
+        ? 'La solicitud se guardó, pero no se pudo actualizar la vista'
         : errorMessage)
     } finally {
       if (operation.isCurrent()) setPending(false)
@@ -327,7 +327,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       () => publication === 'legacy'
         ? transicionarQueja(workflowQueja, 'No Procede', { resolucion: justificacion, resolucionFormato: justificacionFormato, numeroOficio: oficioWorkflow })
         : resolverQuejaConDocumento(workflowQueja, publication),
-      'Queja marcada como No Procede', 'No se pudo marcar la queja como No Procede',
+      'Solicitud marcada como No Procede', 'No se pudo marcar la solicitud como No Procede',
       () => { setDecisionOpen(false); setDecisionProcedencia(null); setJustificacion(''); resetPublicacion() },
     )
   }
@@ -391,7 +391,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const handleConfirmarResolucion = async () => {
     if (workflowPending) return
     if (!resolucion.trim()) {
-      showError(null, 'Escribí el análisis / resolución final antes de resolver la queja')
+      showError(null, 'Escribí el análisis / resolución final antes de resolver la solicitud')
       return
     }
     // La resolución interna ES la respuesta al cliente al publicarla: se comparte la
@@ -404,7 +404,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       () => publication === 'legacy'
         ? transicionarQueja(workflowQueja, 'Resuelto', { resolucion, resolucionFormato, numeroOficio: oficioWorkflow })
         : resolverQuejaConDocumento(workflowQueja, publication),
-      'Queja resuelta', 'No se pudo resolver la queja',
+      'Solicitud resuelta', 'No se pudo resolver la solicitud',
       () => { setResolucionAbierta(false); setResolucion(''); resetPublicacion() },
     )
   }
@@ -424,12 +424,12 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const handleReabrir = async () => {
     if (workflowPending || estadoActual !== 'Finalizado' || !esStaff) return
     if (!motivoReapertura.trim()) {
-      showError(null, 'Escribí el motivo antes de reabrir la queja')
+      showError(null, 'Escribí el motivo antes de reabrir el expediente')
       return
     }
     await runCaseUpdate(
       () => reabrirQuejaFinalizada(workflowQueja, motivoReapertura),
-      'Queja reabierta. Nuevo plazo: 15 días hábiles.', 'No se pudo reabrir la queja',
+      'Expediente reabierto. Nuevo plazo: 15 días hábiles.', 'No se pudo reabrir el expediente',
       () => { setReaperturaAbierta(false); setMotivoReapertura('') }, setReabriendo,
     )
   }
@@ -488,7 +488,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const handleDevolverInvestigacion = () => {
     if (!motivoDevolucion.trim()) { showError(null, 'Escribí el motivo de devolución.'); return }
     return runCaseUpdate(() => revisarResolucionQueja(workflowQueja, 'returned', motivoDevolucion, adjuntosDevolucion.map(file => file.id)),
-      'Queja devuelta a investigación', 'No se pudo devolver la queja',
+      'Solicitud devuelta a investigación', 'No se pudo devolver la solicitud',
       () => { setReviewOpen(false); setMotivoDevolucion(''); setAdjuntosDevolucion([]); setErrorAdjuntoDevolucion(''); void refetchActividad() })
   }
 
@@ -509,7 +509,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         setWorkflowRevision(null)
         showSuccess('Acción SACP ' + (accion.folio || 'registrada') + ' vinculada al expediente.')
         if (!actualizada) {
-          showError(null, 'La acción se creó, pero no se pudo actualizar la revisión del expediente. Reabrí la queja antes de continuar.')
+          showError(null, 'La acción se creó, pero no se pudo actualizar la revisión del expediente. Reabrí el expediente antes de continuar.')
           onClose()
         }
       }
@@ -598,7 +598,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     </div>
   </section>
   const investigationDocument = (queja.resolucion || analysis || queja.numero_oficio_resolucion) && <CaseSection variant="document" source={['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'Gestión de Calidad' : 'Responsable'} title={estadoActual === 'Pendiente de Revisión GC' ? 'Propuesta del responsable' : 'Documento interno de investigación'}><div data-case-reading-copy>{analysis && <div className="mb-5"><h4 className="mb-2 text-sm font-medium text-qms-muted">Análisis</h4><div data-case-reading-text><RichTextContent value={analysis.value} format={analysis.format} /></div></div>}{queja.resolucion && <div><h4 className="mb-2 text-sm font-medium text-qms-muted">Resolución</h4><div data-case-reading-text><RichTextContent value={queja.resolucion} format={queja.resolucion_formato} /></div></div>}{queja.numero_oficio_resolucion && <dl className="mt-4 border-t border-qms-border pt-3 text-sm"><dt className="text-qms-muted">{estadoActual === 'No Procede' ? 'N.º de oficio explicativo' : 'N.º de oficio de resolución'}</dt><dd className="mt-1 break-words">{queja.numero_oficio_resolucion}</dd></dl>}</div></CaseSection>
-  const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir queja'
+  const workflowTitle = decisionOpen ? 'Decisión de procedencia' : resolucionAbierta ? 'Resolución de Calidad' : reviewOpen ? 'Devolver a investigación' : 'Reabrir expediente'
   const terminalDocument = decisionOpen && decisionProcedencia === 'no_procede' || resolucionAbierta
   const clienteTab = terminalDocument && publicacionDisponible && documentTab === 'cliente'
   const publicationPanel = <QuejaPublicacionPanel id={queja.id} respuesta={respuestaPublica}
@@ -760,7 +760,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} />}
           {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"
             className="min-h-10 w-full" disabled={workflowPending || editing}
-            onClick={() => { beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw aria-hidden="true" className="size-4" />Reabrir queja</Button>}
+            onClick={() => { beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw aria-hidden="true" className="size-4" />Reabrir expediente</Button>}
         </CaseAction>}>
             {readOnlyStage ? readOnlyDocument : qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
@@ -791,7 +791,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       {decisionOpen && decisionProcedencia && <Button variant={decisionProcedencia === 'no_procede' ? 'danger' : 'primary'} disabled={workflowPending || (decisionProcedencia === 'procede' ? usuariosLoading || !!usuariosError : !publicacionVerificada)} onClick={decisionProcedencia === 'procede' ? handleGuardarProcede : handleGuardarNoProcede} loading={loading}>{decisionProcedencia === 'no_procede' && publicacionDisponible ? 'Publicar no procedencia' : 'Guardar'}</Button>}
       {resolucionAbierta && <Button onClick={handleConfirmarResolucion} loading={loading} disabled={workflowPending || !publicacionVerificada}>{publicacionDisponible ? 'Publicar y resolver' : 'Confirmar resolución'}</Button>}
       {reviewOpen && <><Button variant="secondary" onClick={closeEditor} disabled={workflowPending}>Cancelar devolución</Button><Button onClick={handleDevolverInvestigacion} loading={loading} disabled={workflowPending || !motivoDevolucion.trim() || !!errorAdjuntoDevolucion}>Confirmar devolución</Button></>}
-      {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo} disabled={workflowPending || !motivoReapertura.trim()}>Reabrir queja</Button>}
+      {reaperturaAbierta && <Button onClick={handleReabrir} loading={reabriendo} disabled={workflowPending || !motivoReapertura.trim()}>Reabrir expediente</Button>}
     </div>}>
       <div className="flex min-h-0 flex-1 flex-col bg-qms-surface select-text">
         {terminalDocument && !publicacionVerificada && <div className="shrink-0 border-b border-qms-border px-4 py-2 text-sm text-qms-muted">
@@ -898,7 +898,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
           </section>
         </div>}
         {reaperturaAbierta && <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain [will-change:transform] p-4">
-          <p className="text-base leading-relaxed text-qms-muted">La queja volverá a <strong>En investigación</strong> y comenzará un nuevo plazo de <strong>15 días hábiles</strong>. El motivo y el ciclo anterior quedarán registrados en el historial.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} required maxLength={10000} placeholder="Explicá por qué debe reabrirse el expediente..." rows={6} className="ui-textarea w-full px-3 py-2 text-base leading-relaxed" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
+          <p className="text-base leading-relaxed text-qms-muted">El expediente volverá a <strong>En investigación</strong> y comenzará un nuevo plazo de <strong>15 días hábiles</strong>. El motivo y el ciclo anterior quedarán registrados en el historial.</p><Field id={'queja-reapertura-' + queja.id} label="Motivo de reapertura"><textarea id={'queja-reapertura-' + queja.id} required maxLength={10000} placeholder="Explicá por qué debe reabrirse el expediente..." rows={6} className="ui-textarea w-full px-3 py-2 text-base leading-relaxed" value={motivoReapertura} disabled={workflowPending} onChange={event => { draftVersions.current.workflow++; setMotivoReapertura(event.target.value) }} /></Field>
         </div>}
         </div>
       </div>
@@ -920,7 +920,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       onReintentar={() => { void refetchAdjuntos() }} onSubir={handleSubirAdjunto} subiendo={subiendoAdjunto} onUpdated={onUpdated} onClose={completed => { setRespuestaCase(null); if (respuestaNoProcede) { setDecisionProcedencia(null); setDecisionOpen(false) } if (completed) { setWorkflowRevision(null); setDecisionOpen(false); setJustificacion(''); resetPublicacion() } setRespuestaNoProcede(false) }} />}
     {informeOpen && esStaff && <QuejaInformeModal queja={queja} anexos={adjuntos} autor={user?.nombre ?? 'Gestión de Calidad'}
       onClose={() => setInformeOpen(false)} />}
-    <ConfirmDialog open={confirmarSACP} title="Derivar a SACP" message="Se creará una acción correctiva vinculada a esta queja. La revisión de Calidad y la respuesta al cliente continuarán su flujo independiente." confirmLabel="Crear acción SACP" loading={derivando} onCancel={() => setConfirmarSACP(false)} onConfirm={() => { void handleDerivarSACP() }} />
+    <ConfirmDialog open={confirmarSACP} title="Derivar a SACP" message="Se creará una acción correctiva vinculada a este expediente. La revisión de Calidad y la respuesta al cliente continuarán su flujo independiente." confirmLabel="Crear acción SACP" loading={derivando} onCancel={() => setConfirmarSACP(false)} onConfirm={() => { void handleDerivarSACP() }} />
     <ConfirmDialog open={confirmarEliminacion !== null} title="Eliminar adjunto" message="¿Seguro que deseas eliminar este adjunto? Esta acción no se puede deshacer." confirmLabel="Eliminar" danger loading={eliminandoAdjunto !== null} onConfirm={() => confirmarEliminacion && handleEliminarAdjunto(confirmarEliminacion)} onCancel={() => setConfirmarEliminacion(null)} />
   </>
 }

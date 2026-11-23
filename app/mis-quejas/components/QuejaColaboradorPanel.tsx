@@ -219,7 +219,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   }
   const handleEnviarRevision = async () => {
     if (resolutionPending || borradorVersion === null) return
-    if (!editable) { showError(null, 'Esta queja no está disponible para enviar a revisión.'); return }
+    if (!editable) { showError(null, 'Esta solicitud no está disponible para enviar a revisión.'); return }
     if (!resolucion.trim()) { showError(null, 'Escribí la conclusión antes de enviarla a revisión'); return }
     if (resolucion.length > DOCUMENT_LIMIT) { showError(null, 'La conclusión admite hasta 10.000 caracteres.'); return }
     const operation = scope.start('workflow')

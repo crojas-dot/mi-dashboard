@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { KeyRound, Mail, RotateCcw, ShieldCheck } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import ConfirmDialog from '@/components/usuarios/ConfirmDialog'
@@ -28,8 +28,18 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
   const [refreshFailed, setRefreshFailed] = useState(false)
   const [manualPassword, setManualPassword] = useState<string | null>(null)
   const [manualCopied, setManualCopied] = useState(false)
-  useEffect(() => { if (!active) { setManualPassword(null); setManualCopied(false) } }, [active])
-  useEffect(() => { setManualPassword(null); setManualCopied(false) }, [usuario.auth_id])
+  const [manualContext, setManualContext] = useState({ active, authId: usuario.auth_id })
+  // Borrar el secreto antes de renderizar otra visita o cuenta, sin un efecto
+  // que dispare un segundo render. Una respuesta tardía no debe mostrarlo.
+  if (manualContext.active !== active || manualContext.authId !== usuario.auth_id) {
+    setManualContext({ active, authId: usuario.auth_id })
+    setManualPassword(null)
+    setManualCopied(false)
+  }
+  const manualVisit = useRef(0)
+  useLayoutEffect(() => {
+    return () => { manualVisit.current++ }
+  }, [active, usuario.auth_id])
   const policy = usuario.access
   const invited = policy?.status === 'invite_pending' || policy?.status === 'invite_expired'
   const temporary = !!policy?.temporaryPassword
@@ -42,6 +52,7 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
   async function run() {
     const operation = confirm
     if (!operation || unavailable || !usuario.auth_id || !onBegin()) return
+    const visit = manualVisit.current
     setRunning(true); setError(''); setMessage(''); setRefreshFailed(false)
     setManualPassword(null); setManualCopied(false)
     try {
@@ -52,7 +63,7 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
       } else if (operation === 'manual') {
         if (typeof result.tempPassword !== 'string') throw new Error('El servicio no confirmó la contraseña manual.')
         setDelivery(null)
-        setManualPassword(result.tempPassword)
+        if (active && manualVisit.current === visit) setManualPassword(result.tempPassword)
       } else {
         setDelivery({ ...result, kind: invited && operation === 'resend' ? 'invitation' : 'temporary' })
       }
@@ -114,7 +125,7 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
       {delivery.kind === 'invitation' ? 'La invitación se generó, pero no se confirmó su envío.' : 'Se generó una contraseña temporal, pero no se confirmó su envío.'}
       {delivery.accessDeliveryError ? ' ' + delivery.accessDeliveryError : ' Verificá el resultado antes de reenviar.'}
     </p>}
-    {manualPassword && <div role="status" className="mt-4 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
+    {active && manualContext.authId === usuario.auth_id && manualPassword && <div role="status" className="mt-4 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
       <p className="text-sm font-medium text-qms-dark">Contraseña temporal generada · válida durante 3 días hábiles</p>
       <div><p className="text-xs text-qms-muted">Usuario</p><p className="break-all text-sm text-qms-dark">{usuario.email}</p></div>
       <div><p className="text-xs text-qms-muted">Contraseña temporal</p>

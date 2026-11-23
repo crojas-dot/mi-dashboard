@@ -441,7 +441,7 @@ test('avisos internos optan por contrato v2 y conservan exactamente el snapshot 
     assert.deepEqual(Object.keys(row).sort(), ['id', 'claim_token', 'tipo', 'destinatario', 'folio', 'estado', 'numero_oficio'].sort())
     const message = messages.quejaMailMessage(row)
     assert.equal(message.kind, tipo)
-    assert.match(message.subject, /Queja 2026-001/)
+    assert.match(message.subject, /Solicitud 2026-001/)
     assert.ok(message.subject.length <= 180 && message.body.length <= 6000)
     assert.doesNotMatch(JSON.stringify(message), /PRIVATE_|private@example|expires_at|notas/)
     const f = fixture({ rows: [raw] })

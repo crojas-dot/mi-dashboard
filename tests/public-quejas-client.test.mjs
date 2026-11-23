@@ -405,7 +405,7 @@ function pageHarness(query, form = {}) {
     '@/components/ui/Input': { default: 'Input' },
     '@/components/ui/Select': { default: 'Select' },
     '@/components/ui/Textarea': { default: 'Textarea' },
-    '@/components/ui/LoadingSkeleton': { default: 'LoadingSkeleton' },
+    '@/components/ui/Skeleton': { default: 'Skeleton' },
     'lucide-react': { X: 'X', Upload: 'Upload', CircleCheck: 'CircleCheck' },
   }, { document: { getElementById: id => ({
     setCustomValidity: message => focusCalls.push({ action: 'validity', id, message }),
@@ -428,13 +428,28 @@ function pageHarness(query, form = {}) {
   } }
 }
 
+test('la carga inicial reserva el mismo lienzo del formulario completo', () => {
+  const view = pageHarness({ isPending: true, data: undefined })
+  const pending = view.render()
+  assert.equal(pending.props['data-public-form-loading'], true)
+  assert.equal(pending.props['aria-busy'], true)
+  assert.equal(elementsOfType(pending, 'form').length, 0)
+  assert.match(pending.props.className, /sm:flex-1/)
+  assert.equal(elementsOfType(pending, 'Skeleton').length, 14)
+  view.query.isPending = false
+  view.query.data = { nombre: 'Formulario sintético', uploadsAllowed: true }
+  const ready = view.render()
+  assert.equal(ready.props.className, pending.props.className)
+  assert.equal(elementsOfType(ready, 'form').length, 1)
+})
+
 test('503 muestra un estado de servicio limpio y un token nuevo remonta otra visita', async () => {
   const view = pageHarness({ isPending: false, data: undefined, isFetching: false })
   view.query.error = new view.api.PublicRequestError(503)
   const rendered = textContent(view.render())
   assert.match(rendered, /Servicio no disponible/)
   assert.match(rendered, /Reintentar/)
-  assert.doesNotMatch(rendered, /Correo electrónico|Registro de queja|Seleccionar categoría/)
+  assert.doesNotMatch(rendered, /Correo electrónico|Registro de solicitud|Seleccionar categoría/)
   const firstVisit = findElement(await view.page(), element => element.type === view.Form)
   view.setToken('another-synthetic-form')
   const nextVisit = findElement(await view.page(), element => element.type === view.Form)
@@ -504,7 +519,7 @@ for (const scenario of [
     });
     const rendered = view.render();
     assert.equal(elementsOfType(rendered, 'form').length, 1);
-    assert.match(textContent(rendered), /Registro de queja/);
+    assert.match(textContent(rendered), /Registro de solicitud/);
     assert.match(textContent(rendered), /Q-SYNTHETIC-001/);
   });
 }
@@ -517,12 +532,12 @@ test('todos los adjuntos y la finalización confirmados muestran la tarjeta fina
   });
   const rendered = view.render();
   assert.equal(elementsOfType(rendered, 'form').length, 0);
-  assert.match(textContent(rendered), /Queja registrada/);
+  assert.match(textContent(rendered), /Solicitud registrada/);
   assert.match(textContent(rendered), /Q-SYNTHETIC-001/);
   assert.match(textContent(rendered), /Evidencias adjuntadas:\s+1\s+de\s+1/);
-  assert.match(textContent(rendered), /Gestión de Calidad revisará tu queja/);
+  assert.match(textContent(rendered), /Gestión de Calidad revisará tu solicitud/);
   assert.match(textContent(rendered), /Recibirás la confirmación en el correo electrónico indicado/);
-  assert.doesNotMatch(textContent(rendered), /Registro de queja|Reintentar|Subiendo|Envío completado|correo enviado/i);
+  assert.doesNotMatch(textContent(rendered), /Registro de solicitud|Reintentar|Subiendo|Envío completado|correo enviado/i);
 });
 
 test('un folio confirmado permanece visible aunque falle la siguiente lectura de metadata', () => {
@@ -530,7 +545,7 @@ test('un folio confirmado permanece visible aunque falle la siguiente lectura de
     receipt: receipt({ submissionId: 'synthetic-submission' }), finalized: true, enviando: false, error: '',
   })
   const rendered = textContent(view.render())
-  assert.match(rendered, /Queja registrada/)
+  assert.match(rendered, /Solicitud registrada/)
   assert.match(rendered, /Q-SYNTHETIC-001/)
   assert.match(rendered, /Conservalo para tus consultas/)
   assert.doesNotMatch(rendered, /Servicio no disponible/)

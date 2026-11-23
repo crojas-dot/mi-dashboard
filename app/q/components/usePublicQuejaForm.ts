@@ -18,7 +18,7 @@ interface ArchivoPublico {
 const EMPTY_DRAFT: PublicQuejaDraft = { nombre: '', email: '', telefono: '', categoria: '', descripcion: '' }
 
 /** La reclamación se conserva en el navegador por sesión y token: si la confirmación se
- * pierde o la página recarga, reenviar recupera el mismo folio en lugar de crear otra queja. */
+ * pierde o la página recarga, reenviar recupera el mismo folio en lugar de crear otra solicitud. */
 interface ReclamacionPublica {
   v: 1
   submissionId: string
@@ -196,7 +196,7 @@ export function usePublicQuejaForm(token: string) {
         actualizarReclamacion(token, { finalized: true, trackingUrl: result?.trackingUrl ?? null, trackingState: result.trackingState })
       }
     } catch (failure) {
-      if (isCurrent()) setError(publicFinalizationMessage(failure, 'La queja está registrada. No se pudo confirmar la finalización; podés reintentar sin crear otra queja.'))
+      if (isCurrent()) setError(publicFinalizationMessage(failure, 'La solicitud está registrada. No se pudo confirmar la finalización; podés reintentar sin crear otra solicitud.'))
     }
   }
 
@@ -222,7 +222,7 @@ export function usePublicQuejaForm(token: string) {
       guardarReclamacion(token, snapshotReclamacion(submission.current))
     }
     setInvalidField(null)
-    setEtapa('Registrando queja…')
+    setEtapa('Registrando solicitud…')
     const attempted = submission.current
     setDraft(validated)
     setConfirmationPending(true)
@@ -306,7 +306,7 @@ export function usePublicQuejaForm(token: string) {
       setTrackingUrl(result.trackingUrl)
       actualizarReclamacion(token, { trackingUrl: result.trackingUrl, trackingState: result.trackingState })
     } catch (failure) {
-      if (isCurrent()) setError(publicFinalizationMessage(failure, 'Tu queja está registrada. No se pudo recuperar el enlace de seguimiento.'))
+      if (isCurrent()) setError(publicFinalizationMessage(failure, 'Tu solicitud está registrada. No se pudo recuperar el enlace de seguimiento.'))
     } finally {
       if (isCurrent()) { request.current = null; lock.finish() }
     }

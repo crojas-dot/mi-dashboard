@@ -9,7 +9,7 @@ export const CASE_FLOW = [
 ] as const
 export const CASE_ACTIONS: Record<string, { step: number; title: string; detail: string; action: string }> = {
   Recibido: { step: 1, title: 'Evaluar procedencia', detail: 'Revisá la solicitud y asigná responsable si procede.', action: 'Tomar decisión' },
-  'En Investigación': { step: 2, title: 'Investigar la queja', detail: 'Documentá los hallazgos, la resolución y su oficio.', action: 'Resolver' },
+  'En Investigación': { step: 2, title: 'Investigar la solicitud', detail: 'Documentá los hallazgos, la resolución y su oficio.', action: 'Resolver' },
   'Pendiente de Revisión GC': { step: 3, title: 'Revisar la conclusión', detail: 'Aprobá la propuesta o devolvela para ajustes.', action: 'Aprobar y continuar' },
   Resuelto: { step: 4, title: 'Preparar respuesta al cliente', detail: 'Generá el expediente y redactá el correo final.', action: 'Redactar respuesta' },
   Finalizado: { step: 5, title: 'Expediente finalizado', detail: 'El expediente conserva sus evidencias y seguimiento.', action: '' },
@@ -131,7 +131,7 @@ export function getCaseRoleCycle(queja: Pick<Queja, 'estado'>, audience: CaseAud
     }
   }
   if (estado === 'No Procede') return {
-    label: 'Tu trabajo', detail: 'La queja no procede y no requiere investigación.',
+    label: 'Tu trabajo', detail: 'La solicitud no procede y no requiere investigación.',
     steps: [{ id: 'not_investigated', label: 'Sin investigación', current: true, completed: false }],
   }
   const positions: Record<string, { current: number; completed: number }> = {

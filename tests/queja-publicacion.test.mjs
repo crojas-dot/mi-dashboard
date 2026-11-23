@@ -252,7 +252,7 @@ test('flag público no confirmado bloquea publicación de No Procede; analista n
   assert.equal(analyst.button('Resolver'), undefined)
 })
 
-test('Reabrir queja solo figura en la columna de acciones para Finalizado', () => {
+test('Reabrir expediente solo figura en la columna de acciones para Finalizado', () => {
   for (const estado of ['Recibido', 'En Investigación', 'Pendiente de Revisión GC', 'Resuelto', 'No Procede']) {
     const panel = panelFixture()
     panel.select({ estado })
@@ -260,12 +260,12 @@ test('Reabrir queja solo figura en la columna de acciones para Finalizado', () =
     assert.ok(shortcut, 'historial accesible para ' + estado)
     shortcut.props.onClick()
     panel.render()
-    assert.equal(panel.button('Reabrir queja'), undefined, 'sin acción de reapertura en ' + estado)
+    assert.equal(panel.button('Reabrir expediente'), undefined, 'sin acción de reapertura en ' + estado)
   }
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
   const aside = panel.nodes().find(node => node.type?.name === 'CaseAction')
-  const reopen = panel.button('Reabrir queja')
+  const reopen = panel.button('Reabrir expediente')
   assert.ok(reopen, 'acción disponible en Finalizado')
   assert.ok(aside.props.children.includes(reopen), 'la acción queda en la columna derecha')
 })
@@ -273,8 +273,8 @@ test('Reabrir queja solo figura en la columna de acciones para Finalizado', () =
 test('Reapertura exige motivo y no emite un segundo RPC durante el primer envío', async () => {
   const panel = panelFixture()
   panel.select({ estado: 'Finalizado' })
-  panel.click('Reabrir queja')
-  const confirm = () => panel.nodes().find(node => node.type === 'Button' && node.props.children === 'Reabrir queja')
+  panel.click('Reabrir expediente')
+  const confirm = () => panel.nodes().find(node => node.type === 'Button' && node.props.children === 'Reabrir expediente')
   assert.equal(confirm().props.disabled, true, 'motivo vacío bloquea la acción')
   panel.field('-reapertura-' + quejaId, '   ')
   assert.equal(confirm().props.disabled, true, 'espacios vacíos bloquean la acción')

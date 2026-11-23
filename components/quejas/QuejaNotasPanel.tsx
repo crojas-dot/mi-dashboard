@@ -81,7 +81,7 @@ export default function QuejaNotasPanel(props: Props) {
   const [tab, setTab] = useState('notas')
   const historial = useQuejaHistorial(props.quejaId, { abierto: props.open, visible: tab === 'historial' })
   const movimientos = historial.data ?? (props.fechaIngreso ? [{
-    id: `registro:${props.fechaIngreso}`, fecha: props.fechaIngreso, usuario: null, accion: 'Registró la queja',
+    id: `registro:${props.fechaIngreso}`, fecha: props.fechaIngreso, usuario: null, accion: 'Registró la solicitud',
   }] : [])
   const storageKey = props.currentUser ? 'qms:fondos-notas:' + props.currentUser.id : ''
   const [fondoState, setFondoState] = useState(() => ({ storageKey, fondos: leerFondos(storageKey) }))
