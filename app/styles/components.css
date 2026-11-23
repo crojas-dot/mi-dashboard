@@ -102,46 +102,46 @@
   background: #F3F6FB;
 }
 
-/* Quejas ampliadas: tema azul solo del panel de acciones de Calidad.
+/* Quejas ampliadas: mismo gris oscuro del menú principal, solo en el panel de Calidad.
    La hoja A4, el gris exterior y Mis Quejas mantienen sus colores originales. */
-[data-case-blue-panel="true"] {
-  background: linear-gradient(180deg, rgb(31 80 141 / 82%) 0%, rgb(25 71 127 / 82%) 100%);
+[data-case-dark-panel="true"] {
+  background: var(--color-qms-dark);
   color: #FFFFFF;
 }
-[data-case-blue-panel="true"] :is(h3, h4, .text-qms-dark) {
+[data-case-dark-panel="true"] :is(h3, h4, .text-qms-dark) {
   color: #FFFFFF;
 }
-[data-case-blue-panel="true"] .text-qms-muted {
-  color: #DCE8F7;
+[data-case-dark-panel="true"] .text-qms-muted {
+  color: #D2D6DA;
 }
-[data-case-blue-panel="true"] [data-case-quality-tools] {
+[data-case-dark-panel="true"] [data-case-quality-tools] {
   border-top-color: rgb(255 255 255 / 24%);
 }
-[data-case-blue-panel="true"] [data-case-quality-tools] > p {
-  color: #E4EEFB;
+[data-case-dark-panel="true"] [data-case-quality-tools] > p {
+  color: #E3E6E9;
 }
-[data-case-blue-panel="true"] :is(.ui-button-secondary, .ui-button-ghost, .ui-button-link) {
-  color: #233B56;
+[data-case-dark-panel="true"] :is(.ui-button-secondary, .ui-button-ghost, .ui-button-link) {
+  color: #212529;
 }
-[data-case-blue-panel="true"] [data-case-evaluation-fields] .ui-button-ghost {
+[data-case-dark-panel="true"] [data-case-evaluation-fields] .ui-button-ghost {
   color: #5A6B81;
 }
-[data-case-blue-panel="true"] [data-case-quality-tools] button {
+[data-case-dark-panel="true"] [data-case-quality-tools] button {
   color: #213047;
 }
-[data-case-blue-panel="true"] details {
+[data-case-dark-panel="true"] details {
   color: var(--color-qms-dark);
 }
-[data-case-blue-panel="true"] details :is(.text-qms-dark, h3, h4) {
+[data-case-dark-panel="true"] details :is(.text-qms-dark, h3, h4) {
   color: var(--color-qms-dark);
 }
-[data-case-blue-panel="true"] details .text-qms-muted {
+[data-case-dark-panel="true"] details .text-qms-muted {
   color: var(--color-qms-muted);
 }
-[data-case-blue-panel="true"] [data-area-queja-control] {
+[data-case-dark-panel="true"] [data-area-queja-control] {
   color: var(--color-qms-dark);
 }
-[data-case-blue-panel="true"] [data-area-queja-control] .text-qms-muted {
+[data-case-dark-panel="true"] [data-area-queja-control] .text-qms-muted {
   color: var(--color-qms-muted);
 }
 
