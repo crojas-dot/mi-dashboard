@@ -50,7 +50,7 @@ export default function Header({
   useEffect(() => { setAvisoOmitido(false) }, [user?.id])
   const avisoTemporal = access?.phase === 'ready' && access.temporaryPassword === true && !avisoOmitido
   const fechaLimite = access?.temporaryPasswordExpiresAt
-    ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
+    ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
     : null
   const agenda = useAgendaHoy(user?.id ?? '')
   const fotoUrl = useFotoPerfil()
