@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Camera, Eye, EyeOff, Play } from 'lucide-react'
+import { Camera, Check, Copy, Eye, EyeOff, Play, WandSparkles } from 'lucide-react'
 import Modal from '@/components/Modal'
 import Button from '@/components/ui/Button'
 import Field from '@/components/ui/Field'
@@ -18,6 +18,9 @@ import { getRoleLabel } from '@/lib/constants/roles'
 import { AVATAR_ACCEPT, AVATAR_UPLOAD_BYTES } from '@/lib/constants/avatar'
 import { captureQueryContext } from '@/lib/queries/queryContextScope'
 import { cambiarClavePerfil, cambiarFotoPerfil, tokenPerfil } from '@/lib/services/miPerfilService'
+import { accessAction } from '@/lib/services/accessClient'
+import { generatePassword } from '@/lib/services/passwordGenerator'
+import { REPLACEMENT_PASSWORD_MIN, isValidReplacementPassword } from '@/lib/constants/accessPassword'
 import { useOperationLock } from '@/lib/hooks/useOperationLock'
 import FotoPerfil from '@/components/perfil/FotoPerfil'
 import LogoRecorteModal, { type BorradorLogo } from '@/app/configuracion/components/LogoRecorteModal'
@@ -45,6 +48,9 @@ type TabId = (typeof TABS)[number]['id']
  */
 export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'detalles' }: Props) {
   const user = useAuthStore(state => state.user)
+  const access = useAuthStore(state => state.access)
+  const refreshAccess = useAuthStore(state => state.refreshAccess)
+  const temporary = access?.temporaryPassword === true
   const queryClient = useQueryClient()
   const setNombreGuardado = useAuthStore(state => state.setNombre)
   const setPrefs = useAuthStore(state => state.setPrefs)
@@ -57,6 +63,8 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
   const [nueva, setNueva] = useState('')
   const [confirmacion, setConfirmacion] = useState('')
   const [claveVisible, setClaveVisible] = useState(false)
+  const [claveGenerada, setClaveGenerada] = useState(false)
+  const [claveCopiada, setClaveCopiada] = useState(false)
   const [guardandoClave, setGuardandoClave] = useState(false)
   const [claveError, setClaveError] = useState('')
   const [claveAviso, setClaveAviso] = useState('')
@@ -78,7 +86,19 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
   const notifHabilitadas = user.notif_habilitadas !== false
   const notifSonido = user.notif_sonido !== false
   const sonidoSeleccionado = user.notif_sonido_id || SONIDO_DEFAULT
-  const claveCompleta = nueva.length >= 8 && nueva === confirmacion
+  const minimoClave = temporary ? REPLACEMENT_PASSWORD_MIN : 8
+  const claveCompleta = (temporary ? isValidReplacementPassword(nueva) : nueva.length >= minimoClave) && nueva === confirmacion
+
+  function generarClave() {
+    const valor = generatePassword(20)
+    setNueva(valor); setConfirmacion(valor); setClaveGenerada(true); setClaveCopiada(false)
+    setClaveVisible(true); setClaveError(''); setClaveAviso('')
+  }
+
+  async function copiarClave() {
+    try { await navigator.clipboard.writeText(nueva); setClaveCopiada(true) }
+    catch { setClaveError('No se pudo copiar automáticamente. Seleccioná la contraseña visible y copiala manualmente.') }
+  }
 
   function perfilActual() {
     const identity = useAuthStore.getState().accessIdentity
@@ -148,22 +168,29 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
     if (guardandoClave) return
     setClaveError('')
     setClaveAviso('')
-    if (nueva.length < 8) { setClaveError('La contraseña debe tener al menos 8 caracteres.'); return }
+    if (temporary ? !isValidReplacementPassword(nueva) : nueva.length < 8) {
+      setClaveError(`La contraseña debe tener al menos ${minimoClave} caracteres.`); return
+    }
     if (nueva !== confirmacion) { setClaveError('Las contraseñas no coinciden.'); return }
     setGuardandoClave(true)
     const scope = perfilActual()
     try {
       const token = await scope.token()
       if (!scope.current()) return
-      await cambiarClavePerfil(token, nueva)
+      if (temporary) await accessAction({ action: 'password', password: nueva, confirmation: confirmacion })
+      else await cambiarClavePerfil(token, nueva)
+      if (!scope.current()) return
+      if (temporary) await refreshAccess()
       if (!scope.current()) return
       setNueva('')
       setConfirmacion('')
       setClaveVisible(false)
+      setClaveGenerada(false)
+      setClaveCopiada(false)
       setClaveAviso('Contraseña actualizada correctamente.')
       showSuccess('Contraseña actualizada')
-    } catch {
-      if (scope.current()) setClaveError('No se pudo cambiar la contraseña. Intentá de nuevo.')
+    } catch (cause) {
+      if (scope.current()) setClaveError(cause instanceof Error ? cause.message : 'No se pudo cambiar la contraseña. Intentá de nuevo.')
     } finally {
       setGuardandoClave(false)
     }
@@ -246,7 +273,9 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-base font-semibold text-qms-dark">Contraseña</h3>
-            <p className="mt-1 text-sm leading-relaxed text-qms-muted">Define una nueva contraseña de al menos 8 caracteres para tu cuenta.</p>
+            <p className="mt-1 text-sm leading-relaxed text-qms-muted">{temporary
+               ? `Usás una contraseña temporal. Reemplazala por otra de al menos ${REPLACEMENT_PASSWORD_MIN} caracteres, escrita por vos o generada automáticamente.`
+               : 'Definí una nueva contraseña de al menos 8 caracteres para tu cuenta.'}</p>
           </div>
           <Button type="button" size="sm" variant="ghost" aria-pressed={claveVisible}
             onClick={() => setClaveVisible(valor => !valor)}>
@@ -254,18 +283,28 @@ export default function MiPerfilModal({ open, onClose, fotoUrl, initialTab = 'de
             {claveVisible ? 'Ocultar' : 'Mostrar'}
           </Button>
         </div>
+        {temporary && <p role="status" className="mt-4 rounded-card border border-qms-border bg-qms-background px-3 py-2 text-sm text-qms-dark">Podés utilizar ECA-QMS durante el plazo de gracia. Cambiá tu contraseña antes del vencimiento indicado en el aviso de acceso.</p>}
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button type="button" size="sm" variant="secondary" disabled={guardandoClave} onClick={generarClave}>
+            <WandSparkles aria-hidden="true" className="size-4" />{claveGenerada ? 'Generar otra contraseña' : 'Generar contraseña segura'}
+          </Button>
+          {claveGenerada && <Button type="button" size="sm" variant="secondary" disabled={guardandoClave || !nueva} onClick={() => void copiarClave()}>
+            {claveCopiada ? <Check aria-hidden="true" className="size-4" /> : <Copy aria-hidden="true" className="size-4" />}{claveCopiada ? 'Copiada' : 'Copiar contraseña'}
+          </Button>}
+        </div>
+        {claveGenerada && <p className="mt-2 text-xs leading-relaxed text-qms-muted">La contraseña generada ya completó ambos campos. Mostrala con el ojo y guardala en tu gestor antes de actualizarla.</p>}
         {claveError && <p role="alert" className="mt-4 rounded-card border border-qms-danger/30 bg-qms-danger/5 p-2.5 text-sm text-qms-danger">{claveError}</p>}
         {claveAviso && <p role="status" className="mt-4 rounded-card border border-qms-success/30 bg-qms-success/5 p-2.5 text-sm text-qms-success">{claveAviso}</p>}
         <div className="mt-4 space-y-4">
           <Field id="mi-perfil-clave" label="Nueva contraseña">
-            <Input id="mi-perfil-clave" name="nueva-contrasena" autoComplete="new-password" minLength={8}
-              type={claveVisible ? 'text' : 'password'} value={nueva} placeholder="Mínimo 8 caracteres"
-              onChange={event => { setNueva(event.target.value); setClaveError(''); setClaveAviso('') }} className="shadow border-qms-muted/40" />
+            <Input id="mi-perfil-clave" name="nueva-contrasena" autoComplete="new-password" minLength={minimoClave}
+              type={claveVisible ? 'text' : 'password'} value={nueva} placeholder={`Mínimo ${minimoClave} caracteres`}
+              onChange={event => { setNueva(event.target.value); setClaveGenerada(false); setClaveCopiada(false); setClaveError(''); setClaveAviso('') }} className="shadow border-qms-muted/40" />
           </Field>
           <Field id="mi-perfil-clave-confirmacion" label="Confirmar contraseña">
-            <Input id="mi-perfil-clave-confirmacion" name="confirmar-contrasena" autoComplete="new-password" minLength={8}
+            <Input id="mi-perfil-clave-confirmacion" name="confirmar-contrasena" autoComplete="new-password" minLength={minimoClave}
               type={claveVisible ? 'text' : 'password'} value={confirmacion} placeholder="Repetí la nueva contraseña"
-              onChange={event => { setConfirmacion(event.target.value); setClaveError(''); setClaveAviso('') }} className="shadow border-qms-muted/40" />
+              onChange={event => { setConfirmacion(event.target.value); setClaveCopiada(false); setClaveError(''); setClaveAviso('') }} className="shadow border-qms-muted/40" />
           </Field>
         </div>
         <div className="mt-5 flex justify-end">
