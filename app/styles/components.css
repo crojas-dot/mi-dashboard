@@ -102,53 +102,66 @@
   background: #F3F6FB;
 }
 
-/* Quejas ampliadas: efecto translúcido inspirado en la superficie lila de CoreUI.
-   Mantener el documento A4, la tipografía y la geometría del panel sin cambios. */
-[data-case-translucent-panel="true"] {
-  background: rgb(122 116 213 / 15%);
-  border-left-color: rgb(99 102 220 / 42%);
-  box-shadow: inset 1px 0 0 rgb(255 255 255 / 50%);
-  -webkit-backdrop-filter: blur(10px) saturate(115%);
-  backdrop-filter: blur(10px) saturate(115%);
-  color: var(--color-qms-dark);
+/* Réplica del DocsComponents.jsx de CoreUI (bg-primary bg-opacity-10,
+   border-2 border-primary rounded), adaptada al lateral vertical de Quejas.
+   CoreUI primary: #5856D6; sobre #F3F4F7 equivale a #E3E4F4.
+   Se conserva el tamaño del panel y la hoja A4 de lectura. */
+[data-case-coreui-docs-panel="true"] {
+  background-color: rgb(88 86 214 / 10%);
+  border: 2px solid #5856D6;
+  border-radius: 6px;
+  box-shadow: none;
+  color: #1F2937;
 }
 
-/* Textos y subtítulos con contraste suficiente sobre la superficie lila. */
-[data-case-translucent-panel="true"] :is(h3, h4, .text-qms-dark) {
-  color: #202638;
+/* En CoreUI los títulos se leen en oscuro sobre la superficie violeta. */
+[data-case-coreui-docs-panel="true"] :is(h3, h4, .text-qms-dark) {
+  color: #1F2937;
 }
-[data-case-translucent-panel="true"] .text-qms-muted {
-  color: #586277;
+[data-case-coreui-docs-panel="true"] .text-qms-muted {
+  color: #4B5563;
 }
-[data-case-translucent-panel="true"] [data-case-quality-tools] {
-  border-top-color: rgb(105 110 158 / 25%);
+[data-case-coreui-docs-panel="true"] [data-case-quality-tools] {
+  border-top-color: rgb(88 86 214 / 22%);
 }
 
-/* Mantener los controles blancos y hacer legibles las decisiones importantes. */
-[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button {
+/* Botones clave: mismo contraste y colores de los dos CTA de DocsComponents.
+   No cambia ninguna acción, permisos ni estado deshabilitado. */
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child {
+  background: #5856D6;
+  border-color: #5856D6;
+  color: #FFFFFF;
+}
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child:hover:not(:disabled) {
+  background: #4745BA;
+  border-color: #4745BA;
+  color: #FFFFFF;
+}
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2) {
+  background: #E55353;
+  border-color: #E55353;
+  color: #FFFFFF;
+}
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2):hover:not(:disabled) {
+  background: #CD4545;
+  border-color: #CD4545;
+  color: #FFFFFF;
+}
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button svg {
+  color: #FFFFFF;
+}
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:hover svg {
+  color: #FFFFFF;
+}
+
+/* Los controles no decisorios permanecen blancos y legibles. */
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-fields] > div button {
   background: #FFFFFF;
-  border-color: #B9C2DB;
-  color: #1F2937;
+  color: #374151;
+  border-color: #B7B8D8;
 }
-[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button:hover:not(:disabled) {
-  background: #EFF2FF;
-  border-color: #6A78BD;
-  color: #1F2937;
-}
-[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button svg {
-  color: #3C58A2;
-}
-[data-case-translucent-panel="true"] [data-case-evaluation-fields] button {
-  border-color: #C6CCE0;
-}
-[data-case-translucent-panel="true"] [data-case-evaluation-fields] button:hover:not(:disabled) {
-  border-color: #7D8ABA;
-}
-
-/* Las acciones primarias existentes conservan el azul ECA y su contraste.
-   Los botones secundarios siguen en blanco, sin cambiar el flujo ni su texto. */
-[data-case-translucent-panel="true"] [data-case-quality-tools] button {
-  border-color: #C6CCE0;
+[data-case-coreui-docs-panel="true"] [data-case-quality-tools] button {
+  border-color: #C2C3DB;
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
