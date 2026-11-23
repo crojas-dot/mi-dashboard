@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     if (Object.keys(body).some(k => !['action', 'password', 'confirmation', 'email', 'code', 'id'].includes(k))) throw new AccessError('invalid', 400)
     if (body.action === 'password') {
       if (status.phase === 'password_expired') throw new AccessError('password_expired', 403)
-      if (status.phase === 'password' && status.temporaryPassword) {
+      if (status.temporaryPassword && ['password', 'ready'].includes(status.phase)) {
         if (typeof body.password !== 'string' || !isValidReplacementPassword(body.password)) throw new AccessError('invalid_replacement')
         if (body.password !== body.confirmation) throw new AccessError('password_mismatch')
         return json(await changeTemporaryAccessPassword(admin, identity, body.password))
