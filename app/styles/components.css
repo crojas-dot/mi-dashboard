@@ -162,7 +162,17 @@
 }
 
 /* El selector de área afectada y los botones secundarios también quedan legibles. */
-[data-case-dark-panel="true"] :is(.ui-button-secondary, .ui-button-ghost) {
+[data-case-dark-panel="true"] .ui-button-secondary {
+  background: #FFFFFF;
+  border-color: #D7DCE2;
+  color: #212529;
+}
+
+[data-case-dark-panel="true"] .ui-button-ghost {
+  color: #FFFFFF;
+}
+
+[data-case-dark-panel="true"] details .ui-button-ghost {
   color: #212529;
 }
 
