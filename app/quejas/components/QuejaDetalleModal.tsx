@@ -632,23 +632,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
     </button>
   </div> : <Button size="sm" className="min-h-10 w-full min-w-0" onClick={openAction} loading={loading} disabled={workflowPending || editing}>{action.action}</Button>)
 
-  const mailAlerts = esStaff ? <CaseFinalMailStatus messages={correos} finalizada={finalizada}
-    loading={correosLoading} error={!!correosError} compactPriority={expanded}
-    onRetry={() => { void refetchCorreos() }} onRetrySend={id => reintentarCorreo.mutate(id)}
-    retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} /> : null
-  const reopenAction = esStaff && !readOnlyStage && estadoActual === 'Finalizado'
-    ? <Button type="button" size="sm" variant="secondary" className="min-h-10 w-full"
-        disabled={workflowPending || editing}
-        onClick={() => { beginWorkflowDraft(); setReaperturaAbierta(true) }}>
-        <RotateCcw aria-hidden="true" className="size-4" />Reabrir queja
-      </Button> : null
-  const stickyActions = expanded && !readOnlyStage && (Boolean(workflowActions) || Boolean(reopenAction))
-    ? <div data-case-workflow-footer className="space-y-2">
-      {estadoActual === 'Recibido' && workflowActions && <p className="text-xs font-semibold text-slate-700">Resultado de la evaluación</p>}
-      {workflowActions}
-      {reopenAction}
-    </div> : undefined
-
   const processSteps = getCaseProcessCycle(queja).steps
   const currentProcessStage = processSteps.find(step => step.current)?.id
     ?? (['Resuelto', 'Finalizado', 'No Procede'].includes(estadoActual) ? 'finished' : null)
@@ -743,7 +726,6 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
       <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn qualitySideGutters notionStyle
-        actionFooter={stickyActions}
         requestFooter={<div className="space-y-2">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0">
             <Button size="sm" variant="secondary" className="min-h-11 w-full min-w-0 justify-center border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
@@ -764,16 +746,21 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </div>}
         compact={<CaseCycle queja={queja} process chevrons compact />}
         cycle={<CaseCycle queja={queja} process chevrons compact selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
-        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre} compactQualityPanel={expanded} priorityAlerts={expanded ? mailAlerts : undefined}
+        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
           {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-2.5">
             <div className="min-w-0 [&>div]:ml-0 [&>div]:w-full [&>div]:max-w-none [&>div>button]:min-h-10 [&>div>button]:rounded-lg [&>div>button]:border [&>div>button]:border-qms-border [&>div>button]:bg-white [&>div>button]:px-3">{areaControl}</div>
-            {!expanded && <><p className="mt-1 text-sm font-semibold text-qms-dark">Resultado de la evaluación</p>{workflowActions}</>}
+            <p className="mt-1 text-sm font-semibold text-qms-dark">Resultado de la evaluación</p>
+            {workflowActions}
           </div>}
-          {!expanded && estadoActual !== 'Recibido' && workflowActions}
-          {!expanded && mailAlerts}
-          {!expanded && reopenAction}
+          {estadoActual !== 'Recibido' && workflowActions}
+          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError}
+            onRetry={() => { void refetchCorreos() }} onRetrySend={id => reintentarCorreo.mutate(id)}
+            retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} />}
+          {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"
+            className="min-h-10 w-full" disabled={workflowPending || editing}
+            onClick={() => { beginWorkflowDraft(); setReaperturaAbierta(true) }}><RotateCcw aria-hidden="true" className="size-4" />Reabrir queja</Button>}
         </CaseAction>}>
             {readOnlyStage ? readOnlyDocument : qualityReview ? <>
               <CaseSection variant="document" source="Responsable" title="Propuesta del responsable">
