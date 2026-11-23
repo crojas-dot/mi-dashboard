@@ -99,14 +99,14 @@ function qmsAccessMailContent_(p) {
    subject:'Tu acceso a ECA-QMS', footer:footer,
    body:['Usuario: '+p.to,'Contraseña temporal: '+p.password,'Iniciar sesión: '+p.url,expiry,footer].join('\n\n'),
    detail:
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;margin:0 0 14px;border:1px solid #d3dfeb;border-radius:9px;background:#f4f7fb;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif">' +
-    '<tr><td style="padding:16px 18px 4px;font-size:13px;line-height:1.5;font-weight:600;color:#536477">Usuario</td></tr>' +
-    '<tr><td style="padding:0 18px 14px;font-size:16px;line-height:1.5;color:#212529;overflow-wrap:anywhere">'+qmsMailEscape_(p.to)+'</td></tr>' +
-    '<tr><td style="padding:0 18px 7px;font-size:13px;line-height:1.5;font-weight:600;color:#536477">Contraseña temporal</td></tr>' +
-    '<tr><td style="padding:0 18px 9px">' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #bfd0e4;border-left:4px solid #024796;border-radius:7px;background:#ffffff">' +
-    '<tr><td style="padding:12px 14px;font-family:Consolas,Monaco,monospace;font-size:18px;line-height:1.6;font-weight:700;letter-spacing:0.02em;color:#183b65;overflow-wrap:anywhere;word-break:break-all">'+qmsMailEscape_(p.password)+'</td></tr></table></td></tr>' +
-    '<tr><td style="padding:0 18px 16px;font-size:12px;line-height:1.6;color:#64748b">Seleccioná y copiá la contraseña para iniciar sesión. No la compartás.</td></tr></table>' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif">' +
+    '<tr><td style="padding:0 0 5px;font-size:13px;line-height:1.5;font-weight:600;color:#586777">Usuario</td></tr>' +
+    '<tr><td style="padding:0 0 18px;font-size:15px;line-height:1.5;color:#212529;overflow-wrap:anywhere">'+qmsMailEscape_(p.to)+'</td></tr>' +
+    '<tr><td style="padding:0 0 7px;font-size:13px;line-height:1.5;font-weight:600;color:#586777">Contraseña temporal</td></tr>' +
+    '<tr><td style="padding:0 0 7px">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;border:1px solid #e2e6eb;border-radius:6px;background:#f8fafc">' +
+    '<tr><td style="padding:11px 13px;font-family:Consolas,Monaco,monospace;font-size:16px;line-height:1.6;font-weight:600;color:#263747;overflow-wrap:anywhere;word-break:break-all">'+qmsMailEscape_(p.password)+'</td></tr></table></td></tr>' +
+    '<tr><td style="padding:1px 0 0;font-size:12px;line-height:1.5;color:#6c757d">Seleccioná y copiá la contraseña para iniciar sesión. No la compartás.</td></tr></table>' +
     qmsAccessMailButton_(p.url,'Iniciar sesión') +
     '<p style="margin:6px 0 0;color:#6c757d;font-size:13px;line-height:1.5">'+qmsMailEscape_(expiry)+'</p>'
   };
