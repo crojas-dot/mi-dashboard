@@ -140,12 +140,30 @@ test('la contraseña temporal se entrega en un único correo con enlace al login
  assert.match(f.sent[0].body,/72 horas/)
  assert.match(f.sent[0].body,/cambiarla/)
  assert.match(f.sent[0].htmlBody,/Iniciar sesión/)
+ assert.match(f.sent[0].htmlBody,/background:#f4f7fb/)
+ assert.match(f.sent[0].htmlBody,/border-left:4px solid #024796/)
+ assert.match(f.sent[0].htmlBody,/font-family:Consolas,Monaco,monospace/)
+ assert.match(f.sent[0].htmlBody,/Seleccioná y copiá la contraseña/)
+ assert.ok(f.sent[0].htmlBody.includes(message.password))
   assert.ok(f.sent[0].htmlBody.includes('>Usuario</td>'))
   assert.ok(f.sent[0].htmlBody.includes('>Contraseña temporal</td>'))
   assert.doesNotMatch(f.sent[0].htmlBody,/Configurar acceso/)
  assert.equal((await (await f.send(message)).json()).outcome,'sent')
  assert.equal(f.sent.length,1)
  assert.doesNotMatch(JSON.stringify([...f.cache.values()]),/synthetic@example|synthetic-password/)
+})
+
+test('el bloque destacado del correo escapa los caracteres especiales de la contraseña',async()=>{
+ const f=fixture(),password='Aa9!<&"p4sswordLong'
+ const message={eventId:randomUUID(),kind:'temporary_access',to:'synthetic@example.test',
+  name:'Usuario de prueba',password,url:origin+'/login'}
+ const result=await f.send(message)
+ assert.equal((await result.json()).outcome,'sent')
+ assert.equal(f.sent.length,1)
+ assert.ok(f.sent[0].body.includes(password))
+ assert.ok(f.sent[0].htmlBody.includes('Aa9!&lt;&amp;&quot;p4sswordLong'))
+ assert.doesNotMatch(f.sent[0].htmlBody,/<script/i)
+ assert.match(f.sent[0].htmlBody,/border-left:4px solid #024796/)
 })
 
 test('la cuota de acceso agotada devuelve el diagnóstico previo a MailApp', async () => {
