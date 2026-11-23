@@ -257,7 +257,9 @@ export default function UsuarioFormModal({ open, mode, usuario, esAuto, onClose,
               <div className="mt-3 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
                 <div><p className="text-xs text-qms-muted">Usuario</p><p className="select-text break-all text-sm font-medium text-qms-dark">{createdEmail}</p></div>
                 <div><p className="text-xs text-qms-muted">Contraseña temporal · 72 horas</p>
-                  <code className="block select-all break-all text-sm font-semibold text-qms-dark">{tempPassword}</code></div>
+                  <div className="mt-2 rounded-md border border-qms-border border-l-4 border-l-qms-primary bg-qms-surface px-3 py-3">
+                    <code className="block select-all break-all font-mono text-base font-semibold leading-relaxed text-qms-dark">{tempPassword}</code>
+                  </div></div>
                 <Button type="button" size="sm" variant="secondary" onClick={() => void copiarPassword()}>
                   {passwordCopied ? 'Contraseña copiada' : 'Copiar contraseña'}
                 </Button>
