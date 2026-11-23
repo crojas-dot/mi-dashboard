@@ -115,7 +115,7 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
       {delivery.accessDeliveryError ? ' ' + delivery.accessDeliveryError : ' Verificá el resultado antes de reenviar.'}
     </p>}
     {manualPassword && <div role="status" className="mt-4 space-y-3 rounded-card border border-qms-border bg-qms-background p-4">
-      <p className="text-sm font-medium text-qms-dark">Contraseña temporal generada · válida durante 72 horas</p>
+      <p className="text-sm font-medium text-qms-dark">Contraseña temporal generada · válida durante 3 días hábiles</p>
       <div><p className="text-xs text-qms-muted">Usuario</p><p className="break-all text-sm text-qms-dark">{usuario.email}</p></div>
       <div><p className="text-xs text-qms-muted">Contraseña temporal</p>
         <div className="mt-2 rounded-md border border-qms-border border-l-4 border-l-qms-primary bg-qms-surface px-3 py-3">
