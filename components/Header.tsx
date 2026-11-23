@@ -21,7 +21,7 @@ import { useAgendaHoy } from '@/lib/queries/useAgendaHoy'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { notificacionesKey } from '@/lib/queries/useNotificaciones'
 import { queryKeys } from '@/lib/queries/queryKeys'
-import { Menu } from 'lucide-react'
+import { Clock3, Menu } from 'lucide-react'
 import { tituloDeRuta } from '@/lib/constants/modulos'
 import { CONFIG_SECTION_LABELS, useConfigSectionStore } from '@/lib/store/configuration-section-store'
 import { useNotificationSound } from '@/lib/hooks/useNotificationSound'
@@ -43,8 +43,15 @@ export default function Header({
   const router = useRouter()
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const access = useAuthStore((s) => s.access)
   const [menuAbierto, setMenuAbierto] = useState<'agenda' | 'notif' | 'user' | null>(null)
-  const [perfilTab, setPerfilTab] = useState<'detalles' | 'notificaciones' | null>(null)
+  const [perfilTab, setPerfilTab] = useState<'detalles' | 'seguridad' | 'notificaciones' | null>(null)
+  const [avisoOmitido, setAvisoOmitido] = useState(false)
+  useEffect(() => { setAvisoOmitido(false) }, [user?.id])
+  const avisoTemporal = access?.phase === 'ready' && access.temporaryPassword === true && !avisoOmitido
+  const fechaLimite = access?.temporaryPasswordExpiresAt
+    ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
+    : null
   const agenda = useAgendaHoy(user?.id ?? '')
   const fotoUrl = useFotoPerfil()
 
@@ -111,6 +118,7 @@ export default function Header({
   }, [menuAbierto])
 
   return (
+    <>
     <header className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-qms-border bg-qms-surface px-3 sm:px-5">
       <div className="flex min-w-0 items-center gap-2">
         {onToggleNavigation && (
@@ -189,7 +197,16 @@ export default function Header({
         />}
       </div>
 
-      {perfilTab && <MiPerfilModal open fotoUrl={fotoUrl} initialTab={perfilTab} onClose={() => setPerfilTab(null)} />}
     </header>
+    {avisoTemporal && <div role="status" className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-qms-border bg-qms-primary-soft px-4 py-2 text-sm text-qms-dark sm:px-5">
+      <Clock3 aria-hidden="true" className="size-4 shrink-0 text-qms-primary" />
+      <p className="min-w-0 flex-1 leading-relaxed">
+        Tu contraseña es temporal. Tenés 3 días hábiles para cambiarla{fechaLimite ? ` (hasta el ${fechaLimite})` : ''}. Podés seguir utilizando el sistema mientras tanto.
+      </p>
+      <button type="button" onClick={() => setPerfilTab('seguridad')} className="shrink-0 font-semibold text-qms-primary underline underline-offset-2 hover:text-qms-dark">Cambiar en Mi perfil</button>
+      <button type="button" onClick={() => setAvisoOmitido(true)} className="shrink-0 text-qms-muted hover:text-qms-dark" aria-label="Ocultar recordatorio de contraseña">Más tarde</button>
+    </div>}
+    {perfilTab && <MiPerfilModal open fotoUrl={fotoUrl} initialTab={perfilTab} onClose={() => setPerfilTab(null)} />}
+    </>
   )
 }
