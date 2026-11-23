@@ -98,7 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         set({access,accessIdentity:authId,accessManaged:access.managed,loading:false,initialized:true});return
       }
       if(currentAuthId===authId&&get().user) {
-        set({access:null,accessIdentity:authId,accessManaged:access.managed,loading:false,initialized:true});return
+        set({access:access.temporaryPassword ? access : null,accessIdentity:authId,accessManaged:access.managed,loading:false,initialized:true});return
       }
       // Lecturas independientes, ambas con autorización en DB; publicar solo al terminar las dos.
       const [appUser, permisos] = await Promise.all([getAppUser(authId), fetchMisPermisos()])
@@ -109,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         return
       }
       currentAuthId = authId
-      set({ user: toAppUser(appUser), permisos, vistaActiva: null, access:null,accessIdentity:authId,accessManaged:access.managed,loading: false, initialized: true, signingOut: false })
+      set({ user: toAppUser(appUser), permisos, vistaActiva: null, access:access.temporaryPassword ? access : null,accessIdentity:authId,accessManaged:access.managed,loading: false, initialized: true, signingOut: false })
     } catch (error) {
       if (revision !== authRevision || isLogoutPending()) return
       logger.error('No se pudo comprobar la sesión', { module: 'auth', action: 'resolve_session' }, error)
@@ -200,7 +200,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
         // Solo un login explícito y confirmado puede abandonar un cierre pendiente.
         clearLogoutPending()
         currentAuthId = data.user.id
-        set({ user: toAppUser(result.user), permisos, vistaActiva: null, access:null,accessIdentity:data.user.id,accessManaged:result.accessManaged??false,loading: false, initialized: true, signingOut: false })
+        set({ user: toAppUser(result.user), permisos, vistaActiva: null, access:result.access?.temporaryPassword ? result.access : null,accessIdentity:data.user.id,accessManaged:result.accessManaged??false,loading: false, initialized: true, signingOut: false })
         return {}
       } catch (error) {
         logger.error('No se pudo iniciar sesión', { module: 'auth', action: 'login' }, error)
