@@ -3,6 +3,7 @@ export interface AccessStatus {
   managed: boolean
   phase: 'ready' | 'blocked' | 'password' | 'password_expired' | 'enroll' | 'verify' | 'locked' | 'reset_pending'
   temporaryPassword?: boolean
+  temporaryPasswordExpiresAt?: string | null
   requireMfa?: boolean
   method?: AccessMethod | null
   maskedEmail?: string | null
