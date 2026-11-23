@@ -118,7 +118,9 @@ export default function UsuarioSeguridadAcceso({ usuario, esAuto, active = true,
       <p className="text-sm font-medium text-qms-dark">Contraseña temporal generada · válida durante 72 horas</p>
       <div><p className="text-xs text-qms-muted">Usuario</p><p className="break-all text-sm text-qms-dark">{usuario.email}</p></div>
       <div><p className="text-xs text-qms-muted">Contraseña temporal</p>
-        <code className="block select-all break-all text-sm font-semibold text-qms-dark">{manualPassword}</code>
+        <div className="mt-2 rounded-md border border-qms-border border-l-4 border-l-qms-primary bg-qms-surface px-3 py-3">
+          <code className="block select-all break-all font-mono text-base font-semibold leading-relaxed text-qms-dark">{manualPassword}</code>
+        </div>
       </div>
       <Button type="button" variant="secondary" size="sm" onClick={() => void navigator.clipboard.writeText(manualPassword)
         .then(() => setManualCopied(true)).catch(() => setError('No se pudo copiar; seleccioná la contraseña manualmente.'))}>
