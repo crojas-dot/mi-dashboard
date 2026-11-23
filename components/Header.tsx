@@ -44,6 +44,7 @@ export default function Header({
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const access = useAuthStore((s) => s.access)
+  const refreshAccess = useAuthStore((s) => s.refreshAccess)
   const [menuAbierto, setMenuAbierto] = useState<'agenda' | 'notif' | 'user' | null>(null)
   const [perfilTab, setPerfilTab] = useState<'detalles' | 'seguridad' | 'notificaciones' | null>(null)
   const [avisoOmitido, setAvisoOmitido] = useState(false)
@@ -52,6 +53,20 @@ export default function Header({
   const fechaLimite = access?.temporaryPasswordExpiresAt
     ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
     : null
+  // El servidor bloquea el acceso al vencer la clave; actualizar también la
+  // sesión visible para no dejar módulos abiertos mostrando errores de permisos.
+  useEffect(() => {
+    if (access?.phase !== 'ready' || !access.temporaryPassword || !access.temporaryPasswordExpiresAt) return
+    const deadline = Date.parse(access.temporaryPasswordExpiresAt)
+    if (!Number.isFinite(deadline)) return
+    const remaining = Math.max(0, deadline - Date.now() + 500)
+    const timer = window.setTimeout(() => { void refreshAccess() }, Math.min(remaining, 2147480000))
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() >= deadline) void refreshAccess()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { window.clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible) }
+  }, [access, refreshAccess])
   const agenda = useAgendaHoy(user?.id ?? '')
   const fotoUrl = useFotoPerfil()
 
