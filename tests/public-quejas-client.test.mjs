@@ -432,7 +432,7 @@ test('la carga inicial reserva el mismo lienzo del formulario completo', () => {
   const view = pageHarness({ isPending: true, data: undefined })
   const pending = view.render()
   assert.equal(pending.props['data-public-form-loading'], true)
-  assert.equal(pending.props['aria-busy'], 'true')
+  assert.equal(pending.props['aria-busy'], true)
   assert.equal(elementsOfType(pending, 'form').length, 0)
   assert.match(pending.props.className, /sm:flex-1/)
   assert.equal(elementsOfType(pending, 'Skeleton').length, 14)
