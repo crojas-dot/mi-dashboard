@@ -140,9 +140,13 @@ test('la contraseña temporal se entrega en un único correo con enlace al login
  assert.match(f.sent[0].body,/3 días hábiles/)
  assert.match(f.sent[0].body,/cambiarla/)
  assert.match(f.sent[0].htmlBody,/Iniciar sesión/)
- assert.match(f.sent[0].htmlBody,/background:#f4f7fb/)
- assert.match(f.sent[0].htmlBody,/border-left:4px solid #024796/)
+ assert.match(f.sent[0].htmlBody,/background:#f8fafc/)
+ assert.match(f.sent[0].htmlBody,/border:1px solid #e2e6eb/)
  assert.match(f.sent[0].htmlBody,/font-family:Consolas,Monaco,monospace/)
+ assert.doesNotMatch(f.sent[0].htmlBody,/border-left:\s*4px/)
+ assert.doesNotMatch(f.sent[0].htmlBody,/background:#f4f7fb/)
+ assert.match(f.sent[0].htmlBody,/font-size:16px;line-height:1\.6;font-weight:600/)
+
  assert.match(f.sent[0].htmlBody,/Seleccioná y copiá la contraseña/)
  assert.ok(f.sent[0].htmlBody.includes(message.password))
   assert.ok(f.sent[0].htmlBody.includes('>Usuario</td>'))
@@ -163,7 +167,7 @@ test('el bloque destacado del correo escapa los caracteres especiales de la cont
  assert.ok(f.sent[0].body.includes(password))
  assert.ok(f.sent[0].htmlBody.includes('Aa9!&lt;&amp;&quot;p4sswordLong'))
  assert.doesNotMatch(f.sent[0].htmlBody,/<script/i)
- assert.match(f.sent[0].htmlBody,/border-left:4px solid #024796/)
+ assert.match(f.sent[0].htmlBody,/border:1px solid #e2e6eb/)
 })
 
 test('la cuota de acceso agotada devuelve el diagnóstico previo a MailApp', async () => {
