@@ -96,10 +96,82 @@
   }
 }
 
-/* Mis Quejas: mismo fondo mate del panel Acciones del responsable.
-   Editor/hoja blancos y una sola barra de edición gris, sin marcos adicionales. */
+/* Mis Quejas: mismo gris exterior de Quejas; el editor conserva su ancho
+   y su única tarjeta blanca. La lectura tiene su propia hoja centrada. */
 [data-case-quality-two-columns="true"] [data-case-document]:has([data-mis-quejas-reading-column]) {
-  background: #F3F6FB;
+  background: var(--color-qms-background);
+}
+
+/* Quejas y Mis Quejas ampliadas: fondo gris original con velo azul ECA (estilo CoreUI).
+   Sin marco ni esquinas redondeadas: mismo panel rectangular de main. */
+[data-case-coreui-docs-panel="true"] {
+  background: linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--color-qms-dark);
+}
+
+[data-case-coreui-docs-panel="true"] :is(h3, h4, .text-qms-dark) {
+  color: var(--color-qms-dark);
+}
+
+[data-case-coreui-docs-panel="true"] .text-qms-muted {
+  color: #566474;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-quality-tools] {
+  border-top-color: rgb(2 71 150 / 18%);
+}
+
+/* Decisiones con el azul y rojo oficiales de ECA, conservando sus permisos. */
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child {
+  background: var(--color-qms-primary);
+  border-color: var(--color-qms-primary);
+  color: #FFFFFF;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:first-child:hover:not(:disabled) {
+  background: var(--color-qms-primary-dark);
+  border-color: var(--color-qms-primary-dark);
+  color: #FFFFFF;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2) {
+  background: var(--color-qms-brand-red);
+  border-color: var(--color-qms-brand-red);
+  color: #FFFFFF;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:nth-child(2):hover:not(:disabled) {
+  background: #BD3437;
+  border-color: #BD3437;
+  color: #FFFFFF;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button svg,
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-choices] > button:hover svg {
+  color: #FFFFFF;
+}
+
+/* Los demás controles permanecen blancos y bien contrastados. */
+[data-case-coreui-docs-panel="true"] [data-case-evaluation-fields] > div button {
+  background: #FFFFFF;
+  color: var(--color-qms-dark);
+  border-color: #CBD5E1;
+}
+
+[data-case-coreui-docs-panel="true"] [data-case-quality-tools] button {
+  border-color: #D1DAE4;
+}
+
+/* Igualar la posición vertical de Descripción del cliente con main.
+   40px originales - 24px de margen gris - 1px de borde de hoja = 15px.
+   Solo la primera sección de lectura de Quejas ampliadas en escritorio. */
+@container (min-width: 1100px) {
+  [data-case-quality-two-columns="true"]:has([data-case-coreui-docs-panel="true"]) [data-case-document] > [data-case-client-document] {
+    padding-top: 15px;
+  }
 }
 
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:

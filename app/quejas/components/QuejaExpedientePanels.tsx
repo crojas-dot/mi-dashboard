@@ -38,14 +38,69 @@ const mailNames: Record<QuejaCorreoEstado['tipo'], string> = {
 }
 
 /** Muestra el diagnóstico guardado por el emisor y la acción permitida para ese evento. */
-export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry }: {
+export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry, compact = false }: {
   messages: QuejaCorreoEstado[]; finalizada?: boolean; loading?: boolean; error?: boolean; onRetry: () => void
   onRetrySend?: (eventId: string) => void
   retry?: { id?: string; pending: boolean; error?: string; succeeded: boolean }
+  compact?: boolean
 }) {
   const final = finalizada ? messages.find(item => item.tipo === 'final') : undefined
   const otherIssues = messages.filter(item => item.tipo !== 'final' && (
     ['retry', 'failed', 'uncertain'].includes(item.status) || (!!retry?.id && item.id === retry.id)))
+
+  if (compact) {
+    if (!finalizada && !error && otherIssues.length === 0) return null
+    const items = [...(final ? [final] : []), ...otherIssues]
+    const issueCount = items.filter(item => ['failed', 'retry', 'uncertain'].includes(item.status)).length
+
+    if (error || loading) return <div className="mt-3 border-t border-qms-border pt-2" aria-live="polite">
+      <p className="text-xs font-semibold text-qms-muted">Correos del expediente</p>
+      {error ? <div className="mt-1 flex flex-wrap items-center justify-between gap-1">
+        <p role="alert" className="text-xs text-qms-danger">No se pudo consultar el envío.</p>
+        <Button variant="secondary" size="sm" onClick={onRetry}>Actualizar</Button>
+      </div> : <p className="mt-1 text-xs text-qms-muted">Consultando envío…</p>}
+    </div>
+
+    const compactStatus = (item: QuejaCorreoEstado) => {
+      const name = mailNames[item.tipo] ?? 'Correo del expediente'
+      const issue = ['failed', 'uncertain'].includes(item.status)
+      const reason = ['retry', 'failed', 'uncertain', 'skipped'].includes(item.status) && quejaMailError(item.safe_error)
+      const retryResult = retry?.id === item.id ? retry : undefined
+      return <div key={item.id} className="min-w-0 border-b border-qms-border/70 py-2 last:border-b-0">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <div className="min-w-0 flex-1">
+            <p className="break-words text-xs font-medium text-qms-muted">{name}</p>
+            <p className={`mt-0.5 break-words text-sm font-medium ${issue ? 'text-qms-danger' : item.status === 'sent' ? 'text-qms-success' : 'text-qms-dark'}`}>
+              {item.status === 'retry' ? 'Reintento pendiente' : mailStates[item.status] ?? 'Estado por comprobar'}
+            </p>
+          </div>
+          {onRetrySend && quejaMailCanRetry(item) && <Button variant="secondary" size="sm" className="shrink-0"
+            aria-label={`Reintentar envío: ${name}`} disabled={retry?.pending}
+            loading={retryResult?.pending} onClick={() => onRetrySend(item.id)}>Reintentar</Button>}
+        </div>
+        {item.status === 'sent' && item.sent_at && <time className="mt-0.5 block text-xs text-qms-muted" dateTime={item.sent_at}>{caseDate(item.sent_at)}</time>}
+        {retryResult?.error && <p role="alert" className="mt-1 text-xs font-medium text-qms-danger">No se pudo reintentar.</p>}
+        {retryResult?.succeeded && ['pending', 'leased'].includes(item.status) && <p className="mt-1 text-xs text-qms-muted">Correo en cola de envío.</p>}
+        {(reason || retryResult?.error) && <details className="mt-1 min-w-0">
+          <summary className="w-fit cursor-pointer text-xs font-medium text-qms-primary">Ver motivo</summary>
+          <div className="mt-1 max-h-28 min-w-0 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-qms-muted [overflow-wrap:anywhere]">
+            {reason && <p>{reason}</p>}
+            {retryResult?.error && <p className="mt-1">{retryResult.error}</p>}
+          </div>
+        </details>}
+      </div>
+    }
+
+    return <div data-case-mail-compact className="mt-3 min-w-0 border-t border-qms-border pt-2" aria-live="polite">
+      <p className="text-xs font-semibold text-qms-muted">Correos{issueCount > 0 && <span className="ml-1 text-qms-danger"> · {issueCount} {issueCount === 1 ? 'incidencia' : 'incidencias'}</span>}</p>
+      {finalizada && !final && <p className="mt-1 text-xs text-qms-muted">Sin correo final registrado.</p>}
+      {items.slice(0, 2).map(compactStatus)}
+      {items.length > 2 && <details className="mt-1 min-w-0">
+        <summary className="cursor-pointer py-1 text-xs font-medium text-qms-primary">Ver {items.length - 2} {items.length === 3 ? 'correo más' : 'correos más'}</summary>
+        <div className="max-h-56 min-w-0 overflow-y-auto overscroll-contain">{items.slice(2).map(compactStatus)}</div>
+      </details>}
+    </div>
+  }
 
   if (!finalizada && !error && otherIssues.length === 0) return null
   if (error || loading) return <div className="mt-4 border-t border-qms-border pt-3" aria-live="polite">
@@ -138,13 +193,15 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false, notionStyle = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean; notionStyle?: boolean }) {
+export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false, qualitySideGutters = false, preserveEditorWidth = false, notionStyle = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean; qualitySideGutters?: boolean; preserveEditorWidth?: boolean; notionStyle?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const centerRef = useRef<HTMLDivElement>(null)
+  const qualityPanelRef = useRef<HTMLElement>(null)
   // Cambiar de documento comienza arriba sin desmontar editores ni borrar borradores.
   useLayoutEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = 0
     if (centerRef.current) centerRef.current.scrollTop = 0
+    if (qualityPanelRef.current) qualityPanelRef.current.scrollTop = 0
   }, [documentKey])
   // Igualar el ancho del ciclo en la cabecera con el ancho *útil* del editor:
   // el scrollport reserva un gutter de scrollbar que la cabecera no tiene.
@@ -167,12 +224,15 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
     }
   }, [presentation, expanded])
   const comfortableReading = readingLayout && expanded && presentation === 'reference'
+  const showQualitySideGutters = qualitySideGutters && qualityTwoColumn && expanded
+  // Mis Quejas mantiene el ancho del editor; su hoja de lectura se limita internamente.
+  const showDocumentSheet = showQualitySideGutters && !preserveEditorWidth
   const referenceColumns = qualityTwoColumn
     ? '@min-[1100px]:grid-cols-[minmax(0,1fr)_360px] @min-[1100px]:gap-0 @min-[1100px]:px-0'
     : comfortableReading
       ? '@min-[1100px]:grid-cols-[240px_minmax(0,1fr)_270px] @min-[1360px]:grid-cols-[280px_minmax(0,1fr)_300px] @min-[1100px]:gap-6 @min-[1100px]:px-6'
       : '@min-[1100px]:grid-cols-[220px_minmax(0,1fr)_260px] @min-[1100px]:gap-4 @min-[1100px]:px-4'
-  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" data-case-reading-layout={comfortableReading || undefined} data-case-quality-two-columns={qualityTwoColumn || undefined} className={`@container flex min-h-0 flex-1 flex-col overflow-hidden ${qualityTwoColumn && expanded ? 'bg-white' : notionStyle ? 'bg-[#F7F7F5]' : 'bg-qms-hover-bg'} select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
+  if (presentation === 'reference') return <div data-case-workspace data-case-presentation="reference" data-case-reading-layout={comfortableReading || undefined} data-case-quality-two-columns={qualityTwoColumn || undefined} className={`@container flex min-h-0 flex-1 flex-col overflow-hidden ${qualityTwoColumn && expanded ? (showQualitySideGutters ? 'bg-qms-background' : 'bg-white') : notionStyle ? 'bg-[#F7F7F5]' : 'bg-qms-hover-bg'} select-text ${expanded ? '' : 'pb-3 sm:pb-4'}`}>
     {/* En escritorio el círculo ocupa el margen de página y su etiqueta se alinea con Descripción. */}
     {(cyclePlacement !== 'header' || !expanded) && <div data-case-top-cycle className={`shrink-0 border-b py-3 ${notionStyle ? 'border-[#E9E9E7] bg-[#FBFBFA]' : 'border-qms-border bg-qms-surface'} ${expanded ? 'overflow-hidden [scrollbar-gutter:stable]' : 'px-4'}`}>{expanded ? <div data-case-top-cycle-layout className={`grid w-full min-w-0 gap-4 px-3 sm:px-4 ${comfortableReading ? 'mx-auto max-w-[1500px]' : ''} ${referenceColumns}`}><div data-case-cycle-track className="min-w-0 px-5 sm:px-0 @min-[1100px]:col-start-2">{cycle}</div></div> : compact}</div>}
     {cyclePlacement === 'header' && expanded && <div data-case-mobile-cycle className={`shrink-0 border-b px-3 py-2 @min-[1100px]/workspace:hidden ${notionStyle ? 'border-[#E9E9E7] bg-[#FBFBFA]' : 'border-qms-border bg-qms-surface'}`}>{cycle}</div>}
@@ -180,15 +240,15 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
     {/* No desmontar las columnas ni Tiptap: ocultar el mismo árbol durante el triaje. */}
     <div data-case-frame style={!expanded && compactContent ? { display: 'none' } : undefined} className={`flex min-h-0 flex-1 flex-col ${expanded ? '' : notionStyle ? 'mx-3 mt-3 overflow-hidden rounded-card border border-[#E7E5E1] bg-[#FFFEFC] sm:mx-4 sm:mt-4' : 'mx-3 mt-3 overflow-hidden rounded-card border border-qms-border bg-qms-surface sm:mx-4 sm:mt-4'}`}>
       {/* En escritorio la cuadrícula queda fija. En móvil se desplaza el conjunto apilado. */}
-      <div ref={scrollRef} data-case-scroll data-case-stack-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? qualityTwoColumn ? 'bg-white @min-[1100px]:overflow-y-auto @min-[1100px]:[will-change:auto]' : 'bg-qms-hover-bg @min-[1100px]:overflow-clip @min-[1100px]:[will-change:auto]' : notionStyle ? 'bg-[#FFFEFC]' : 'bg-qms-surface'}`}>
+      <div ref={scrollRef} data-case-scroll data-case-stack-scroll className={`min-h-0 flex-1 overflow-y-auto overscroll-contain [will-change:transform] ${expanded ? qualityTwoColumn ? `${showQualitySideGutters ? 'bg-qms-background' : 'bg-white'} @min-[1100px]:overflow-y-auto @min-[1100px]:[will-change:auto]` : 'bg-qms-hover-bg @min-[1100px]:overflow-clip @min-[1100px]:[will-change:auto]' : notionStyle ? 'bg-[#FFFEFC]' : 'bg-qms-surface'}`}>
         <div data-case-layout className={`grid w-full min-w-0 gap-4 ${expanded ? `${qualityTwoColumn ? 'gap-4 p-3 sm:p-4 @min-[1100px]:gap-0 @min-[1100px]:p-0 @min-[1100px]:items-start' : comfortableReading ? 'mx-auto max-w-[1500px] gap-6 p-4 sm:p-6' : 'p-3 sm:p-4'} ${referenceColumns} ${qualityTwoColumn ? '@min-[1100px]:min-h-full @min-[1100px]:py-0' : `@min-[1100px]:h-full @min-[1100px]:grid-rows-[minmax(0,1fr)] ${comfortableReading ? '@min-[1100px]:py-6' : '@min-[1100px]:py-4'}`}` : ''}`}>
           {!qualityTwoColumn && <aside data-case-request-region hidden={!expanded && !requestFooter} className={`order-2 min-w-0 ${expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : ''}`}>
             {requestFooter ? <><div hidden={!expanded}>{request}</div><div className={expanded ? 'mt-4' : 'px-4'}>{requestFooter}</div></> : request}
           </aside>}
-          <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? qualityTwoColumn ? '@min-[1100px]:order-none @min-[1100px]:overflow-visible' : '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
-            <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? '@min-[1100px]:min-h-[calc(100dvh-70px)] bg-white' : ''}`}`}>{children}</main>
+          <div ref={centerRef} data-case-scroll data-case-document-scroll className={`order-3 min-h-0 min-w-0 ${expanded ? qualityTwoColumn ? `@min-[1100px]:order-none @min-[1100px]:overflow-visible ${showDocumentSheet ? '@min-[1100px]:px-6 @min-[1100px]:pt-6' : ''}` : '@min-[1100px]:order-none @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[will-change:transform]' : ''}`}>
+            <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? `@min-[1100px]:min-h-[calc(100dvh-70px)] bg-white ${showDocumentSheet ? '@min-[1100px]:mx-auto @min-[1100px]:w-full @min-[1100px]:max-w-[210mm] @min-[1100px]:border @min-[1100px]:border-qms-border @min-[1100px]:shadow-sm' : ''}` : ''}`}`}>{children}</main>
           </div>
-          <aside data-case-action className={`order-1 min-w-0 ${qualityTwoColumn ? 'bg-[#F3F6FB] p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start @min-[1100px]:overflow-visible @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5' : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
+          <aside ref={showQualitySideGutters ? qualityPanelRef : undefined} data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start ${showQualitySideGutters ? '@min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain @min-[1100px]:[scrollbar-width:thin]' : '@min-[1100px]:overflow-visible'} @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
             {action}
             {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
               <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTA QUEJA</p>

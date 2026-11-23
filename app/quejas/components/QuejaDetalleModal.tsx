@@ -725,7 +725,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader chevrons queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
-      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn notionStyle
+      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn qualitySideGutters notionStyle
         requestFooter={<div className="space-y-2">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0">
             <Button size="sm" variant="secondary" className="min-h-11 w-full min-w-0 justify-center border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
@@ -755,7 +755,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             {workflowActions}
           </div>}
           {estadoActual !== 'Recibido' && workflowActions}
-          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError}
+          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError} compact={expanded}
             onRetry={() => { void refetchCorreos() }} onRetrySend={id => reintentarCorreo.mutate(id)}
             retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} />}
           {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"

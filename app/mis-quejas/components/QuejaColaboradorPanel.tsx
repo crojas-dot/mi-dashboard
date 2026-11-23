@@ -360,7 +360,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
             : <p className="text-sm text-qms-muted">Sin propuesta registrada.</p>}
         </CaseSection>
   const lectura = cuerpoLectura && <div data-case-stage-readonly={historica ? true : undefined}
-    className={isExpanded ? 'min-w-0 bg-qms-surface' : 'min-w-0 overflow-hidden rounded-card border border-qms-border bg-qms-surface'}>
+    className={isExpanded ? 'min-w-0 bg-qms-surface @min-[1100px]:mx-auto @min-[1100px]:w-full @min-[1100px]:max-w-[210mm] @min-[1100px]:min-h-[calc(100dvh-70px)] @min-[1100px]:border @min-[1100px]:border-qms-border @min-[1100px]:shadow-sm' : 'min-w-0 overflow-hidden rounded-card border border-qms-border bg-qms-surface'}>
     {historica && <CaseReadOnlyHeader etapa={ciclo.etapas.find(paso => paso.id === etapa)?.label ?? etapa} onReturn={() => cambiarEtapa(ciclo.actual)} />}
     {cuerpoLectura}
   </div>
@@ -429,7 +429,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       headerActions={<CaseWorkspaceNavigation expanded={isExpanded} onToggleExpanded={() => { setResolutionOverlay(null); setIsExpanded(value => !value) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationLocked} />}>
       <CaseWorkspace documentKey={queja.id + ':' + etapa} expanded={isExpanded} compactContent={compactTriage || undefined}
-        cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn notionStyle
+        cyclePlacement="header" presentation="reference" documentStyle="sheet" readingLayout qualityTwoColumn qualitySideGutters preserveEditorWidth notionStyle
         requestFooter={isExpanded && <div className="space-y-2">
           {etapa === 'resolucion' && <button type="button" data-investigation-files-card aria-label="Ver mis adjuntos" onClick={abrirAdjuntos}
             className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg border border-qms-border bg-white px-3 text-left text-sm font-medium text-qms-dark transition-colors hover:border-qms-primary/50 hover:text-qms-primary">
@@ -462,9 +462,9 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
               {reenviarRevision && loading ? null : <Send aria-hidden="true" className="size-4 shrink-0" />}{reenviarRevision ? 'Reenviar a Revisión GC' : 'Enviar a Revisión GC'}
             </Button>}
           </div>}
-          {editable && errorResolucion && <p role="alert" className="mt-3 text-sm text-qms-danger">{errorResolucion}</p>}
+          {editable && errorResolucion && <div data-case-resolution-error className="mt-3 min-w-0 border-t border-qms-border pt-2"><p role="alert" className="text-sm font-medium text-qms-danger">Incidencia en la resolución</p><details className="mt-1 min-w-0"><summary className="w-fit cursor-pointer text-xs font-medium text-qms-primary">Ver motivo</summary><p className="mt-1 max-h-28 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-qms-muted [overflow-wrap:anywhere]">{errorResolucion}</p></details></div>}
         </section></div>}>
-        <div data-mis-quejas-reading-column className="mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-[#F3F6FB] px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6 lg:px-8">
+        <div data-mis-quejas-reading-column className={`mx-auto min-h-[calc(100dvh-70px)] w-full min-w-0 max-w-[960px] bg-qms-background px-4 pt-3 pb-5 sm:px-6 sm:pt-4 sm:pb-6 lg:px-8 ${isExpanded && !editable ? '@min-[1100px]:pt-6' : ''}`}>
         {isExpanded && lectura}
         {isExpanded && avisoDevolucion && <div className="mt-5">{avisoDevolucion}</div>}
         {investigando && editorVisitado && <div data-resolution-shell hidden={etapa !== 'resolucion'} className="relative h-[clamp(420px,calc(100dvh-95px),820px)] min-w-0">
