@@ -102,6 +102,55 @@
   background: #F3F6FB;
 }
 
+/* Quejas ampliadas: efecto translúcido inspirado en la superficie lila de CoreUI.
+   Mantener el documento A4, la tipografía y la geometría del panel sin cambios. */
+[data-case-translucent-panel="true"] {
+  background: rgb(122 116 213 / 15%);
+  border-left-color: rgb(99 102 220 / 42%);
+  box-shadow: inset 1px 0 0 rgb(255 255 255 / 50%);
+  -webkit-backdrop-filter: blur(10px) saturate(115%);
+  backdrop-filter: blur(10px) saturate(115%);
+  color: var(--color-qms-dark);
+}
+
+/* Textos y subtítulos con contraste suficiente sobre la superficie lila. */
+[data-case-translucent-panel="true"] :is(h3, h4, .text-qms-dark) {
+  color: #202638;
+}
+[data-case-translucent-panel="true"] .text-qms-muted {
+  color: #586277;
+}
+[data-case-translucent-panel="true"] [data-case-quality-tools] {
+  border-top-color: rgb(105 110 158 / 25%);
+}
+
+/* Mantener los controles blancos y hacer legibles las decisiones importantes. */
+[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button {
+  background: #FFFFFF;
+  border-color: #B9C2DB;
+  color: #1F2937;
+}
+[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button:hover:not(:disabled) {
+  background: #EFF2FF;
+  border-color: #6A78BD;
+  color: #1F2937;
+}
+[data-case-translucent-panel="true"] [data-case-evaluation-choices] > button svg {
+  color: #3C58A2;
+}
+[data-case-translucent-panel="true"] [data-case-evaluation-fields] button {
+  border-color: #C6CCE0;
+}
+[data-case-translucent-panel="true"] [data-case-evaluation-fields] button:hover:not(:disabled) {
+  border-color: #7D8ABA;
+}
+
+/* Las acciones primarias existentes conservan el azul ECA y su contraste.
+   Los botones secundarios siguen en blanco, sin cambiar el flujo ni su texto. */
+[data-case-translucent-panel="true"] [data-case-quality-tools] button {
+  border-color: #C6CCE0;
+}
+
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
    así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
