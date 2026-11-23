@@ -27,7 +27,7 @@ test('correo y sobre de recepción conservan ceros, año e históricos del folio
 test('el correo de acompañamiento saluda al interesado y remite los resultados al adjunto', () => {
   const correo = crearCorreoAcompanamiento({ cliente_nombre: 'Ana Pérez', folio: snapshot.folio })
   assert.match(correo.cuerpo, /^Estimado\(a\) Ana Pérez:/)
-  assert.match(correo.cuerpo, /resultados del análisis y la resolución se encuentran en el informe adjunto/)
+  assert.match(correo.cuerpo, /informe adjunto con los resultados del análisis y la resolución/)
   assert.doesNotMatch(correo.cuerpo, /estado: Resuelto|PROPUESTA INTERNA/)
   assert.ok(correo.asunto.includes(snapshot.folio))
   assert.equal(correo.asunto, 'Respuesta a su solicitud - Folio '+snapshot.folio)
@@ -60,10 +60,10 @@ test('el asunto y cuerpo editados son los del sobre final; el destino siempre sa
   assert.doesNotMatch(tracked.body, /concluyó con el estado/)
 })
 
-test('un sobre histórico sin correo editable conserva el texto y asunto anteriores', () => {
+test('un sobre histórico sin correo editable utiliza la plantilla neutral', () => {
   const mail = quejaMailMessage(claimMailSnapshot(snapshot))
-  assert.equal(mail.subject, 'Queja 2026-001: comunicación final')
-  assert.match(mail.body, /concluyó con el estado: Resuelto/)
+  assert.equal(mail.subject, 'Solicitud 2026-001: comunicación final')
+  assert.match(mail.body, /La evaluación de su solicitud, folio 2026-001, ha concluido/)
   const receipt = claimMailSnapshot({ ...snapshot, tipo: 'recibido', estado: 'Recibido', correo: { subject: 'No usar', body: 'Privado' } })
   assert.equal(receipt.correo, undefined)
   assert.doesNotMatch(quejaMailMessage(receipt).body, /Privado/)
