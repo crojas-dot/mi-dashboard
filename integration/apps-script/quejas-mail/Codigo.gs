@@ -620,7 +620,7 @@ function qmsMailFrame_(title, subtitle, content, footer, identidad, folio) {
     '<tr><td style="padding:12px 24px;border-bottom:1px solid #dee2e6;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif">' + qmsMailHeader_(identidad) + '</td></tr>' +
     '<tr><td style="padding:16px 24px 12px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;line-height:1.5;overflow-wrap:anywhere;word-break:break-word">' +
     '<h1 style="margin:0 0 8px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:20px;line-height:1.5;font-weight:600;color:#212529">' + qmsMailEscape_(title) + '</h1>' +
-    '<p style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #dee2e6;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;color:#6c757d">' + subtitleText + '</p>' +
+    (subtitleText ? '<p style="margin:0 0 14px;padding:0 0 12px;border-bottom:1px solid #dee2e6;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.5;color:#6c757d">' + subtitleText + '</p>' : '') +
     content + '</td></tr>' +
     '<tr><td style="padding:10px 24px;border-top:1px solid #dee2e6;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:13px;line-height:1.5;color:#6c757d">' +
     qmsMailEscape_(footer) + '</td></tr></table></td></tr></table></body></html>';
