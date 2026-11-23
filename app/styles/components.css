@@ -165,6 +165,15 @@
   border-color: #D1DAE4;
 }
 
+/* Igualar la posición vertical de Descripción del cliente con main.
+   40px originales - 24px de margen gris - 1px de borde de hoja = 15px.
+   Solo la primera sección de lectura de Quejas ampliadas en escritorio. */
+@container (min-width: 1100px) {
+  [data-case-quality-two-columns="true"]:has([data-case-coreui-docs-panel="true"]) [data-case-document] > [data-case-client-document] {
+    padding-top: 15px;
+  }
+}
+
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
    así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
