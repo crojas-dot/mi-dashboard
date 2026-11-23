@@ -220,7 +220,7 @@ solo al editar esa capa.
 Para trabajo por módulo, registra sus capacidades terminadas y pendientes; no marques
 un módulo como completo solo porque su página o tabla exista.
 
-## Inventario funcional y cobertura — corte del 15 noviembre de 2026
+## Inventario funcional y cobertura — base del 15 noviembre; acceso actualizado al 23
 
 Este inventario complementa el contrato de arquitectura. **Operativo** significa que
 hay ruta/consumidor y lógica integrada en el repositorio; no significa aceptación
