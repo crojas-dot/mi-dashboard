@@ -67,8 +67,8 @@ export function claimMailSnapshot(value: unknown, options: { internal?: boolean 
 export function quejaMailMessage(row: QuejaMailSnapshot, options: { trackingUrl?: string } = {}) {
   const base = `Solicitud ${row.folio}`
   const messages = {
-    recibido: { subject: `${base}: recepción confirmada`, body: `Confirmamos la recepción de su solicitud, folio ${row.folio}.\n\nGestión de Calidad realizará la evaluación inicial en un plazo de 3 días hábiles.` },
-    final: { subject: `${base}: comunicación final`, body: `La evaluación de su solicitud, folio ${row.folio}, ha concluido.${row.numero_oficio ? `\n\nNúmero de oficio: ${row.numero_oficio}.` : ''}\n\nLa comunicación de respuesta contiene el resultado de la gestión.` },
+    recibido: { subject: `${base}: recepción confirmada`, body: `Confirmamos la recepción de su solicitud. Gestión de Calidad realizará la evaluación inicial en un plazo de 3 días hábiles.` },
+    final: { subject: `${base}: comunicación final`, body: `${row.estado === 'No Procede' ? 'Su solicitud fue declarada no procedente. Los fundamentos se detallan en el informe adjunto.' : 'La gestión de su solicitud ha concluido. Se adjunta el informe de respuesta.'}${row.numero_oficio ? `\n\nNúmero de oficio: ${row.numero_oficio}.` : ''}` },
     interno_recibido: { subject: `${base}: nueva recepción`, body: `Se recibió la solicitud ${row.folio}.\n\nGestión de Calidad dispone de 3 días hábiles para evaluar su procedencia. Revise el expediente y registre la decisión en el sistema.` },
     interno_evaluacion_1: { subject: `${base}: evaluación por vencer`, body: `La evaluación del expediente ${row.folio} vence en 1 día hábil.\n\nRevise el expediente y registre la decisión de procedencia en el sistema.` },
     interno_asignacion: { subject: `${base}: investigación asignada`, body: `Se le asignó la investigación del expediente ${row.folio}.\n\nEl plazo de investigación es de 15 días hábiles desde la decisión de procedencia. Revise el expediente y registre el trabajo en el sistema.` },
