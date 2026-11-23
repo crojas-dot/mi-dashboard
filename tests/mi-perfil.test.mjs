@@ -51,6 +51,20 @@ test('el modal personal agrupa nombre, contraseña y preferencias de notificaci�
   assert.ok(source.includes('guardarPrefs'), 'las preferencias se guardan con guardado y rollback en el modal')
 })
 
+test('Mi perfil ofrece cambio de clave temporal manual o generada, con ojo y copiar', () => {
+  const profile = fs.readFileSync('components/perfil/MiPerfilModal.tsx', 'utf8')
+  const header = fs.readFileSync('components/Header.tsx', 'utf8')
+  assert.ok(profile.includes('generatePassword(20)'))
+  assert.ok(profile.includes('setConfirmacion(valor)'))
+  assert.ok(profile.includes('setClaveVisible(true)'))
+  assert.ok(profile.includes('navigator.clipboard.writeText(nueva)'))
+  assert.ok(profile.includes('accessAction({ action: \'password\', password: nueva, confirmation: confirmacion })'))
+  assert.ok(profile.includes('await refreshAccess()'))
+  assert.ok(header.includes("setPerfilTab('seguridad')"))
+  assert.ok(header.includes('Más tarde'))
+  assert.ok(header.includes('temporaryPasswordExpiresAt'))
+})
+
 test('el encabezado ya no monta el modal de contraseña del menú', () => {
   const source = fs.readFileSync('components/Header.tsx', 'utf8')
   assert.ok(!source.includes('CambiarMiPasswordModal'))
