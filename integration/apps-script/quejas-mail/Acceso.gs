@@ -93,7 +93,7 @@ function qmsAccessMailButton_(url,label) {
 function qmsAccessMailContent_(p) {
  var para='style="margin:0 0 9px;font-family:Inter,Roboto,Segoe UI,Arial,sans-serif;font-size:16px;line-height:1.5;color:#212529"';
  if(p.kind==='temporary_access'){
-  var expiry='Válida durante 72 horas. En el primer ingreso deberás cambiar esta contraseña.';
+  var expiry='Válida durante 3 días hábiles desde su emisión (lunes a viernes). Podés ingresar al sistema y cambiarla desde Mi perfil > Seguridad antes del vencimiento.';
   var footer='Si no reconocés este acceso, contactá a la administración de ECA-QMS.';
   return {
    subject:'Tu acceso a ECA-QMS', footer:footer,
