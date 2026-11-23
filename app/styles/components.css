@@ -102,6 +102,49 @@
   background: #F3F6FB;
 }
 
+/* Quejas ampliadas: tema azul solo del panel de acciones de Calidad.
+   La hoja A4, el gris exterior y Mis Quejas mantienen sus colores originales. */
+[data-case-blue-panel="true"] {
+  background: linear-gradient(180deg, #1F508D 0%, #19477F 100%);
+  color: #FFFFFF;
+}
+[data-case-blue-panel="true"] :is(h3, h4, .text-qms-dark) {
+  color: #FFFFFF;
+}
+[data-case-blue-panel="true"] .text-qms-muted {
+  color: #DCE8F7;
+}
+[data-case-blue-panel="true"] [data-case-quality-tools] {
+  border-top-color: rgb(255 255 255 / 24%);
+}
+[data-case-blue-panel="true"] [data-case-quality-tools] > p {
+  color: #E4EEFB;
+}
+[data-case-blue-panel="true"] :is(.ui-button-secondary, .ui-button-ghost, .ui-button-link) {
+  color: #233B56;
+}
+[data-case-blue-panel="true"] [data-case-evaluation-fields] .ui-button-ghost {
+  color: #5A6B81;
+}
+[data-case-blue-panel="true"] [data-case-quality-tools] button {
+  color: #213047;
+}
+[data-case-blue-panel="true"] details {
+  color: var(--color-qms-dark);
+}
+[data-case-blue-panel="true"] details :is(.text-qms-dark, h3, h4) {
+  color: var(--color-qms-dark);
+}
+[data-case-blue-panel="true"] details .text-qms-muted {
+  color: var(--color-qms-muted);
+}
+[data-case-blue-panel="true"] [data-area-queja-control] {
+  color: var(--color-qms-dark);
+}
+[data-case-blue-panel="true"] [data-area-queja-control] .text-qms-muted {
+  color: var(--color-qms-muted);
+}
+
 /* El editor conserva su scroll interno, pero la tarjeta central no es sticky:
    así respeta el margen superior habitual del expediente al abrir. */
 /* La ampliación vertical conserva el editor real: sin remount de Tiptap.
