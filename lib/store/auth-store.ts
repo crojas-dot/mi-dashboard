@@ -185,7 +185,10 @@ export const useAuthStore = create<AuthState>((set, get) => {
         const result = await signIn(email, password)
         if (revision !== authRevision) return { error: 'La sesión cambió. Vuelve a iniciar sesión.' }
         if (result.error) return { error: result.error }
-        if(result.access&&result.authId) {
+        // Solo los estados PENDIENTES van a /acceso. Una sesión 'ready'
+        // (incluida la clave temporal dentro de los 3 días hábiles)
+        // debe publicar perfil y permisos ahora, sin esperar un evento de Auth.
+        if (result.access && result.access.phase !== 'ready' && result.authId) {
           const verified=await supabase.auth.getUser()
           if(revision!==authRevision||verified.error||verified.data.user?.id!==result.authId)return {error:'La sesión cambió. Volvé a iniciar sesión.'}
           clearLogoutPending();clearSession();currentAuthId=result.authId
