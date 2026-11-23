@@ -94,7 +94,7 @@ function RespuestaEditor({ queja, initial, informeActual, informePendiente, info
   const compatibleDraft = noProcede || originalDraft?.motivo_no_procede == null ? originalDraft : null
   const [form, setForm] = useState<RespuestaClienteDraftInput & { correo: CorreoQueja }>(() => {
     const plantilla = crearCorreoAcompanamiento(queja, noProcede)
-    const respuesta = compatibleDraft?.respuesta?.trim() ? compatibleDraft.respuesta : (noProcede ? 'La solicitud se declara no procedente. Los fundamentos se detallan en el informe adjunto al correo de respuesta.' : 'La resolución de su solicitud se detalla en el informe oficial enviado como archivo adjunto al correo de respuesta.')
+    const respuesta = compatibleDraft?.respuesta?.trim() ? compatibleDraft.respuesta : (noProcede ? 'La solicitud se declara no procedente. Los fundamentos se detallan en el informe adjunto al correo de respuesta.' : 'El resultado de su solicitud se comunica mediante el informe enviado por correo.')
     const motivoGuardado = compatibleDraft?.motivo_no_procede?.trim() ? compatibleDraft.motivo_no_procede : null
     // Los fundamentos se redactan en el oficio; el registro conserva el motivo
     // previo o la comunicación que remite al adjunto, sin pedir un segundo texto.
