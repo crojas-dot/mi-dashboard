@@ -69,7 +69,7 @@ export default function PublicTrackingPage({ available = true, initialLogo }: { 
 
       {!available ? <div role="status" className="mt-4 space-y-2 text-base leading-relaxed">
         <p className="font-medium text-qms-dark">La consulta en línea todavía no está habilitada.</p>
-        <p className="text-qms-muted">Esto no afecta el registro de tu queja. Conservá tu consecutivo para consultar con Gestión de Calidad.</p>
+        <p className="text-qms-muted">Esto no afecta el registro de tu solicitud. Conservá tu consecutivo para consultar con Gestión de Calidad.</p>
       </div> : status ? <>
         <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-qms-border pb-4 text-sm text-qms-muted">
           <span>Número de registro</span>
@@ -97,7 +97,7 @@ export default function PublicTrackingPage({ available = true, initialLogo }: { 
       </> : loading ? <div className="mt-5"><LoadingSkeleton variant="list" label="Consultando tu trámite…" framed={false} /></div> :
         <div className="mt-4 space-y-3 text-base leading-relaxed">
           <p className="text-qms-dark">Ingresá desde el botón «Consultar mi trámite» del correo de confirmación. El enlace abre tu trámite directamente, sin contraseña.</p>
-          <p className="text-sm text-qms-muted">Si recargaste esta página, volvé a abrir el enlace del correo o el que guardaste al registrar la queja.</p>
+          <p className="text-sm text-qms-muted">Si recargaste esta página, volvé a abrir el enlace del correo o el que guardaste al registrar la solicitud.</p>
           {canRetry && <Button variant="secondary" className="min-h-11 w-full sm:w-auto" onClick={() => void consultar(lastRequestKey.current)}>Reintentar consulta</Button>}
         </div>}
       {error && <p role="alert" className="mt-4 text-sm text-qms-danger">{error}</p>}
