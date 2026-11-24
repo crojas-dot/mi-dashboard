@@ -1,6 +1,6 @@
 import type { Queja } from '@/lib/types'
 import type { QuejaPlazoRun } from '@/lib/queries/useQuejaSeguimiento'
-import { getQuejaDeadline } from '@/lib/utils/quejaDeadline'
+import { getQuejaDeadline, formatQuejaDeadlineDate } from '@/lib/utils/quejaDeadline'
 
 export const CASE_FLOW = [
   { id: 'received', label: 'Recepción' }, { id: 'evaluation', label: 'Evaluación' },
@@ -161,7 +161,7 @@ const day = (value: string | number) => {
 const obj = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
 
 /** Presenta el snapshot; jamás calcula o cambia otro vencimiento a partir de prioridad. */
-export function caseDeadline(queja: Queja, runs: QuejaPlazoRun[], now = Date.now()) {
+export function caseDeadline(queja: Queja, runs: QuejaPlazoRun[], now = Date.now(), plazoLoading = false) {
   const result = getQuejaDeadline(queja, now)
   const run = runs.find(r => r.expires_at && result.vence && Date.parse(r.expires_at) === Date.parse(result.vence))
   const snapshot = obj(run?.snapshot), rule = obj(snapshot.rule), calendar = obj(snapshot.calendar)
@@ -185,16 +185,18 @@ export function caseDeadline(queja: Queja, runs: QuejaPlazoRun[], now = Date.now
   const today = day(now), due = result.vence ? day(result.vence) : null, start = run ? day(run.started_at) : null
   let label = result.label, progress: number | null = null
   const calendarValid = rule.day_type === 'calendar_days' || (business && weekdays !== null && validHolidays)
+  // No presentar un conteo natural provisional mientras falta el snapshot hábil.
+  const pending = !!result.vence && plazoLoading && (!run || !calendarValid)
   if (result.vence && today !== null && due !== null && run && calendarValid) {
     const remaining = result.vencido ? count(due, today) : count(today, due)
     if (remaining !== null && business) {
       const amount = Math.abs(remaining), unit = amount === 1 ? 'día hábil' : 'días hábiles'
-      label = result.vencido ? due === today ? 'Venció hoy' : amount > 0 ? `Venció hace ${amount} ${unit}` : 'Vencido' : due === today ? 'Vence hoy' : `Vence en ${amount} ${unit}`
+      label = result.vencido ? due === today ? 'Venció hoy' : amount > 0 ? `Venció hace ${amount} ${unit}` : 'Vencido' : due === today ? 'Vence hoy' : amount === 0 ? `Vence el ${formatQuejaDeadlineDate(result.vence)}` : `Vence en ${amount} ${unit}`
     }
     const elapsed = start === null ? null : count(start, Math.max(start, today))
     if (duration && duration > 0 && elapsed !== null) progress = Math.min(100, Math.max(0, elapsed / duration * 100))
   }
-  return { ...result, label, progress, duration, business: business && calendarValid, stageTitle: run?.stage_id === 'quejas.investigation' ? 'Investigación' : run?.stage_id === 'quejas.evaluation' ? 'Evaluación inicial' : 'Plazo vigente' }
+  return { ...result, label: pending ? 'Consultando plazo…' : label, variant: pending ? 'gray' as const : result.variant, pending, progress, duration, business: business && calendarValid, stageTitle: (run?.stage_id ?? result.etapa) === 'quejas.investigation' ? 'Investigación' : (run?.stage_id ?? result.etapa) === 'quejas.evaluation' ? 'Evaluación inicial' : 'Plazo vigente' }
 }
 export function caseDate(value?: string | null) {
   return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h12' }) : '—'
