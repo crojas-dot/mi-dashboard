@@ -16,7 +16,8 @@ sin renovar por consultas o reaperturas. No anticipar una fecha fija al recibir.
 GET privado `/api/quejas/seguimiento`
 exige staff; POST exige admin y relación formulario/consecutivo. No hay búsqueda pública
 por folio. Web/Edge comparten clave dedicada; Apps Script solo recibe el origen permitido.
-La configuración incompleta con el flag activo devuelve error, nunca false para usar
+La configuración incompleta con el flag activo devuelve error, nunca false para usar el flujo antiguo.
+
 El enlace se envía solo en el acuse; el correo final contiene el documento
 físico y no depende del seguimiento. La UI no ofrece descarga del informe.
 WAF de seguimiento: 90 solicitudes/IP/600 s según corte documentado.
@@ -87,38 +88,6 @@ doble envío antes del siguiente render. No cerrar ni regenerar el borrador dura
 una escritura. Un fallo de red conserva datos/contraseña; un fallo del listado tras
 guardar se anuncia aparte. El guard real admin deshabilita la lectura de la página
 antes de estar inicializado; no convierte una simulación de vista en autorización.
-
-exclusivo de acceso, separado de `endpoint` para Quejas. El RPC
-  `qms_access_mail_transport()` devuelve `coalesce(access_endpoint,endpoint)`.
-  Esta separación y la activación se verificaron en Supabase el 23 noviembre.
-  No sobrescribir el transporte de Quejas ni exponer secretos. El correo de
-  Quejas utiliza `delivery_request`; acceso usa `access_delivery_request`.
-- **Apps Script actual:** fuentes `integration/apps-script/quejas-mail/Codigo.gs`
-  y `Acceso.gs`; archivo íntegro para copiar/publicar:
-  `docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs`. La entrada
-  `doPost` enruta acceso al manejador versionado
-  `qmsAccessMailPostV20261121_`; el autodiagnóstico
-  `qmsAccessMailSelfTest()` debe indicar `valid:true`, recepción firmada,
-  `handlerVersion:'2026-11-21-v2'`, y rechazo simulado
-  `invalid_access_payload` **sin enviar correo**. Un diagnóstico previo
-  basado en `String(función)` causó falsos indicios de código duplicado:
-  no inferir duplicados sin comprobar el proyecto real.
-  El usuario confirmó correos de acceso reales recibidos en Gmail, pero
-  **no** presupone que la última plantilla de GitHub esté publicada en GAS.
-  Tras cambiar `.gs`, actualizar la **versión de implementación web existente
-  /exec** en Google; Vercel no lo hace por sí solo. No crear ni rotar URL sin
-  necesidad y no confundir éxito simulado con recepción real.
-- **Correo de acceso (diseño aprobado):** título «Tu acceso a ECA-QMS»,
-  sin subtítulo redundante «Acceso inicial al sistema». Mostrar **Usuario**
-  de manera visible y **Contraseña temporal** en un único bloque compacto
-  de `max-width:340px`, fondo suave, borde fino uniforme y tipografía
-  monoespaciada. Texto inferior solo «No compartás esta contraseña.»,
-  botón «Iniciar sesión» a `/login`, y vigencia «3 días hábiles» sin
-  «(lunes a viernes)». Evitar líneas azules verticales `border-left`,
-  tarjetas enormes anidadas y ayudas repetitivas; conservar el logo, la
-  cabecera y las plantillas de invitación/OTP/Quejas. El HTML usa estilos
-  inline y caracteres escapados por compatibilidad con Gmail/Outlook.
-- **Seguridad pendiente:** en pruebas anteriores se expuso un valor de
 
 ## Correo de acceso: transporte y plantillas
 
@@ -247,7 +216,8 @@ orquestación y revisión de las escrituras. No importar SDK servidor en esas vi
   justifica editar genéricamente reglas 3/15. No inventar feriados institucionales.
 
 Referencias: [correo por evento](../quejas-formulario-correo-inmediato-2026-11-10.md),
-[protocolo](../seguridad-correos-quejas.md),
+[protocolo](../seguridad-correos-quejas.md), [avisos internos](../avisos-internos-quejas-2026-10-14.md),
+[audio](../notificaciones-audio-2026-10-14.md) y [calendario](../calendario-qms-2026-10-15.md).
 
 Desde el 20 octubre, el contrato ciudadano tiene dos eventos: `recibido` y `final`
 (No Procede o resolución de Calidad). DB aplicó `20261020163142`, conservando los
