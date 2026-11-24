@@ -22,7 +22,7 @@ para ubicar componentes. No recuperar las pruebas descartadas.
 - Antes de verificar una URL privada, solo fondo neutral; no presentar barra, login ni shell de dashboard. Login/logout usa skeleton de login cuando corresponde; datos pendientes del módulo usan solo su carga propia.
 - Skeletons fijos CSS y movimiento reducido; Spinner solo en operaciones. Sin espera mínima ni círculo permanente por registro o Acta Pendiente.
 - Modal mantiene dialog nativo, top layer, Tab/Shift+Tab, foco y scroll lock de modales anidados. Escape/fondo cierran por defecto; dismissOnEscape/dismissOnBackdrop permiten exigir X en una vista concreta.
-- Clases dark: pueden existir, pero no hay selector completo de tema integrado. QuejasSummary dibuja SVG y no carga Chart.js en el dashboard activo.
+- Clases dark: pueden existir, pero no hay selector completo de tema integrado. QuejasSummary dibuja SVG puro y no carga librerías de gráficos.
 
 Catálogos usa `COLORES_CATALOGO` de `lib/constants/badges.ts`: primary, info, success,
 warning, danger y secondary son códigos DB; sus etiquetas y estilos se resuelven
@@ -453,3 +453,23 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - Visor: marco estable, permiso verificado y Blob local revocable, nunca
   iframe Drive externo. Indicador tras 180 ms; transición breve 150 ms con
   movimiento reducido. Precarga/caché privada en [datos y rendimiento](datos-y-rendimiento.md).
+
+## Dashboard ejecutivo
+
+- Cabecera «Dashboard · Indicadores del SGC», pestañas horizontales accesibles
+  (Quejas activa por defecto), selector de período e Imprimir / PDF discretos.
+  Solo Quejas dibuja ocho tarjetas; las demás muestran preparación sin datos.
+- Fondo #F4F7F6, Inter heredada, tarjeta blanca con borde fino uniforme y sin
+  bordes laterales destacados. Azul #024796, verde QMS #198754, ámbar y gris.
+- Tres filas compactas: 4 KPIs de altura mínima 126px; tendencia y dona de
+  240px (65/35 en escritorio); áreas y cumplimiento por etapa de 186px.
+  Reflow en pantallas estrechas, no recortar información por impedir scroll.
+- SVG puro: anillos delgados, puntas redondeadas, barras segmentadas,
+  etiquetas cortas, leyenda y tooltip de tendencia por hover/foco; sin Chart.js
+  ni Recharts. Meta 90% solo referencia; no sustituye denominadores reales.
+- DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
+  formas fijas CSS motion-safe, sin temporizadores por registro. Error real
+  con reintento, sin datos evaluables no equivale a 0%.
+- Impresión circunscrita al tablero: shell y controles ocultos, altura y
+  overflow liberados, colores de SVG, tarjetas indivisibles y fecha/período.
+  No modificar AuthShell, SessionScreen, tema global ni alias de ruta.
