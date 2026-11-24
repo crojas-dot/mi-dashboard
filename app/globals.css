@@ -201,14 +201,20 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   body:has([data-dashboard-print]) a[href="#app-content"] { display: none !important; }
 
   [data-dashboard-print] {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4mm;
     box-sizing: border-box;
-    width: 100%;
+    width: 297mm;
     max-width: none;
-    height: auto;
+    height: 208mm;
+    max-height: 208mm;
     min-height: 0;
     margin: 0;
-    padding: 10mm;
-    overflow: visible;
+    padding: 9mm 11mm;
+    overflow: hidden;
+    background: #ffffff;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
     font-size: 9pt;
@@ -220,29 +226,45 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 0 0 7px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid var(--color-qms-border);
+    flex: 0 0 auto;
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #024796;
   }
-  [data-dashboard-print-meta] h1 { font-size: 15pt; line-height: 1.2; margin: 0 0 2px; }
+  [data-dashboard-print-meta] h1 { color: #024796; font-size: 17pt; line-height: 1.2; margin: 3px 0 0; }
   [data-dashboard-print-meta] p { font-size: 9pt; line-height: 1.25; margin: 0; }
-  [data-dashboard-print] [data-dashboard-graphics] { container-type: normal; }
+  [data-dashboard-print-meta] > div:first-child > p { font-size: 11pt; color: #024796; }
+  [data-dashboard-print-footer] { display: flex !important; flex: 0 0 auto; justify-content: space-between; border-top: 1px solid #e2e8f0; padding-top: 7px; font-size: 9pt; }
+  [data-dashboard-print] > [role='tabpanel']:not([hidden]) { display: flex; flex: 1 1 auto; flex-direction: column; min-height: 0; min-width: 0; }
+  [data-dashboard-print] [data-dashboard-graphics] {
+    container-type: normal;
+    display: grid;
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-rows: minmax(132px, 1fr) minmax(230px, 1.55fr) minmax(168px, 1.2fr);
+    gap: 4mm;
+  }
   [data-dashboard-print] [data-dashboard-graphics] > div {
     display: grid !important;
-    gap: 10px;
-    margin: 0 0 9px !important;
+    gap: 12px;
+    min-height: 0;
+    margin: 0 !important;
     break-inside: avoid;
   }
   [data-dashboard-print] [data-dashboard-graphics] > div:first-child { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  [data-dashboard-print] [data-dashboard-graphics] > div:nth-child(2) { grid-template-columns: minmax(0, 13fr) minmax(0, 7fr); }
+  [data-dashboard-print] [data-dashboard-graphics] > div:nth-child(2) { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
   [data-dashboard-print] [data-dashboard-graphics] > div:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 0 !important; }
   [data-dashboard-graphics] > div > section {
     break-inside: avoid;
     page-break-inside: avoid;
     min-width: 0;
     min-height: 0 !important;
-    padding: 10px !important;
+    padding: 12px !important;
     max-height: none;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: none !important;
   }
   [data-dashboard-graphics] h2 { font-size: 11pt; line-height: 1.2; margin: 0; }
   [data-dashboard-graphics] p,
@@ -252,28 +274,28 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   [data-dashboard-graphics] .text-xs { font-size: 8pt; line-height: 1.25; }
   [data-dashboard-graphics] > div:first-child h2 { font-size: 10.5pt; }
   [data-dashboard-kpi-row] { margin-top: 6px; gap: 8px; }
-  [data-dashboard-kpi-ring] { width: 64px !important; height: 64px !important; }
+  [data-dashboard-kpi-ring] { width: 56px !important; height: 56px !important; }
   [data-dashboard-active-legend] {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 1px;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 4px 8px;
     margin-top: 4px;
-    font-size: 8pt !important;
+    font-size: 10px !important;
     line-height: 1.25;
   }
-  [data-dashboard-active-legend] > span { min-width: 0; gap: 5px; }
-  [data-dashboard-active-legend] > span > span:nth-child(2) { white-space: nowrap; }
+  [data-dashboard-active-legend] > span { min-width: 0; gap: 3px; justify-content: space-between; }
+  [data-dashboard-active-legend] > span > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   [data-dashboard-active-legend] strong { margin-left: auto; }
   [data-dashboard-active-legend] > span > span:first-child { width: 7px; height: 7px; }
   /* Chromium puede fragmentar un SVG en flujo dentro de una grilla impresa.
      Reservar el marco y posicionar el SVG dentro evita el salto de página. */
-  [data-dashboard-trend-frame] { position: relative; height: 170px; margin-top: 4px; break-inside: avoid; }
+  [data-dashboard-trend-frame] { position: relative; height: 175px; margin-top: 4px; break-inside: avoid; }
   [data-dashboard-trend] { position: absolute; inset: 0; height: 100% !important; width: 100%; margin: 0; }
   [data-dashboard-trend-note] { margin-top: 2px; min-height: 0; font-size: 8pt !important; }
   [data-dashboard-trend-note]:empty { display: none; }
-  [data-dashboard-distribution] { flex-wrap: nowrap; gap: 8px; margin-top: 8px; }
-  [data-dashboard-donut] { width: 110px !important; height: 110px !important; }
+  [data-dashboard-distribution] { flex-wrap: nowrap; justify-content: center; gap: 14px; margin-top: 12px; }
+  [data-dashboard-donut] { width: 146px !important; height: 146px !important; }
   [data-dashboard-distribution-legend] { flex: 1 1 0%; min-width: 0; }
-  [data-dashboard-distribution-legend] > li { margin-top: 0; margin-bottom: 4px; font-size: 8pt; gap: 3px; }
+  [data-dashboard-distribution-legend] > li { margin-top: 0; margin-bottom: 5px; font-size: 9pt; gap: 5px; }
   [data-dashboard-areas] { margin-top: 8px; }
   [data-dashboard-areas] > li { margin-top: 0; margin-bottom: 4px; }
   [data-dashboard-area-name] { white-space: normal; overflow-wrap: anywhere; }
