@@ -122,7 +122,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const draftVersions = useRef({ workflow: 0 })
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId, !!queja)
-  const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
+  const { data: runs = [], isPending: plazosPending, isFetching: plazosFetching, error: plazosError } = useQuejaPlazos(quejaId)
   const investigationActive = queja?.estado === 'En Investigación'
   const { data: asignacion, isLoading: asignacionLoading, error: asignacionError } = useQuejaInvestigationAssignment(quejaId, investigationActive)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
@@ -230,7 +230,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   if (!queja) return null
 
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
-  const investigationDeadline = caseDeadline(queja, runs)
+  const investigationDeadline = caseDeadline(queja, runs, Date.now(), plazosPending || plazosFetching)
   const investigationActionDetail = investigationDeadline.business && investigationDeadline.duration
     ? `El responsable tiene ${investigationDeadline.duration} días hábiles para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.`
     : 'El responsable dispone del plazo registrado en el expediente para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.'
@@ -670,7 +670,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       : <CaseSection variant="document" title="Cierre"><p className="text-sm text-qms-muted">Esta etapa todavía no tiene una resolución aprobada para consultar.</p></CaseSection>)}
   </div>
 
-  const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError}
+  const compactTriage = <CaseTriageSummary queja={queja} runs={runs} plazoError={!!plazosError} plazoLoading={plazosPending || plazosFetching}
     responsable={responsableActual?.nombre}
     primaryAction={<CaseTriageNextStep
       step={getCaseTriageNextStep(estadoActual, { responsable: responsableActual?.nombre, canPublish: esStaff })}
@@ -746,7 +746,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </div>}
         compact={<CaseCycle queja={queja} process chevrons compact />}
         cycle={<CaseCycle queja={queja} process chevrons compact selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
-        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} presentation="reference" responsable={responsableActual?.nombre}
+        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} plazoLoading={plazosPending || plazosFetching} presentation="reference" responsable={responsableActual?.nombre}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
           {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-2.5">
