@@ -227,3 +227,45 @@ test('cada método que omite la autenticación duplicada valida la sesión en su
     }
   }
 })
+
+
+test('el nombre de PDF usa módulo y período y el título se restaura al imprimir o cancelar', () => {
+  const make = (mode) => {
+    const doc = { title: 'ECA-QMS', hasFocus: () => true }
+    const win = new EventTarget()
+    const media = new EventTarget()
+    media.matches = false
+    win.matchMedia = () => media
+    const timers = new Map()
+    let seq = 0
+    win.print = () => {
+      assert.equal(doc.title, 'ECA-QMS - Informe Ejecutivo - Quejas - 2026')
+      if (mode === 'afterprint') win.dispatchEvent(new Event('afterprint'))
+      if (mode === 'throw') throw new Error('Impresión no disponible')
+    }
+    const { printExecutiveReport } = loadModule('lib/utils/dashboardPrint.ts', {}, {
+      document: doc, window: win,
+      setTimeout: callback => { timers.set(++seq, callback); return seq },
+      clearTimeout: id => timers.delete(id),
+    })
+    return { doc, win, media, timers, run: () => printExecutiveReport('Quejas', '2026') }
+  }
+  const normal = make('afterprint')
+  normal.run()
+  assert.equal(normal.doc.title, 'ECA-QMS')
+  assert.equal(normal.timers.size, 0)
+  const canceled = make('cancel')
+  canceled.run()
+  canceled.win.dispatchEvent(new Event('blur'))
+  canceled.win.dispatchEvent(new Event('focus'))
+  assert.equal(canceled.doc.title, 'ECA-QMS')
+  assert.equal(canceled.timers.size, 0)
+  const fallback = make('fallback')
+  fallback.run()
+  assert.equal(fallback.doc.title, 'ECA-QMS - Informe Ejecutivo - Quejas - 2026')
+  for (const callback of [...fallback.timers.values()]) callback()
+  assert.equal(fallback.doc.title, 'ECA-QMS')
+  const error = make('throw')
+  assert.throws(error.run, /Impresión no disponible/)
+  assert.equal(error.doc.title, 'ECA-QMS')
+})
