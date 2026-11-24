@@ -273,7 +273,7 @@ importado antes de modificar archivos similares de una etapa anterior.
   permisos/privacidad en la API; no prometer latencia en milisegundos.
 
 Detalle y evidencia visual: [patrones](../visual-patterns.md),
-[capa visual](visual.md) y [panel](../quejas-panel-2026-10-13.md).
+[panel](../quejas-panel-2026-10-13.md).
 
 ### Contrato de aceptación: triaje contextual y directorio
 
@@ -375,8 +375,7 @@ con cabecera, scroll único y pie fijo. Crear mantiene una vista con «Informaci
   al cerrar el modal.
 Editar conserva pestañas «Detalles del perfil» y «Seguridad y acceso», avatar,
 y zona de peligro con confirmación. FormData permanece montado al cambiar de tab.
-Editar mantiene pestañas Detalles del perfil y Seguridad y acceso, perfil
-montado y confirmación de peligro. La Seguridad vigente genera/restablece
+La Seguridad vigente genera/restablece
 acceso desde `UsuarioSeguridadAcceso`; no recuperar el antiguo editor
 de contraseña administrada por PATCH ni abrir otro modal. Ver
 [sesión y permisos](sesion-y-permisos.md).
