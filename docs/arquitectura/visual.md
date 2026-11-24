@@ -462,14 +462,20 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - Fondo #F4F7F6, Inter heredada, tarjeta blanca con borde fino uniforme y sin
   bordes laterales destacados. Azul #024796, verde QMS #198754, ámbar y gris.
 - Tres filas con escala legible del Dashboard anterior: 4 KPIs de altura mínima
-  210px; tendencia y dona de 350px (65/35 cuando el espacio útil lo permite);
+  184px (altura mínima, sin recortar contenido); tendencia y dona de 350px (65/35 cuando el espacio útil lo permite);
   áreas y cumplimiento por etapa de 270px. Títulos de 18px, texto secundario
-  de 14px, valores principales de 36px, anillos KPI de 116px y dona de 200px.
+  de 14px, valores principales de 36px, anillos KPI de 88–116px y dona de 200px. En los KPI de proporción y tiempo,
+  texto a la izquierda y SVG a la derecha en una sola fila; conteos breves
+  con buen contraste.
   Paddings de 20px en escritorio. Cuatro KPIs desde 1120px de ancho del contenido,
   dos en pantallas intermedias; permitir scroll vertical antes que miniaturizar.
 - SVG puro: anillos delgados, puntas redondeadas, barras segmentadas,
   etiquetas cortas, leyenda y tooltip de tendencia por hover/foco; sin Chart.js
-  ni Recharts. Meta 90% solo referencia; no sustituye denominadores reales.
+  ni Recharts. Valores positivos encima de cada barra, sin mostrar ceros
+  ni inventar datos; leyenda de dona con cantidad y porcentaje. Meta 90%
+  rotulada sobre su marca vertical en la primera barra de etapas; los
+  conteos se expresan como «X de Y a tiempo». La meta es solo referencia;
+  no sustituye denominadores reales. Sin notas repetidas bajo tendencia.
 - DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
   formas fijas CSS motion-safe, sin temporizadores por registro. Error real
   con reintento, sin datos evaluables no equivale a 0%.
