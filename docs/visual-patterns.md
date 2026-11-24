@@ -446,8 +446,11 @@ suave. **Historial y notas** usa un diálogo común con
 dos pestañas con las mismas dimensiones. Cada lista tiene scroll interno.
 Historial muestra una cuadrícula centrada de líneas finas con Usuario, Fecha y
 Acción realizada. Las filas miden 40 px y el encabezado queda visible al
-desplazar la tabla. Las fechas usan hora de 12 horas (a. m./p. m.) y se disponen en dos líneas
-en móvil.
+desplazar la tabla. Las fechas usan hora de 12 horas (a. m./p. m.); la columna
+admite dos líneas si hace falta y no invade la acción. El panel derecho ampliado
+permite la rueda hacia el expediente si no tiene recorrido propio, sin desplazar
+la página de fondo. Mientras llega el snapshot de plazo, no presentar conteos
+provisionales.
 Notas muestra texto sin título y un selector opcional de color personal. Ambas
 listas muestran primero lo más reciente. El estado del correo final y la reapertura
 se consultan en la columna de acciones. Agenda y Notificaciones usan la misma
