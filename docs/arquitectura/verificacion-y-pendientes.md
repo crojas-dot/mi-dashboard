@@ -54,8 +54,8 @@ Evidencia reciente, con alcances distintos y selecciones parcialmente solapadas:
 | Correo por evento | 83/83 selección de correo, 39/39 emisor, 159 PostgreSQL aisladas; activación HMAC/Drive y ACK final con Word documentados | [Activación](../../supabase/backups/quejas_urgent_mail_activation_20261110.json) |
 
 No sumar esas cifras como suite global nueva. Las verificaciones completas antiguas,
-fallos previos de informe/paginación y auditorías conservan su fecha y alcance en
-[verificación y pendientes](verificacion-y-pendientes.md). No hay
+fallos previos de informe/paginación y auditorías conservan su fecha y alcance
+más abajo. No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
 - **Web (verificada el 23 noviembre de 2026, corte histórico de acceso):** rama
@@ -102,26 +102,23 @@ Para Quejas/Mis Quejas consultar también el
 No atribuir pruebas E2E a inspección estática, SQL de metadatos ni compilación
 Vercel. La existencia de archivos Node no demuestra que fueron ejecutados.
 
-### Evidencia de acceso y regresiones
+### Evidencia de acceso, regresiones y alcance
 
-plazo vencido, reenvíos y factores. Referencias de regresión:
-`tests/auth-visibility.test.mjs`,
-`tests/usuarios-acceso-mail.test.mjs`,
-`tests/usuarios-acceso-seguro.test.mjs`,
-`tests/usuarios-invitacion-restaurada.test.mjs`,
-`tests/mi-perfil.test.mjs`. Ejecutar los tests realmente antes de
-declararlos aprobados; la mera existencia de fixtures no certifica
-entrega real o comportamiento en navegador.
+El propietario confirmó recepción real de correo de acceso. El autodiagnóstico
+GAS y las verificaciones con mocks anteriores pasaron; el nuevo HTML aún exige
+comprobar publicación. El login ready tuvo build READY; falta E2E de inicio,
+cambio de clave, vencimiento, reenvíos y factores. Suites de referencia:
+`tests/auth-visibility.test.mjs`, `tests/usuarios-acceso-mail.test.mjs`,
+`tests/usuarios-acceso-seguro.test.mjs`, `tests/usuarios-acceso-link.test.mjs`,
+`tests/usuarios-invitacion-restaurada.test.mjs`, `tests/mi-perfil.test.mjs`
+y `scripts/test-usuarios-acceso-db.mjs`. Ejecutarlas antes de declarar aprobación;
+QA sintética no demuestra entrega real ni autenticación en producción.
 
-**Diseño público (ver contrato visual):** `/q/seguimiento` y confirmación de Queja comparten
-`FondoIdentidad`, `PublicQmsHeader`, tarjeta blanca centrada y pie interno.
-Sin botón «Actualizar estado». Formulario público máximo 860 px; correo
-
-Pruebas de referencia: `tests/usuarios-acceso-seguro.test.mjs`,
-`tests/usuarios-acceso-mail.test.mjs`, `tests/usuarios-acceso-link.test.mjs`,
-`tests/auth-visibility.test.mjs`, suites de
-Usuarios y `scripts/test-usuarios-acceso-db.mjs`. QA sintética no demuestra
-recepción de correo ni autenticación real de producción.
+El corte del 14 noviembre sobre PDF/precarga/scroll conserva su rama
+`fix/qms-pdf-pages-preview-scroll-20261114` como referencia histórica, no como
+base actual. Tests Node de scroll, deduplicación, PDF corto/largo y guardado
+son regresiones de código, no pruebas de UX real. Consultar main vigente
+y no sobrescribir cambios ajenos.
 
 Las entradas siguientes son evidencia histórica, no contratos de producto actuales.
 
