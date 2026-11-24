@@ -168,3 +168,21 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
     background: white;
   }
 }
+
+/* Impresión ejecutiva: quitar el shell y sus scrollports solo en Dashboard. */
+@media print {
+  body:has([data-dashboard-print]) > div:has(#app-content),
+  body:has([data-dashboard-print]) div:has(> #app-content),
+  body:has([data-dashboard-print]) #app-content { display: block !important; height: auto !important; max-height: none !important; overflow: visible !important; padding: 0 !important; }
+  body:has([data-dashboard-print]) [data-dashboard-tabs],
+  body:has([data-dashboard-print]) [data-dashboard-controls],
+  body:has([data-dashboard-print]) #qms-main-sidebar,
+  body:has([data-dashboard-print]) #qms-mobile-navigation { display: none !important; }
+  [data-dashboard-print] { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  [data-dashboard-print] [data-dashboard-print-meta] { display: block !important; margin-bottom: 8px; }
+  [data-dashboard-print] [data-dashboard-graphics] > div { display: grid !important; gap: 8px; }
+  [data-dashboard-print] [data-dashboard-graphics] > div:first-child { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  [data-dashboard-print] [data-dashboard-graphics] > div:nth-child(2) { grid-template-columns: minmax(0, 13fr) minmax(0, 7fr); }
+  [data-dashboard-print] [data-dashboard-graphics] > div:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  [data-dashboard-print] [data-dashboard-graphics] section { break-inside: avoid; min-height: 0 !important; }
+}
