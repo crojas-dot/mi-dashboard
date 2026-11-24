@@ -57,19 +57,19 @@ export default function DashboardPage() {
     <PageHeader title="Dashboard · Indicadores del SGC" compact={false}>
       <div data-dashboard-controls className="flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor="dashboard-period">Período</label>
-        <select id="dashboard-period" className="ui-input min-h-10 max-w-full px-3 text-sm" value={choice} onChange={event => setChoice(event.target.value as PeriodChoice)}>
+        <select id="dashboard-period" className="ui-input min-h-11 max-w-full px-4 text-base" value={choice} onChange={event => setChoice(event.target.value as PeriodChoice)}>
           <option value="year">Año actual ({period.year})</option>
           <option value="six">Últimos 6 meses</option>
           {(hasPrevious || choice === 'previous') && <option value="previous">Año anterior ({period.year - 1})</option>}
         </select>
-        <button type="button" className="ui-button ui-button-outline ui-button-sm min-h-10 gap-2" disabled={!active || !data || !!error} onClick={() => window.print()}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
+        <button type="button" className="ui-button ui-button-outline min-h-11 gap-2 text-base" disabled={!active || !data || !!error} onClick={() => window.print()}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
       </div>
     </PageHeader>
     <p data-dashboard-print-meta className="hidden print:block text-sm text-qms-muted">Módulo: {MODULOS[tab].label} · Período: {period.label} · Generado: {generated}</p>
-    <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-3 flex gap-1 overflow-x-auto border-b border-qms-border">
+    <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-4 flex gap-2 overflow-x-auto border-b border-qms-border">
       {tabs.map((id, index) => <button key={id} ref={node => { buttons.current[index] = node }} id={'dashboard-tab-' + id} role="tab" type="button"
         aria-selected={tab === id} aria-controls={'dashboard-panel-' + id} tabIndex={tab === id ? 0 : -1}
-        className={'min-h-10 shrink-0 whitespace-nowrap border-b-2 px-3 text-sm font-medium ' + (tab === id ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark')}
+        className={'min-h-12 shrink-0 whitespace-nowrap border-b-2 px-4 text-base font-medium ' + (tab === id ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark')}
         onClick={() => setTab(id)} onKeyDown={event => moveTab(event, index)}>{MODULOS[id].label}</button>)}
     </div>
     {tabs.map(id => <DeferredMount key={id} active={tab === id}>
@@ -78,9 +78,9 @@ export default function DashboardPage() {
           : error ? <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-6 text-sm">No se pudieron cargar los indicadores. <button type="button" className="font-medium text-qms-primary underline" onClick={() => void refetch()}>Reintentar</button></div>
           : isPending || !data ? <DashboardLoading label="Cargando indicadores de Quejas…" variant="executive" />
           : <QuejasSummary data={data.metrics} />
-          : <div className="flex min-h-64 flex-col items-center justify-center rounded-card border border-qms-border bg-qms-surface p-8 text-center">
-            <svg viewBox="0 0 48 48" className="mb-4 size-12 text-qms-muted" aria-hidden="true"><path d="M8 39V9M8 39H41" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><rect x="14" y="24" width="6" height="15" rx="2" fill="currentColor" opacity=".35" /><rect x="24" y="16" width="6" height="23" rx="2" fill="currentColor" opacity=".45" /><rect x="34" y="10" width="6" height="29" rx="2" fill="currentColor" opacity=".55" /></svg>
-            <h2 className="font-semibold text-qms-dark">{MODULOS[id].label}</h2><p className="mt-1 text-sm text-qms-muted">Módulo en preparación · Sin indicadores activos</p>
+          : <div className="flex min-h-80 flex-col items-center justify-center rounded-card border border-qms-border bg-qms-surface p-8 text-center">
+            <svg viewBox="0 0 48 48" className="mb-5 size-16 text-qms-muted" aria-hidden="true"><path d="M8 39V9M8 39H41" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><rect x="14" y="24" width="6" height="15" rx="2" fill="currentColor" opacity=".35" /><rect x="24" y="16" width="6" height="23" rx="2" fill="currentColor" opacity=".45" /><rect x="34" y="10" width="6" height="29" rx="2" fill="currentColor" opacity=".55" /></svg>
+            <h2 className="text-xl font-semibold text-qms-dark">{MODULOS[id].label}</h2><p className="mt-2 text-base text-qms-muted">Módulo en preparación · Sin indicadores activos</p>
           </div>}
       </section>
     </DeferredMount>)}
