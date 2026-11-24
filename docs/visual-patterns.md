@@ -355,17 +355,13 @@ destellos como adorno. Los iconos que identifican controles siguen disponibles.
   identidad/perfil/permisos; no habilita el dashboard. Botones de al menos 44px.
 - Si se recarga durante un cierre de sesión pendiente, se continúa el cierre.
   La marca de bloqueo no contiene información de cuenta y no concede permisos.
-- El dashboard usa `DashboardLoading` con variantes summary/modules/table/activity:
-  skeleton proporcional a cada bloque, círculos de gráficos y líneas cortas.
-  Conservar la carga independiente por bloque, no agregar un segundo marco dentro
-  de una tarjeta que ya tiene encabezado ni esperar a que terminen todos los bloques.
-  `components/ui/Skeleton` solo dibuja formas; no consulta datos ni permisos.
+- El dashboard usa `DashboardLoading` variante executive: cuatro KPIs, dos gráficos y dos tarjetas inferiores, las mismas grillas/alturas que QuejasSummary. Formas fijas, movimiento reducido, sin tabla ni feed. Los módulos parciales no montan indicadores. Ver [contrato ejecutivo](arquitectura/visual.md).
 - `LoadingSkeleton` es la carga inicial compartida de los módulos activos: table
   para listados/permisos, form para ajustes/formulario público, cards para IA y
   list para historial, hallazgos, comentarios y evidencias. Cinco filas de tabla
   o tres elementos/tarjetas como máximo, independientes del número de registros.
   Usar `framed={false}` dentro de un panel que ya tiene borde. No agregar spinners
-  sueltos ni mensajes visibles a esas cargas. Dashboard delega table/activity aquí.
+  sueltos ni mensajes visibles a esas cargas. Las variantes legacy de DashboardLoading delegan table/activity aquí.
 - Reservar `Spinner` para guardar, subir, descargar, sincronizar o analizar.
   Caja estable de 14/16/24px, centrada en ambos ejes, sin deformar texto ni botones;
   giro CSS solo con movimiento permitido. `Button loading` lo incorpora y conserva
