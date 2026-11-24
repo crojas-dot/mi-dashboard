@@ -77,7 +77,7 @@ function Trend({ data }: { data: DashboardMetrics }) {
   const labelSize = Math.min(12, Math.max(8, (bar + 2) / Math.max(1, String(max).length) / .62))
   const label = (month: string) => monthFmt.format(new Date(month + '-01T00:00:00Z')).replace('.', '')
   return <Card title="Tendencia mensual" height={MAIN_HEIGHT}>
-    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-qms-muted">
+    <div data-dashboard-trend-legend className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-qms-muted">
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-primary" />Recibidos</span>
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-success" />Resueltos en plazo</span>
     </div>
@@ -129,7 +129,7 @@ function Distribution({ data }: { data: DashboardMetrics }) {
 function Areas({ data }: { data: DashboardMetrics }) {
   const max = Math.max(1, ...data.areas.map(a => a.count))
   return <Card title="Top áreas afectadas" height={LOWER_HEIGHT}>
-    <p className="mt-1 text-sm text-qms-muted">Solicitudes procedentes · Top 5</p>
+    <p data-dashboard-areas-caption className="mt-1 text-sm text-qms-muted">Solicitudes procedentes · Top 5</p>
     {data.areas.length ? <ul data-dashboard-areas className="mt-4 space-y-3">{data.areas.map(a => <li key={a.area} className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(64px,1fr)_auto] items-center gap-2 text-sm">
       <span data-dashboard-area-name className="truncate text-qms-dark" title={a.area}>{a.area}</span><svg role="img" aria-label={a.area + ': ' + a.count} viewBox="0 0 100 7" preserveAspectRatio="none" className="h-3.5 w-full"><rect width="100" height="7" rx="3.5" fill={track} /><rect width={a.count / max * 100} height="7" rx="3.5" fill={primary} /></svg><strong className="tabular-nums">{a.count}</strong>
     </li>)}</ul> : <p className="py-9 text-center text-sm text-qms-muted">Sin áreas registradas en solicitudes procedentes.</p>}
