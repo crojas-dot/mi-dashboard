@@ -431,6 +431,12 @@ zona Costa Rica; no modificar el instante almacenado por un cambio visual.
   sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
   relleno ni elementos apilados. Check y «Ver agenda» usan qms-primary; el día
   seleccionado usa fondo qms-primary y texto blanco, sin cambiar la marca global.
+- Pulsar cualquier día abre la vista de tarjetas filtrada por esa fecha, con
+  fecha y cantidad de vencimientos. «Volver al calendario» conserva el mes;
+  «Ver todo» retira el filtro. Si no hay coincidencias, mostrar un vacío acotado
+  a la agenda actual. Mantener ancho 320px, lista de cinco y «Ver más» local,
+  foco en la navegación y scroll al inicio al cambiar filtro. Reabrir desde
+  el icono restablece día/mes y vista; sin cambios de la paleta global.
 - Visor: marco estable, permiso verificado y Blob local revocable, nunca
   iframe Drive externo. Indicador tras 180 ms; transición breve 150 ms con
   movimiento reducido. Precarga/caché privada en [datos y rendimiento](datos-y-rendimiento.md).

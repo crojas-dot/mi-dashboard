@@ -140,6 +140,14 @@ No añade solicitudes remotas ni cambia Realtime/intervalos. Ver
   sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
   relleno ni elementos apilados. Check y «Ver agenda» usan qms-primary; el día
   seleccionado usa fondo qms-primary y texto blanco, sin cambiar la marca global.
+- Filtro diario local: elegir una fecha del calendario abre las tarjetas de los
+  registros recibidos cuya `fecha_limite` civil CR coincide exactamente. «Ver todo»
+  elimina el filtro e incluye también novedades sin vencimiento. El resultado vacío
+  se limita explícitamente a la agenda actual, no a toda la DB. El filtro, navegar
+  meses y expandir «Ver más» no disparan RPC, invalidaciones ni nuevos canales.
+  Mantener caché de cinco minutos y límite 20. Una futura agenda mensual de
+  Auditorías/Revisión/SACP requerirá un contrato de consulta por mes autorizado;
+  no forma parte de esta mejora.
 - Agenda de hoy reúne novedades accionables de hoy (recepción, asignación, propuesta
   para GC, devolución, lista para publicar y programación) y plazos de hoy o dentro
   de dos días hábiles. La ventana incluye un día hábil con etiqueta precisa.

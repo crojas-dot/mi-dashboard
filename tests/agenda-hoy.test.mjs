@@ -127,3 +127,45 @@ test('el alias /dashboard conserva el módulo y redirige al panel existente',()=
   const {default:Alias}=loadModule('app/dashboard/page.tsx',{'next/navigation':{redirect:href=>{target=href}}})
   Alias();assert.equal(target,'/')
 })
+
+test('un día abre solo sus vencimientos, Ver todo conserva novedades sin fecha y Ver más se reinicia',()=>{
+  const states=[];let cursor=0,open=true,loading=false,error=false
+  const calendar=loadModule('lib/utils/agendaCalendar.ts')
+  const {default:Component}=loadModule('components/ui/AgendaHoyWidget.tsx',{...linkMock,
+    '@/lib/utils/agendaCalendar':{...calendar,crearMesAgenda:(_date,offset)=>calendar.crearMesAgenda(new Date('2026-11-23T18:00:00Z'),offset)},
+    react:{...React,useId:()=> 'agenda-date-fixture',useRef:()=>({current:null}),useEffect(){},
+      useState:initial=>{const index=cursor++;states[index]??=initial;return[states[index],value=>{states[index]=typeof value==='function'?value(states[index]):value}]}},
+  })
+  const items=[
+    ...Array.from({length:7},(_,i)=>({...sample,id:'day25-'+i,codigo:'Caso 25-'+i,fecha_limite:'2026-11-25',motivo:'vence_en_2_dias'})),
+    {...sample,id:'day24',codigo:'Caso 24',fecha_limite:'2026-11-24',motivo:'vence_en_1_dia'},
+    {...sample,id:'no-date',codigo:'Sin fecha',fecha_limite:null,motivo:'nueva_asignacion'},
+  ]
+  const nodes=value=>Array.isArray(value)?value.flatMap(nodes):value?.props?[value,...nodes(value.props.children)]:[]
+  const render=()=>{cursor=0;return nodes(Component({open,items,loading,error,onToggle(){open=!open},onClose(){open=false},onRetry(){}}))}
+  const content=value=>Array.isArray(value)?value.map(content).join(''):value?.props?content(value.props.children):typeof value==='string'||typeof value==='number'?String(value):''
+  const clickText=label=>render().find(n=>n.type==='button'&&content(n.props.children)===label).props.onClick()
+  const clickDay=day=>render().find(n=>n.type==='button'&&n.props['aria-label']?.startsWith(day+' noviembre de 2026')).props.onClick()
+  const cards=()=>render().filter(n=>n.type==='li').map(n=>content(n.props.children))
+  clickDay(25)
+  assert.equal(cards().length,5)
+  assert.ok(cards().every(x=>x.includes('Caso 25-')))
+  assert.ok(render().some(n=>n.type==='h3'&&content(n.props.children)==='25 de noviembre de 2026'))
+  clickText('Ver más');assert.equal(cards().length,7)
+  clickText('Volver al calendario');clickDay(24)
+  assert.equal(cards().length,1);assert.match(cards()[0],/Caso 24/)
+  assert.ok(!render().some(n=>n.type==='button'&&content(n.props.children)==='Ver más'))
+  clickText('Volver al calendario');clickDay(26)
+  assert.equal(cards().length,0)
+  assert.ok(render().some(n=>n.type==='p'&&content(n.props.children)==='Sin vencimientos para este día en la agenda actual.'))
+  loading=true;assert.ok(render().some(n=>n.type==='p'&&content(n.props.children)==='Cargando agenda…'));loading=false
+  error=true;assert.ok(render().some(n=>n.props.role==='alert'));error=false
+  clickText('Ver todo')
+  assert.equal(cards().length,5)
+  clickText('Ver más');assert.equal(cards().length,9);assert.ok(cards().some(x=>x.includes('Sin fecha')))
+  clickText('Volver al calendario');clickDay(25)
+  open=false;render().find(n=>n.props['aria-haspopup']==='dialog').props.onClick()
+  assert.ok(render().some(n=>n.props['data-agenda-calendar']!==undefined))
+  clickText('Ver agenda');assert.equal(cards().length,5)
+  assert.ok(!render().some(n=>n.type==='button'&&content(n.props.children)==='Ver todo'))
+})

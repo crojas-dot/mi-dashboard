@@ -68,6 +68,19 @@ Verificación de este ajuste: 10 pruebas Node, 33 comprobaciones de navegador a
 320/390/1440 px (ambas vistas), TypeScript, ESLint y build correctos. Sin escrituras
 de negocio ni cambios de DB. Interfaz local sin publicar.
 
+## Filtro por fecha — contrato de cliente
+
+El clic en un día abre exclusivamente los registros en memoria que tienen
+`fecha_limite` igual a esa fecha civil de Costa Rica, respetando el orden
+original. Muestra fecha y número de vencimientos. Si no hay resultados,
+«Sin vencimientos para este día en la agenda actual»; no afirmar que la DB
+no tiene actividades fuera de la ventana/límite del RPC. «Ver todo» y «Ver
+agenda» incluyen toda la respuesta, también novedades con fecha_limite null.
+Volver conserva el mes y la selección; cada filtro y reapertura reinician
+la expansión de cinco tarjetas y el scroll. No cambia permisos, RPC, queries,
+Realtime, caché de cinco minutos ni introduce creación manual de eventos.
+La consulta mensual para futuros módulos queda pendiente y exige diseño propio.
+
 ## Historial visual anterior
 
 Último ajuste visual: la vista calendario usa exactamente las recetas Tailwind
@@ -87,7 +100,7 @@ sin tocar DB ni reenviar correos.
 
 El calendario conserva ancho máximo 320px, sin altura vacía reservada, semana desde
 domingo D/L/M/X/J/V/S, botones de día circulares y flechas juntas para mes anterior
-y siguiente. Se puede seleccionar una fecha para consultarla visualmente. Reabrir
+y siguiente. Seleccionar una fecha abre sus vencimientos en la lista, según el contrato de filtro anterior. Reabrir
 restablece el mes y día actuales de Costa Rica; volver desde agenda conserva el mes.
 
 `20261111175442_agenda_hoy_fecha_limite.sql` añade fecha_limite al JSON, como fecha
