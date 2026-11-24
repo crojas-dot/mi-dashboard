@@ -10,17 +10,51 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # ECA-QMS — guía de entrada
 
-Revisión: **23 de noviembre de 2026**. Esta entrada contiene reglas siempre aplicables.
+Revisión: **23 de noviembre de 2026 (actualización de cierre)**. Esta entrada contiene reglas siempre aplicables.
 El detalle se consulta por tema en [el mapa de arquitectura](docs/arquitectura/README.md).
 No cargar todos los documentos para una modificación aislada.
+
+## Corte vigente de entrega — 23 noviembre 2026
+
+- Código funcional en `main`: PR #64 (`80a902e1`, diseño de expedientes) y
+  PR #65 (`d9c2be898e0e237cde23e7bbbf21e140079b5ae3`, formulario, seguimiento,
+  terminología, correos y correcciones de lint). Las variantes descartadas
+  de panel oscuro/lila, pie fijo de decisiones y herramientas plegadas NO
+  forman parte del diseño aprobado.
+- Vercel: el alias productivo `mi-dashboard-iota.vercel.app` se verificó
+  READY en `80a902e1f3e87cd72c4c58b96a7f03d1d187b33c`,
+  despliegue `dpl_41uyHBE9VonR37du4KeBDGDG2pt7`. El PR #65 está integrado
+  en GitHub y su preview `c8d2c076` estaba READY; su publicación en el
+  alias productivo aún no se confirmó en esta comprobación. Verificar SHA,
+  alias y estado antes de declarar publicado cualquier commit posterior.
+- Los módulos conservan sus nombres **Quejas** y **Mis Quejas**. Tipos:
+  Queja, Observación, Sugerencia, Reclamo y Felicitación. Usar **solicitud**
+  para el trámite y **expediente** para el registro de trabajo; conservar
+  nombres de tipos, rutas, tablas, RPC, catálogos, folios, estados y permisos.
+- Pendiente funcional: oficio/informe opcionales para Felicitación, con
+  respuesta de agradecimiento. No está implementado: hoy la publicación,
+  validación de cierre, autorización y transporte final siguen exigiendo
+  documento. Observación/Sugerencia con informe según evaluación de GC
+  es propuesta, no regla vigente. No eliminar controles solo en la UI.
+- Pendiente operativo: publicar y comprobar plantillas nuevas de Quejas
+  en Supabase Edge y Google Apps Script; Vercel no despliega esos servicios.
+  Los PR #64/#65 no modifican la base de datos.
+- QA del PR #65 (head `c8d2c076`): preview READY; TypeScript y lint
+  superaron sus pasos (lint: 0 errores, 1 advertencia); verificación de
+  bandeja Quejas aprobada. CaseWorkspace, Identidad y Reapertura fallaron
+  pruebas posteriores. Hay aserciones antiguas de geometría y login,
+  mocks incompletos de reintento de correo y fallos de acceso de usuarios.
+  Investigar cada caso antes de modificar tests; no asumir que todos son
+  obsoletos. GitHub Actions: runs 45278996866, 45278996483, 45278996512
+  y 45278996490. No afirmar suite global verde ni E2E real. Falta aceptación
+  institucional del ciclo por tipo, permisos, correo y seguimiento.
 
 ## Contrato vigente — acceso, sesión, 2FA y correo (23 noviembre 2026)
 
 **Este bloque prevalece sobre los relatos históricos del 15, 17 y 21 noviembre.**
-Corte funcional de `main` verificado en producción: `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`,
-Vercel `READY`, alias `mi-dashboard-iota.vercel.app` (23-11-2026).
-Cualquier commit posterior exige volver a comprobar alias, SHA y estado. Un build
-correcto no es una prueba funcional completa ni publica Google Apps Script.
+Corte histórico de la corrección de acceso: `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`,
+Vercel `READY` el 23-11-2026. Consultar «Corte vigente de entrega» arriba.
+Un build correcto no es una prueba funcional completa ni publica Google Apps Script.
 
 - **Alta de usuarios:** `UsuarioFormModal.tsx` crea mediante un solo `POST`
   con `access: { id, invite:false, requireMfa, sendByEmail }`. Las casillas
@@ -71,6 +105,10 @@ correcto no es una prueba funcional completa ni publica Google Apps Script.
   Al completarla, `refreshAccess()` retira el aviso. Para una contraseña
   ordinaria, el perfil conserva su ruta existente y mínimo de 8 caracteres.
   «Más tarde» solo oculta el aviso, **no** prorroga el vencimiento.
+  PR #65: el aviso se reinicia por identidad en `Header.tsx`; en
+  `UsuarioSeguridadAcceso.tsx` se limpia la clave manual al cambiar cuenta
+  o visita y se descartan respuestas tardías mediante `manualVisit`.
+  Conservar estas garantías; las pruebas generales de acceso siguen pendientes.
 - **2FA independiente:** si `requireMfa=true`, mantener enrolamiento y
   verificación en `/acceso`, incluso durante la gracia. TOTP nativo requiere
   AAL2 real; OTP alternativo por correo no debe fingir AAL2. No suprimir
@@ -490,6 +528,9 @@ permisos ni datos persistidos.
   y respuesta tienen versiones remotas; conflictos conservan el borrador. No sustituir
   la revisión esperada por la de un refresco ni repetir una publicación confirmada.
 - Oficio institucional único y documento publicado obligatorios para el cierre final.
+  La excepción propuesta para Felicitación sigue pendiente: no habilitar
+  cierre sin adjunto hasta coordinar RPC, restricciones y guard de cierre,
+  outbox, autorización Edge, Apps Script, seguimiento y pruebas por categoría.
   Aprobar la propuesta en GC no exige adelantar la publicación del oficio. El número
   nuevo precarga el folio como valor editable; no es otra serie ni cambia el folio.
 - Área afectada: selección directa junto a Descripción; solo se edita en Recibido
@@ -566,26 +607,46 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   abrir Resolución para editar y permanece montado al cambiar de vista. La visita,
   las revisiones y los borradores se conservan.
   La tabla y la geometría del drawer no cambian.
-- Ampliado: recorrido horizontal completo; desde 1100 px útiles, contacto a la
-  izquierda, documento al centro y acciones a la derecha. Las etiquetas de los pasos
-  se alinean con Descripción. Por debajo se apila sin desbordar el diálogo.
-  El lienzo central tiene su propio scroll y ambos laterales quedan fijos, con
-  texto sobre el fondo y botones del kit. Los laterales solo desplazan su
-  contenido cuando el alto disponible es insuficiente. El encabezado ampliado
-  usa el fondo de superficie del sistema. Anterior y Siguiente miden 44 px y comparten
-  CaseWorkspaceNavigation con Ampliar/Reducir; la X la proporciona Modal.
-  Ambos módulos comparten la hoja de lectura y el resumen vertical, con las
-  etapas y acciones propias de cada rol.
+- Ampliado: dos columnas desde 1100 px útiles, documento centrado y acciones
+  a la derecha (360 px); conservar encabezado, navegación, ciclo y geometría
+  original. Por debajo se apila sin desbordar.
+  `CaseWorkspace` activa `qualitySideGutters` solo con `qualityTwoColumn` y
+  `expanded`. Fondo exterior `bg-qms-background` (#F4F7F6). En Quejas,
+  hoja blanca de ancho máximo 210 mm, altura mínima original
+  `calc(100dvh-70px)`, margen superior de 24 px, padding lateral de 24 px
+  en la zona de lectura, borde tenue y sombra mínima. En escritorio el
+  primer `data-case-client-document` tiene padding superior de 15 px para
+  compensar margen/borde y recuperar la altura de «Descripción del cliente».
+  No reducir letras ni imponer una altura A4 fija que recorte contenido.
+  En Mis Quejas, `preserveEditorWidth` evita limitar el editor al A4;
+  `data-mis-quejas-reading-column` mantiene máximo 960 px, fondo gris y
+  hoja de lectura centrada. Conservar Tiptap, ancho, expansión y borrador.
+  Panel derecho rectangular, sin marco, radio ni sombra:
+  `data-case-coreui-docs-panel` en `app/styles/components.css` usa
+  `linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB`.
+  No sustituir por lila, negro, blur, opacidad global ni transparencia al 10%.
+  Procede en azul ECA #024796 y No procede en rojo ECA #DE4041, con
+  texto/icono blancos; controles secundarios blancos. Mantener contraste,
+  disabled, hover y acciones de cada rol. Panel con scroll interno en
+  escritorio, alto original y reset por expediente; no añadir pie fijo
+  de decisiones ni plegar herramientas por defecto. Anterior/Siguiente
+  comparten CaseWorkspaceNavigation con Ampliar/Reducir; X de Modal.
 - En Quejas, ciclo de evaluación/investigación/revisión/cierre; el contraído no usa
   checks verticales. No Procede muestra únicamente evaluación y cierre. Es una
   proyección del estado, nunca otro historial ni aprobaciones/fechas inventadas.
-- Descripción comienza el documento y usa todo el ancho disponible. Área afectada
-  queda a la derecha en el mismo encabezado, adaptándose al espacio. Sin resumen
-  superior de resultado ni líneas verticales decorativas. En revisión GC se prioriza
-  la propuesta y se pliegan Solicitud y antecedentes.
+- Descripción comienza el documento y usa el ancho interior de la hoja.
+  En Evaluación, Área afectada queda en el panel derecho antes de las
+  decisiones. Sin resumen superior de resultado ni líneas decorativas.
+  En revisión GC se prioriza la propuesta y se pliegan Solicitud y antecedentes.
 - Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
   expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
   Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
+  `CaseFinalMailStatus` compacto (Quejas ampliadas): tipo/estado, contador
+  de incidencias y reintento individual; «Ver motivo» despliega detalles
+  extensos con altura limitada y ajuste de palabras. Después de dos correos,
+  los adicionales se pliegan. No inventar reintento masivo ni reenviar por
+  consultar. En Mis Quejas, error de resolución resumido con «Ver motivo»
+  y scroll acotado; conservar los detalles y recuperación existente.
 - Mis Quejas presenta Análisis, Resolución y Revisión de Calidad. El breadcrumb
   separa la etapa vigente de la consultada y funciona en el contraído y el
   ampliado. Las etapas alcanzadas se pueden consultar. Una devolución habilita
@@ -689,7 +750,9 @@ Contratos: [revisión GC y respuesta](docs/quejas-revision-y-respuesta-2026-11-0
   transiciones históricas vinculadas por folio, fecha y aviso del expediente.
   Resuelve nombres bajo los permisos de la sesión. Notas conserva texto breve sin
   título, orden descendente, reglas de escritura del rol y color por cuenta y
-  navegador. Reabrir queja queda bajo el correo final en la columna de acciones.
+  navegador. «Reabrir expediente» queda bajo el correo final en acciones.
+  «MI TRABAJO EN ESTE EXPEDIENTE», «Expediente anterior/siguiente» y
+  textos neutrales son los rótulos vigentes; no renombrar IDs.
 - En Evaluación, «Mis adjuntos» permite subir mediante el diálogo compartido.
   Un archivo propio ya subido se puede vincular como oficio de apertura; para
   No Procede o respuesta final se puede seleccionar un PDF válido del expediente.
@@ -876,6 +939,11 @@ estado y evidencias actuales en
 - Formulario público normal de 860px máximos, dos columnas desde sm y una en móvil;
   descripción ampliable, scroll de página y tarjeta institucional centrada.
   La variante `?embed=1` conserva su contrato propio para WordPress.
+  PR #65: `FormularioQuejaPublica.tsx` usa `data-public-form-loading`,
+  la misma tarjeta/encabezado y skeleton de campos, descripción, evidencias
+  y botón, reservando la geometría completa desde el inicio; evitar saltos
+  y el skeleton genérico corto. Rótulos: «Registro de solicitud», «Enviar
+  solicitud» y «Solicitud registrada». No alterar validación ni idempotencia.
 - Hasta diez evidencias públicas PDF/JPEG/PNG, máximo 4 MiB por archivo. Gateway
   valida bytes/tipo/contenido, tamaño, cuotas y capacidades; no confiar en extensión,
   MIME declarado o validación del navegador. BotID/WAF y accesos legacy cerrados se
@@ -897,9 +965,16 @@ estado y evidencias actuales en
 - Caduca 30 días naturales desde el primer No Procede/Finalizado; Resuelto no inicia
   el plazo. Consultar/reabrir no renueva el acceso ni borra expediente/evidencias.
   Recuperar un enlace pendiente no repite registro/adjuntos.
-- Seguimiento muestra etapas, fechas y respuesta permitida dentro de la tarjeta
-  institucional con logo y pie interno; sin «Actualizar estado», «Copiar enlace»
-  ni descarga de informe en esa vista. Quitar UI no revoca capacidades ni endpoints.
+- Seguimiento (`PublicTrackingPage.tsx`) conserva la tarjeta institucional
+  con logo y pie interno: `data-public-tracking-card`, altura estable en
+  escritorio `min(680px,calc(100dvh-3rem))` y scroll interior en
+  `data-public-tracking-scroll`; móvil con scroll natural. Cuatro filas fijas:
+  Recepción, Investigación, Respuesta y Cierre. Solo marcar verde si existe
+  evento real; sin evento, «Pendiente» o «Sin registro» en estado terminal.
+  Nunca inventar investigación, fecha ni aprobación en No Procede.
+  Respuesta extensa dentro del scroll; no repetir fecha de recepción.
+  Sin «Actualizar estado», «Copiar enlace» ni descarga de informe en esa
+  vista. Quitar UI no revoca capacidades ni endpoints.
 - El propietario confirmó el reintento del PDF original y la lectura remota verificó
   un adjunto completo con checksum coincidente. Excluyó recuperar la evidencia antigua
   de otro folio; no recrearla ni generar quejas de prueba para compensar esa exclusión.
@@ -910,6 +985,13 @@ Seguridad y capacidad: [formularios públicos](docs/seguridad-formularios-public
 
 ## Correo, avisos, sonido y calendario
 
+- Plantillas PR #65: tratamiento de usted, «Solicitud» en asunto, mensajes
+  breves sin repetir el folio del encabezado, enlace personal y pie
+  «Notificación automática · QMS ECA». El cuerpo manual conserva edición.
+  Fuentes: `lib/utils/quejaCorreo.ts`, `supabase/functions/quejas-mail-queue/message.ts`
+  e `integration/apps-script/quejas-mail/Codigo.gs`. Revisar y sincronizar
+  también el archivo de instalación GAS completo antes de publicar; no
+  afirmar despliegue Edge/GAS ni recepción real por un merge de GitHub.
 - Dos eventos ciudadanos: recibido y final (No Procede o publicación de respuesta).
   Inicio de investigación queda histórico; reapertura/Finalizado no duplican envíos.
   DB encola, Edge autoriza/transporta y Apps Script envía/confirma mediante HMAC,
@@ -1163,7 +1245,7 @@ fallos previos de informe/paginación y auditorías conservan su fecha y alcance
 [verificación y pendientes](docs/arquitectura/verificacion-y-pendientes.md). No hay
 benchmark autenticado con miles de filas ni garantía universal de servicios externos.
 
-- **Web (verificada el 23 noviembre de 2026, corte funcional):** rama
+- **Web (verificada el 23 noviembre de 2026, corte histórico de acceso):** rama
   productiva `main`, dominio `mi-dashboard-iota.vercel.app`, estado `READY`,
   commit `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`, despliegue
   `dpl_2xHeJWY7bvPJrkA42NhH7xHkW5Wz`. Incluye acceso inmediato con
@@ -1189,6 +1271,8 @@ benchmark autenticado con miles de filas ni garantía universal de servicios ext
   10 noviembre, independiente del cambio de acceso. No reabrir accesos
   legacy ni restaurar clientes incompatibles.
 - **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
+  excepción documental de Felicitación, publicación y verificación de plantillas
+  Edge/GAS y resolución de las pruebas fallidas descritas en el corte vigente,
   feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
   o subidas inciertos; contraste de las barras internas de Google Drive.
 - **Límites de seguridad:** alta, 2FA opcional, plazo de gracia y login
