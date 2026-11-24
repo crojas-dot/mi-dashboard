@@ -52,7 +52,7 @@ export default function Header({
   const avisoOmitido = aviso.userId === user?.id && aviso.omitido
   const avisoTemporal = access?.phase === 'ready' && access.temporaryPassword === true && !avisoOmitido
   const fechaLimite = access?.temporaryPasswordExpiresAt
-    ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
+    ? new Intl.DateTimeFormat('es-CR', { day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit', hourCycle: 'h12', timeZone: 'America/Costa_Rica' }).format(new Date(access.temporaryPasswordExpiresAt))
     : null
   // El servidor bloquea el acceso al vencer la clave; actualizar también la
   // sesión visible para no dejar módulos abiertos mostrando errores de permisos.
