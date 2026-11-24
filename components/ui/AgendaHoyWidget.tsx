@@ -24,17 +24,30 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
   const [offsetMes, setOffsetMes] = useState(0)
   const [seleccion, setSeleccion] = useState<string | null>(null)
   const [mostrarTodos, setMostrarTodos] = useState(false)
+  const [fechaFiltro, setFechaFiltro] = useState<string | null>(null)
   const accionVista = useRef<HTMLButtonElement>(null)
   const primerExtra = useRef<HTMLAnchorElement>(null)
   const mes = crearMesAgenda(new Date(), offsetMes)
   const puntos = puntosAgenda(items)
   const fechaSeleccionada = seleccion ?? mes.fechaHoy
-  useEffect(() => { if (open) accionVista.current?.focus() }, [open, vista])
+  // El calendario solo conoce las fechas civiles de los registros ya recibidos.
+  const itemsVisibles = fechaFiltro ? items.filter(item => item.fecha_limite === fechaFiltro) : items
+  const tituloFecha = fechaFiltro ? new Intl.DateTimeFormat('es-CR', {
+    timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(new Date(`${fechaFiltro}T00:00:00Z`)) : null
+
+  function abrirAgenda(fecha: string | null) {
+    setFechaFiltro(fecha)
+    setMostrarTodos(false)
+    setVista('agenda')
+  }
+
+  useEffect(() => { if (open) accionVista.current?.focus() }, [open, vista, fechaFiltro])
   useEffect(() => { if (mostrarTodos) primerExtra.current?.focus() }, [mostrarTodos])
   return <div className="relative">
     <button type="button" className="ui-button ui-button-ghost ui-button-icon relative size-10! min-h-10! rounded-full!" aria-label="Agenda de hoy"
       aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined} onClick={() => {
-        if (!open) { setVista('calendario'); setOffsetMes(0); setSeleccion(null); setMostrarTodos(false) }
+        if (!open) { setVista('calendario'); setOffsetMes(0); setSeleccion(null); setMostrarTodos(false); setFechaFiltro(null) }
         onToggle()
       }}>
       <CalendarDays className="size-5" aria-hidden="true" />
@@ -48,8 +61,10 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
           className="flex items-center gap-1 text-sm text-qms-primary">
           <ChevronLeft className="size-5" aria-hidden="true" />Volver al calendario
         </button>
+        {fechaFiltro && <button type="button" onClick={() => abrirAgenda(null)}
+          className="shrink-0 text-xs font-medium text-qms-primary hover:text-qms-primary-hover hover:underline">Ver todo</button>}
       </div>}
-      <div className={`min-h-0 overflow-y-auto overscroll-contain px-2 pb-2 ${vista === 'agenda' ? 'max-h-80' : ''}`} aria-busy={!!loading}>
+      <div key={`${vista}:${fechaFiltro ?? 'todas'}`} className={`min-h-0 overflow-y-auto overscroll-contain px-2 pb-2 ${vista === 'agenda' ? 'max-h-80' : ''}`} aria-busy={!!loading}>
         {vista === 'calendario' ? <div data-agenda-calendar>
           <div className="flex justify-between items-center mb-4 px-2 pt-2">
             <h3 className="text-sm font-semibold text-gray-800 capitalize" aria-live="polite">{mes.titulo.replace(' de ', ' ')}</h3>
@@ -70,7 +85,7 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
               const motivo = !error ? puntos.get(fecha) : undefined
               return <button key={fecha} type="button" aria-label={`${dia} ${mes.titulo}${motivo ? ', con pendientes' : ''}`}
                   aria-current={dia === mes.hoy ? 'date' : undefined} aria-pressed={fecha === fechaSeleccionada}
-                  onClick={() => setSeleccion(fecha)}
+                  onClick={() => { setSeleccion(fecha); abrirAgenda(fecha) }}
                   className={fecha === fechaSeleccionada
                     ? 'relative w-8 h-8 mx-auto flex items-center justify-center rounded-full bg-qms-primary text-white font-bold shadow-sm'
                     : 'relative w-8 h-8 mx-auto flex items-center justify-center text-gray-700 rounded-full hover:bg-gray-100 transition-colors'}>{dia}
@@ -83,14 +98,18 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
               : error ? 'No se pudieron cargar los pendientes.'
               : <><CheckCircle className="size-4 shrink-0 text-qms-primary" aria-hidden="true" />
                 <span><span className="font-medium text-qms-dark">{items.length} {items.length === 1 ? 'tarea' : 'tareas'}</span> hoy</span></>}</p>
-            <button ref={accionVista} type="button" onClick={() => setVista('agenda')}
+            <button ref={accionVista} type="button" onClick={() => abrirAgenda(null)}
               className="shrink-0 text-xs font-medium text-qms-primary hover:text-qms-primary-hover hover:underline">Ver agenda</button>
           </div>
         </div> : loading ? <p role="status" className="p-3 text-sm text-qms-muted">Cargando agenda…</p>
           : error ? <div role="alert" className="p-3 text-sm text-qms-muted">No se pudo cargar la agenda.
             <button type="button" onClick={onRetry} className="ml-2 text-qms-primary underline">Reintentar</button></div>
-          : !items.length ? <p className="p-3 text-sm text-qms-muted">No hay tareas urgentes para hoy.</p>
-          : <><ul className="space-y-1">{items.slice(0, mostrarTodos ? items.length : 5).map((item, indice) => <li key={`${item.ruta}:${item.id}`}>
+          : <>{tituloFecha && <div className="mb-2 px-3 pb-2 border-b border-qms-border/50" role="status">
+              <h3 className="text-sm font-semibold text-qms-dark">{tituloFecha}</h3>
+              <p className="mt-1 text-xs text-qms-muted">{itemsVisibles.length} {itemsVisibles.length === 1 ? 'vencimiento' : 'vencimientos'} en la agenda actual</p>
+            </div>}
+            {!itemsVisibles.length ? <p className="p-3 text-sm text-qms-muted">{fechaFiltro ? 'Sin vencimientos para este día en la agenda actual.' : 'No hay tareas urgentes para hoy.'}</p>
+          : <><ul className="space-y-1">{itemsVisibles.slice(0, mostrarTodos ? itemsVisibles.length : 5).map((item, indice) => <li key={`${item.ruta}:${item.id}`}>
             <Link ref={indice === 5 ? primerExtra : undefined} href={item.ruta + '?abrir=' + encodeURIComponent(item.id)} prefetch={false} onClick={onClose}
               className="block min-w-0 rounded-card border border-qms-border/50 p-3 hover:bg-slate-50 focus-visible:bg-slate-50">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -100,9 +119,9 @@ export default function AgendaHoyWidget({ open, items, loading, error, onToggle,
               <p className="mt-1 truncate text-sm text-qms-muted" title={item.descripcion}>{item.descripcion || 'Sin descripción'}</p>
             </Link>
           </li>)}</ul>
-          {!mostrarTodos && items.length > 5 && <button type="button" onClick={() => setMostrarTodos(true)}
+          {!mostrarTodos && itemsVisibles.length > 5 && <button type="button" onClick={() => setMostrarTodos(true)}
             className="block w-full py-3 text-center text-sm text-blue-600 hover:text-blue-700 hover:underline">Ver más</button>}
-          </>}
+          </>}</>}
       </div>
     </section>}
   </div>
