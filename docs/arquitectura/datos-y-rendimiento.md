@@ -38,7 +38,7 @@ en Supabase está pendiente con la migración del avatar y la autoría de notas.
 - `pagination.ts`: páginas de 25, count exacto, filtro de estado antes de range, orden principal descendente + `id` ascendente. Se usa en Auditorías, Documentos, Procesos, Reuniones, Riesgos y SACP.
 - Quejas: filtros folio/cliente, tipo, estado y responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
 - Usuarios: API y parámetros normalizados; `usuariosQueryKey()` es la clave compartida entre página y precarga.
-- `useHoverPrefetch`: intención de 80 ms por hover/foco/tacto del Sidebar, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga sus cuatro recursos, no una consulta incompatible distinta. Mis Quejas precarga su clave con responsableId propio; sin id no consulta. Reportería no inserta datos ficticios en caché.
+- `useHoverPrefetch`: intención de 80 ms por hover/foco/tacto del Sidebar, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga solo Quejas ejecutivo del año vigente cuando tiene permiso, con la misma opción que la página. Mis Quejas precarga su clave con responsableId propio; sin id no consulta. Reportería no inserta datos ficticios en caché.
 - Cancelación real con `.abortSignal(signal)` está integrada en dashboard, seis listados paginados, Quejas/adjuntos/comentarios/actividad/estadísticas/SLA, catálogos, formularios públicos, permisos, notificaciones y API de Usuarios/zona horaria. Los wrappers de queryFn y precarga pasan solo `context.signal`. Las consultas directas legacy de componentes no quedan migradas automáticamente por esta revisión.
 - `containsPattern()` se usa en búsquedas de Quejas y API de Usuarios: comas, comillas y paréntesis quedan dentro del valor citado y no alteran la gramática de filtros. Conserva los comodines `%`/`_` ya admitidos por la búsqueda; no describirlo como una búsqueda literal de esos dos caracteres.
 
@@ -71,8 +71,8 @@ en Supabase está pendiente con la migración del avatar y la autoría de notas.
 La [auditoría del 23 de noviembre](../auditoria-rendimiento-2026-11-23.md) registra los planes y las mediciones locales. El menú y los indicadores desactivan el prefetch automático de rutas de Next. La precarga de TanStack Query se activa por intención.
 
 - Mostrar caché fresca al volver a un módulo y refrescar según sus reglas; no borrar datos globalmente al navegar. Cambiar de usuario/rol real/vista sí cambia el ámbito y vacía la caché anterior.
-- Compartir claves y queryFn entre precarga y vista: el dashboard usa cuatro recursos compartidos para indicadores/tareas, frente a seis lecturas anteriores. Estadísticas de Quejas y actividad son consultas adicionales independientes; no afirmar que toda la página hace únicamente cuatro requests.
-- Resolver identidad antes de datos de perfil; paralelizar solo lecturas independientes. Cada bloque de dashboard se revela al completar sus dependencias: tareas necesitan Quejas+Acciones; indicadores necesitan sus cuatro recursos; QuejasSummary y actividad tienen sus propios estados.
+- Compartir claves y queryFn entre precarga y vista: Dashboard ejecutivo usa ['dashboard','quejas-ejecutivo',inicio,fin], TTL 60s y un bundle paginado; no monta consultas de módulos parciales ni actividad.
+- Resolver identidad antes de datos de perfil; paralelizar solo lecturas independientes. Quejas ejecutivo revela sus gráficos al completar las dependencias del período; no presenta datos de otro período como placeholder.
 - Eliminar la doble comprobación de Auth solo para métodos registrados que ya tienen guard completo. No reutilizar una autorización guardada entre requests ni sacrificar comprobación de perfil activo para ahorrar latencia.
 - Páginas operativas de 25 y consultas de resumen acotadas; reportería lee lotes de 500 con tope de 5000. Último acceso usa Auth Admin paginado por lotes de 1000, sin una solicitud por perfil. Ese escaneo puede crecer con el directorio Auth y no es un indicador de presencia en vivo.
 - `DeferredMount` aplaza montaje de modales/secciones y conserva borradores después de abrir; no es descarga diferida. Mantener hooks enabled por apertura/sección cuando ya lo implementen; evitar consultas de paneles invisibles.
@@ -85,7 +85,7 @@ La [auditoría del 23 de noviembre](../auditoria-rendimiento-2026-11-23.md) regi
 | Fuente | Qué contiene / quién la consume |
 | --- | --- |
 | `logs` | Auditoría de operaciones de los RPC legacy/workflow que la escriben: fecha, usuario, acción, módulo y detalle **text**. No es una captura universal de cada API o cambio |
-| `quejas_actividad` | Notas del expediente y marcas históricas del flujo; ambos paneles y las últimas cinco entradas del dashboard |
+| `quejas_actividad` | Notas del expediente y marcas históricas del flujo; ambos paneles |
 | `qms_config_audit` | Historia de configuración versionada/catálogos, actor y motivo, `old_value/new_value` JSONB; acceso de administración en DB, sin visor completo montado |
 | `qms_case_events` | Eventos de apertura/cierre/resolución generados por triggers QMS; distintos de quejas_actividad |
 | `/api/quejas/historial` | Proyección para el expediente autorizado desde el diálogo «Historial y notas». Combina eventos QMS, revisiones, reaperturas y transiciones históricas asociadas al caso. La precarga al abrir el diálogo y la pestaña comparten petición y caché de 30 s. Antes de recibir los movimientos se muestra el ingreso disponible en el expediente |
@@ -187,3 +187,19 @@ No añade solicitudes remotas ni cambia Realtime/intervalos. Ver
   paralelo; no bloquearla por informe o historial. Elegir PDF vigente
   automáticamente solo sin elección manual. Las respuestas tardías
   no sustituyen borrador/versión guardados de la visita.
+
+### Dashboard ejecutivo: transporte y rendimiento
+
+`dashboardQuejasOptions(period)` comparte clave y queryFn con la precarga por
+intención, TTL 60 s. El hook solo está enabled cuando Quejas es activa y tiene
+permiso de lectura. Realtime Quejas invalida el prefijo ejecutivo solo en esa
+pestaña; la caché sigue aislada por el QueryProvider. Cero consultas a módulos
+parciales. Paginación estable de 500 filas y lotes de IDs de 100; proyección
+mínima, sin PII, textos de expedientes ni snapshots completos. Se consultan
+cohorte de ingreso, eventos observados de resolución, ejecuciones concluidas
+y existencia del año anterior; según los eventos, lecturas adicionales de
+casos antiguos y sus ejecuciones para completar denominadores. Cada página
+pasa AbortSignal y no reutiliza resultados de otro período. No prometer un
+número fijo de requests ni escalabilidad sin medición; si crece el volumen,
+proponer RPC agregado invoker con igual semántica y pruebas, sin romper el RPC
+legacy. Ver [métricas y cohortes](modulos-y-flujos.md).
