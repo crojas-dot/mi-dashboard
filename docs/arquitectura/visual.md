@@ -485,7 +485,9 @@ ISO de API/DB, orden, plazos y reglas de negocio.
   cuatro KPIs en fila y dos filas de gráficos con geometría solo de impresión
   y tarjetas indivisibles. Liberar html/body y todos los ancestros del tablero
   (altura, overflow y espacios), leyenda de activos de una columna y tendencia
-  de 170px. Objetivo: una sola hoja A4 horizontal sin encabezados automáticos;
+  de 170px en un marco de impresión con SVG posicionado dentro (evita la
+  fragmentación del SVG en la grilla de Chromium). Objetivo: una sola hoja
+  A4 horizontal sin encabezados automáticos;
   las opciones de impresión del navegador pueden prevalecer. No recortar datos.
 - «Solicitudes procedentes» muestra procedentes y no proceden del mismo
   denominador, sin añadir felicitaciones ni solicitudes sin evaluar.
