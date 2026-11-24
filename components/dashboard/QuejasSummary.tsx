@@ -50,13 +50,13 @@ function RatioKpi({ title, metric, target, detail }: { title: string; metric: Co
 }
 function ActiveBar({ data }: { data: DashboardMetrics }) {
   const id = useId()
-  let offset = 0
   return <div className="mt-2">
     <svg role="img" aria-label={data.distribution.slice(0, 4).map((s, i) => shortStates[i] + ': ' + s.count).join('; ')} viewBox="0 0 240 10" className="h-2.5 w-full" preserveAspectRatio="none">
       <defs><clipPath id={id}><rect width="240" height="10" rx="5" /></clipPath></defs>
       <rect width="240" height="10" rx="5" fill={track} />
       <g clipPath={'url(#' + id + ')'}>{data.distribution.slice(0, 4).map((s, i) => {
-        const width = data.active ? s.count / data.active * 240 : 0, x = offset; offset += width
+        const width = data.active ? s.count / data.active * 240 : 0
+        const x = data.active ? data.distribution.slice(0, i).reduce((sum, item) => sum + item.count, 0) / data.active * 240 : 0
         return <rect key={s.state} x={x} width={width} height="10" fill={colors[i]}><title>{shortStates[i]}: {s.count}</title></rect>
       })}</g>
     </svg>
@@ -97,14 +97,14 @@ function Trend({ data }: { data: DashboardMetrics }) {
   </Card>
 }
 function Distribution({ data }: { data: DashboardMetrics }) {
-  let offset = 0
   const total = data.received
   return <Card title="Distribución por estado" height={MAIN_HEIGHT}>
     <div className="mt-4 flex flex-wrap items-center justify-center gap-4 sm:flex-nowrap">
       <svg viewBox="0 0 132 132" className="w-[132px] shrink-0" role="img" aria-label={total + ' solicitudes del período'}>
         <circle cx="66" cy="66" r="54" fill="none" stroke={track} strokeWidth="11" />
         {data.distribution.map((s, i) => {
-          const p = total ? s.count / total * 100 : 0, at = offset; offset += p
+          const p = total ? s.count / total * 100 : 0
+          const at = total ? data.distribution.slice(0, i).reduce((sum, item) => sum + item.count, 0) / total * 100 : 0
           return p > 0 && <circle key={s.state} cx="66" cy="66" r="54" fill="none" stroke={colors[i]} strokeWidth="11" pathLength="100" strokeDasharray={p + ' ' + (100 - p)} strokeDashoffset={-at} transform="rotate(-90 66 66)"><title>{shortStates[i]}: {s.count} ({pct(p)})</title></circle>
         })}
         <text x="66" y="60" textAnchor="middle" className="fill-qms-dark text-[25px] font-semibold">{fmt.format(total)}</text>
