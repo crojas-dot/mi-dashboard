@@ -137,3 +137,32 @@ test('Historial se prepara solo al abrir el diálogo y comparte la petición y e
     client.clear()
   }
 })
+
+test('el historial presenta horas de Costa Rica en ciclo de 12 horas sin cambiar el instante', () => {
+  const { default: Historial } = loadModule('components/quejas/QuejaHistorial.tsx', {
+    '@/components/ui/Button': { default: 'button' },
+  })
+  const movimientos = [
+    ['2026-11-23T06:00:00Z', '12:00 a. m.'],
+    ['2026-11-23T18:00:00Z', '12:00 p. m.'],
+    ['2026-11-23T21:30:00Z', '03:30 p. m.'],
+  ].map(([fecha], i) => ({ id: String(i), fecha, usuario: null, accion: 'Movimiento' }))
+  const nodes = value => Array.isArray(value) ? value.flatMap(nodes)
+    : value?.props ? [value, ...nodes(value.props.children)] : []
+  const tree = nodes(Historial({ movimientos, loading: false, error: false, onRetry() {} }))
+  const times = tree.filter(node => node.type === 'time')
+  assert.equal(times.length, 3)
+  const expected = ['12:00 a. m.', '12:00 p. m.', '03:30 p. m.']
+  times.forEach((node, i) => {
+    assert.equal(node.props.dateTime, movimientos[i].fecha)
+    assert.ok(node.props.title.replace(/\s/g, ' ').endsWith(expected[i]), node.props.title)
+  })
+})
+
+test('los formateadores compartidos presentan medianoche, mediodía y tarde en 12 horas', () => {
+  const { formatDateTime } = loadModule('lib/utils/format.ts')
+  for (const [hour, expected] of [[0, '12:00 a. m.'], [12, '12:00 p. m.'], [15, '03:00 p. m.']]) {
+    const date = new Date(2026, 10, 23, hour, 0)
+    assert.ok(formatDateTime(date).replace(/\s/g, ' ').endsWith(expected))
+  }
+})

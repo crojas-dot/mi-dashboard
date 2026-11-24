@@ -120,7 +120,7 @@ function ActividadRecienteBlock() {
               : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>
               : actividad.data.map((item) => <div key={item.id} className="p-3 text-sm">
                 <p>{item.descripcion}</p>
-                <p className="text-gray-500">{new Date(item.created_at).toLocaleString('es-CR')}</p>
+                <p className="text-gray-500">{new Date(item.created_at).toLocaleString('es-CR', { hourCycle: 'h12' })}</p>
               </div>)}
           </div>
         </div>

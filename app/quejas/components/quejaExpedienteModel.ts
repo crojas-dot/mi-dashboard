@@ -197,5 +197,5 @@ export function caseDeadline(queja: Queja, runs: QuejaPlazoRun[], now = Date.now
   return { ...result, label, progress, duration, business: business && calendarValid, stageTitle: run?.stage_id === 'quejas.investigation' ? 'Investigación' : run?.stage_id === 'quejas.evaluation' ? 'Evaluación inicial' : 'Plazo vigente' }
 }
 export function caseDate(value?: string | null) {
-  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica', dateStyle: 'short', timeStyle: 'short' }) : '—'
+  return value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleString('es-CR', { timeZone: 'America/Costa_Rica', dateStyle: 'short', timeStyle: 'short', hourCycle: 'h12' }) : '—'
 }

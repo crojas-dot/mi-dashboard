@@ -19,5 +19,5 @@ export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOpt
 }
 
 export function formatDateTime(date: string | Date): string {
-  return formatDate(date, { hour: '2-digit', minute: '2-digit' })
+  return formatDate(date, { hour: '2-digit', minute: '2-digit', hourCycle: 'h12' })
 }
