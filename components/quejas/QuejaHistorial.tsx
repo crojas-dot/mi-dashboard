@@ -7,7 +7,7 @@ const FECHA = new Intl.DateTimeFormat('es-CR', {
   timeZone: 'America/Costa_Rica', day: '2-digit', month: '2-digit', year: '2-digit',
 })
 const HORA = new Intl.DateTimeFormat('es-CR', {
-  timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  timeZone: 'America/Costa_Rica', hour: '2-digit', minute: '2-digit', hourCycle: 'h12',
 })
 
 export default function QuejaHistorial({ movimientos, loading, error, onRetry }: {
