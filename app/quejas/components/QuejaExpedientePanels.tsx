@@ -412,7 +412,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
 }
 
 export function CaseAction({ queja, runs, children, plazoError, plazoLoading = false, condensed = false, variant = 'panel', heading, presentation = 'default', responsable, actionTitle, actionDetail }: { queja: Queja; runs: QuejaPlazoRun[]; children?: ReactNode; plazoError?: boolean; plazoLoading?: boolean; condensed?: boolean; variant?: CaseSectionVariant; heading?: string; presentation?: 'default' | 'reference'; responsable?: string; actionTitle?: string; actionDetail?: string }) {
-  const action = CASE_ACTIONS[queja.estado], deadline = caseDeadline(queja, runs, Date.now(), plazoLoading)
+  const action = CASE_ACTIONS[queja.estado], deadline = caseDeadline(queja, runs, undefined, plazoLoading)
   // Evaluación conserva el mismo panel lateral y los tokens visuales de las demás etapas.
   if (presentation === 'reference' && queja.estado === 'Recibido' && !actionTitle) return (
     <CaseSection title="Siguiente paso" variant="plain">
