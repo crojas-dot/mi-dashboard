@@ -166,3 +166,16 @@ test('los formateadores compartidos presentan medianoche, mediodía y tarde en 1
     assert.ok(formatDateTime(date).replace(/\s/g, ' ').endsWith(expected))
   }
 })
+
+test('la columna de fecha admite la hora completa y puede pasar a dos líneas', () => {
+  const { default: Historial } = loadModule('components/quejas/QuejaHistorial.tsx', {
+    '@/components/ui/Button': { default: 'button' },
+  })
+  const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : value?.props ? [value, ...nodes(value.props.children)] : []
+  const tree = nodes(Historial({ movimientos: [{ id: 'uno', fecha: envio, usuario: null, accion: 'Movimiento' }], loading: false, error: false, onRetry() {} }))
+  const cols = tree.filter(node => node.type === 'col')
+  assert.ok(cols[1].props.className.includes('sm:w-[11.5rem]'))
+  const time = tree.find(node => node.type === 'time')
+  assert.ok(time.props.className.includes('sm:flex-wrap'))
+  assert.equal(nodes(time).filter(node => node.type === 'span' && node.props.className.includes('whitespace-nowrap')).length, 2)
+})
