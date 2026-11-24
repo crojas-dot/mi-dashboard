@@ -92,7 +92,10 @@ try {
       assert.match(second.stdout, /Cumplimiento por etapa/)
       assert.match(second.stdout, /Página\s+2\s+de\s+2/)
       assert.doesNotMatch(second.stdout, /Tendencia mensual/)
-      for (const area of data.areas) assert.ok(second.stdout.replace(/\s+/g, ' ').includes(area), label + ': área faltante ' + area)
+      // El orden de pintura (raw) evita intercalar cantidades de la otra columna.
+      const raw = spawnSync('pdftotext', ['-f', '2', '-l', '2', '-raw', out, '-'], { encoding: 'utf8' })
+      assert.equal(raw.status, 0)
+      for (const { area } of data.areas) assert.ok(raw.stdout.replace(/\s+/g, ' ').includes(area), label + ': área faltante ' + area)
     }
     console.log(label + ': 2 páginas, reporte impreso correctamente')
   }
