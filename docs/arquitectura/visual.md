@@ -234,7 +234,7 @@ importado antes de modificar archivos similares de una etapa anterior.
 - El diálogo centrado «Historial y notas» conserva el mismo tamaño en ambas
   pestañas. Cada lista se desplaza dentro del diálogo. Historial usa una
   cuadrícula centrada de líneas finas con Usuario, Fecha y Acción realizada.
-  Las filas miden 40 px y la hora usa el formato de 24 horas. El GET privado se
+  Las filas miden 40 px y la hora usa el formato de 12 horas (a. m./p. m.). El GET privado se
   prepara al abrir el diálogo «Historial y notas» del folio y comparte petición y
   caché de 30 s con Historial. Mientras llega, la pestaña puede mostrar el ingreso que la vista
   ya tiene. El GET valida la sesión y el expediente por RLS y devuelve
@@ -414,6 +414,9 @@ altura original de cada fila, colores y densidad. El seguimiento por etapas y
 sus pruebas está en [tablas y bandeja](../quejas-bandeja-etapas-2026-11-16.md).
 Las fechas de ingreso se presentan con `formatFechaIngreso` en DD/MM/AAAA y
 zona Costa Rica; no modificar el instante almacenado por un cambio visual.
+Toda hora visible usa `hourCycle: 'h12'` (a. m./p. m., medianoche y mediodía
+como 12:00). Conservar la zona y precisión de cada formateador, fechas civiles,
+ISO de API/DB, orden, plazos y reglas de negocio.
 
 ## Agenda y visor
 
