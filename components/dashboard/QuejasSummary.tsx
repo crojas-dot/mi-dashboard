@@ -11,10 +11,10 @@ const shortStates = ['Recibido', 'Investigación', 'Revisión GC', 'Resuelto', '
 const percent = (m: CountMetric) => m.total > 0 ? m.good / m.total * 100 : null
 const pct = (value: number | null) => value === null ? '—' : fmt.format(value) + ' %'
 
-export const CARD = 'min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5'
-export const KPI_GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 @min-[1120px]:grid-cols-4'
-export const MAIN_GRID = 'grid grid-cols-1 gap-4 @min-[1000px]:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]'
-export const LOWER_GRID = 'grid grid-cols-1 gap-4 lg:grid-cols-2'
+export const CARD = 'min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5 print:p-3 print:break-inside-avoid'
+export const KPI_GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 @min-[1120px]:grid-cols-4 print:grid-cols-4 print:gap-2.5'
+export const MAIN_GRID = 'grid grid-cols-1 gap-4 @min-[1000px]:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] print:gap-3'
+export const LOWER_GRID = 'grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-2 print:gap-3'
 const KPI_HEIGHT = 'min-h-[184px] sm:py-4'
 export const KPI_ROW = 'mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3'
 export const KPI_RING = 'aspect-square w-[clamp(88px,8cqw,116px)] shrink-0'
@@ -24,7 +24,7 @@ export const dashboardGeometry = { kpi: KPI_HEIGHT, main: MAIN_HEIGHT, lower: LO
 
 function Ring({ metric, color, label }: { metric: CountMetric; color: string; label: string }) {
   const p = percent(metric)
-  return <svg viewBox="0 0 120 120" className={KPI_RING} role="img" aria-label={label + ': ' + pct(p) + (metric.total ? ' (' + metric.good + ' de ' + metric.total + ')' : ', sin datos evaluables')}>
+  return <svg viewBox="0 0 120 120" data-dashboard-kpi-ring className={KPI_RING} role="img" aria-label={label + ': ' + pct(p) + (metric.total ? ' (' + metric.good + ' de ' + metric.total + ')' : ', sin datos evaluables')}>
     <circle cx="60" cy="60" r="50" fill="none" stroke={track} strokeWidth="8" />
     {p !== null && p > 0 && <circle cx="60" cy="60" r="50" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" pathLength="100" strokeDasharray={p + ' ' + (100 - p)} transform="rotate(-90 60 60)" />}
     <text x="60" y="61" dominantBaseline="middle" textAnchor="middle" className="fill-qms-dark text-[22px] font-semibold">{p === null ? '—' : fmt.format(p) + '%'}</text>
@@ -36,13 +36,13 @@ function Card({ title, height, children }: { title: string; height: string; chil
     {children}
   </section>
 }
-function RatioKpi({ title, metric, target, suffix, excluded = 0 }: { title: string; metric: CountMetric; target?: boolean; suffix: string; excluded?: number }) {
+function RatioKpi({ title, metric, target, suffix, breakdown, excluded = 0 }: { title: string; metric: CountMetric; target?: boolean; suffix?: string; breakdown?: boolean; excluded?: number }) {
   const p = percent(metric)
   const color = target ? p !== null && p >= 90 ? success : warning : primary
   return <Card title={title} height={KPI_HEIGHT}>
-    <div className={KPI_ROW}>
+    <div data-dashboard-kpi-row className={KPI_ROW}>
       <div className="min-w-0">
-        <p className="text-sm font-semibold leading-snug text-qms-dark">{metric.total ? fmt.format(metric.good) + ' de ' + fmt.format(metric.total) + ' ' + suffix : 'Sin datos evaluables'}</p>
+        <p className="text-sm font-semibold leading-snug text-qms-dark">{metric.total ? breakdown ? <>{fmt.format(metric.good)} procedentes · {fmt.format(metric.total - metric.good)} no proceden</> : fmt.format(metric.good) + ' de ' + fmt.format(metric.total) + ' ' + suffix : 'Sin datos evaluables'}</p>
         {target && <p className="mt-1.5 text-sm text-qms-muted">Meta 90 %</p>}
         {excluded > 0 && <p className="mt-1 text-xs leading-snug text-qms-muted">{fmt.format(excluded)} sin plazo verificable</p>}
       </div>
@@ -62,8 +62,8 @@ function ActiveBar({ data }: { data: DashboardMetrics }) {
         return <rect key={s.state} x={x} width={width} height="10" fill={colors[i]}><title>{shortStates[i]}: {s.count}</title></rect>
       })}</g>
     </svg>
-    <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-qms-muted">
-      {data.distribution.slice(0, 4).map((s, i) => <span key={s.state} className="flex min-w-0 items-center gap-1"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} />{shortStates[i]} <strong className="text-qms-dark">{s.count}</strong></span>)}
+    <div data-dashboard-active-legend className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-qms-muted">
+      {data.distribution.slice(0, 4).map((s, i) => <span key={s.state} className="flex min-w-0 items-center gap-1"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} /><span className="min-w-0 break-words">{shortStates[i]}</span><strong className="shrink-0 whitespace-nowrap tabular-nums text-qms-dark">{s.count}</strong></span>)}
     </div>
   </div>
 }
@@ -81,7 +81,7 @@ function Trend({ data }: { data: DashboardMetrics }) {
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-primary" />Recibidos</span>
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-success" />Resueltos en plazo</span>
     </div>
-    <svg viewBox="0 0 620 250" className="mt-3 block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
+    <svg data-dashboard-trend viewBox="0 0 620 250" className="mt-3 block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
       {[0, 1, 2, 3].map(n => <g key={n}><line x1={left} y1={base - n * plot / 3} x2="610" y2={base - n * plot / 3} stroke={track} /><text x="34" y={base - n * plot / 3 + 4} textAnchor="end" className="fill-qms-muted text-[14px]">{n * step}</text></g>)}
       {data.monthly.map((m, i) => {
         const x = left + slot * (i + .5), h1 = m.received / top * plot, h2 = m.resolvedOnTime / top * plot
@@ -98,14 +98,14 @@ function Trend({ data }: { data: DashboardMetrics }) {
         </g>
       })}
     </svg>
-    <p aria-live="polite" className="mt-2 min-h-5 text-center text-sm text-qms-muted">{active ? label(active.month) + ' · ' + active.received + ' recibidos · ' + (active.resolvedEvaluable ? active.resolvedOnTime + '/' + active.resolvedEvaluable + ' en plazo' : 'Sin resoluciones evaluables') : data.resolution.total ? '' : 'Sin resoluciones evaluables en el período'}</p>
+    <p data-dashboard-trend-note aria-live="polite" className="mt-2 min-h-5 text-center text-sm text-qms-muted">{active ? label(active.month) + ' · ' + active.received + ' recibidos · ' + (active.resolvedEvaluable ? active.resolvedOnTime + '/' + active.resolvedEvaluable + ' en plazo' : 'Sin resoluciones evaluables') : data.resolution.total ? '' : 'Sin resoluciones evaluables en el período'}</p>
   </Card>
 }
 function Distribution({ data }: { data: DashboardMetrics }) {
   const total = data.received
   return <Card title="Distribución por estado" height={MAIN_HEIGHT}>
-    <div className="mt-5 flex flex-wrap items-center justify-center gap-5">
-      <svg viewBox="0 0 132 132" className="w-[200px] max-w-full shrink-0" role="img" aria-label={total + ' solicitudes del período'}>
+    <div data-dashboard-distribution className="mt-5 flex flex-wrap items-center justify-center gap-5">
+      <svg data-dashboard-donut viewBox="0 0 132 132" className="w-[200px] max-w-full shrink-0" role="img" aria-label={total + ' solicitudes del período'}>
         <circle cx="66" cy="66" r="54" fill="none" stroke={track} strokeWidth="11" />
         {data.distribution.map((s, i) => {
           const p = total ? s.count / total * 100 : 0
@@ -115,7 +115,7 @@ function Distribution({ data }: { data: DashboardMetrics }) {
         <text x="66" y="60" textAnchor="middle" className="fill-qms-dark text-[26px] font-semibold">{fmt.format(total)}</text>
         <text x="66" y="78" textAnchor="middle" className="fill-qms-muted text-[10px]">Solicitudes</text>
       </svg>
-      <ul className="min-w-0 flex-1 basis-[180px] space-y-2">
+      <ul data-dashboard-distribution-legend className="min-w-0 flex-1 basis-[180px] space-y-2">
         {data.distribution.filter(s => s.state !== 'Otros' || s.count > 0).map(s => {
           const i = data.distribution.indexOf(s)
           return <li key={s.state} className="flex min-w-0 items-center gap-1.5 text-sm text-qms-muted"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} /><span className="flex-1">{shortStates[i]}</span><span className="shrink-0 whitespace-nowrap tabular-nums text-qms-muted"><strong className="font-semibold text-qms-dark">{fmt.format(s.count)}</strong>{total > 0 ? ' (' + fmt.format(s.count / total * 100) + '%)' : ' (—)'}</span></li>
@@ -128,8 +128,8 @@ function Areas({ data }: { data: DashboardMetrics }) {
   const max = Math.max(1, ...data.areas.map(a => a.count))
   return <Card title="Top áreas afectadas" height={LOWER_HEIGHT}>
     <p className="mt-1 text-sm text-qms-muted">Solicitudes procedentes · Top 5</p>
-    {data.areas.length ? <ul className="mt-4 space-y-3">{data.areas.map(a => <li key={a.area} className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(64px,1fr)_auto] items-center gap-2 text-sm">
-      <span className="truncate text-qms-dark" title={a.area}>{a.area}</span><svg role="img" aria-label={a.area + ': ' + a.count} viewBox="0 0 100 7" preserveAspectRatio="none" className="h-3.5 w-full"><rect width="100" height="7" rx="3.5" fill={track} /><rect width={a.count / max * 100} height="7" rx="3.5" fill={primary} /></svg><strong className="tabular-nums">{a.count}</strong>
+    {data.areas.length ? <ul data-dashboard-areas className="mt-4 space-y-3">{data.areas.map(a => <li key={a.area} className="grid min-w-0 grid-cols-[minmax(0,1fr)_minmax(64px,1fr)_auto] items-center gap-2 text-sm">
+      <span data-dashboard-area-name className="truncate text-qms-dark" title={a.area}>{a.area}</span><svg role="img" aria-label={a.area + ': ' + a.count} viewBox="0 0 100 7" preserveAspectRatio="none" className="h-3.5 w-full"><rect width="100" height="7" rx="3.5" fill={track} /><rect width={a.count / max * 100} height="7" rx="3.5" fill={primary} /></svg><strong className="tabular-nums">{a.count}</strong>
     </li>)}</ul> : <p className="py-9 text-center text-sm text-qms-muted">Sin áreas registradas en solicitudes procedentes.</p>}
   </Card>
 }
@@ -137,7 +137,7 @@ function Stage({ label, metric, showTarget = false }: { label: string; metric: C
   const p = percent(metric)
   return <div>
     <div className="flex items-center justify-between gap-2 text-sm"><span className="font-medium text-qms-dark">{label}</span><strong className="tabular-nums text-qms-dark">{pct(p)}</strong></div>
-    <div className={'relative mt-1.5' + (showTarget ? ' pt-5' : '')}>
+    <div data-dashboard-stage-bar className={'relative mt-1.5' + (showTarget ? ' pt-5' : '')}>
       {showTarget && <span className="absolute right-[10%] top-0 whitespace-nowrap text-xs font-medium text-qms-muted">Meta 90%</span>}
     <svg viewBox="0 0 100 8" preserveAspectRatio="none" className="block h-3.5 w-full" role="img" aria-label={label + ': ' + pct(p) + ', meta 90 %'}>
       <rect width="100" height="8" rx="4" fill={track} />
@@ -152,11 +152,11 @@ export default function QuejasSummary({ data }: { data: DashboardMetrics }) {
   return <div data-dashboard-graphics className="@container space-y-4">
     <div className={KPI_GRID}>
       <RatioKpi title="Cumplimiento de plazos" metric={data.resolution} target suffix="en plazo" excluded={Math.max(0, data.observed - data.resolution.total)} />
-      <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div className={KPI_ROW}><div className="min-w-0"><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario<br />{data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" className={KPI_RING} aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
-      <RatioKpi title="Procedencia" metric={data.procedure} suffix="procedentes" />
+      <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div data-dashboard-kpi-row className={KPI_ROW}><div className="min-w-0"><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario<br />{data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" data-dashboard-kpi-ring className={KPI_RING} aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
+      <RatioKpi title="Solicitudes procedentes" metric={data.procedure} breakdown />
       <Card title="Expedientes activos" height={KPI_HEIGHT}><p className="mt-1 text-4xl font-semibold tabular-nums text-qms-dark">{fmt.format(data.active)}</p><ActiveBar data={data} /></Card>
     </div>
     <div className={MAIN_GRID}><Trend data={data} /><Distribution data={data} /></div>
-    <div className={LOWER_GRID}><Areas data={data} /><Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><div className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} showTarget /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card></div>
+    <div className={LOWER_GRID}><Areas data={data} /><Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><div data-dashboard-stages className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} showTarget /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card></div>
   </div>
 }
