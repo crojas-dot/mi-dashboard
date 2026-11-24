@@ -54,6 +54,7 @@ export default function DashboardPage() {
   }
 
   return <div data-dashboard-print className="min-w-0">
+    <div data-dashboard-screen-heading className="print:hidden">
     <PageHeader title="Dashboard · Indicadores del SGC" compact={false}>
       <div data-dashboard-controls className="flex flex-wrap items-center gap-2">
         <label className="sr-only" htmlFor="dashboard-period">Período</label>
@@ -65,8 +66,12 @@ export default function DashboardPage() {
         <button type="button" className="ui-button ui-button-outline min-h-11 gap-2 text-base" disabled={!active || !data || !!error} onClick={() => window.print()}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
       </div>
     </PageHeader>
-    <p data-dashboard-print-meta className="hidden print:block text-sm text-qms-muted">Módulo: {MODULOS[tab].label} · Período: {period.label} · Generado: {generated}</p>
-    <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-4 flex gap-2 overflow-x-auto border-b border-qms-border">
+    </div>
+    <div data-dashboard-print-meta className="hidden print:flex items-center justify-between gap-3">
+      <div className="min-w-0"><h1 className="font-semibold text-qms-dark">ECA-QMS · Indicadores del SGC</h1><p className="text-qms-muted">Módulo: {MODULOS[tab].label} · Período: {period.label}</p></div>
+      <p className="shrink-0 text-right text-qms-muted">Generado: {generated}</p>
+    </div>
+    <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-4 flex gap-2 overflow-x-auto border-b border-qms-border print:hidden">
       {tabs.map((id, index) => <button key={id} ref={node => { buttons.current[index] = node }} id={'dashboard-tab-' + id} role="tab" type="button"
         aria-selected={tab === id} aria-controls={'dashboard-panel-' + id} tabIndex={tab === id ? 0 : -1}
         className={'min-h-12 shrink-0 whitespace-nowrap border-b-2 px-4 text-base font-medium ' + (tab === id ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark')}
