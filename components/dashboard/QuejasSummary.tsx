@@ -15,14 +15,16 @@ export const CARD = 'min-w-0 rounded-card border border-qms-border bg-qms-surfac
 export const KPI_GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 @min-[1120px]:grid-cols-4'
 export const MAIN_GRID = 'grid grid-cols-1 gap-4 @min-[1000px]:grid-cols-[minmax(0,13fr)_minmax(0,7fr)]'
 export const LOWER_GRID = 'grid grid-cols-1 gap-4 lg:grid-cols-2'
-const KPI_HEIGHT = 'min-h-[210px]'
+const KPI_HEIGHT = 'min-h-[184px] sm:py-4'
+export const KPI_ROW = 'mt-3 grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3'
+export const KPI_RING = 'aspect-square w-[clamp(88px,8cqw,116px)] shrink-0'
 const MAIN_HEIGHT = 'min-h-[350px]'
 const LOWER_HEIGHT = 'min-h-[270px]'
 export const dashboardGeometry = { kpi: KPI_HEIGHT, main: MAIN_HEIGHT, lower: LOWER_HEIGHT }
 
 function Ring({ metric, color, label }: { metric: CountMetric; color: string; label: string }) {
   const p = percent(metric)
-  return <svg viewBox="0 0 120 120" className="size-[116px] shrink-0" role="img" aria-label={label + ': ' + pct(p) + (metric.total ? ' (' + metric.good + ' de ' + metric.total + ')' : ', sin datos evaluables')}>
+  return <svg viewBox="0 0 120 120" className={KPI_RING} role="img" aria-label={label + ': ' + pct(p) + (metric.total ? ' (' + metric.good + ' de ' + metric.total + ')' : ', sin datos evaluables')}>
     <circle cx="60" cy="60" r="50" fill="none" stroke={track} strokeWidth="8" />
     {p !== null && p > 0 && <circle cx="60" cy="60" r="50" fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" pathLength="100" strokeDasharray={p + ' ' + (100 - p)} transform="rotate(-90 60 60)" />}
     <text x="60" y="61" dominantBaseline="middle" textAnchor="middle" className="fill-qms-dark text-[22px] font-semibold">{p === null ? '—' : fmt.format(p) + '%'}</text>
@@ -34,15 +36,15 @@ function Card({ title, height, children }: { title: string; height: string; chil
     {children}
   </section>
 }
-function RatioKpi({ title, metric, target, detail }: { title: string; metric: CountMetric; target?: boolean; detail: string }) {
+function RatioKpi({ title, metric, target, suffix, excluded = 0 }: { title: string; metric: CountMetric; target?: boolean; suffix: string; excluded?: number }) {
   const p = percent(metric)
   const color = target ? p !== null && p >= 90 ? success : warning : primary
   return <Card title={title} height={KPI_HEIGHT}>
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+    <div className={KPI_ROW}>
       <div className="min-w-0">
-        <p className="text-sm text-qms-muted">{metric.total ? fmt.format(metric.good) + ' de ' + fmt.format(metric.total) : 'Sin datos evaluables'}</p>
-        <p className="mt-1 text-sm text-qms-muted">{detail}</p>
-        {target && <p className="mt-1 text-sm font-medium text-qms-dark">Meta 90 %</p>}
+        <p className="text-sm font-semibold leading-snug text-qms-dark">{metric.total ? fmt.format(metric.good) + ' de ' + fmt.format(metric.total) + ' ' + suffix : 'Sin datos evaluables'}</p>
+        {target && <p className="mt-1.5 text-sm text-qms-muted">Meta 90 %</p>}
+        {excluded > 0 && <p className="mt-1 text-xs leading-snug text-qms-muted">{fmt.format(excluded)} sin plazo verificable</p>}
       </div>
       <Ring metric={metric} color={color} label={title} />
     </div>
@@ -72,6 +74,7 @@ function Trend({ data }: { data: DashboardMetrics }) {
   const step = Math.max(1, Math.ceil(max / 3)), top = step * 3
   const width = 620, base = 218, plot = 180, left = 43, slot = (width - left - 10) / data.monthly.length
   const bar = Math.min(23, slot * .28)
+  const labelSize = Math.min(12, Math.max(8, (bar + 2) / Math.max(1, String(max).length) / .62))
   const label = (month: string) => monthFmt.format(new Date(month + '-01T00:00:00Z')).replace('.', '')
   return <Card title="Tendencia mensual" height={MAIN_HEIGHT}>
     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-qms-muted">
@@ -89,11 +92,13 @@ function Trend({ data }: { data: DashboardMetrics }) {
           <rect x={x - slot / 2 + 2} y="24" width={slot - 4} height="197" rx="5" fill={focused === m.month ? '#F0F4F8' : 'transparent'} />
           <rect x={x - bar - 1} y={base - h1} width={bar} height={h1} rx="3" fill={primary} />
           {m.resolvedEvaluable > 0 && <rect x={x + 1} y={base - h2} width={bar} height={h2} rx="3" fill={success} />}
+          {m.received > 0 && <text x={x - bar / 2 - 1} y={base - h1 - 5} textAnchor="middle" fontSize={labelSize} className="fill-qms-muted font-medium tabular-nums">{m.received}</text>}
+          {m.resolvedEvaluable > 0 && m.resolvedOnTime > 0 && <text x={x + bar / 2 + 1} y={base - h2 - 5} textAnchor="middle" fontSize={labelSize} className="fill-qms-muted font-medium tabular-nums">{m.resolvedOnTime}</text>}
           <text x={x} y="240" textAnchor="middle" className="fill-qms-muted text-[14px]">{label(m.month)}</text>
         </g>
       })}
     </svg>
-    <p aria-live="polite" className="mt-2 min-h-5 text-center text-sm text-qms-muted">{active ? label(active.month) + ' · ' + active.received + ' recibidos · ' + (active.resolvedEvaluable ? active.resolvedOnTime + '/' + active.resolvedEvaluable + ' en plazo' : 'Sin resoluciones evaluables') : data.resolution.total ? 'Recepción y resolución por su mes registrado' : 'Sin resoluciones evaluables en el período'}</p>
+    <p aria-live="polite" className="mt-2 min-h-5 text-center text-sm text-qms-muted">{active ? label(active.month) + ' · ' + active.received + ' recibidos · ' + (active.resolvedEvaluable ? active.resolvedOnTime + '/' + active.resolvedEvaluable + ' en plazo' : 'Sin resoluciones evaluables') : data.resolution.total ? '' : 'Sin resoluciones evaluables en el período'}</p>
   </Card>
 }
 function Distribution({ data }: { data: DashboardMetrics }) {
@@ -110,10 +115,10 @@ function Distribution({ data }: { data: DashboardMetrics }) {
         <text x="66" y="60" textAnchor="middle" className="fill-qms-dark text-[26px] font-semibold">{fmt.format(total)}</text>
         <text x="66" y="78" textAnchor="middle" className="fill-qms-muted text-[10px]">Solicitudes</text>
       </svg>
-      <ul className="min-w-0 flex-1 basis-[140px] space-y-2">
+      <ul className="min-w-0 flex-1 basis-[180px] space-y-2">
         {data.distribution.filter(s => s.state !== 'Otros' || s.count > 0).map(s => {
           const i = data.distribution.indexOf(s)
-          return <li key={s.state} className="flex min-w-0 items-center gap-1.5 text-sm text-qms-muted"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} /><span className="flex-1">{shortStates[i]}</span><strong className="whitespace-nowrap font-medium tabular-nums text-qms-dark">{total ? pct(s.count / total * 100) : '—'}</strong></li>
+          return <li key={s.state} className="flex min-w-0 items-center gap-1.5 text-sm text-qms-muted"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} /><span className="flex-1">{shortStates[i]}</span><span className="shrink-0 whitespace-nowrap tabular-nums text-qms-muted"><strong className="font-semibold text-qms-dark">{fmt.format(s.count)}</strong>{total > 0 ? ' (' + fmt.format(s.count / total * 100) + '%)' : ' (—)'}</span></li>
         })}
       </ul>
     </div>
@@ -128,27 +133,30 @@ function Areas({ data }: { data: DashboardMetrics }) {
     </li>)}</ul> : <p className="py-9 text-center text-sm text-qms-muted">Sin áreas registradas en solicitudes procedentes.</p>}
   </Card>
 }
-function Stage({ label, metric }: { label: string; metric: CountMetric }) {
+function Stage({ label, metric, showTarget = false }: { label: string; metric: CountMetric; showTarget?: boolean }) {
   const p = percent(metric)
   return <div>
     <div className="flex items-center justify-between gap-2 text-sm"><span className="font-medium text-qms-dark">{label}</span><strong className="tabular-nums text-qms-dark">{pct(p)}</strong></div>
-    <svg viewBox="0 0 100 8" preserveAspectRatio="none" className="mt-1.5 h-3.5 w-full" role="img" aria-label={label + ': ' + pct(p) + ', meta 90 %'}>
+    <div className={'relative mt-1.5' + (showTarget ? ' pt-5' : '')}>
+      {showTarget && <span className="absolute right-[10%] top-0 whitespace-nowrap text-xs font-medium text-qms-muted">Meta 90%</span>}
+    <svg viewBox="0 0 100 8" preserveAspectRatio="none" className="block h-3.5 w-full" role="img" aria-label={label + ': ' + pct(p) + ', meta 90 %'}>
       <rect width="100" height="8" rx="4" fill={track} />
       {p !== null && p > 0 && <rect width={p} height="8" rx="4" fill={p >= 90 ? success : warning} />}
       <line x1="90" x2="90" y1="0" y2="8" stroke="#596675" strokeWidth=".8" />
     </svg>
-    <p className="mt-1 text-sm text-qms-muted">{metric.total ? metric.good + ' de ' + metric.total + ' ejecuciones evaluables' : 'Sin ejecuciones evaluables'}</p>
+    </div>
+    <p className="mt-1 text-sm text-qms-muted">{metric.total ? metric.good + ' de ' + metric.total + ' a tiempo' : 'Sin datos evaluables'}</p>
   </div>
 }
 export default function QuejasSummary({ data }: { data: DashboardMetrics }) {
   return <div data-dashboard-graphics className="@container space-y-4">
     <div className={KPI_GRID}>
-      <RatioKpi title="Cumplimiento de plazos" metric={data.resolution} target detail={data.observed > data.resolution.total ? (data.observed - data.resolution.total) + ' sin plazo verificable' : 'Resoluciones evaluables'} />
-      <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div className="mt-4 flex items-center justify-between gap-2"><div><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario · {data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" className="size-20 shrink-0" aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
-      <RatioKpi title="Procedencia" metric={data.procedure} detail="Sin felicitaciones ni pendientes" />
+      <RatioKpi title="Cumplimiento de plazos" metric={data.resolution} target suffix="en plazo" excluded={Math.max(0, data.observed - data.resolution.total)} />
+      <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div className={KPI_ROW}><div className="min-w-0"><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario<br />{data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" className={KPI_RING} aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
+      <RatioKpi title="Procedencia" metric={data.procedure} suffix="procedentes" />
       <Card title="Expedientes activos" height={KPI_HEIGHT}><p className="mt-1 text-4xl font-semibold tabular-nums text-qms-dark">{fmt.format(data.active)}</p><ActiveBar data={data} /></Card>
     </div>
     <div className={MAIN_GRID}><Trend data={data} /><Distribution data={data} /></div>
-    <div className={LOWER_GRID}><Areas data={data} /><Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><p className="mt-1 text-sm text-qms-muted">Meta 90 % · Plazos persistidos</p><div className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card></div>
+    <div className={LOWER_GRID}><Areas data={data} /><Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><div className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} showTarget /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card></div>
   </div>
 }
