@@ -81,7 +81,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
   const quejaId = queja?.id ?? ''
   const { data: actividad = [], isLoading: actividadLoading, error: actividadError, refetch: refetchActividad } = useQuejaActividad(quejaId)
   const { data: adjuntos = [], isLoading: adjuntosLoading, error: adjuntosError, refetch: refetchAdjuntos } = useQuejaAdjuntos(quejaId)
-  const { data: runs = [], error: plazosError } = useQuejaPlazos(quejaId)
+  const { data: runs = [], isPending: plazosPending, isFetching: plazosFetching, error: plazosError } = useQuejaPlazos(quejaId)
   const estado = queja?.estado ?? ''
   const investigando = estado === 'En Investigación' && !!user && queja?.responsable_id === user.id
     && ['admin', 'calidad', 'colaborador'].includes(user.rol)
@@ -177,7 +177,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       setEditandoResolucion(false)
     }
   }
-  const deadline = caseDeadline(queja, runs)
+  const deadline = caseDeadline(queja, runs, Date.now(), plazosPending || plazosFetching)
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
@@ -388,7 +388,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
     ctaLabel: 'Abrir editor para redactar', icon: 'edit', tone: 'blue',
   }
   const compactTriage = !isExpanded && <CaseTriageSummary key={etapa} queja={{ ...queja, estado_nombre: badgeEstado, estado_color: variante }}
-    runs={runs} plazoError={!!plazosError} responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
+    runs={runs} plazoError={!!plazosError} plazoLoading={plazosPending || plazosFetching} responsable={queja.responsable_id === user?.id ? user?.nombre : undefined}
     primaryAction={editable
       ? <CaseTriageNextStep step={triageStep} onOpen={prepararResolucion} disabled={resolutionPending} />
       : irProximaEtapa && <div className="ml-auto w-full sm:max-w-64">{irProximaEtapa}</div>}
