@@ -179,6 +179,12 @@ orquestación y revisión de las escrituras. No importar SDK servidor en esas vi
 
 ## Correo ciudadano de Quejas y avisos
 
+- El claim v4 transporta el snapshot opcional de asunto/mensaje aprobados por
+  Calidad; no sustituye informe ni respuesta pública. Máximo dos mensajes para
+  el sobre de 64 KiB; autorización v2 separa ciudadanos/internos. La plantilla
+  editada conserva contenido exacto; los contactos institucionales se mantienen
+  en las plantillas correspondientes. No reescribir huellas históricas.
+
 - Plantillas PR #65: tratamiento de usted, «Solicitud» en asunto, mensajes
   breves sin repetir el folio del encabezado, enlace personal y pie
   «Notificación automática · QMS ECA». El cuerpo manual conserva edición.
