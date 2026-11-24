@@ -171,23 +171,25 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
 
 /* Página nombrada: la orientación horizontal no afecta informes de otros módulos. */
 @page qms-dashboard {
-  size: landscape;
-  margin: 10mm;
+  size: A4 landscape;
+  margin: 0;
 }
 
 @media print {
-  body:has([data-dashboard-print]) {
-    page: qms-dashboard;
-    margin: 0 !important;
-  }
-  body:has([data-dashboard-print]) div:has(#app-content),
-  body:has([data-dashboard-print]) #app-content {
+  /* Liberar toda la cadena de ancestros, no solo main: h-dvh y overflow-hidden
+     del shell pueden reservar una segunda hoja aunque el tablero ya quepa. */
+  html:has([data-dashboard-print]) { page: qms-dashboard; }
+  html:has([data-dashboard-print]),
+  body:has([data-dashboard-print]),
+  body :has([data-dashboard-print]) {
     display: block !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     width: 100% !important;
+    max-width: none !important;
     overflow: visible !important;
+    margin: 0 !important;
     padding: 0 !important;
     background: white !important;
   }
@@ -199,7 +201,14 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   body:has([data-dashboard-print]) a[href="#app-content"] { display: none !important; }
 
   [data-dashboard-print] {
-    page: qms-dashboard;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 10mm;
+    overflow: visible;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
     font-size: 9pt;
@@ -211,8 +220,8 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin: 0 0 8px;
-    padding-bottom: 6px;
+    margin: 0 0 7px;
+    padding-bottom: 5px;
     border-bottom: 1px solid var(--color-qms-border);
   }
   [data-dashboard-print-meta] h1 { font-size: 15pt; line-height: 1.2; margin: 0 0 2px; }
@@ -221,7 +230,7 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   [data-dashboard-print] [data-dashboard-graphics] > div {
     display: grid !important;
     gap: 10px;
-    margin: 0 0 10px !important;
+    margin: 0 0 9px !important;
     break-inside: avoid;
   }
   [data-dashboard-print] [data-dashboard-graphics] > div:first-child { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -233,6 +242,7 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
     min-width: 0;
     min-height: 0 !important;
     padding: 10px !important;
+    max-height: none;
   }
   [data-dashboard-graphics] h2 { font-size: 11pt; line-height: 1.2; margin: 0; }
   [data-dashboard-graphics] p,
@@ -240,24 +250,33 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   [data-dashboard-graphics] .text-sm { font-size: 9pt; line-height: 1.25; }
   [data-dashboard-graphics] .text-4xl { font-size: 23pt; line-height: 1.1; }
   [data-dashboard-graphics] .text-xs { font-size: 8pt; line-height: 1.25; }
-  [data-dashboard-kpi-row] { margin-top: 6px; gap: 6px; }
-  [data-dashboard-kpi-ring] { width: 68px !important; height: 68px !important; }
-  [data-dashboard-active-legend] { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 7px; margin-top: 6px; font-size: 8pt !important; }
-  [data-dashboard-active-legend] > span { min-width: 0; gap: 3px; }
-  [data-dashboard-active-legend] > span > span:nth-child(2) { overflow-wrap: anywhere; }
+  [data-dashboard-graphics] > div:first-child h2 { font-size: 10.5pt; }
+  [data-dashboard-kpi-row] { margin-top: 6px; gap: 8px; }
+  [data-dashboard-kpi-ring] { width: 64px !important; height: 64px !important; }
+  [data-dashboard-active-legend] {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1px;
+    margin-top: 4px;
+    font-size: 8pt !important;
+    line-height: 1.25;
+  }
+  [data-dashboard-active-legend] > span { min-width: 0; gap: 5px; }
+  [data-dashboard-active-legend] > span > span:nth-child(2) { white-space: nowrap; }
   [data-dashboard-active-legend] strong { margin-left: auto; }
-  [data-dashboard-trend] { height: 166px !important; width: 100%; margin-top: 4px; }
+  [data-dashboard-active-legend] > span > span:first-child { width: 7px; height: 7px; }
+  [data-dashboard-active-legend] + * { margin-top: 0; }
+  [data-dashboard-trend] { height: 170px !important; width: 100%; margin-top: 4px; }
   [data-dashboard-trend-note] { margin-top: 2px; min-height: 0; font-size: 8pt !important; }
   [data-dashboard-trend-note]:empty { display: none; }
   [data-dashboard-distribution] { flex-wrap: nowrap; gap: 8px; margin-top: 8px; }
-  [data-dashboard-donut] { width: 112px !important; height: 112px !important; }
+  [data-dashboard-donut] { width: 110px !important; height: 110px !important; }
   [data-dashboard-distribution-legend] { flex: 1 1 0%; min-width: 0; }
   [data-dashboard-distribution-legend] > li { margin-top: 0; margin-bottom: 4px; font-size: 8pt; gap: 3px; }
   [data-dashboard-areas] { margin-top: 8px; }
-  [data-dashboard-areas] > li { margin-top: 0; margin-bottom: 5px; }
+  [data-dashboard-areas] > li { margin-top: 0; margin-bottom: 4px; }
   [data-dashboard-area-name] { white-space: normal; overflow-wrap: anywhere; }
   [data-dashboard-stages] { margin-top: 8px; }
-  [data-dashboard-stages] > div { margin-top: 0; margin-bottom: 7px; }
+  [data-dashboard-stages] > div { margin-top: 0; margin-bottom: 5px; }
   [data-dashboard-stage-bar] { margin-top: 3px; }
   [data-dashboard-stage-bar] svg { height: 9px; }
 }
