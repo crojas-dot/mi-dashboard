@@ -158,16 +158,18 @@ test('pestañas, período y permiso controlan la consulta y nunca montan registr
     '@/components/ui/DeferredMount': { default: 'DeferredMount' },
     '@/components/ui/PageHeader': { default: 'PageHeader' },
     '@/components/dashboard/DashboardLoading': { default: 'DashboardLoading' },
-    '@/components/dashboard/QuejasSummary': { default: 'QuejasSummary' },
+    '@/components/dashboard/QuejasSummary': { default: 'QuejasSummary', DashboardPrintReport: 'DashboardPrintReport' },
     '@/lib/utils/logger': { logger: { error() {} } },
   })
   const nodes = value => Array.isArray(value) ? value.flatMap(nodes) : value?.props ? [value, ...nodes(value.props.children)] : []
   const render = () => { cursor = 0; return nodes(Page()) }
   let tree = render()
   assert.equal(tree.filter(n => n.props.role === 'tab').length, 7)
-  assert.ok(tree.some(n => n.props['data-dashboard-print-meta'] !== undefined && n.props.className.includes('print:flex')))
-  assert.ok(tree.some(n => n.type === 'h1' && Array.isArray(n.props.children) && n.props.children.join('') === 'Reporte de Indicadores del SGC · Quejas'))
-  assert.ok(tree.some(n => n.props['data-dashboard-print-footer'] !== undefined && n.props.className.includes('print:flex')))
+  assert.ok(tree.some(n => n.props['data-dashboard-screen'] !== undefined && n.props.className.includes('print:hidden')))
+  const report = tree.find(n => n.type === 'DashboardPrintReport')
+  assert.ok(report)
+  assert.equal(report.props.data, data.metrics)
+  assert.equal(report.props.period, activeRequests.at(-1).p.label)
   assert.equal(tree.find(n => n.props.role === 'tab' && n.props['aria-selected']).props.id, 'dashboard-tab-quejas')
   assert.equal(tree.filter(n => n.type === 'DeferredMount' && n.props.active).length, 1)
   assert.ok(activeRequests.at(-1).enabled)
@@ -187,6 +189,7 @@ test('pestañas, período y permiso controlan la consulta y nunca montan registr
   tree = render()
   assert.equal(activeRequests.at(-1).enabled, false)
   assert.ok(!tree.some(n => n.type === 'QuejasSummary'))
+  assert.ok(!tree.some(n => n.type === 'DashboardPrintReport'))
 })
 
 test('cada método que omite la autenticación duplicada valida la sesión en su handler', async () => {
@@ -268,4 +271,27 @@ test('el nombre de PDF usa módulo y período y el título se restaura al imprim
   const error = make('throw')
   assert.throws(error.run, /Impresión no disponible/)
   assert.equal(error.doc.title, 'ECA-QMS')
+})
+
+
+test('el reporte separa exactamente dos hojas y reusa los mismos indicadores', () => {
+  const { DashboardPrintReport } = loadModule('components/dashboard/QuejasSummary.tsx')
+  const metrics = summarizeDashboard(period, cases, events, runs)
+  const report = DashboardPrintReport({ data: metrics, period: '2026', generated: '24 de noviembre de 2026, 5:00 p. m.' })
+  assert.ok(report.props.className.includes('hidden print:block'))
+  const [first, second] = report.props.children
+  assert.equal(first.props['data-dashboard-sheet'], '1')
+  assert.equal(second.props['data-dashboard-sheet'], '2')
+  assert.ok(first.props.className.includes('print:break-after-page'))
+  assert.ok(second.props.className.includes('print:break-after-avoid'))
+  const [header, kpis, trend, footer1] = first.props.children
+  assert.equal(header.props.children[0].props.children[1].props.children, 'Reporte de Indicadores del SGC · Quejas')
+  assert.equal(kpis.props.children.props.data, metrics)
+  assert.equal(trend.props.children.props.data, metrics)
+  assert.equal(trend.props.children.props.report, true)
+  assert.equal(footer1.props.page, 1)
+  const [, detail, stages, footer2] = second.props.children
+  assert.ok(detail.props.children.every(child => child.props.data === metrics))
+  assert.equal(stages.props.children.props.data, metrics)
+  assert.equal(footer2.props.page, 2)
 })
