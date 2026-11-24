@@ -81,7 +81,8 @@ function Trend({ data }: { data: DashboardMetrics }) {
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-primary" />Recibidos</span>
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-success" />Resueltos en plazo</span>
     </div>
-    <svg data-dashboard-trend viewBox="0 0 620 250" className="mt-3 block h-auto w-full print:h-[170px]" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
+    <div data-dashboard-trend-frame className="mt-3 print:mt-1 print:h-[170px]">
+    <svg data-dashboard-trend viewBox="0 0 620 250" className="block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
       {[0, 1, 2, 3].map(n => <g key={n}><line x1={left} y1={base - n * plot / 3} x2="610" y2={base - n * plot / 3} stroke={track} /><text x="34" y={base - n * plot / 3 + 4} textAnchor="end" className="fill-qms-muted text-[14px]">{n * step}</text></g>)}
       {data.monthly.map((m, i) => {
         const x = left + slot * (i + .5), h1 = m.received / top * plot, h2 = m.resolvedOnTime / top * plot
@@ -98,6 +99,7 @@ function Trend({ data }: { data: DashboardMetrics }) {
         </g>
       })}
     </svg>
+    </div>
     <p data-dashboard-trend-note aria-live="polite" className="mt-2 min-h-5 text-center text-sm text-qms-muted">{active ? label(active.month) + ' · ' + active.received + ' recibidos · ' + (active.resolvedEvaluable ? active.resolvedOnTime + '/' + active.resolvedEvaluable + ' en plazo' : 'Sin resoluciones evaluables') : data.resolution.total ? '' : 'Sin resoluciones evaluables en el período'}</p>
   </Card>
 }
