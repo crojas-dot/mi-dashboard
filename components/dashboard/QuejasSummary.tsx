@@ -11,7 +11,7 @@ const shortStates = ['Recibido', 'Investigación', 'Revisión GC', 'Resuelto', '
 const percent = (m: CountMetric) => m.total > 0 ? m.good / m.total * 100 : null
 const pct = (value: number | null) => value === null ? '—' : fmt.format(value) + ' %'
 
-export const CARD = 'min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5 print:p-3 print:break-inside-avoid'
+export const CARD = 'min-w-0 rounded-card border border-qms-border bg-qms-surface p-4 sm:p-5 print:p-2.5 print:break-inside-avoid'
 export const KPI_GRID = 'grid grid-cols-1 gap-4 sm:grid-cols-2 @min-[1120px]:grid-cols-4 print:grid-cols-4 print:gap-2.5'
 export const MAIN_GRID = 'grid grid-cols-1 gap-4 @min-[1000px]:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] print:gap-3'
 export const LOWER_GRID = 'grid grid-cols-1 gap-4 lg:grid-cols-2 print:grid-cols-2 print:gap-3'
@@ -62,7 +62,7 @@ function ActiveBar({ data }: { data: DashboardMetrics }) {
         return <rect key={s.state} x={x} width={width} height="10" fill={colors[i]}><title>{shortStates[i]}: {s.count}</title></rect>
       })}</g>
     </svg>
-    <div data-dashboard-active-legend className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-qms-muted">
+    <div data-dashboard-active-legend className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-qms-muted print:grid-cols-1 print:gap-0.5 print:text-[10px]">
       {data.distribution.slice(0, 4).map((s, i) => <span key={s.state} className="flex min-w-0 items-center gap-1"><span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: colors[i] }} /><span className="min-w-0 break-words">{shortStates[i]}</span><strong className="shrink-0 whitespace-nowrap tabular-nums text-qms-dark">{s.count}</strong></span>)}
     </div>
   </div>
@@ -81,7 +81,7 @@ function Trend({ data }: { data: DashboardMetrics }) {
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-primary" />Recibidos</span>
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-success" />Resueltos en plazo</span>
     </div>
-    <svg data-dashboard-trend viewBox="0 0 620 250" className="mt-3 block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
+    <svg data-dashboard-trend viewBox="0 0 620 250" className="mt-3 block h-auto w-full print:h-[170px]" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
       {[0, 1, 2, 3].map(n => <g key={n}><line x1={left} y1={base - n * plot / 3} x2="610" y2={base - n * plot / 3} stroke={track} /><text x="34" y={base - n * plot / 3 + 4} textAnchor="end" className="fill-qms-muted text-[14px]">{n * step}</text></g>)}
       {data.monthly.map((m, i) => {
         const x = left + slot * (i + .5), h1 = m.received / top * plot, h2 = m.resolvedOnTime / top * plot
@@ -149,7 +149,7 @@ function Stage({ label, metric, showTarget = false }: { label: string; metric: C
   </div>
 }
 export default function QuejasSummary({ data }: { data: DashboardMetrics }) {
-  return <div data-dashboard-graphics className="@container space-y-4">
+  return <div data-dashboard-graphics className="@container space-y-4 print:space-y-3">
     <div className={KPI_GRID}>
       <RatioKpi title="Cumplimiento de plazos" metric={data.resolution} target suffix="en plazo" excluded={Math.max(0, data.observed - data.resolution.total)} />
       <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div data-dashboard-kpi-row className={KPI_ROW}><div className="min-w-0"><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario<br />{data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" data-dashboard-kpi-ring className={KPI_RING} aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
