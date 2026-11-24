@@ -479,18 +479,21 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
   formas fijas CSS motion-safe, sin temporizadores por registro. Error real
   con reintento, sin datos evaluables no equivale a 0%.
-- Impresión circunscrita al tablero: página nombrada A4 horizontal, margen
-  externo cero, contenedor de 297 × 208mm con padding 9mm 11mm y flex/gap
-  4mm. Liberar los ancestros y reservar 2mm de tolerancia para evitar una hoja
-  en blanco. Encabezado institucional azul con módulo, período y hora CR 12h;
-  pie con identificación ISO 9001 y Página 1 de 1. Tres filas distribuidas
-  en el espacio disponible, tarjetas blancas con borde suave, anillos 56px,
-  activos en dos columnas sin colisiones y tendencia de 175px con SVG
-  posicionado en su marco. Impresión de colores exactos. Verificar que no
-  haya contenido recortado en Chromium, incluso con cinco áreas y siete estados.
-  El botón usa un título temporal «ECA-QMS - Informe Ejecutivo - módulo - período»,
-  restaurado con afterprint o fallback al salir de impresión/recuperar foco.
-  El navegador conserva control final sobre nombre y opciones del diálogo.
+- Impresión exclusiva del tablero: página nombrada landscape con margen de
+  12mm, ancho 100% adaptable a Carta/A4, sin medidas físicas fijas ni alturas
+  de pantalla. Liberar ancestros y ocultar sus hermanos (shell/portales).
+  DashboardPrintReport reutiliza los componentes SVG y la misma data ya
+  autorizada, sin consultas adicionales y oculto en pantalla. Dos bloques:
+  hoja 1, cabecera oficial azul, cuatro KPIs y tendencia de ancho completo
+  con viewBox amplio y marco de 280px; hoja 2, cabecera compacta, distribución
+  y áreas en dos columnas, cumplimiento por etapa de ancho completo. Cada
+  hoja lleva pie ISO 9001 con Página 1 de 2 / Página 2 de 2. Un único salto
+  después de la primera hoja; no fijar altura ni recortar datos. Verificar
+  paginación y legibilidad en ambos tamaños de papel con Chromium.
+  Colores exactos, tarjetas blancas con borde suave sin sombra. El botón
+  mantiene el título temporal «ECA-QMS - Informe Ejecutivo - módulo - período»
+  y lo restaura al terminar/cancelar. El navegador controla las opciones de
+  papel, escala y encabezados automáticos.
 - «Solicitudes procedentes» muestra procedentes y no proceden del mismo
   denominador, sin añadir felicitaciones ni solicitudes sin evaluar.
   No modificar AuthShell, SessionScreen, tema global ni alias de ruta.
