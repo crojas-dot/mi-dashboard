@@ -50,7 +50,6 @@ const sections = GRUPOS_NAVEGACION.map(section => ({
 }))
 
 const prefetchMap: Partial<Record<ModuloId, PrefetchConfig | PrefetchConfig[]>> = {
-  dashboard:  dashboardPrefetchOptions(),
   quejas:     { queryKey: quejasKey({ page: 0, pageSize: 25 }), queryFn: ({ signal }) => fetchQuejas({ page: 0, pageSize: 25 }, signal) },
   documentos: { queryKey: paginaKey(documentosKey), queryFn: ({ signal }) => fetchDocumentos(0, '', signal) },
   sacp:       { queryKey: paginaKey(accionesKey), queryFn: ({ signal }) => fetchAcciones(0, '', signal) },
@@ -74,6 +73,10 @@ export default function Sidebar({ expanded = false, onNavigate, className = '' }
   const prefetch = useHoverPrefetch()
 
   const prepareNavigation = (id: ModuloId) => {
+    if (id === 'dashboard') {
+      if (tienePermiso(permisos, 'quejas', false, user?.rol)) prefetch(dashboardPrefetchOptions())
+      return
+    }
     const config = id === 'mis_quejas' && user?.id
       ? { queryKey: quejasKey({ responsableId: user.id, soloFolio: true }), queryFn: ({ signal }: QueryFunctionContext) => fetchQuejas({ responsableId: user.id, soloFolio: true }, signal) }
       : prefetchMap[id]
