@@ -15,6 +15,7 @@ import PageHeader from '@/components/ui/PageHeader'
 import DashboardLoading from '@/components/dashboard/DashboardLoading'
 import QuejasSummary from '@/components/dashboard/QuejasSummary'
 import { logger } from '@/lib/utils/logger'
+import { printExecutiveReport } from '@/lib/utils/dashboardPrint'
 
 const tabs = ['quejas', 'sacp', 'documentos', 'riesgos', 'auditorias', 'revision', 'procesos'] as const
 type Tab = typeof tabs[number]
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const [choice, setChoice] = useState<PeriodChoice>('year')
   const [today] = useState(() => new Date())
   const [generated, setGenerated] = useState(printDate)
+  const restorePrintTitle = useRef<(() => void) | null>(null)
   const buttons = useRef<(HTMLButtonElement | null)[]>([])
   const user = useAuthStore(s => s.user)
   const permisos = useAuthStore(s => s.permisos)
@@ -42,8 +44,17 @@ export default function DashboardPage() {
   useEffect(() => {
     const beforePrint = () => flushSync(() => setGenerated(printDate()))
     window.addEventListener('beforeprint', beforePrint)
-    return () => window.removeEventListener('beforeprint', beforePrint)
+    return () => {
+      window.removeEventListener('beforeprint', beforePrint)
+      restorePrintTitle.current?.()
+    }
   }, [])
+
+  function printReport() {
+    restorePrintTitle.current?.()
+    flushSync(() => setGenerated(printDate()))
+    restorePrintTitle.current = printExecutiveReport(MODULOS[tab].label, period.label)
+  }
 
   function moveTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1
@@ -53,7 +64,7 @@ export default function DashboardPage() {
     buttons.current[next]?.focus()
   }
 
-  return <div data-dashboard-print className="min-w-0 print:w-full print:max-w-none print:p-[10mm]">
+  return <div data-dashboard-print className="min-w-0 print:max-w-none">
     <div data-dashboard-screen-heading className="print:hidden">
     <PageHeader title="Dashboard · Indicadores del SGC" compact={false}>
       <div data-dashboard-controls className="flex flex-wrap items-center gap-2">
@@ -63,13 +74,13 @@ export default function DashboardPage() {
           <option value="six">Últimos 6 meses</option>
           {(hasPrevious || choice === 'previous') && <option value="previous">Año anterior ({period.year - 1})</option>}
         </select>
-        <button type="button" className="ui-button ui-button-outline min-h-11 gap-2 text-base" disabled={!active || !data || !!error} onClick={() => window.print()}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
+        <button type="button" className="ui-button ui-button-outline min-h-11 gap-2 text-base" disabled={!active || !data || !!error} onClick={printReport}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
       </div>
     </PageHeader>
     </div>
-    <div data-dashboard-print-meta className="hidden print:flex items-center justify-between gap-3">
-      <div className="min-w-0"><h1 className="font-semibold text-qms-dark">ECA-QMS · Indicadores del SGC</h1><p className="text-qms-muted">Módulo: {MODULOS[tab].label} · Período: {period.label}</p></div>
-      <p className="shrink-0 text-right text-qms-muted">Generado: {generated}</p>
+    <div data-dashboard-print-meta className="hidden print:flex items-center justify-between gap-3 border-b-2 border-[#024796] pb-2">
+      <div className="min-w-0"><p className="font-bold text-qms-primary">ECA-QMS</p><h1 className="font-semibold text-qms-primary">Reporte de Indicadores del SGC · {MODULOS[tab].label}</h1></div>
+      <div className="shrink-0 text-right text-qms-muted"><p>Período: {period.label}</p><p>Generado: {generated}</p></div>
     </div>
     <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-4 flex gap-2 overflow-x-auto border-b border-qms-border print:hidden">
       {tabs.map((id, index) => <button key={id} ref={node => { buttons.current[index] = node }} id={'dashboard-tab-' + id} role="tab" type="button"
@@ -89,5 +100,6 @@ export default function DashboardPage() {
           </div>}
       </section>
     </DeferredMount>)}
+    <div data-dashboard-print-footer className="hidden print:flex items-center justify-between gap-3 border-t border-qms-border pt-2 text-qms-muted"><span>ECA-QMS · Sistema de Gestión de Calidad (ISO 9001)</span><span className="whitespace-nowrap">Página 1 de 1</span></div>
   </div>
 }
