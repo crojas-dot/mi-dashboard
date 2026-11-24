@@ -1,6 +1,6 @@
 import Skeleton from '@/components/ui/Skeleton'
 import LoadingSkeleton from '@/components/ui/LoadingSkeleton'
-import { CARD, KPI_GRID, MAIN_GRID, LOWER_GRID, dashboardGeometry } from './QuejasSummary'
+import { CARD, KPI_GRID, KPI_ROW, KPI_RING, MAIN_GRID, LOWER_GRID, dashboardGeometry } from './QuejasSummary'
 
 export default function DashboardLoading({ label = 'Cargando información…', className = '', framed = true, variant = 'modules' }: {
   label?: string
@@ -11,8 +11,12 @@ export default function DashboardLoading({ label = 'Cargando información…', c
   if (variant === 'executive') return <div role="status" aria-busy="true" className={`@container space-y-4 ${className}`}>
     <span className="sr-only">{label}</span>
     <div aria-hidden="true" className="space-y-4 motion-safe:animate-pulse [animation-duration:2.4s]">
-      <div className={KPI_GRID}>{Array.from({ length: 4 }, (_, i) => <div key={i} className={CARD + ' ' + dashboardGeometry.kpi}><Skeleton className="h-5 w-3/4" /><div className="mt-4 flex items-center justify-between gap-3"><div className="flex-1 space-y-2"><Skeleton className="h-8 w-20" /><Skeleton className="h-4 w-4/5" /></div>{i !== 3 && <div className="size-[116px] shrink-0 rounded-full border-[8px] border-qms-primary/[0.07]" />}</div>{i === 3 && <Skeleton className="mt-3 h-3.5 w-full" />}</div>)}</div>
-      <div className={MAIN_GRID}><div className={CARD + ' ' + dashboardGeometry.main}><Skeleton className="h-5 w-40" /><div className="mt-5 flex h-60 items-end justify-around gap-2">{Array.from({length: 6}, (_, i) => <Skeleton key={i} className={'w-7 ' + ['h-16','h-32','h-24','h-48','h-24','h-40'][i]} />)}</div></div><div className={CARD + ' ' + dashboardGeometry.main}><Skeleton className="h-5 w-40" /><div className="mt-5 flex flex-wrap items-center justify-center gap-5"><div className="size-[200px] max-w-full shrink-0 rounded-full border-[16px] border-qms-primary/[0.07]" /><div className="min-w-0 flex-1 basis-[140px] space-y-3">{Array.from({length: 6}, (_,i) => <Skeleton key={i} className="h-4 w-full" />)}</div></div></div></div>
+      <div className={KPI_GRID}>{Array.from({ length: 4 }, (_, i) => <div key={i} className={CARD + ' ' + dashboardGeometry.kpi}>
+        <Skeleton className="h-5 w-3/4" />
+        {i === 3 ? <><Skeleton className="mt-2 h-9 w-20" /><Skeleton className="mt-3 h-3.5 w-full" /><div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2">{Array.from({length: 4}, (_, j) => <Skeleton key={j} className="h-4 w-full" />)}</div></> :
+          <div className={KPI_ROW}><div className="min-w-0 space-y-2"><Skeleton className={i === 1 ? 'h-8 w-3/4' : 'h-4 w-full'} /><Skeleton className="h-4 w-4/5" /></div><div className={KPI_RING + ' rounded-full border-[8px] border-qms-primary/[0.07]'} /></div>}
+      </div>)}</div>
+      <div className={MAIN_GRID}><div className={CARD + ' ' + dashboardGeometry.main}><Skeleton className="h-5 w-40" /><div className="mt-5 flex h-60 items-end justify-around gap-2">{Array.from({length: 6}, (_, i) => <Skeleton key={i} className={'w-7 ' + ['h-16','h-32','h-24','h-48','h-24','h-40'][i]} />)}</div></div><div className={CARD + ' ' + dashboardGeometry.main}><Skeleton className="h-5 w-40" /><div className="mt-5 flex flex-wrap items-center justify-center gap-5"><div className="size-[200px] max-w-full shrink-0 rounded-full border-[16px] border-qms-primary/[0.07]" /><div className="min-w-0 flex-1 basis-[180px] space-y-3">{Array.from({length: 6}, (_,i) => <Skeleton key={i} className="h-4 w-full" />)}</div></div></div></div>
       <div className={LOWER_GRID}>{[0,1].map(i => <div key={i} className={CARD + ' ' + dashboardGeometry.lower}><Skeleton className="h-5 w-40" /><div className="mt-5 space-y-4">{Array.from({length: i ? 4 : 5}, (_, j) => <Skeleton key={j} className="h-4 w-4/5" />)}</div></div>)}</div>
     </div>
   </div>
