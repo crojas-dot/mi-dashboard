@@ -40,7 +40,7 @@ const proceeds = (q: DashboardCase) => eligibleDecision(q) && q.estado !== 'No P
 export function summarizeDashboard(period: DashboardPeriod, cases: DashboardCase[], events: DashboardEvent[], runs: DashboardRun[]) {
   const cohort = cases.filter(q => inPeriod(q.fecha, period))
   const byId = new Map(cases.map(q => [q.id, q]))
-  const monthly = period.months.map(month => ({ month, received: 0, resolvedOnTime: 0 }))
+  const monthly = period.months.map(month => ({ month, received: 0, resolvedOnTime: 0, resolvedEvaluable: 0 }))
   const byMonth = new Map(monthly.map(m => [m.month, m]))
   const distribution = STATES.map(state => ({ state, count: cohort.filter(q => state === 'Otros' ? !(STATES.slice(0, -1) as readonly string[]).includes(q.estado) : q.estado === state).length }))
   const decisions = cohort.filter(eligibleDecision)
@@ -69,8 +69,9 @@ export function summarizeDashboard(period: DashboardPeriod, cases: DashboardCase
     if (!matching || consumed.has(matching.id) || !evaluable(matching)) continue
     consumed.add(matching.id)
     resolutionTotal++
+    const m = byMonth.get(civilDate(event.occurred_at).slice(0, 7)); if (m) m.resolvedEvaluable++
     if (Date.parse(event.occurred_at) <= Date.parse(matching.expires_at!)) {
-      resolutionGood++; const m = byMonth.get(civilDate(event.occurred_at).slice(0, 7)); if (m) m.resolvedOnTime++
+      resolutionGood++; if (m) m.resolvedOnTime++
     }
   }
   const stageMetric = (stage: string): CountMetric => {
