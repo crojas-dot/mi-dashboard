@@ -230,7 +230,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   if (!queja) return null
 
   const responsableActual = responsables.find((u) => u.id === queja.responsable_id)
-  const investigationDeadline = caseDeadline(queja, runs, Date.now(), plazosPending || plazosFetching)
+  const investigationDeadline = caseDeadline(queja, runs, undefined, plazosPending || plazosFetching)
   const investigationActionDetail = investigationDeadline.business && investigationDeadline.duration
     ? `El responsable tiene ${investigationDeadline.duration} días hábiles para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.`
     : 'El responsable dispone del plazo registrado en el expediente para recopilar evidencias y enviar su resolución. El caso pasará a «Revisión GC» cuando la envíe.'
