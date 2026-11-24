@@ -22,7 +22,7 @@ export function CaseTriageSummary({ queja, runs, responsable, plazoError = false
   children: ReactNode
   footer: ReactNode
 }) {
-  const deadline = caseDeadline(queja, runs, Date.now(), plazoLoading)
+  const deadline = caseDeadline(queja, runs, undefined, plazoLoading)
   return <div data-case-triage-summary className="flex h-full min-h-0 flex-col bg-qms-surface">
     <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
       <section className="space-y-3 border-b border-qms-border pb-4" aria-label="Situación del expediente">
