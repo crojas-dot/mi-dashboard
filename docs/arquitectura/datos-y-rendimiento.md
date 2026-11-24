@@ -1,11 +1,11 @@
 # Datos, caché, rendimiento y diagnóstico
 
-El corte del 17 de noviembre acota la campana a 15 filas con orden estable y
+La campana se acota la campana a 15 filas con orden estable y
 un conteo de no leídos sin descargar más mensajes. La agenda se refresca cada
 cinco minutos en primer plano y vuelve a consultar ante nuevos avisos o al
 recuperar el canal. Leer o archivar avisos refresca solo la campana.
 
-El visor comprueba el acceso al expediente antes de leer Drive. La precarga
+El visor privado comprueba el acceso al expediente antes de leer Drive. La precarga
 requiere 80 ms de intención para formatos nativos y admite dos lecturas en
 paralelo. El indicador aparece a los 180 ms de espera. Un archivo caliente se
 revela cuando está listo, con transición breve que respeta movimiento reducido.
@@ -17,7 +17,7 @@ superó 73 comprobaciones aisladas, incluidas 25 solicitudes simultáneas con el
 mismo identificador que generaron un expediente. La aplicación de los índices
 en Supabase está pendiente con la migración del avatar y la autoría de notas.
 
-> Referencia vigente del código y del snapshot remoto del 7 de octubre de 2026. Consultar solo el tema que se modifica; una nota histórica no demuestra el estado de un despliegue nuevo.
+> Contrato de datos y rendimiento. La evidencia fechada no demuestra el estado de un despliegue nuevo; ver [verificación](verificacion-y-pendientes.md).
 
 ### Lecturas y claves
 
@@ -36,7 +36,7 @@ en Supabase está pendiente con la migración del avatar y la autoría de notas.
 - La bandeja de Quejas y Mis Quejas reutiliza páginas frescas durante 30 s. Refresca al montar, enfocarse o reconectar si la página está obsoleta. El RPC de estadísticas usa `refetchOnMount:'always'`. Notificaciones hacen polling cada 60 s y pueden deshabilitar la consulta por preferencias.
 - Hooks analíticos no montados actualmente y zona horaria tienen TTL propios de 5 min; no asumir que el TTL global reemplaza cada override.
 - `pagination.ts`: páginas de 25, count exacto, filtro de estado antes de range, orden principal descendente + `id` ascendente. Se usa en Auditorías, Documentos, Procesos, Reuniones, Riesgos y SACP.
-- Quejas: filtros folio/cliente, estado, prioridad, responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
+- Quejas: filtros folio/cliente, tipo, estado y responsable; count exacto; `fecha desc, id asc`; `keepPreviousData`. Búsqueda con `useDeferredValue` y página de 25.
 - Usuarios: API y parámetros normalizados; `usuariosQueryKey()` es la clave compartida entre página y precarga.
 - `useHoverPrefetch`: intención de 80 ms por hover/foco/tacto del Sidebar, uno o varios configs, deduplicación en vuelo y caché fresca respetada por TanStack. El dashboard precarga sus cuatro recursos, no una consulta incompatible distinta. Mis Quejas precarga su clave con responsableId propio; sin id no consulta. Reportería no inserta datos ficticios en caché.
 - Cancelación real con `.abortSignal(signal)` está integrada en dashboard, seis listados paginados, Quejas/adjuntos/comentarios/actividad/estadísticas/SLA, catálogos, formularios públicos, permisos, notificaciones y API de Usuarios/zona horaria. Los wrappers de queryFn y precarga pasan solo `context.signal`. Las consultas directas legacy de componentes no quedan migradas automáticamente por esta revisión.
@@ -107,8 +107,7 @@ no un coste por fila ni una consulta remota añadida a la bandeja.
 
 Panel del 12 octubre: `useQuejaSeguimiento` lee hasta 20 ejecuciones del expediente
 con orden estable y AbortSignal. El panel cuenta el calendario guardado para presentar
-tiempo restante; conserva el vencimiento de la vista. Comentarios, actividad y estados
-de correo solo consultan al abrir Actividad. Los estados de correo omiten destinatario,
+tiempo restante; conserva el vencimiento de la vista. Comentarios, actividad e historial consultan al abrir sus superficies; estado de correo se consulta en el expediente según rol y estado. Los estados de correo omiten destinatario,
 payload y claim; se invalidan con el prefijo Quejas, y cambios con quejasActividad.
 No hubo cambios de TTL global, duración mínima de espera ni nuevo coste por fila.
 
@@ -118,3 +117,65 @@ MP3 antes de reclamar el ID en IndexedDB; autoplay bloqueado o descarga fallida 
 consumen el reclamo compartido. Buffers correctos se reutilizan; fallos no se cachean.
 No añade solicitudes remotas ni cambia Realtime/intervalos. Ver
 [contrato y pruebas](../notificaciones-audio-2026-10-14.md).
+
+## Agenda de hoy, campana y foto de perfil
+
+- Agenda: RPC invoker de Quejas/Auditorías, permisos y fechas CR, máximo 20 y un
+  motivo prioritario por registro. Caché de cinco minutos por perfil, sin canal
+  Realtime adicional ni hover. Los avisos existentes invalidan también Agenda.
+  Header controla apertura/cierre; UI solo recibe datos/callbacks.
+  /dashboard es alias protegido del panel en /. Asignación/devolución salen de
+  eventos reales. SQL aplicado; verificar SHA de producción para determinar su publicación. [Contrato](../agenda-hoy-2026-11-11.md).
+- Agenda compacta (máximo 320px) abre en calendario con semana D/L/M/X/J/V/S,
+  flechas de mes anterior/siguiente, selección circular y puntos por fecha_limite
+  real y prioridad. El RPC añade fecha_limite civil CR (null si no existe), caché
+  de contrato v3, cinco minutos. «Ver agenda» muestra cinco tarjetas y «Volver al
+  calendario» regresa. Si hay más de cinco, «Ver más» aparece dentro del scroll y
+  despliega ahí los restantes recibidos, sin navegar a otro panel. Navegar meses no consulta
+  otras agendas ni inventa eventos: puntos solo para los registros recibidos.
+  Cada apertura restablece mes actual y selección. Migración 20261111175442 aplicada;
+  confirmar publicación por SHA de producción. [Contrato](../agenda-hoy-2026-11-11.md).
+- Calendario de Agenda: mes a la izquierda y las dos flechas juntas a la derecha,
+  con área 32px e iconos 20px. Grillas gap-1, días 32px y puntos de 4px. Pie de una
+  sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
+  relleno ni elementos apilados. Check y «Ver agenda» usan qms-primary; el día
+  seleccionado usa fondo qms-primary y texto blanco, sin cambiar la marca global.
+- Agenda de hoy reúne novedades accionables de hoy (recepción, asignación, propuesta
+  para GC, devolución, lista para publicar y programación) y plazos de hoy o dentro
+  de dos días hábiles. La ventana incluye un día hábil con etiqueta precisa.
+  Excluye vencidas y finalizadas; novedades antiguas solo reaparecen por vencimiento.
+  Calidad ve recepción/revisión/publicación; el colaborador solo su investigación.
+  Quejas usa el calendario de su run persistido; Auditorías usa el calendario vigente.
+  No inferir novedades a partir de la creación si su evento real es otro.
+
+- Campana: últimos 15 avisos no archivados, orden fecha/ID y contador de
+  no leídos exacto. La consulta de conteo sin filas se hace cuando hay avisos
+  fuera de la lista. Desactivar avisos suspende su consulta, canal y sonido.
+  Agenda conserva su caché de cinco minutos, refresca en primer plano e
+  invalida con avisos nuevos o reconexión.
+
+- Foto propia: JPG/PNG/WebP hasta 2 MiB y 16 MP, recodificada a WebP 320×320.
+  API Bearer de perfil activo, objeto privado por usuario y puntero con
+  comparación de la versión leída. Usar iniciales hasta que la foto cargue.
+  Cliente/API y pruebas locales listos; la activación de la migración de bucket,
+  autoría de notas e índices espera autorización explícita del proyecto remoto.
+
+## Evidencias privadas y precarga
+
+- La visualización actual usa `fetchDriveBlob` → `/api/drive/download` con
+  Bearer QMS, perfil activo, rol, expediente, pertenencia y privacidad física
+  verificadas. Blob local y URL.createObjectURL revocada al cerrar/cambiar
+  documento o sesión; Storage legacy usa descarga autenticada. Nunca
+  iframe externo, preconnect ni autenticación directa Drive. Sin MIME
+  previsualizable ofrecer Descargar, no cambiar permisos.
+- Intención 80 ms, máximo dos precargas nativas/paralelas y caché 45 s /
+  cinco archivos por usuario/rol. Compartir descarga en vuelo; limpiar
+  al cambiar identidad, rol o logout. Nada persistente, cookies Google
+  ni URL pública. `recordarDriveBlob` solo después de confirmación del
+  registro/subida servidor; no cachear fallo. El primer archivo puede tardar.
+- La resolución, el informe y el compositor comparten claves y TTL 30 s
+  donde corresponde. Precargar por intención y desde expediente, solo
+  autorización efectiva. Redacción consulta borrador/publicación en
+  paralelo; no bloquearla por informe o historial. Elegir PDF vigente
+  automáticamente solo sin elección manual. Las respuestas tardías
+  no sustituyen borrador/versión guardados de la visita.
