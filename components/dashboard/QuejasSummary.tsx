@@ -67,13 +67,13 @@ function ActiveBar({ data }: { data: DashboardMetrics }) {
     </div>
   </div>
 }
-function Trend({ data }: { data: DashboardMetrics }) {
+function Trend({ data, report = false }: { data: DashboardMetrics; report?: boolean }) {
   const [focused, setFocused] = useState<string | null>(null)
   const active = data.monthly.find(m => m.month === focused)
   const max = Math.max(1, ...data.monthly.flatMap(m => [m.received, m.resolvedOnTime]))
   const step = Math.max(1, Math.ceil(max / 3)), top = step * 3
-  const width = 620, base = 218, plot = 180, left = 43, slot = (width - left - 10) / data.monthly.length
-  const bar = Math.min(23, slot * .28)
+  const width = report ? 940 : 620, base = 218, plot = 180, left = 43, slot = (width - left - 10) / data.monthly.length
+  const bar = Math.min(report ? 36 : 23, slot * .28)
   const labelSize = Math.min(12, Math.max(8, (bar + 2) / Math.max(1, String(max).length) / .62))
   const label = (month: string) => monthFmt.format(new Date(month + '-01T00:00:00Z')).replace('.', '')
   return <Card title="Tendencia mensual" height={MAIN_HEIGHT}>
@@ -81,9 +81,9 @@ function Trend({ data }: { data: DashboardMetrics }) {
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-primary" />Recibidos</span>
       <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-qms-success" />Resueltos en plazo</span>
     </div>
-    <div data-dashboard-trend-frame className="mt-3 print:mt-1 print:h-[175px]">
-    <svg data-dashboard-trend viewBox="0 0 620 250" className="block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
-      {[0, 1, 2, 3].map(n => <g key={n}><line x1={left} y1={base - n * plot / 3} x2="610" y2={base - n * plot / 3} stroke={track} /><text x="34" y={base - n * plot / 3 + 4} textAnchor="end" className="fill-qms-muted text-[14px]">{n * step}</text></g>)}
+    <div data-dashboard-trend-frame className="mt-3">
+    <svg data-dashboard-trend viewBox={`0 0 ${width} 250`} className="block h-auto w-full" role="group" aria-label="Volumen mensual por fecha de recepción y resolución">
+      {[0, 1, 2, 3].map(n => <g key={n}><line x1={left} y1={base - n * plot / 3} x2={width - 10} y2={base - n * plot / 3} stroke={track} /><text x="34" y={base - n * plot / 3 + 4} textAnchor="end" className="fill-qms-muted text-[14px]">{n * step}</text></g>)}
       {data.monthly.map((m, i) => {
         const x = left + slot * (i + .5), h1 = m.received / top * plot, h2 = m.resolvedOnTime / top * plot
         const description = label(m.month) + ': ' + m.received + ' recibidos; ' + (m.resolvedEvaluable ? m.resolvedOnTime + ' resueltos en plazo de ' + m.resolvedEvaluable + ' evaluables' : 'sin resoluciones evaluables')
@@ -150,15 +150,53 @@ function Stage({ label, metric, showTarget = false }: { label: string; metric: C
     <p className="mt-1 text-sm text-qms-muted">{metric.total ? metric.good + ' de ' + metric.total + ' a tiempo' : 'Sin datos evaluables'}</p>
   </div>
 }
-export default function QuejasSummary({ data }: { data: DashboardMetrics }) {
-  return <div data-dashboard-graphics className="@container space-y-4 print:space-y-3">
-    <div className={KPI_GRID}>
+function Kpis({ data }: { data: DashboardMetrics }) {
+  return <div className={KPI_GRID}>
       <RatioKpi title="Cumplimiento de plazos" metric={data.resolution} target suffix="en plazo" excluded={Math.max(0, data.observed - data.resolution.total)} />
       <Card title="Tiempo promedio de resolución" height={KPI_HEIGHT}><div data-dashboard-kpi-row className={KPI_ROW}><div className="min-w-0"><p className="text-4xl font-semibold tabular-nums text-qms-dark">{data.average === null ? '—' : fmt.format(data.average)}</p><p className="mt-1 text-sm text-qms-muted">días calendario<br />{data.durationTotal} resoluciones</p></div><svg viewBox="0 0 48 48" data-dashboard-kpi-ring className={KPI_RING} aria-hidden="true"><circle cx="24" cy="24" r="19" fill="none" stroke={track} strokeWidth="4" /><path d="M24 12V24L32 29" fill="none" stroke={primary} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg></div></Card>
       <RatioKpi title="Solicitudes procedentes" metric={data.procedure} breakdown />
       <Card title="Expedientes activos" height={KPI_HEIGHT}><p className="mt-1 text-4xl font-semibold tabular-nums text-qms-dark">{fmt.format(data.active)}</p><ActiveBar data={data} /></Card>
     </div>
+}
+function StageCompliance({ data }: { data: DashboardMetrics }) {
+  return <Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><div data-dashboard-stages className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} showTarget /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card>
+}
+
+export default function QuejasSummary({ data }: { data: DashboardMetrics }) {
+  return <div data-dashboard-graphics className="@container space-y-4 print:space-y-3">
+    <Kpis data={data} />
     <div className={MAIN_GRID}><Trend data={data} /><Distribution data={data} /></div>
-    <div className={LOWER_GRID}><Areas data={data} /><Card title="Cumplimiento por etapa" height={LOWER_HEIGHT}><div data-dashboard-stages className="mt-4 space-y-5"><Stage label="Evaluación · 3 días" metric={data.evaluation} showTarget /><Stage label="Investigación · 15 días" metric={data.investigation} /></div></Card></div>
+    <div className={LOWER_GRID}><Areas data={data} /><StageCompliance data={data} /></div>
+  </div>
+}
+
+function ReportFooter({ page }: { page: 1 | 2 }) {
+  return <div data-dashboard-print-footer className="hidden print:flex items-center justify-between gap-3 border-t border-qms-border pt-2 text-qms-muted">
+    <span>ECA-QMS · Sistema de Gestión de Calidad (ISO 9001)</span>
+    <span className="whitespace-nowrap">Página {page} de 2</span>
+  </div>
+}
+
+/** Solo impresión: reusa los mismos indicadores, sin consultas ni cálculos adicionales. */
+export function DashboardPrintReport({ data, period, generated }: { data: DashboardMetrics; period: string; generated: string }) {
+  return <div data-dashboard-report className="hidden print:block">
+    <div data-dashboard-sheet="1" className="print:break-after-page">
+      <div data-dashboard-print-meta className="hidden print:flex items-center justify-between gap-4 border-b-2 border-[#024796] pb-2">
+        <div className="min-w-0"><p className="font-bold text-qms-primary">ECA-QMS</p><h1 className="font-semibold text-qms-primary">Reporte de Indicadores del SGC · Quejas</h1></div>
+        <div className="shrink-0 text-right text-qms-muted"><p>Período: {period}</p><p>Generado: {generated}</p></div>
+      </div>
+      <div data-dashboard-report-kpis><Kpis data={data} /></div>
+      <div data-dashboard-report-trend><Trend data={data} report /></div>
+      <ReportFooter page={1} />
+    </div>
+    <div data-dashboard-sheet="2" className="print:break-after-avoid">
+      <div data-dashboard-print-meta data-dashboard-print-secondary className="hidden print:flex items-center justify-between gap-4 border-b border-qms-border pb-2">
+        <h1 className="font-semibold text-qms-primary">ECA-QMS · Indicadores de Quejas</h1>
+        <p className="shrink-0 text-right text-qms-muted">Período: {period}</p>
+      </div>
+      <div data-dashboard-report-detail className="grid grid-cols-2 gap-5"><Distribution data={data} /><Areas data={data} /></div>
+      <div data-dashboard-report-stages><StageCompliance data={data} /></div>
+      <ReportFooter page={2} />
+    </div>
   </div>
 }
