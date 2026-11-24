@@ -17,7 +17,7 @@ export default function QuejaHistorial({ movimientos, loading, error, onRetry }:
   onRetry: () => void
 }) {
   return <table aria-label="Historial del expediente" aria-busy={loading} className="w-full table-fixed border-separate border-spacing-0 border-x border-t border-qms-border bg-qms-surface text-left text-xs leading-4">
-    <colgroup><col className="w-1/4" /><col className="w-[4.75rem] sm:w-[8.25rem]" /><col /></colgroup>
+    <colgroup><col className="w-1/4" /><col className="w-[6.75rem] sm:w-[11.5rem]" /><col /></colgroup>
     <thead className="sticky top-0 z-10 bg-qms-table-head text-qms-muted">
       <tr>
         <th scope="col" className={CELDA}>Usuario</th>
@@ -33,8 +33,8 @@ export default function QuejaHistorial({ movimientos, loading, error, onRetry }:
           <td className={CELDA}><span className={TEXTO} title={item.usuario ?? undefined}>{item.usuario || '—'}</span></td>
           <td className={CELDA + ' text-qms-muted tabular-nums'}>
             <time dateTime={item.fecha} title={[dia, hora].filter(Boolean).join(' ')}
-              className="block whitespace-nowrap sm:flex sm:items-center sm:gap-1.5">
-              <span className="block">{dia}</span>{' '}<span className="block">{hora}</span>
+              className="flex min-w-0 flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-1.5">
+              <span className="block whitespace-nowrap">{dia}</span>{' '}<span className="block whitespace-nowrap">{hora}</span>
             </time>
           </td>
           <td className={CELDA}><span className={TEXTO} title={item.accion}>{item.accion}</span></td>
