@@ -461,9 +461,12 @@ ISO de API/DB, orden, plazos y reglas de negocio.
   Solo Quejas dibuja ocho tarjetas; las demás muestran preparación sin datos.
 - Fondo #F4F7F6, Inter heredada, tarjeta blanca con borde fino uniforme y sin
   bordes laterales destacados. Azul #024796, verde QMS #198754, ámbar y gris.
-- Tres filas compactas: 4 KPIs de altura mínima 126px; tendencia y dona de
-  240px (65/35 en escritorio); áreas y cumplimiento por etapa de 186px.
-  Reflow en pantallas estrechas, no recortar información por impedir scroll.
+- Tres filas con escala legible del Dashboard anterior: 4 KPIs de altura mínima
+  210px; tendencia y dona de 350px (65/35 cuando el espacio útil lo permite);
+  áreas y cumplimiento por etapa de 270px. Títulos de 18px, texto secundario
+  de 14px, valores principales de 36px, anillos KPI de 116px y dona de 200px.
+  Paddings de 20px en escritorio. Cuatro KPIs desde 1120px de ancho del contenido,
+  dos en pantallas intermedias; permitir scroll vertical antes que miniaturizar.
 - SVG puro: anillos delgados, puntas redondeadas, barras segmentadas,
   etiquetas cortas, leyenda y tooltip de tendencia por hover/foco; sin Chart.js
   ni Recharts. Meta 90% solo referencia; no sustituye denominadores reales.
