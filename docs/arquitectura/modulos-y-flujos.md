@@ -67,7 +67,7 @@ permisos ni datos persistidos.
   empieza en 001 si ese año no tiene histórico. Conservar los prefijos de otros
   módulos. SACP/Auditorías/Riesgos omiten el folio vacío en el INSERT; nunca reservar
   desde UI. Los RPC legacy se conservan para compatibilidad del cliente publicado.
-  DB aplicada el 11 noviembre; cliente local y calendario adicional aplazado.
+  DB aplicada el 11 noviembre; calendario adicional aplazado. Ver estado web en verificación.
   [Contrato y evidencia](../consecutivos-anuales-2026-11-11.md).
 - Corrección posterior autorizada del 11 noviembre: solo futuras altas de Quejas,
   contador 2026 de 2089 a 89 (siguiente `2026-090`), retirando el arrastre de 2000.
@@ -335,7 +335,7 @@ Seguridad y capacidad: [formularios públicos](../seguridad-formularios-publicos
 ### Gateway y evidencias: reglas complementarias
 
 - Metadata por GET/API, token exacto/activo/modulo Quejas; no lista otros enlaces ni devuelve IDs internos. El cliente usa TIPOS_REGISTRO_QUEJA: Queja, Observación, Sugerencia, Reclamo y Felicitación; 'Denuncia' sobrevive solo como valor histórico en DB. El ciudadano selecciona tipo; GC asigna área internamente.
-- Orden: POST crear devuelve folio/capacidad → subir cada evidencia por API → POST finalizar. El navegador no llama Supabase RPC en este flujo. El ciudadano conserva su folio aunque falle una evidencia. Datos, progreso y reintentos permanecen en el mismo formulario durante la subida. Solo al confirmar todos los adjuntos y la finalización se sustituye por la tarjeta de éxito con el folio. Adjuntar/contador comparten una fila; la lista aparece solo al seleccionar y llega hasta dos filas con scroll. [Presentación actualizada al 16 octubre](../formulario-publico-visual-2026-10-14.md).
+- Orden: POST crear devuelve folio/capacidad → subir cada evidencia por API → POST finalizar. El navegador no llama Supabase RPC en este flujo. El ciudadano conserva su folio aunque falle una evidencia. Datos, progreso y reintentos permanecen en el mismo formulario durante la subida. Solo al confirmar todos los adjuntos y la finalización se sustituye por la tarjeta de éxito con el folio. La geometría y los controles se describen en [visual](visual.md).
 - Seguimiento activo desde el 19 octubre: la finalización distingue disabled/available/pending, y solo available entrega URL validada. Reintentar el enlace no repite alta ni uploads. La página informativa no pide contraseña/folio; el enlace privado abre automáticamente. Ver [contrato y límites](../quejas-seguimiento-y-publicacion-2026-10-16.md).
 - UUID de envío y hash normalizado reclaman una única queja antes del folio. Un reintento incierto conserva ID y cuerpo; un mismo ID con contenido diferente produce conflicto. No recrear la queja para reintentar archivos.
 - Cada archivo tiene uploadId estable. Reintentar una subida confirmada recupera su recibo; las pendientes no abren otra escritura Drive. El cliente reintenta solo los archivos fallidos y mantiene la capacidad únicamente en memoria.
@@ -372,6 +372,7 @@ Archivos internos comparten transporte, pero tienen su propia allowlist y autori
 - Formularios: crear/copiar URL/activar/desactivar/eliminar con confirmación, solo admin activo. La lectura ciudadana pasa por GET/API. El corte público del 9 octubre cerró la lectura anónima directa; administración consulta con su autorización. Los formularios con envíos registrados quedan protegidos por FK: desactivar antes que borrar.
 - Zona horaria: clave `org.zona_horaria`, fallback America/Costa_Rica; GET para cualquier perfil activo, PUT admin, validación Intl. La configuración se usa en análisis/helpers conectados; no todos los widgets ni el motor QMS usan esa clave.
 - Marca institucional: `org.logo_url` guarda la URL pública del objeto vigente en el bucket `branding`. El menú lateral usa `EmpresaLogo`: con logo muestra la imagen sola (sin fondo ni círculo, conservando la transparencia) y sin logo, la inicial «E» en un círculo azul. Configuración ofrece subir, centrar y quitar, solo admin real. El recorte cuadrado se resuelve en el cliente y la API revalida tipo/peso antes de escribir con service role.
+
 ### Otros módulos
 
 - SACP: alta con folio, tipo, descripción y fecha límite; estado Abierta, avance 0. Avance 100→En Validación. El botón de cierre se muestra desde En Validación y escribe Cerrada/100; la UI no sustituye una máquina de estados transaccional de DB.
@@ -379,11 +380,12 @@ Archivos internos comparten transporte, pero tienen su propia allowlist y autori
 - Riesgos: probabilidad×impacto con escala 1–3. <=2 Bajo, <=4 Medio, <=6 Alto, >6 Crítico; matriz 3×3. Alta directa de atributos y nivel.
 - Auditorías: alta con folio (manual o automático en el INSERT), tipo/área/fechas/objetivo/alcance. Hallazgos asociados solo se listan; badge derivado_sacp_id no implementa derivación.
 - Documentos: alta con código/título, versión 1.0 y Borrador; `generar_folio_documento` existe pero no se usa aquí. Cambiar versión solo actualiza `documentos.version_actual`; el historial muestra un placeholder y no inserta versiones.
-- Consecutivos automáticos desde el 11 noviembre: año de registro CR y contador por módulo/año, mínimo tres dígitos sin truncar; SACP/Auditorías/Riesgos omiten folio vacío para asignarlo transaccionalmente. Los RPC previos siguen compatibles para el cliente publicado y los códigos manuales se conservan. DB aplicada, modales nuevos locales; [contrato](../consecutivos-anuales-2026-11-11.md).
+- Consecutivos automáticos desde el 11 noviembre: año de registro CR y contador por módulo/año, mínimo tres dígitos sin truncar; SACP/Auditorías/Riesgos omiten folio vacío para asignarlo transaccionalmente. Los RPC previos siguen compatibles para el cliente publicado y los códigos manuales se conservan. DB aplicada; consultar estado web en verificación. [contrato](../consecutivos-anuales-2026-11-11.md).
 - Revisión por Dirección: altas/listado/detalle de reuniones, agenda/fechas. Acta Pendiente/Registrada con texto e icono estático; no usar spinner para un estado permanente. No se implementa un gestor de actas o acuerdos con Drive completo.
 - Reportería: módulos Quejas/SACP/Documentos/Auditorías/Riesgos/Revisión; filtros de fechas/estado/tipo (sin prioridad en Quejas). Lee lotes de 500 ordenados por id, tope 5000 filas y exige restringir filtros al superarlo. `window.print`/CSS de impresión; no persiste informes_config.
 - Usuarios: ver [sesión y permisos](sesion-y-permisos.md) para el contrato vigente de administración, acceso y borrado.
 - Cambio de contraseña propia: seguir el contrato de acceso temporal o contraseña ordinaria; sin service role en navegador.
+
 ## Contrato de altas operativas
 
 Procesos, Auditorías, Riesgos, Reuniones, SACP y Documentos usan un lock síncrono contra doble envío, validación de campos obligatorios recortados y fechas/escalas según formulario, try/catch/finally y error accesible. El borrador se conserva tras fallar y no se permite cerrar durante una escritura. Si el INSERT tuvo éxito y el refresco falla, comunicar que se guardó; no invitar a crear una segunda fila. `lib/utils/operationalFormValidation.ts` es la validación compartida.
