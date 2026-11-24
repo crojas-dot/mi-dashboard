@@ -31,7 +31,7 @@ export default function VistaPreviaInforme({ modulo, incluir, fechaDesde, fechaH
             <h2 className="m-0 text-xl font-bold text-qms-dark">Informe de {modulos.find(m => m.value === modulo)?.label}</h2>
             <p className="m-0 mt-1 text-sm text-qms-muted">Ente Costarricense de Acreditación</p>
             <p className="m-0 text-xs text-gray-400">
-              Generado: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              Generado: {new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h12' })}
               {fechaDesde && ` · Período: ${new Date(fechaDesde).toLocaleDateString('es-ES')} - ${new Date(fechaHasta).toLocaleDateString('es-ES')}`}
             </p>
           </div>
