@@ -212,7 +212,7 @@ export default function UsuariosPage() {
 <TableCell><UsuarioEstadoAcceso usuario={u}/></TableCell>
                 <TableCell><UsuarioSegundoFactor usuario={u}/></TableCell>
                 <TableCell className="whitespace-nowrap text-sm text-qms-muted">
-                  {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}
+                  {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short', hourCycle: 'h12' }) : 'Sin accesos'}
                 </TableCell>
                 <TableCell className="pl-0 text-left">
                   <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
@@ -241,7 +241,7 @@ export default function UsuariosPage() {
                 <UsuarioSegundoFactor usuario={u}/>
               </div>
               <div className="flex items-center justify-between gap-2 border-t border-qms-border pt-2">
-                <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short' }) : 'Sin accesos'}</p>
+                <p className="text-xs text-qms-muted">Último acceso: {u.ultimo_acceso ? new Date(u.ultimo_acceso).toLocaleString('es-CR', { dateStyle: 'short', timeStyle: 'short', hourCycle: 'h12' }) : 'Sin accesos'}</p>
                 <UsuarioAccionesMenu usuario={u} esPropio={esAuto(u)}
                   onEditar={() => abrirEditar(u)}
                   onRestablecer={() => abrirEditar(u, 'seguridad')}
