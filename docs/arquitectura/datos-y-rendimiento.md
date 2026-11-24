@@ -1,6 +1,6 @@
 # Datos, caché, rendimiento y diagnóstico
 
-La campana se acota la campana a 15 filas con orden estable y
+La campana se acota a 15 filas con orden estable y
 un conteo de no leídos sin descargar más mensajes. La agenda se refresca cada
 cinco minutos en primer plano y vuelve a consultar ante nuevos avisos o al
 recuperar el canal. Leer o archivar avisos refresca solo la campana.
@@ -105,7 +105,7 @@ Reportería usa la misma vista/campo, sin filtro prioridad. Mantener AbortSignal
 paginación estable y caché por ámbito. Tiptap/ProseMirror es lazy al abrir el editor,
 no un coste por fila ni una consulta remota añadida a la bandeja.
 
-Panel del 12 octubre: `useQuejaSeguimiento` lee hasta 20 ejecuciones del expediente
+Evidencia del 12 octubre (contrato de consulta actualizado en las secciones vigentes): `useQuejaSeguimiento` lee hasta 20 ejecuciones del expediente
 con orden estable y AbortSignal. El panel cuenta el calendario guardado para presentar
 tiempo restante; conserva el vencimiento de la vista. Comentarios, actividad e historial consultan al abrir sus superficies; estado de correo se consulta en el expediente según rol y estado. Los estados de correo omiten destinatario,
 payload y claim; se invalidan con el prefijo Quejas, y cambios con quejasActividad.
