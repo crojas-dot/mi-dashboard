@@ -140,9 +140,6 @@
   heredadas siguen con token personal de 24 horas, canje y reenvío separados;
   no migrar masivamente ni cambiar contraseñas heredadas en silencio. Reset
   2FA requiere admin y confirmación.
-- **Emisor y destinos separados:** Next API → Supabase Edge
-  `qms-access-mailer` **v5 ACTIVE** → Google Apps Script → MailApp;
-  `qms_private.mail_wake_settings.access_endpoint` almacena el destino
 
 App autenticadora usa TOTP nativo y AAL2 real. Correo alternativo usa verificación
 propia autorizada por el usuario: **no elevar ni presentar su JWT como AAL2**.
