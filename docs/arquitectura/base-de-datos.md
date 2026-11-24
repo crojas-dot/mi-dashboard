@@ -74,7 +74,7 @@ y enviar con revisión/versión explícitas. Guardar no actualiza Queja ni publi
 el cambio de estado/responsable limpia el borrador, preservando la propuesta enviada.
 48 comprobaciones PostgreSQL aisladas; esquema/grants/guards sin usuario y asesores
 remotos verificados, sin cambios en sus hallazgos existentes ni datos de negocio.
-[Contrato y evidencia](../mis-quejas-borrador-resolucion-2026-11-11.md). Cliente web local.
+[Contrato y evidencia](../mis-quejas-borrador-resolucion-2026-11-11.md). Evidencia del cliente web en la fecha indicada; ver corte vigente.
 
 11 noviembre, aplicada: `20261111184056_agenda_hoy_recibidas_y_proximas` incorpora
 novedades accionables del día y ventana de dos días hábiles, excluyendo vencidas y
@@ -112,7 +112,7 @@ la Edge compatible. RLS/grants y avisos de seguridad antes/después verificados.
 inmutable y borradores internos con CAS; aprobación sin publicación y publicación
 atómica a Finalizado. Puentes invoker, implementación privada y RLS de lectura staff.
 [Contrato, compatibilidad y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
-El cliente nuevo sigue local, sin despliegue web.
+La referencia histórica no certifica un despliegue web posterior.
 
 19 octubre, **activado y verificado** en `fykhrrpeoehwqznccmfp`:
 `20261015223440_quejas_public_tracking.sql` está aplicada y registrada; agrega
@@ -276,7 +276,7 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 
 - Desde `20261111151343`, los cinco generadores usan `qms_private.next_annual_folio` con la fecha de la transacción en Costa Rica. Quejas conserva su única tabla `folios_quejas_anuales(anio,ultimo)`; otros módulos usan `qms_private.folios_anuales(modulo,anio,ultimo)`, sin acceso cliente.
 - UPSERT por módulo/año: mínimo tres dígitos (`AAAA-001`), crece a 1000 sin truncar y el nuevo año comienza en 001 salvo histórico ya existente. No requiere reset manual ni cron. Los prefijos SACP-/AUD-/RIESGO-/DOC- se conservan; ningún folio previo se reescribe.
-- SACP/Auditorías/Riesgos aceptan código manual o asignan automáticamente dentro del INSERT mediante `a_qms_annual_folio`. RPC previos conservan ACL para el cliente publicado; la eliminación de la reserva previa en esos modales sigue local. Documentos usa `codigo_doc`; su generador anual no tiene consumidor.
+- SACP/Auditorías/Riesgos aceptan código manual o asignan automáticamente dentro del INSERT mediante `a_qms_annual_folio`. RPC previos conservan ACL para el cliente publicado; ver estado de los modales sin reserva previa en verificación. Documentos usa `codigo_doc`; su generador anual no tiene consumidor.
 - `siguiente_folio_queja()` y las secuencias anteriores quedan cerrados al cliente, sin consumidores vigentes ni reset de valores históricos. Los RPC de creación de Quejas mantienen sus guards y revisión del contrato.
 - No generar un folio de queja adicional en frontend antes de `crear_queja_interna`/pública: la creación lo resuelve en DB.
 
