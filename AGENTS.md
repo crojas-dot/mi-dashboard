@@ -87,7 +87,7 @@ Leer solo esta guía, el AGENTS.md de la capa afectada y la referencia del tema.
   si ready, cambio desde Mi perfil y aviso no bloqueante. Vencimiento requiere
   reset autorizado. 2FA independiente si exigido; TOTP AAL2 real, OTP propio
   nunca simula AAL2. No imponer políticas nuevas retroactivamente a cuentas legacy.
-- Alta/reenvío/reset autorizados son idempotentes; no repetir alta confirmada.
+- No repetir altas confirmadas; reenvío/reset solo autorizados y con confirmación.
   No exponer clave temporal si se solicitó correo. Borrado conserva autores,
   responsables e historial; no eliminar físicamente el perfil.
 - Concurrencia optimista: conservar revisión/versiones capturadas y lock
