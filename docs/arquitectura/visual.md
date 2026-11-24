@@ -120,7 +120,9 @@ importado antes de modificar archivos similares de una etapa anterior.
   Procede en azul ECA #024796 y No procede en rojo ECA #DE4041, con
   texto/icono blancos; controles secundarios blancos. Mantener contraste,
   disabled, hover y acciones de cada rol. Panel con scroll interno en
-  escritorio, alto original y reset por expediente; no añadir pie fijo
+  escritorio, alto original y reset por expediente; permitir la cadena nativa
+  de rueda hacia el scrollport del expediente cuando el panel no tenga más
+  recorrido (overscroll-y-auto lateral; contención en el scrollport exterior); no añadir pie fijo
   de decisiones ni plegar herramientas por defecto. Anterior/Siguiente
   comparten CaseWorkspaceNavigation con Ampliar/Reducir; X de Modal.
 - En Quejas, ciclo de evaluación/investigación/revisión/cierre; el contraído no usa
@@ -179,6 +181,11 @@ importado antes de modificar archivos similares de una etapa anterior.
 - Plazos en ambas tablas/paneles: punto verde vigente, ámbar en alerta, rojo vencido;
   gris completado/sin plazo. Texto sin fondo y fecha en el título. El color no
   sustituye el texto ni altera el cálculo de `getQuejaDeadline`/`caseDeadline`.
+  Mientras se consulta un snapshot de plazo aún no disponible, mostrar
+  «Consultando plazo…» en gris, sin conteo natural provisional. Un snapshot
+  válido en caché se muestra inmediatamente aunque se esté refrescando;
+  un futuro vencimiento sin días hábiles intermedios se expresa por fecha.
+  Mantener fecha límite, errores reales y fallback tras terminar la consulta.
 - Fila seleccionada: `ui-case-row` + `aria-selected`, fondo `qms-row-selected`
   **#F0F4F7**, sin contorno añadido ni cambios de alto; persiste al retirar el puntero
   y desaparece al cerrar. Enter/Espacio abren la fila sin interceptar controles hijos.
@@ -234,7 +241,10 @@ importado antes de modificar archivos similares de una etapa anterior.
 - El diálogo centrado «Historial y notas» conserva el mismo tamaño en ambas
   pestañas. Cada lista se desplaza dentro del diálogo. Historial usa una
   cuadrícula centrada de líneas finas con Usuario, Fecha y Acción realizada.
-  Las filas miden 40 px y la hora usa el formato de 12 horas (a. m./p. m.). El GET privado se
+  Las filas tienen altura mínima de 40 px; fecha y hora de 12 horas (a. m./p. m.)
+  quedan dentro de su columna, ampliada a 11.5 rem en escritorio y 6.75 rem en
+  móvil. Si no caben juntas pasan a líneas separadas sin invadir Acción realizada.
+  El GET privado se
   prepara al abrir el diálogo «Historial y notas» del folio y comparte petición y
   caché de 30 s con Historial. Mientras llega, la pestaña puede mostrar el ingreso que la vista
   ya tiene. El GET valida la sesión y el expediente por RLS y devuelve

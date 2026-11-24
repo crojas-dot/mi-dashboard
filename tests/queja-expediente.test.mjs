@@ -84,3 +84,27 @@ test('fallos de seguimiento no se convierten en listas vacías exitosas', async 
   const queries = loadModule('lib/queries/useQuejaSeguimiento.ts', { '@/lib/supabase': db })
   await assert.rejects(queries.fetchQuejaCorreos('A'), /denegado/)
 })
+
+test('la vista previa no presenta conteos provisionales mientras consulta el calendario', () => {
+  const now = at('2026-10-09')
+  const pending = caseDeadline(queja, [], now, true)
+  assert.equal(pending.label, 'Consultando plazo…')
+  assert.equal(pending.variant, 'gray')
+  assert.equal(pending.vence, due)
+  assert.equal(pending.progress, null)
+  assert.equal(pending.pending, true)
+  const cached = caseDeadline(queja, [run], now, true)
+  assert.equal(cached.label, 'Vence en 3 días hábiles')
+  assert.equal(cached.pending, false)
+  assert.equal(caseDeadline(queja, [run], now, false).label, cached.label)
+  assert.equal(caseDeadline(queja, [{ ...run, expires_at: '2026-10-13T23:00:00-06:00' }], now, true).label, 'Consultando plazo…')
+  assert.equal(caseDeadline(queja, [], now, false).label, 'Vence en 5 días')
+  assert.equal(caseDeadline({ ...queja, estado: 'Finalizado' }, [], now, true).label, 'Completado')
+})
+
+test('un vencimiento futuro sin días laborables intermedios muestra la fecha y no cero días', () => {
+  const future = '2026-10-11T23:00:00-06:00'
+  const result = caseDeadline({ ...queja, plazo_vence: future }, [{ ...run, expires_at: future }], at('2026-10-09'))
+  assert.equal(result.label, 'Vence el 11/10/2026')
+  assert.equal(result.vencido, false)
+})
