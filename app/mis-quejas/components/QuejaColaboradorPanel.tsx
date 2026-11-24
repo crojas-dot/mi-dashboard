@@ -177,7 +177,7 @@ export default function QuejaColaboradorPanel({ queja, onClose, onUpdated, onNav
       setEditandoResolucion(false)
     }
   }
-  const deadline = caseDeadline(queja, runs, Date.now(), plazosPending || plazosFetching)
+  const deadline = caseDeadline(queja, runs, undefined, plazosPending || plazosFetching)
   const devoluciones = devolucion ? (devolucionesPersistidas.length ? devolucionesPersistidas : obtenerHistorialDevoluciones(actividad)) : []
   const notasInvestigacion = actividad.filter(esNotaInvestigacion)
   const reenviarRevision = investigando && !!devolucion
