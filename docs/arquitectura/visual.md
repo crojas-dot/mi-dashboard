@@ -479,6 +479,12 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
   formas fijas CSS motion-safe, sin temporizadores por registro. Error real
   con reintento, sin datos evaluables no equivale a 0%.
-- Impresión circunscrita al tablero: shell y controles ocultos, altura y
-  overflow liberados, colores de SVG, tarjetas indivisibles y fecha/período.
+- Impresión circunscrita al tablero: página nombrada horizontal con margen
+  de 10mm, cabecera ECA-QMS · Indicadores del SGC, módulo, período y hora CR
+  en 12h. Shell y controles ocultos, overflow liberado, colores SVG exactos,
+  cuatro KPIs en fila y dos filas de gráficos con geometría solo de impresión
+  y tarjetas indivisibles. Objetivo: una hoja A4/Carta horizontal, verificar
+  con el navegador; no recortar datos para forzar una página.
+- «Solicitudes procedentes» muestra procedentes y no proceden del mismo
+  denominador, sin añadir felicitaciones ni solicitudes sin evaluar.
   No modificar AuthShell, SessionScreen, tema global ni alias de ruta.
