@@ -1,32 +1,8 @@
 # Apariencia: fuentes y particularidades
 
-9 noviembre, local: [estabilidad de Quejas y Mis Quejas](../quejas-resolucion-y-revision-gc-2026-11-03.md#estabilidad-del-modal--9-noviembre-de-2026).
-Asistencia sale del flex de las pestañas y se limita a investigación editable;
-el lienzo `fill` de Tiptap admite escritura en toda su superficie sin el anillo
-interno que aparecía bajo el texto. El encabezado responde al ancho del workspace
-y los textos accesibles del ciclo permanecen dentro de su scroll. QA sintética
-505/505, sin publicación; límites de las pruebas del informe en la referencia.
-
-4 noviembre, local: [revisión GC y respuesta al cliente](../quejas-revision-y-respuesta-2026-11-04.md)
-separadas. Revisión breve con alto según contenido, respuesta/oficio/documento y
-consulta de resolución plegada en la siguiente etapa. `Modal height="content"`
-es opcional para documentos; los demás editores conservan su altura previa.
-
-5 noviembre, editor del informe de Quejas: variante `Modal variant="report"` de
-94vw/1450px por 94dvh, con encabezado fijo, barra Tiptap compacta y una sola región
-desplazable para la hoja A4. Su hoja y reglas de metadatos/secciones están aisladas
-en `QuejaInformeHoja.module.css`; no aplicar al resto de editores ni a `document`.
-Word/PDF mantienen A4 y presentan títulos/metadatos con estilos de informe.
-
-16 octubre, local: Mis Quejas reutiliza el workspace/ciclo/plazo de Quejas, con lienzo
-Tiptap y asistencia secundaria; la publicación de Calidad separa documento interno y
-respuesta pública. Seguimiento utiliza el mismo kit en una página genérica adaptable.
-Validado en escritorio y 390/320 px. [Contrato, capturas y estado](../quejas-seguimiento-y-publicacion-2026-10-16.md).
-
-La guía de trabajo canónica es [docs/visual-patterns.md](../visual-patterns.md).
-Incluye controles, accesibilidad, responsive, skeletons, operaciones y configuración.
-El [mapa de edición](README.md) ubica cada cambio visual. No usar inventarios CoreUI
-ni prototipos con prefijo tw: como base de una vista del runtime.
+Contrato vigente del diseño aprobado; la guía general del kit es
+[visual-patterns.md](../visual-patterns.md). Usar [mapa de edición](README.md)
+para ubicar componentes. No recuperar las pruebas descartadas.
 
 ## Fuentes activas
 
@@ -58,159 +34,403 @@ Cada regla de tamaños y variantes vive en los tokens/kit; no copiar paletas o C
 por página para resolver un ajuste local. Revisar componentes montados y el CSS
 importado antes de modificar archivos similares de una etapa anterior.
 
-## Visor de evidencias
+## Identidad, carga y navegación
 
-Drive conserva su visor nativo inmediato, sin skeleton ni descarga previa en QMS. Marco fijo y espacio completo desde el primer render; cada visita se desmonta al cerrar/cambiar archivo. Repetir el mismo clic conserva el iframe. Storage legacy usa su URL firmada, carga centrada y reintento. Comprobación local del 9 octubre: Chrome temporal + React StrictMode, 20 clics repetidos, 10 reaperturas y 3 cambios sin errores; red Google ficticia, sin datos reales ni solicitudes a producción.
+- El logo lateral y el botón de menú comparten el control de expansión. En
+  móvil el logo cierra el menú abierto. Dashboard usa velocímetro, Reportería
+  un informe con gráfico y Configuración un engranaje.
+- Menú y login conservan el isotipo ECA local hasta que carga su imagen
+  personalizada. Identidad administra «Logo del inicio de sesión» por separado.
+  Su recuadro conserva 56 px y el fondo azul del sistema. El servidor lee fondo
+  y logo del login en una sola consulta. El cliente consulta si esa lectura falla.
+- Fondo de login y formularios: `FondoIdentidad` y `.ui-auth-card` comparten
+  el fondo, blanco al 96 %, borde y sombra. El formulario en `/q/[token]`
+  usa scroll de página. Solo `?embed=1` permite la vista transparente y
+  comunica su altura al origen WordPress configurado por `ALLOWED_FRAME_ORIGIN`.
+- Los paneles contraído y ampliado de Quejas y Mis Quejas usan el mismo
+  stepper de chevrones. Bajo 420 px de ancho de panel se abrevian las etiquetas.
 
-## Formulario público
+- En correo de acceso, credencial en bloque compacto con borde uniforme;
+  los detalles de plantilla viven en [integraciones](integraciones.md).
+- El formulario público conserva el ancho máximo de 860 px, el correo
+  institucional 900 px, tarjeta blanca al 96 %, fondo compartido y pie
+  interno. El skeleton reproduce la geometría completa; ver [flujos](modulos-y-flujos.md).
+- Cuatro campos en dos columnas desde sm y una en móvil; descripción ampliable.
+  Adjuntar/contador comparten fila, lista visible solo con archivos y scroll
+  tras dos filas; nombres truncados conservan valor accesible.
+  Pie separado sin superponerse; variante embed mantiene contrato propio.
+- Confirmación con cabecera de marca, folio azul en línea, una columna y
+  pie discreto; no duplicar evidencias ni insertar check circular gigante.
+  Seguimiento conserva altura fija en escritorio y scroll interno, cuatro
+  etapas y pie estable; móvil con scroll natural. No añadir «Actualizar estado».
+- Carga sin credenciales: fondo neutral, sin shell ni módulo anticipado;
+  después de autorización, skeleton específico. No añadir tiempos mínimos.
 
-El marco de /q/[token] usa un único ancho máximo local de 896 px, también en carga,
-error y confirmación. Cuatro campos iniciales en dos columnas desde sm, una columna
-móvil, descripción de cinco filas ampliable. Encabezado compacto de 20 px alineado al contenido.
-Adjuntar usa Button secondary, icono, hover/foco, mínimo 44 px y contador anunciado;
-el input oculto abre el selector. Acción y contador comparten una fila, sin un panel
-vacío. La lista aparece al seleccionar y crece hasta dos filas (104 px); el resto
-hace scroll accesible. Nombres recortados conservan el valor completo en title y
-en la acción de quitar. Añadir archivos después de las dos primeras filas no la estira.
+## Quejas y Mis Quejas: presentación vigente
 
-La tarjeta conserva altura natural hasta 100dvh − 48 px. En pantallas bajas solo
-los campos hacen scroll; el pie shrink-0 conserva espacio propio y no se superpone
-a descripción/adjuntos. Sustituye el pie sticky anterior. El contador es texto visible
-y anunciado; no se reserva altura de estado para un error vacío. La verificación
-del 14 octubre tiene 124 comprobaciones en cuatro tamaños y reducción de altura:
-geometría estable con diez archivos, teclado, error, reintento y finalización con
-página/hook/cliente reales y API sintética. [Contrato y evidencia](../formulario-publico-visual-2026-10-14.md).
-Este ajuste no cambia cuotas, validaciones, BotID ni el contrato del gateway.
+- Compartir `CaseWorkspace`, `CaseCycle`, `CaseRequestHeader`, `CaseSection`,
+  `CaseWorkspaceNavigation`, `CaseReadOnlyHeader`, `QuejaCierreResumen`, `AreaAfectada`, `ListaAdjuntos`
+  y `QuejaPlazoIndicator` cuando el contrato coincida.
+  Conservar las acciones/permisos particulares de Calidad y del responsable.
+- Workspace lateral derecho de 40vw/100dvh; la tabla conserva columnas, filtros y
+  scroll en ambos ejes. Móvil y ampliado usan diálogo nativo. Cerrar restablece el
+  lateral. Ampliar/reducir conserva nodos, editor, visita y borradores.
+- Contraído (40vw/100dvh): triaje estrictamente sin edición ni Tiptap visible:
+  segmentos no interactivos en Quejas y navegación de consulta en Mis Quejas; tarjeta compacta de estado/plazo/
+  responsable y tarjeta de «Siguiente paso» superior, con fondo suave y
+  contorno uniforme tenue (SIN rayas verticales de color ni `border-l-4`),
+  icono, título, explicación de 2 líneas y CTA principal azul.
+  El contorno es `border` uniforme y tenue: prohibidos `border-l-2`,
+  `border-l-4` y otros acentos verticales en todas las tarjetas de triaje,
+  incluida la observación amarilla de devolución de Mis Quejas.
+  Los tonos azul, ámbar y verde se aplican con fondos suaves y borde fino;
+  conservar iconografía, legibilidad y hover del botón azul institucional.
+  No reducir el triaje a un botón plano o una vista vacía. Debajo conservar
+  en Quejas el extracto de 3 líneas y máximo 2 chips de adjuntos con contador "+N más en ampliado".
+  REGLA DE ORO: cero decisiones a ciegas. Si el contexto está truncado, ninguna
+  acción crítica (Tomar decisión, Aprobar, Devolver, Derivar a SACP, Enviar a GC,
+  Resolver, Publicar) se ejecuta desde contraído. El CTA principal contextual
+  (con flecha a la derecha) únicamente expande el workspace;
+  los botones originales de negocio viven únicamente en la columna derecha del
+  AMPLIADO. Acciones auxiliares seguras como abrir Notas/Historial/Análisis
+  y la consulta de etapas sí se permiten sin ejecutar transiciones.
+  El pie compacto ofrece Historial y notas en ambos módulos. Presentar el contenido
+  de la etapa en Mis Quejas con una sola superficie visible. El editor se monta al
+  abrir Resolución para editar y permanece montado al cambiar de vista. La visita,
+  las revisiones y los borradores se conservan.
+  La tabla y la geometría del drawer no cambian.
+- Ampliado: dos columnas desde 1100 px útiles, documento centrado y acciones
+  a la derecha (360 px); conservar encabezado, navegación, ciclo y geometría
+  original. Por debajo se apila sin desbordar.
+  `CaseWorkspace` activa `qualitySideGutters` solo con `qualityTwoColumn` y
+  `expanded`. Fondo exterior `bg-qms-background` (#F4F7F6). En Quejas,
+  hoja blanca de ancho máximo 210 mm, altura mínima original
+  `calc(100dvh-70px)`, margen superior de 24 px, padding lateral de 24 px
+  en la zona de lectura, borde tenue y sombra mínima. En escritorio el
+  primer `data-case-client-document` tiene padding superior de 15 px para
+  compensar margen/borde y recuperar la altura de «Descripción del cliente».
+  No reducir letras ni imponer una altura A4 fija que recorte contenido.
+  En Mis Quejas, `preserveEditorWidth` evita limitar el editor al A4;
+  `data-mis-quejas-reading-column` mantiene máximo 960 px, fondo gris y
+  hoja de lectura centrada. Conservar Tiptap, ancho, expansión y borrador.
+  Panel derecho rectangular, sin marco, radio ni sombra:
+  `data-case-coreui-docs-panel` en `app/styles/components.css` usa
+  `linear-gradient(rgb(2 71 150 / 9%), rgb(2 71 150 / 9%)), #F3F6FB`.
+  No sustituir por lila, negro, blur, opacidad global ni transparencia al 10%.
+  Procede en azul ECA #024796 y No procede en rojo ECA #DE4041, con
+  texto/icono blancos; controles secundarios blancos. Mantener contraste,
+  disabled, hover y acciones de cada rol. Panel con scroll interno en
+  escritorio, alto original y reset por expediente; no añadir pie fijo
+  de decisiones ni plegar herramientas por defecto. Anterior/Siguiente
+  comparten CaseWorkspaceNavigation con Ampliar/Reducir; X de Modal.
+- En Quejas, ciclo de evaluación/investigación/revisión/cierre; el contraído no usa
+  checks verticales. No Procede muestra únicamente evaluación y cierre. Es una
+  proyección del estado, nunca otro historial ni aprobaciones/fechas inventadas.
+- Descripción comienza el documento y usa el ancho interior de la hoja.
+  En Evaluación, Área afectada queda en el panel derecho antes de las
+  decisiones. Sin resumen superior de resultado ni líneas decorativas.
+  En revisión GC se prioriza la propuesta y se pliegan Solicitud y antecedentes.
+- Responsable antes de las acciones de Calidad. Devolver/Aprobar se ofrecen en el
+  expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
+  Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
+  `CaseFinalMailStatus` compacto (Quejas ampliadas): tipo/estado, contador
+  de incidencias y reintento individual; «Ver motivo» despliega detalles
+  extensos con altura limitada y ajuste de palabras. Después de dos correos,
+  los adicionales se pliegan. No inventar reintento masivo ni reenviar por
+  consultar. En Mis Quejas, error de resolución resumido con «Ver motivo»
+  y scroll acotado; conservar los detalles y recuperación existente.
+- Mis Quejas presenta Análisis, Resolución y Revisión de Calidad. El breadcrumb
+  separa la etapa vigente de la consultada y funciona en el contraído y el
+  ampliado. Las etapas alcanzadas se pueden consultar. Una devolución habilita
+  consultar la revisión devuelta y devuelve la acción a Resolución. No Procede
+  mantiene Análisis como único paso disponible.
+- Análisis muestra primero la evaluación en café suave y Procede en azul cuando existe, después la
+  descripción y el área afectada. Las evidencias del cliente y los archivos
+  internos de Calidad/antecedentes quedan al final, en lectura. El botón azul
+  «Ir a Resolución» cambia únicamente la vista. La consulta histórica usa la
+  cabecera azul compartida «Solo lectura». Las lecturas del oficio y de las
+  devoluciones permiten reservar sus adjuntos para Análisis incluso cuando el
+  autor coincide con el responsable de la queja.
+- Resolución muestra el lienzo integrado y «Mis adjuntos» personales. El
+  responsable asignado puede editar, guardar, adjuntar y enviar/reenviar en
+  En Investigación. La consulta de Análisis conserva el editor y el borrador
+  montados. Cada cambio de etapa empieza arriba. La tarjeta única «Historial y
+  notas» vive debajo del cliente y abre el diálogo centrado con ambas secciones;
+  el contraído conserva el mismo acceso en el pie. En consulta se leen las
+  notas, y la redacción y los menús de escritura se habilitan en Resolución.
+- Revisión de Calidad reutiliza `QuejaCierreResumen` para Análisis, Propuesta y
+  Revisión. Cada detalle permite recorrer Anterior/Siguiente desde el inicio
+  del contenido. Resuelto y Finalizado concluyen aquí el trabajo del responsable
+  y muestran la fecha registrada de aprobación de Calidad cuando existe.
+  La lectura puntual por expediente y
+  responsable utiliza la revisión más nueva para reflejar decisiones incluso
+  cuando el expediente sale del filtro de la tabla.
+- Las tarjetas de Agenda y los avisos navegables abren el registro con `?abrir=<id>`.
+  Cada bandeja consulta por ID y con los permisos de sesión; Mis Quejas exige
+  además responsabilidad propia. La bandeja abre en lateral y consume el parámetro.
+- El editor conserva el desplazamiento interno al enfocar texto o barra de
+  formato. Sin foco, la rueda desplaza el expediente. Escape reduce el
+  workspace conservando borradores. El guardado es versionado y conserva
+  los cambios ante conflictos; las cargas pendientes bloquean el envío.
+- Estados de Quejas/Mis Quejas: usar primero `estado_color` del catálogo y la paleta
+  original de Badge; mapa histórico de `estados.ts` como fallback. No imponer los
+  colores de una maqueta ni cambiar los códigos guardados. Otros estados neutros
+  conservan el fondo `qms-neutral-soft` (gris ECA aclarado) y texto oscuro.
+- Plazos en ambas tablas/paneles: punto verde vigente, ámbar en alerta, rojo vencido;
+  gris completado/sin plazo. Texto sin fondo y fecha en el título. El color no
+  sustituye el texto ni altera el cálculo de `getQuejaDeadline`/`caseDeadline`.
+- Fila seleccionada: `ui-case-row` + `aria-selected`, fondo `qms-row-selected`
+  **#F0F4F7**, sin contorno añadido ni cambios de alto; persiste al retirar el puntero
+  y desaparece al cerrar. Enter/Espacio abren la fila sin interceptar controles hijos.
+- Adjuntos en `ListaAdjuntos layout="cards"`: superficie suave, sin marcos/separadores
+  interiores fuertes; iconos estáticos por formato, nombre/tamaño y acciones accesibles.
+  Separar evidencias del cliente y del análisis por su autor, sin descargar miniaturas
+  ni archivos al listar. Conservar permisos de eliminar/descargar/visualizar.
+- Marco redondeado y margen inferior del lienzo solo contraído; ampliado sin esa
+  franja. El documento conserva padding final para que el contenido no toque el borde.
+- En Quejas, el stepper permite consultar por clic Evaluación, Investigación,
+  Revisión de Calidad y Cierre **solo con el workspace expandido**, sin transición
+  ni escritura; "Volver a etapa actual" restaura las acciones. En el panel
+  contraído se conserva el indicador visual no interactivo de la etapa actual.
+  Al reducir o cambiar el folio se cierra la consulta. Nunca fingir registros
+  de etapas futuras ni permitir mutaciones desde una vista histórica.
+- Divulgación progresiva en ambos módulos y TODAS sus etapas: Recibido muestra
+  descripción truncada (3 líneas) y dos adjuntos del cliente; En Investigación
+  de Calidad muestra estado, responsable e instrucciones reales (no reciclar la
+  justificación de la evaluación como análisis); el CTA es «Ver estado de la
+  investigación →». Revisión GC presenta propuesta truncada
+  (3 líneas), dos archivos internos y CTA "Revisar propuesta completa →".
+  Los handlers existentes de Aprobar/Devolver/SACP NO se montan en la superficie
+  visible del contraído; permanecen intactos exclusivamente en la columna derecha
+  del ampliado. En Recibido el CTA «Revisar solicitud completa →» abre
+  la evaluación, sin botón «Tomar decisión». En Revisión GC el CTA dice
+  «Revisar propuesta completa →». En Resuelto, la persona autorizada ve
+  «Redactar y publicar respuesta →» para llegar al panel ampliado y seguir el
+  flujo existente de correo/publicación (sin publicar directamente).
+  Resuelto/Finalizado muestran únicamente los pasos de
+  `QuejaCierreResumen`; No Procede solo Solicitud y No procedencia. La respuesta
+  al cliente sigue disponible en Resuelto. En Mis Quejas contraído, Resolución
+  muestra el estado del borrador y su único botón azul abre el editor ampliado.
+  Análisis y Revisión de Calidad muestran la lectura de la etapa elegida.
+  Escape reduce el ampliado conservando el borrador. Desde el contraído devuelve
+  el foco a la fila si no hay edición pendiente. Los diálogos auxiliares cierran
+  primero, preservando la visita. Usar scroll inmediato y superficies opacas.
+- En Quejas → Resuelto/Finalizado, QuejaCierreResumen muestra tres tarjetas de
+  lectura (Solicitud, Análisis, Calidad); en No Procede usa solo dos (Solicitud
+  y No procedencia), sin fingir investigación ni aprobación GC. Los nodos
+  tienen fondo y anillo opacos para que la línea vertical no atraviese iconos.
+  Las tarjetas conservan línea discreta, nodos de 32 px,
+  cabeceras suaves y texto de 14 px. Contraído, las tarjetas mantienen
+  124 px desde 580 px útiles del lienzo y resumen de dos líneas. Expandido,
+  usan altura fluida basada en la ventana (124–212 px, 21dvh) para aprovechar
+  el espacio sin crear scroll innecesario; desde 700 px de ancho útil el
+  resumen puede mostrar tres líneas. En estrecho crecen según contenido. Cada tarjeta abre Modal
+  variant=document size=mail con navegación Anterior/Siguiente y acceso a
+  adjuntos reales. El artículo del visor usa todo el ancho interior útil y texto
+  de lectura de 16 px, como el patrón de Análisis, sin cambiar el modal.
+  No atribuir documentos internos sin asociación de etapa,
+  ni inventar autores/fechas. No modificar el timeline lateral ni las notas
+  del responsable solo para igualar una maqueta.
+- El diálogo centrado «Historial y notas» conserva el mismo tamaño en ambas
+  pestañas. Cada lista se desplaza dentro del diálogo. Historial usa una
+  cuadrícula centrada de líneas finas con Usuario, Fecha y Acción realizada.
+  Las filas miden 40 px y la hora usa el formato de 24 horas. El GET privado se
+  prepara al abrir el diálogo «Historial y notas» del folio y comparte petición y
+  caché de 30 s con Historial. Mientras llega, la pestaña puede mostrar el ingreso que la vista
+  ya tiene. El GET valida la sesión y el expediente por RLS y devuelve
+  movimientos en orden descendente. Usa eventos QMS, revisiones, reaperturas y
+  transiciones históricas vinculadas por folio, fecha y aviso del expediente.
+  Resuelve nombres bajo los permisos de la sesión. Notas conserva texto breve sin
+  título, orden descendente, reglas de escritura del rol y color por cuenta y
+  navegador. «Reabrir expediente» queda bajo el correo final en acciones.
+  «MI TRABAJO EN ESTE EXPEDIENTE», «Expediente anterior/siguiente» y
+  textos neutrales son los rótulos vigentes; no renombrar IDs.
+- En Evaluación, «Mis adjuntos» permite subir mediante el diálogo compartido.
+  Un archivo propio ya subido se puede vincular como oficio de apertura; para
+  No Procede o respuesta final se puede seleccionar un PDF válido del expediente.
+- Scroll principal nativo de ancho normal (`scrollbar-width: auto`), color/gutter
+  estable y capa compuesta `will-change: transform`; excluirlo de reglas globales
+  `::-webkit-scrollbar`. Análisis/Notas/Adjuntos usan data-case-scroll y
+  [will-change:transform], sin qms-compact-modal-scroll, backdrop-blur en overlays
+  o scroll-smooth en scrollports internos. En escritorio el lienzo central se
+  desplaza dentro de la cuadrícula fija. Móvil conserva la pila con un scroll
+  común. Ampliado sin velo sobre el fondo ya cubierto.
+- Visor privado: NO usar iframe externo, preconnect, enlace externo ni
+  autenticación directa contra drive.google.com. Los archivos Drive se consultan por
+  fetchDriveBlob → /api/drive/download, donde se verifica Bearer QMS, usuario
+  activo, rol, expediente, pertenencia y privacidad física de Drive. El navegador
+  recibe un Blob local con URL.createObjectURL y la revoca al cerrar/cambiar
+  de sesión o de documento. Archivos legacy Storage usan download autenticado
+  con el mismo usuario Supabase; nunca se abre URL firmada externa. Sin sesión
+  válida o si cambia la identidad, mostrar error y no conservar la vista.
+  Sin soporte de vista previa para un MIME, ofrecer Descargar, sin dar permisos
+  nuevos ni exponer service role. Para acortar la espera se precargan hasta dos
+  adjuntos Drive del expediente y se anticipa el documento al hover/focus; los
+  bytes ya autorizados se reutilizan en memoria hasta 45 segundos y un máximo
+  de 5 entradas. La caché se separa por usuario/rol y se limpia ante cambio de
+  identidad, rol o logout, nunca usa cookies Google, almacenamiento persistente
+  ni URLs públicas. La primera consulta puede demorar por verificaciones de
+  permisos/privacidad en la API; no prometer latencia en milisegundos.
 
-Envío público: el mismo form conserva campos, folio, progreso y reintentos durante la subida. Estados Pendiente/Subiendo/Adjuntado/No adjuntado por archivo; reintento usa el mismo envío. La confirmación publicada el 19 octubre usa encabezado compacto, folio y próximo paso en dos columnas desde sm, una columna móvil; evidencia se informa una sola vez. Distingue registro confirmado, espera del correo y disponibilidad del enlace. Aparece únicamente con todos los archivos adjuntados, finalización confirmada y operación terminada. Un archivo fallido o una finalización pendiente conserva el formulario para reintentar. Reintentar solo el enlace mantiene la tarjeta confirmada. No abre otra pestaña ni añade esperas visuales.
+Detalle y evidencia visual: [patrones](../visual-patterns.md),
+[panel](../quejas-panel-2026-10-13.md).
 
-El recibo local del 20 octubre sustituye esa distribución por la jerarquía del
-correo: cabecera blanca de marca, folio azul en línea, cuerpo de una columna y
-pie discreto, sin check circular ni recuadro interior. Conserva ancho y contrato
-de finalización/seguimiento. Sigue sin publicar; ver
-[formulario y evidencia visual](../formulario-publico-visual-2026-10-14.md).
+### Contrato de aceptación: triaje contextual y directorio
 
-Seguimiento: el enlace privado abre la consulta automáticamente. Sin él se muestran
-instrucciones y una opción secundaria para pegar el enlace completo, sin contraseña
-ni consecutivo manual. Mientras la configuración esté apagada/incompleta se informa
-que la consulta en línea no está habilitada. Verificación local del 16 octubre:
-74 comprobaciones en 1440/1280/375/320 px; no activa servicios remotos.
+- **Calidad / `/quejas`:** cada estado tiene una sola tarjeta compartida
+  `CaseTriageNextStep` en el bloque superior de `CaseTriageSummary`.
+  `getCaseTriageNextStep` define el título, la descripción breve, el icono,
+  el tono y la etiqueta (separados del código persistido y del catálogo):
+  - Recibido: «Evaluar procedencia» → «Revisar solicitud completa».
+  - En Investigación: «Seguimiento de caso» → «Ver avance del caso completo»,
+    mencionando al responsable real cuando se conoce.
+  - Pendiente de Revisión GC: «Revisión de Calidad» →
+    «Revisar propuesta completa».
+  - Resuelto, con permiso: «Preparar respuesta al cliente» →
+    «Redactar y publicar respuesta» (**solo abre**; publicar sigue en ampliado).
+  - Finalizado / No Procede: «Expediente cerrado» →
+    «Ver expediente de cierre completo».
+  - Estados desconocidos o sin permiso: CTA de consulta, jamás un permiso
+    implícito de publicación. Mantener el ciclo real y las tarjetas de cierre;
+    No Procede no debe inventar etapa de investigación ni aprobación.
+- **Responsable / `/mis-quejas`:** Sin borrador → «Redactar resolución»;
+  borrador con fecha → «Borrador guardado»; cambios locales →
+  «Cambios sin guardar»; devolución de Calidad → «Corrección requerida»
+  con alerta ámbar y motivo de dos líneas; también los estados de consulta
+  ofrecen «Siguiente paso» descriptivo. Cada CTA de edición amplía y enfoca
+  el **mismo** Tiptap. No añadir otro botón de editar bajo la observación
+  ni volver a insertar el editor en el contraído.
+- **Prueba visual obligatoria:** en todas las etapas, la tarjeta debe mostrar
+  icono, título claro, descripción `line-clamp-2` a 13px y CTA principal azul
+  con flecha. Fondo tonal suave, borde exterior fino **en los cuatro lados**,
+  sin raya vertical decorativa. Evitar tanto el vacío como el scroll largo:
+  extracto de tres líneas, hasta dos chips y contador; pie auxiliar fijo.
+- **Acciones y persistencia:** el CTA de la tarjeta nunca llama a
+  `guardarResolucionBorrador`, `enviarResolucionBorradorRevision`, aprobar,
+  devolver, derivar ni publicar. Toda acción de negocio permanece en el ampliado;
+  este conserva DOM/Tiptap, `visitId`, revisiones, borradores, permisos y datos.
+  Escape colapsa primero y los diálogos auxiliares se cierran antes; no añadir
+  autosave, consultas de red por expansión, `scroll-smooth` ni `backdrop-blur`.
+- **Usuarios:** conservar la tabla y sus columnas 24/14/13/19/18/12 %.
+  En Acciones, el botón «Editar» (lápiz, texto y flecha) reemplaza los tres puntos,
+  alineado con el encabezado. Conservar `UsuarioAccionesMenu`, su portal,
+  sus tres handlers, permisos y tarjetas móviles; no convertirlo en una acción
+  de edición automática ni crear scroll horizontal fuera de la tabla.
 
-Quejas (13 octubre): Modal variant=workspace abre a la derecha, 40vw y 100dvh; escritorio
-no es modal y deja la tabla operativa. Solo se recorta la ventana de la tabla, sin cambiar
-columnas ni filtros. Móvil y ampliado conservan modalidad nativa. Al cerrar/reabrir vuelve
-al lateral. Ciclo/estado/acción son sticky; no hay footer de lectura. Actividad conserva
-sheet de 420 px. El encabezado del workspace identifica **Folio** y consecutivo con
-peso semibold; sus iconos miden 20 px y Actividad usa texto azul sin fondo resaltado. La variante
-se limita al workspace sin agrandar los otros diálogos. Decisiones/revisión usan document XL (1040 px, 90dvh fijos), encabezado
-blanco, elección azul/roja inicial centrada que cede el espacio al editor; decisión
-en gris arriba a la derecha y guardado en el footer. Tres columnas desde
-1100 px útiles al ampliar. Quejas y Mis Quejas comparten CaseWorkspace, con ancho
-máximo de 1440 px y el mismo margen, fondo y laterales discretos. El centro es la única hoja de la lectura (superficie
-blanca con borde y sombra, secciones con líneas finas); las barras laterales de
-ciclo y acción no llevan tarjeta propia. El scrollport del expediente se promueve a
-capa compuesta (`will-change: transform`) con fondo opaco, queda excluido de las reglas
-`::-webkit-scrollbar` y usa la barra nativa `solid-color` de ancho normal y gutter
-estable, que Chromium actualiza en el
-compositor; los laterales sticky llevan capa propia para que su offset no dependa del
-hilo principal. Al ampliar a todo el ancho el diálogo no compone un velo sobre su fondo
-opaco. [Contrato actual](../quejas-panel-2026-10-13.md).
-La revisión local del 3 noviembre deja margen inferior del mismo fondo del lienzo
-solo sin ampliar (12px en móvil, 16px desde sm), con un marco de 1px y las mismas
-esquinas redondeadas arriba y abajo. El marco contiene el scrollport, sin montar
-otro editor al alternar de modo;
-los scrolls interiores de los modales usan 16px y puntas cuadradas, conservando
-la excepción nativa del scrollport principal. El resumen superior de resultado se
-retiró por petición del propietario: la lectura general comienza con Descripción,
-sin etiqueta Cliente encima. En Pendiente de Revisión GC se prioriza la propuesta
-y Solicitud y antecedentes queda desplegable; el ciclo va en horizontal. El ajuste
-local posterior del 11 noviembre integra Resolución en Mis Quejas. El refinamiento
-basado en la referencia HTML coloca primero la tarjeta amplia del editor;
-acción y devolución de Calidad pasan a la derecha. Notas queda en su propia tarjeta
-compacta bajo el contacto, con cantidad/última fecha y un diálogo centrado para
-leer/agregar. Adjuntar está en el encabezado, a la izquierda de Guardar/Editar, y los
-adjuntos se listan bajo el lienzo con `ListaAdjuntos layout="cards"`, también al
-editar; no hay sheet aparte. No hay otras secciones debajo del lienzo más allá de
-esos adjuntos, y abrir los paneles no añade consultas. En contraído la tarjeta de
-notas sigue disponible sin mostrar el contacto.
-El bloque de contexto se retiró: solo aparece la devolución amarilla cuando existe, sin espacio
-reservado en su ausencia. Conserva la columna
-central y aumenta el lienzo a 70dvh/720px, mínimo 420px. El envío se ofrece una sola vez
-en Acción actual, también en espacios estrechos. Si la investigación tiene devolución
-previa, el control se llama «Reenviar revisión a GC» y el mensaje de devolución no se
-muestra en ese contexto; un mensaje muy largo se resume en línea y abre modal «Ver más».
-Ver caso completo queda en Acción actual,
-encima del envío a GC, con el rojo institucional `qms-brand-red`; el hover invierte
-a fondo blanco y texto/icono/borde rojos. Guardar comparte fila con Asistencia y
-confirma un borrador remoto sin transicionar: azul con cambios, neutral/deshabilitado
-con check y Guardado tras confirmación. Investigación omite la descripción redundante. Ese único acceso
-abre Análisis como modal document/xl de hasta 1040px y 90dvh, igual que procedencia,
-sin ampliar el workspace. Ordena primero Observación de Calidad con Procede azul y
-después Descripción del cliente; el pie vuelve al editor. Resolución contiene el
-scroll con foco en texto/formato y lo cede al expediente al salir del editor,
-conservando su posición interna y ancho. El editor y su revisión
-no se recrean al consultar; adjuntos e historial comparten las lecturas existentes.
-[Contrato actual](../quejas-panel-2026-10-13.md#investigación-integrada-y-análisis-lateral--11-noviembre).
-RichTextEditor carga Tiptap lazy con toolbar accesible, listas dentro del padding y
-240 px mínimos. RichTextContent muestra plain literal y markdown con subconjunto
-seguro sin HTML/enlaces/imágenes. CaseRequestHeader conserva el mini desplegable
-nativo **Datos de la solicitud** debajo del encabezado del folio y fuera del lienzo,
-en ambas vistas. Cerrado muestra persona/tipo; al abrir ofrece correo, teléfono,
-recepción y tipo, con etiquetas y scroll de hasta 45dvh. Su apertura se reinicia solo
-al cambiar de expediente, sin remontar el documento. No existe una ranura de datos
-en el encabezado de Modal; se recupera la geometría lateral con su altura completa.
-La variante intermedia con datos inline fue descartada y su QA no certifica esta
-composición. La restauración conserva su evidencia fechada en
-`.performance/case-dropdown-20261019/`; no certifica el ajuste posterior de áreas.
+### Regresión de diseño y navegación
 
-Ajuste local del 5 de noviembre: en el modal de gestión de Quejas los datos de la
-solicitud pasan al lateral izquierdo como panel estático (`data-case-request`) y el avance
-del proceso a la línea horizontal superior (`data-case-top-cycle`) con la línea de progreso
-en el token azul del estado activo (`bg-qms-primary`). La disposición del staff no depende
-del modo expandido. El catálogo de áreas sale del expediente ampliado y se administra desde
-Configuración. Detalle: [panel y procesamiento](../quejas-panel-2026-10-13.md).
+- **Pruebas mínimas antes de integrar:** `npx tsc --noEmit`,
+  `npm run lint`, `node --test tests/quejas-progressive-disclosure.test.mjs
+  tests/quejas-panel-reference.test.mjs tests/mis-quejas-workspace.test.mjs
+  tests/quejas-stepper-consulta.test.mjs tests/usuarios-table-layout.test.mjs
+  tests/usuarios-acciones-menu.test.mjs`, `npm run build`,
+  `npm run check:structure` y `npm run check:visual`.
+  La automatización de referencia es
+  `.github/workflows/qms-workspace-verify.yml`. Una prueba de código correcta
+  no sustituye inspección visual y operativa en navegador autenticado.
 
-El layout de tres columnas amplía la columna de solicitud a 280 px para que los datos del
-solicitante tengan espacio suficiente sin romper los textos, reduce el padding izquierdo
-del contenedor para empujar esa caja hacia el borde sin aplastar la columna central, y
-restaura la columna central (Descripción) a su tamaño anterior.
+### Editor integrado, informe y compositor
 
-- `AreaQuejaControl` edita el área junto a Descripción con una lista de opciones
-directamente seleccionables en un solo popup, sin Select anidado ni Guardar selección.
-Elegir guarda el snapshot capturado de revisión/oficio/observación; elegir la misma
-área cancela sin escribir. Mis Quejas la presenta solo para lectura. Las opciones
-no se habilitan durante carga, fallo o guardado; el área histórica se conserva aunque
-ya no esté activa. La gestión del catálogo vive en Configuración (módulo `quejas`,
-tipo `area_afectada`); el expediente solo conserva el control de asignación.
-`AreaQuejaCatalogo` es compacto (448 px máximos), sin tarjeta gris; AreaCatalogoPicker
-despliega las áreas con tres puntos al final de cada fila. Editar/Eliminar o Restaurar
-aparecen solo al abrir sus acciones, sobre el snapshot de esa fila aunque otra esté
-seleccionada. El popup usa top layer y scroll local; Escape cierra primero acciones
-y luego lista, devolviendo foco sin cerrar el expediente. Añadir para
-admin/Calidad reales; Editar, Eliminar y Restaurar solo para admin real. Eliminar
-requiere confirmación y desactiva la opción; Restaurar la reactiva, sin DELETE ni
-reescritura de expedientes históricos. Seleccionar en este catálogo no asigna la
-queja. El servicio
-quejaAreaCatalogService actualiza una propiedad por operación y compara el snapshot
-de valor/activo, con RLS vigente; un conflicto no se reintenta con valores nuevos.
-Administrar el catálogo no asigna el área de la queja. Oficio se escribe en su etapa de
-decisión/resolución; Observaciones unifica el compositor superior y seguimiento de
-Actividad, conservando el texto histórico. RegistroQuejaGC es una utilidad histórica
-sin montaje actual; no atribuirle la lectura activa de Mis Quejas. Límite editor 10.000.
+- El editor de resolución mantiene `h-[clamp(360px,calc(100dvh-110px),700px)]`,
+  una barra Tiptap, pie fijo y scroll propio. Asistencia a la derecha, separada
+  de Expandir/Contraer. Solo Expandir explícito altera altura hacia arriba;
+  Editar después de guardar reabre normal con `resolutionOverlay=null`.
+  Guardar azul incluso disabled, no autoguardar ni montar segundo editor.
+  Los límites de escritura y guardado están en [flujos](modulos-y-flujos.md).
+- Modal de informe `variant="report"`: 94vw/1450px por 94dvh, encabezado fijo,
+  barra compacta y una región desplazable; `QuejaInformeHoja.module.css`
+  no se aplica a otros editores. `height="content"` es opcional para otros
+  documentos. Word/editor Century Gothic títulos y Arial cuerpo, PDF Helvetica;
+  colores de informe en informeDesign.ts (#2A61B0, #1A1718, #E6E5E5).
+  A4 visual sin página fantasma; PDF independiente, sin truncar.
+- Respuesta al cliente: Para y oficio en misma fila, asunto en línea,
+  adjuntos fijos y único scroll de textarea `data-response-message-scroll`.
+  Cuadrícula minmax(0,1fr)/auto; no agregar scroll exterior, editor ficticio
+  ni otro selector. Ver [flujos](modulos-y-flujos.md).
+- RichTextEditor lazy, toolbar accesible, listas dentro del padding,
+  mínimo 240 px en su variante base. RichTextContent mantiene plain literal
+  y Markdown seguro sin interpretar HTML/enlaces/imágenes. No inferir formato.
+- `CaseRequestHeader`: desplegable nativo Datos de la solicitud en cabecera
+  del folio; persona/tipo, correo/teléfono/recepción, scroll hasta 45dvh.
+  Se reinicia por expediente sin remontar documento; no abrir otra ranura.
+- Área afectada: selección directa en Evaluación, sin Select anidado ni
+  botón de guardado adicional. No habilitar durante carga, error o guardado.
+  Gestión en Configuración; catálogo compacto 448 px, acciones por fila en
+  popup top layer, Escape por nivel y foco restaurado. Desactivar/restaurar,
+  no borrar históricos; autorización real y CAS.
 
-Refinamiento local del 19 octubre, posterior al despliegue: el ciclo visible se adapta
-al trabajo. Calidad muestra evaluación/revisión/cierre y espera al responsable durante
-investigación; Mis Quejas muestra asignación/investigación/propuesta enviada. Deriva del
-estado vigente, no inventa aprobaciones ni cambia IDs, permisos o plazos. Las pestañas
-del responsable y Tiptap pertenecen a la misma hoja, sin tarjetas anidadas. Este ajuste
-visual no se ha publicado en Vercel.
+## Usuarios: tabla, modales y roles
 
-El refinamiento posterior de Folio/Actividad y selección/gestión de áreas del
-19 octubre también sigue local. QA prevista en `.performance/case-areas-20261019/`,
-pendiente de verificación; los resultados anteriores mantienen fecha y alcance.
+Nunca mostrar éxito ficticio ni inventar estado 2FA. Usuarios evita
+repetir el título «Gestión de accesos» sobre un encabezado «Usuarios» existente
+y usa un único lienzo con pestañas y «Nuevo usuario» en la cabecera,
+filtros en la banda siguiente, tabla y paginación debajo; Roles comparte el
+mismo lienzo sin contenedores anidados. Se conserva paginación en cliente,
+scroll vertical interno y tarjetas móviles sin scroll horizontal. Ambos modales usan
+`Modal` `variant="document" size="mail" height="fill"` (896 px / 90dvh),
+con cabecera, scroll único y pie fijo. Crear mantiene una vista con «Información del usuario» y «Acceso al sistema»;
+  tras el alta muestra el resultado del envío y permite reenviar bajo autorización.
+  **Con correo activado no muestra la contraseña**; si se desactivó expresamente
+  el envío, la muestra una única vez al admin para entrega manual y la descarta
+  al cerrar el modal.
+Editar conserva pestañas «Detalles del perfil» y «Seguridad y acceso», avatar,
+y zona de peligro con confirmación. FormData permanece montado al cambiar de tab.
+La Seguridad vigente genera/restablece
+acceso desde `UsuarioSeguridadAcceso`; no recuperar el antiguo editor
+de contraseña administrada por PATCH ni abrir otro modal. Ver
+[sesión y permisos](sesion-y-permisos.md).
 
-La referencia nueva del 12 octubre sustituye la restauración del 10: sin pestañas,
-lectura de solicitud separada de Actividad; editor en diálogo de decisión.
-Ver [contrato y evidencia](../quejas-panel-y-correo-2026-10-12.md). Escape desde un
-contenteditable cierra solo su diálogo salvo en la decisión de procedencia, que exige
-X; Cancelar vuelve a elegir sin perder borrador. Los selects conservan su manejo nativo.
+La tabla sigue el orden Usuario, Rol, Estado,
+Seguridad (2FA), Último acceso y Acciones, sin columna «Alta». Mientras no haya
+política de acceso nueva, Seguridad muestra «Sin cambios». Para cuentas con política,
+muestra su método o pendiente; no inventar factores ni habilitar filtros ficticios.
+Estado usa punto y fondo discretos semánticos; Rol conserva el badge existente.
+La tabla de Usuarios aprovecha el espacio: Usuario 24 %, Rol 14 %, Estado 13 %,
+Seguridad (2FA) 19 %, Último acceso 18 % y Acciones 12 % en escritorio.
+Las columnas posteriores a Usuario comienzan más a la izquierda, sin quitar
+espacio a nombres/correos ni alterar los datos, el orden o la versión móvil.
+Acciones conserva la última columna y su proporción: el encabezado se
+alinea con el comienzo del botón «Editar» con icono lápiz y chevron, en lugar
+de los tres puntos. Su clic despliega las mismas tres acciones; no llama
+a edición directamente. En escritorio, respetar `colgroup`
+`24/14/13/19/18/12` con tabla fija y scroll local; encabezado
+`<TableHeaderCell className="pl-0 text-left">Acciones</TableHeaderCell>` y
+celda de acción `pl-0`, sin el antiguo truco de `w-[18px] justify-end`.
+El menú mantiene Actualizar perfil,
+Restablecer contraseña (abre Seguridad del mismo modal de Gestionar usuario;
+NO correo de recuperación ni un segundo diálogo), y Desactivar/Restaurar
+cuenta según estado, con confirmación
+y prohibición de desactivar la cuenta propia. No duplicar mutaciones ni guards.
+El menú se muestra en portal fuera del scroll de tabla/tarjetas, para no
+recortarse al final; soporta clic externo, Escape, flechas y foco accesible.
+Reutilizar también en móvil. Fuente: app/usuarios/components/
+UsuarioAccionesMenu.tsx y tests/usuarios-acciones-menu.test.mjs.
+Roles muestra ayuda en un portal flotante con z-index independiente
+(por encima de la tabla y encabezado), Escape y X para cerrar, sin
+contenedores details recortados; matriz con scroll propio.
+
+Tablas de Quejas/Mis Quejas: la especificación del 16 noviembre conserva la
+altura original de cada fila, colores y densidad. El seguimiento por etapas y
+sus pruebas está en [tablas y bandeja](../quejas-bandeja-etapas-2026-11-16.md).
+Las fechas de ingreso se presentan con `formatFechaIngreso` en DD/MM/AAAA y
+zona Costa Rica; no modificar el instante almacenado por un cambio visual.
+
+## Agenda y visor
+
+- Agenda compacta (máximo 320px) abre en calendario con semana D/L/M/X/J/V/S,
+  flechas de mes anterior/siguiente, selección circular y puntos por fecha_limite
+  real y prioridad. El RPC añade fecha_limite civil CR (null si no existe), caché
+  de contrato v3, cinco minutos. «Ver agenda» muestra cinco tarjetas y «Volver al
+  calendario» regresa. Si hay más de cinco, «Ver más» aparece dentro del scroll y
+  despliega ahí los restantes recibidos, sin navegar a otro panel. Navegar meses no consulta
+  otras agendas ni inventa eventos: puntos solo para los registros recibidos.
+  Cada apertura restablece mes actual y selección. Migración 20261111175442 aplicada;
+  confirmar publicación por SHA de producción. [Contrato](../agenda-hoy-2026-11-11.md).
+- Calendario de Agenda: mes a la izquierda y las dos flechas juntas a la derecha,
+  con área 32px e iconos 20px. Grillas gap-1, días 32px y puntos de 4px. Pie de una
+  sola fila: check circular azul + «X tareas hoy» y «Ver agenda» como acción textual azul, ambos text-xs; «hoy» en color de texto normal, sin CTA
+  relleno ni elementos apilados. Check y «Ver agenda» usan qms-primary; el día
+  seleccionado usa fondo qms-primary y texto blanco, sin cambiar la marca global.
+- Visor: marco estable, permiso verificado y Blob local revocable, nunca
+  iframe Drive externo. Indicador tras 180 ms; transición breve 150 ms con
+  movimiento reducido. Precarga/caché privada en [datos y rendimiento](datos-y-rendimiento.md).

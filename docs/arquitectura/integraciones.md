@@ -1,31 +1,12 @@
 # API e integraciones: Usuarios, formularios públicos, Drive e IA
 
-10 noviembre: Edge v17 y Apps Script v5 activos con despertador ciudadano desde
-pg_net. Autorización Google/Drive, recibo HMAC accepted y ACK sent del final pendiente
-con Word verificados. [Protocolo y estado](../quejas-formulario-correo-inmediato-2026-11-10.md).
+Contrato de integraciones vigente; estado de despliegue y evidencias fechadas en
+[verificación y pendientes](verificacion-y-pendientes.md). No confundir el
+código de GitHub con las versiones activas de Edge o Apps Script.
 
-10 noviembre, Edge v16 verificada: las plantillas predeterminadas de recepción/final
-añaden `gc@eca.or.cr`; el correo editado conserva su contenido exacto. Mantiene el
-adjunto físico final obligatorio y seguimiento solo en el acuse. Sin actualización
-adicional de Apps Script, permisos, activadores o reenvíos. La respuesta de No Procede
-usa el mismo snapshot de correo mediante publicación transaccional.
-[Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
+## Seguimiento privado
 
-10 noviembre, ajuste del correo final activado: Apps Script adjunta obligatoriamente
-el Word/PDF publicado y deja el envío pendiente si no puede obtenerlo. Edge v15 emite
-el enlace de seguimiento solo en el acuse de recibo; el correo final no depende del
-acceso que vence a los 30 días. HEAD del emisor y bundle remoto leídos y verificados;
-sin cambios de permisos/manifiesto, activadores, DB o reenvíos. [Contrato y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
-
-10 noviembre: el correo final puede usar asunto/mensaje de acompañamiento editados
-y aprobados por Calidad. `quejas-mail-queue/message.ts` consume el snapshot opcional
-del claim v4; no sustituye la respuesta pública ni el informe. La Edge conserva
-HMAC, tracking y adjunto único publicado. Limita el reclamo a dos mensajes para el
-sobre de 64 KiB; la autorización v2 valida por separado envíos ciudadanos/internos.
-El emisor Apps Script conserva su HTML, permisos, diario y ACK. No hay reenvío ni
-cambio de huellas históricas. [Contrato y activación](../quejas-revision-y-respuesta-2026-11-04.md).
-
-19 octubre, **activo en producción**: `/q/seguimiento` es una página estática genérica. Los POST públicos
+`/q/seguimiento` es una página estática genérica. Los POST públicos
 exactos `/api/public/seguimiento` y `/api/public/seguimiento/documento` requieren una
 capacidad firmada y DB vigente, con cuota/no-store y guard BotID Basic antes
 del backend. El enlace autoriza al portador; no verifica identidad/control del correo.
@@ -35,19 +16,12 @@ sin renovar por consultas o reaperturas. No anticipar una fecha fija al recibir.
 GET privado `/api/quejas/seguimiento`
 exige staff; POST exige admin y relación formulario/consecutivo. No hay búsqueda pública
 por folio. Web/Edge comparten clave dedicada; Apps Script solo recibe el origen permitido.
-La configuración incompleta con el flag activo devuelve error, nunca false para usar
-el flujo antiguo. El correo envía el enlace, con descarga del oficio desde el seguimiento;
-no amplía permisos Drive del emisor. Web publicada y promovida:
-`dpl_2kk83rkgKrip1MwK8NNbMcw2d2MF`,
-[dominio canónico](https://mi-dashboard-iota.vercel.app). DB, Edge y Apps Script
-compatibles quedaron activados; los dos cortes SQL se verificaron después del cliente.
-La regla WAF existente conserva 90 solicitudes/IP/600 s y añade ambos POST de
-seguimiento. Las seis comprobaciones HTTP de producción verificaron disponibilidad,
-guards y rechazo público sin verificación; no certifican una consulta real con
-capacidad ni la recepción del botón en un buzón. No se reenviaron eventos históricos.
-[Fuentes y evidencia de activación](../quejas-seguimiento-y-publicacion-2026-10-16.md).
+La configuración incompleta con el flag activo devuelve error, nunca false para usar el flujo antiguo.
 
-> Contratos de código revisados el 8 de octubre de 2026; el inventario general conserva el snapshot remoto del 7 de octubre, con la ampliación pública indicada abajo. El estado de producción se registra por separado en [la guía del formulario público](../seguridad-formularios-publicos.md).
+El enlace se envía solo en el acuse; el correo final contiene el documento
+físico y no depende del seguimiento. La UI no ofrece descarga del informe.
+WAF de seguimiento: 90 solicitudes/IP/600 s según corte documentado.
+[Contrato](../quejas-seguimiento-y-publicacion-2026-10-16.md).
 
 | Método y ruta | Contrato y autoridad |
 | --- | --- |
@@ -62,7 +36,7 @@ capacidad ni la recepción del botón en un buzón. No se reenviaron eventos his
 | POST `/api/public/quejas` | BotID Basic, JSON ciudadano estricto, cuotas PostgreSQL, creación idempotente y capacidad firmada |
 | POST `/api/drive/upload-public` | BotID Basic y capacidad firmada; reserva DB antes de Drive, vínculo exacto formulario/envío/queja y archivo validado |
 | POST `/api/public/quejas/finalizar` | BotID Basic y capacidad vigente; finalización y notificación idempotentes |
-| GET `/api/drive/download?id=...` | Bearer, RLS del expediente, pertenencia y privacidad verificadas en Drive, stream y filename RFC 5987. Con `vista=drive` devuelve la URL privada del visor |
+| GET `/api/drive/download?id=...` | Bearer, RLS del expediente, pertenencia y privacidad verificadas en Drive, stream y filename RFC 5987. El cliente usa Blob local revocable; no iframe ni URL de visor externo |
 | DELETE `/api/drive/delete` | Bearer, permiso según origen del adjunto, Drive primero y fila después |
 | POST `/api/ai/analizar` | Bearer activo, staff o responsable de queja; módulo/entidad/tipo auto-custom |
 | POST `/api/ai/test` | Admin, un proveedor/modelo por solicitud; ejecuta test en servidor |
@@ -92,7 +66,7 @@ publicado y el cierre de accesos legacy están aplicados desde el 9 octubre;
 el seguimiento y sus cortes internos se activaron el 19. Consultar
 [la evidencia pública](../seguridad-formularios-publicos.md).
 
-### Transporte y editor de Usuarios
+### Transporte de Usuarios y acceso
 
 `lib/services/apiClient.ts` comparte transporte HTTP con Usuarios e IA. Lee el token
 local para enviarlo; la API verifica identidad activa/rol de nuevo. Las lecturas usan
@@ -102,22 +76,54 @@ DELETE delega en `lib/server/usuarioDeletion.ts` y el RPC service-only
 `qms_delete_user_account`. [Borrado recuperable](../usuarios-eliminacion-2026-11-17.md):
 desactiva antes de Auth, omite Auth null, confirma ausencia por ID y retira el perfil
 con `eliminado_en`, sin romper FK ni borrar historial. GET/PATCH excluyen retirados.
-DB 20261117212024 aplicada; no confundir con activar invitaciones/MFA.
+Ver contrato de borrado en [sesión y permisos](sesion-y-permisos.md).
 
-El [acceso inicial del 17 noviembre](../usuarios-acceso-inicial-mfa-2026-11-17.md)
-añade `/api/auth/acceso`, `/api/usuarios/acceso` y el canje público exacto
-`/api/public/acceso/invitacion`. Edge `qms-access-mailer` y Apps Script `Acceso.gs`
-usan HMAC de propósito exclusivo y recibo firmado; no sustituyen ni activan la cola
-de Quejas. Backend activado con autorización el 17 noviembre: migración
-20261117214855, Edge v2 y Apps Script v7. El emisor parte de v6 y conserva los demás
-archivos/funciones. La credencial de máquina se valida por RPC service-only contra
-Supabase; no basta un claim sin firma. Cliente/API locales, invitaciones loopback
-solo en desarrollo y con marca firmada. No se publicó Vercel.
+- `/api/auth/acceso`, `/api/usuarios/acceso` y canje POST público exacto
+  `/api/public/acceso/invitacion` conservan guards de sesión y autorización.
+  El mailer usa HMAC de propósito exclusivo y recibo firmado, con identidad
+  de máquina validada por RPC service-only; no basta un claim sin firma.
+  Loopback solo en desarrollo con marca firmada.
 Los modales y confirmación de estado comparten `useOperationLock` para impedir
 doble envío antes del siguiente render. No cerrar ni regenerar el borrador durante
 una escritura. Un fallo de red conserva datos/contraseña; un fallo del listado tras
 guardar se anuncia aparte. El guard real admin deshabilita la lectura de la página
 antes de estar inicializado; no convierte una simulación de vista en autorización.
+
+## Correo de acceso: transporte y plantillas
+
+- **Emisor y destinos separados:** Next API → Supabase Edge
+  `qms-access-mailer` **v5 ACTIVE** → Google Apps Script → MailApp;
+  `qms_private.mail_wake_settings.access_endpoint` almacena el destino
+  exclusivo de acceso, separado de `endpoint` para Quejas. El RPC
+  `qms_access_mail_transport()` devuelve `coalesce(access_endpoint,endpoint)`.
+  Esta separación y la activación se verificaron en Supabase el 23 noviembre.
+  No sobrescribir el transporte de Quejas ni exponer secretos. El correo de
+  Quejas utiliza `delivery_request`; acceso usa `access_delivery_request`.
+- **Apps Script actual:** fuentes `integration/apps-script/quejas-mail/Codigo.gs`
+  y `Acceso.gs`; archivo íntegro para copiar/publicar:
+  `docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs`. La entrada
+  `doPost` enruta acceso al manejador versionado
+  `qmsAccessMailPostV20261121_`; el autodiagnóstico
+  `qmsAccessMailSelfTest()` debe indicar `valid:true`, recepción firmada,
+  `handlerVersion:'2026-11-21-v2'`, y rechazo simulado
+  `invalid_access_payload` **sin enviar correo**. Un diagnóstico previo
+  basado en `String(función)` causó falsos indicios de código duplicado:
+  no inferir duplicados sin comprobar el proyecto real.
+  El usuario confirmó correos de acceso reales recibidos en Gmail, pero
+  **no** presupone que la última plantilla de GitHub esté publicada en GAS.
+  Tras cambiar `.gs`, actualizar la **versión de implementación web existente
+  /exec** en Google; Vercel no lo hace por sí solo. No crear ni rotar URL sin
+  necesidad y no confundir éxito simulado con recepción real.
+- **Correo de acceso (diseño aprobado):** título «Tu acceso a ECA-QMS»,
+  sin subtítulo redundante «Acceso inicial al sistema». Mostrar **Usuario**
+  de manera visible y **Contraseña temporal** en un único bloque compacto
+  de `max-width:340px`, fondo suave, borde fino uniforme y tipografía
+  monoespaciada. Texto inferior solo «No compartás esta contraseña.»,
+  botón «Iniciar sesión» a `/login`, y vigencia «3 días hábiles» sin
+  «(lunes a viernes)». Evitar líneas azules verticales `border-left`,
+  tarjetas enormes anidadas y ayudas repetitivas; conservar el logo, la
+  cabecera y las plantillas de invitación/OTP/Quejas. El HTML usa estilos
+  inline y caracteres escapados por compatibilidad con Gmail/Outlook.
 
 ### Subsistema de IA
 
@@ -171,15 +177,53 @@ orquestación y revisión de las escrituras. No importar SDK servidor en esas vi
 
 `.env*`, `.next`, node_modules y .vercel están ignorados. Configurar también el entorno del despliegue; la presencia de .env.local no demuestra configuración de producción. No agregar secretos al repo. La infraestructura externa Apps Script/Drive no se verifica solo por compilar.
 
-### Correo ciudadano Quejas (activo desde 13 octubre)
+## Correo ciudadano de Quejas y avisos
 
-Despertador **local del 3 noviembre, sin activar**: `public/quejas/finalizar`
-programa `wakeQuejaMail` tras commit con `after()`. Payload vacío y HMAC exclusivo;
-Apps Script despierta su poll directo con el mismo lease/diario. Variables de
-servidor `QUEJAS_MAIL_WAKE_ENABLED`, `QUEJAS_MAIL_WAKE_URL`, `QUEJAS_MAIL_WAKE_SECRET`;
-script `QMS_MAIL_WAKE_SECRET`. No reactiva el worker legacy ni sustituye el trigger
-de cinco minutos. El transporte HTTP acotado se comparte en `quejaMailTransport.ts`.
-Activación y límites en [su contrato](../quejas-claridad-y-acuse-2026-11-03.md).
+- El claim v4 transporta el snapshot opcional de asunto/mensaje aprobados por
+  Calidad; no sustituye informe ni respuesta pública. Máximo dos mensajes para
+  el sobre de 64 KiB; autorización v2 separa ciudadanos/internos. La plantilla
+  editada conserva contenido exacto; los contactos institucionales se mantienen
+  en las plantillas correspondientes. No reescribir huellas históricas.
+
+- Plantillas PR #65: tratamiento de usted, «Solicitud» en asunto, mensajes
+  breves sin repetir el folio del encabezado, enlace personal y pie
+  «Notificación automática · QMS ECA». El cuerpo manual conserva edición.
+  Fuentes: `lib/utils/quejaCorreo.ts`, `supabase/functions/quejas-mail-queue/message.ts`
+  e `integration/apps-script/quejas-mail/Codigo.gs`. Revisar y sincronizar
+  también el archivo de instalación GAS completo antes de publicar; no
+  afirmar despliegue Edge/GAS ni recepción real por un merge de GitHub.
+- Dos eventos ciudadanos: recibido y final (No Procede o publicación de respuesta).
+  Inicio de investigación queda histórico; reapertura/Finalizado no duplican envíos.
+  DB encola, Edge autoriza/transporta y Apps Script envía/confirma mediante HMAC,
+  leases, nonce y ACK. No depende de Vercel ni de un worker web.
+- Despertador por evento activo según evidencia del **10 noviembre**: `pg_net`
+  después del commit, Edge **v17** y Apps Script **v5**, sin revertir el negocio si
+  falla el despertar. Migraciones `20261110203610` y `20261110212506` aplicadas;
+  settings/Vault privados y RPC de máquina solo service_role, sin claves en logs.
+- Claim urgente de hasta dos correos ciudadanos, respetando finalización del
+  formulario, orden y deduplicación; el poll de cinco minutos conserva recuperación
+  y avisos internos. Envío por evento no garantiza latencia, cuota ni entrega en inbox.
+- Antes de intentar el final, autorizar y verificar el único documento publicado,
+  descargarlo y adjuntarlo físicamente. No aceptar un final nuevo sin adjunto.
+  Diario mínimo del emisor sin destinatarios/contenido; no reenviar sent ni reintentar
+  incertidumbre a ciegas. Una recuperación histórica autorizada no habilita reenvíos en masa.
+- Avisos internos: recepción a Calidad, evaluación a un día, asignación al responsable,
+  investigación a cinco días a Calidad y a tres a ambos, vencimientos pertinentes.
+  Destinatarios activos con rol real calidad; admin no sustituye ese rol. Conservar
+  corte temporal, calendario y pertinencia antes del envío; límite de claim cero no
+  reserva correo y permite procesar campanas.
+- Sonido: primera lectura silenciosa; IDs nuevos y reclamo IndexedDB atómico entre
+  pestañas, con sesión/preferencias vigentes. Preparar MP3/contexto por gesto antes
+  de reclamar; recuperar descarga fallida. Si falla almacenamiento, omitir audio
+  automático. No prometer sonido sin permiso/interacción previa del navegador.
+- Calendario admin en Configuración: días ISO/feriados confirmados, motivo y versión
+  capturada, publicación con `qms_publish_calendar`. Afecta etapas nuevas, no abiertas;
+  conflictos conservan borrador/revisión. SLA legacy no publica calendarios QMS ni
+  justifica editar genéricamente reglas 3/15. No inventar feriados institucionales.
+
+Referencias: [correo por evento](../quejas-formulario-correo-inmediato-2026-11-10.md),
+[protocolo](../seguridad-correos-quejas.md), [avisos internos](../avisos-internos-quejas-2026-10-14.md),
+[audio](../notificaciones-audio-2026-10-14.md) y [calendario](../calendario-qms-2026-10-15.md).
 
 Desde el 20 octubre, el contrato ciudadano tiene dos eventos: `recibido` y `final`
 (No Procede o resolución de Calidad). DB aplicó `20261020163142`, conservando los
@@ -198,8 +242,7 @@ conversor Drive. Ver [contratos/evidencia](../correo-quejas-directo-2026-10-13.m
 [límites](../seguridad-correos-quejas.md).
 
 El endpoint `/api/quejas/correos` quedó de compatibilidad, apagado por defecto y requiere
-transporte legacy explícito. El `/exec` anterior fue archivado. Actividad de Quejas
-consulta únicamente el estado de la cola; no activa envíos ni permite conciliarlos.
+transporte legacy explícito. El `/exec` anterior fue archivado. La consulta de estado no activa envíos. El reintento explícito autorizado reprograma una fila elegible del outbox, sin reenviar sent/uncertain a ciegas.
 
 Desde el 14 octubre el mismo transporte incorpora [avisos internos](../avisos-internos-quejas-2026-10-14.md).
 Edge usó claim v2 (0–5); desde el 19 octubre selecciona v3 cuando seguimiento está
@@ -211,9 +254,12 @@ del diario prevalece ante ACK perdido; no reinterpretar sent/uncertain como omit
 ciudadano no amplía ese contrato. El endpoint legacy sigue ciudadano; no acepta
 los nuevos tipos. Sin nuevos secretos, scopes, triggers ni dependencia de Vercel.
 
-La ampliación del 19 sí incorpora la firma dedicada de seguimiento en web/Edge y
-el origen permitido en Apps Script. `Codigo.gs` guardado se comparó con el remoto,
-`QMS_MAIL_ENABLED=true` quedó guardado y se conservó el único activador de cinco
-minutos, sin poll manual ni nueva publicación del `/exec` archivado. El envío
-continúa DB → Edge → Apps Script, sin worker de Vercel. Evidencia sanitizada:
-[`public_tracking_activation_20261019.json`](../../supabase/backups/public_tracking_activation_20261019.json).
+- El diagnóstico de correo usa códigos públicos; «Reintentar envío» reprograma
+  la misma fila del outbox si el fallo fue previo a MailApp. El poll existente
+  conserva autorización, reserva y deduplicación. La migración local
+  `20261120224355` corrige el acceso de máquina a la regla privada de autorización.
+
+El poll de cinco minutos y el despertador DB `pg_net` son el contrato activo;
+no restaurar el despertador web experimental del 3 noviembre ni el worker
+legacy. Conservar firma de seguimiento, origen permitido, scopes y activador.
+Evidencia histórica y versiones en [verificación](verificacion-y-pendientes.md).

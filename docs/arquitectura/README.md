@@ -6,74 +6,17 @@ Las rutas de código de estas tablas parten de la raíz del proyecto.
 
 ## Ruta rápida
 
-[Borrado recuperable de Usuarios — 17 noviembre](../usuarios-eliminacion-2026-11-17.md):
-retira Auth y directorio sin borrar responsables/autores históricos. RPC service-only,
-intento durable y marca `eliminado_en`; DB aplicada, cliente/API local.
-
-[Acceso inicial de Usuarios — 17 noviembre](../usuarios-acceso-inicial-mfa-2026-11-17.md):
-invitación, contraseña temporal, TOTP nativo y verificación propia por correo,
-API/guard/RLS y restablecimiento. Código integrado localmente; DB/Edge/Apps Script
-y publicación web pendientes, sin forzar políticas a usuarios anteriores.
-
-[Agenda de hoy](../agenda-hoy-2026-11-11.md): qms_get_agenda_hoy y puente privado
-de eventos autorizados; useAgendaHoy con caché de cinco minutos y widget controlado
-por Header. Quejas/Auditorías, sin nueva suscripción Realtime. Alias /dashboard → /.
-
-[Consecutivos anuales — 11 noviembre](../consecutivos-anuales-2026-11-11.md)
-ubica el contador por módulo/año de Costa Rica, `qms_private.next_annual_folio`, los
-triggers de alta de SACP/Auditorías/Riesgos y la compatibilidad con RPC anteriores.
-DB aplicada, históricos intactos; modales sin reserva previa en el cliente local.
-Quejas mantiene `AAAA-NNN`; otros módulos conservan sus prefijos. Calendario adicional aplazado.
-
-[Asignación y seguimiento de investigación de Quejas](../quejas-asignacion-investigacion-2026-11-14.md):
-Procede con instrucciones y oficio opcionales, transición atómica, vistas de Calidad
-sin repetir evaluación, con justificación antes del responsable y sin avisos de borrador.
-
-[Limpieza compartida de Quejas/Mis Quejas](../quejas-panel-2026-10-13.md)
-ubica la selección persistente de fila con fondo #F0F4F7 (`ui-case-row`, `qms-row-selected`), contacto solo al ampliar,
-responsable antes de acciones, área junto a Descripción y adjuntos sin marcos
-anidados. `components/quejas/AreaAfectada.tsx` comparte el área de solo lectura
-sin consultar el catálogo. Cambios web locales; el contraste interno del visor
-de Google permanece pendiente por su aislamiento de origen.
-Quejas/Mis Quejas vuelven a leer `estado_color` para el fondo de sus estados;
-`components/quejas/QuejaPlazoIndicator.tsx` comparte punto y texto del plazo en
-tablas y paneles. Conserva fechas y colores originales del sistema.
-
-[Formulario, evidencias y correo por evento — 10 noviembre](../quejas-formulario-correo-inmediato-2026-11-10.md)
-ubica validación nativa y límites compartidos, finalización tras adjuntos,
-seguimiento sin copiar enlaces y RPC privados del despertador. DB/Edge aplicadas;
-Apps Script v5 activo por evento y final pendiente enviado con Word; web local sin publicar.
-
-[Revisión GC y respuesta al cliente](../quejas-revision-y-respuesta-2026-11-04.md)
-ubica acciones directas, devolución con motivo, informe editable y selector Word/PDF,
-borrador persistente y publicación final atómica. También documenta el adjunto físico
-del emisor, conservando No Procede y los contratos del cliente anterior.
-Su ajuste del 10 noviembre ubica `QuejaCorreoEditor.tsx` y `lib/utils/quejaCorreo.ts`:
-correo de acompañamiento personalizado con asunto/mensaje editables y
-selección/subida/visualización del documento arriba y atajo Editar informe que conserva
-el correo. No Procede comparte esa ventana y publica desde ella, sin un segundo
-editor/modal de justificación; conserva borrador CAS y fundamentos en el informe.
-Guardado/publicación v2, puentes de rechazo y claim v4 conservan el correo aprobado;
-DB y Edge están activadas, mientras el cliente web sigue local.
-La misma referencia ubica `CaseCompletionDate`/`CaseFinalMailStatus` en
-`QuejaExpedientePanels.tsx` y la actualización acotada del ACK en
-`lib/queries/useQuejaSeguimiento.ts`: cierre visible y estado del correo final.
-También registra el ajuste activo en Apps Script/Edge que reserva seguimiento
-al acuse y exige el informe físico en el correo final; Edge v16 añade el contacto de
-Calidad a las plantillas ciudadanas predeterminadas. El mismo contrato ubica el marco
-contraído compartido y Enviar a Revisión GC en las acciones de Mis Quejas.
-
-Revisión local del 3 noviembre de Quejas: [claridad, sonido y acuse por evento](../quejas-claridad-y-acuse-2026-11-03.md).
-Ubica la presentación del expediente y el despertador de correo, activado el
-10 noviembre según el contrato enlazado arriba. El resumen superior de resultado se retiró por petición
-del propietario. [Resolución y revisión GC](../quejas-resolucion-y-revision-gc-2026-11-03.md)
-ubica la edición compacta y la propuesta prioritaria durante revisión; los demás
-estados mantienen Descripción al principio.
-
-[Informe editable y Word](../quejas-informe-editable-word-2026-11-03.md) ubica
-Generar expediente, plantilla Tiptap, API y almacenamiento por versiones. Editor y
-exportación verificados en local; almacenamiento remoto activado el 3 noviembre,
-con publicación web pendiente.
+- [Sesión y permisos](sesion-y-permisos.md): acceso temporal, 2FA, login,
+  administración de Usuarios y borrado recuperable.
+- [Módulos y flujos](modulos-y-flujos.md): inventario, Quejas/Mis Quejas,
+  informe, publicación, formulario y seguimiento.
+- [Visual](visual.md): contrato aprobado de workspace, triaje, Usuarios y
+  superficies públicas.
+- [Datos y rendimiento](datos-y-rendimiento.md): queries, agenda, campana,
+  caché y visor.
+- [Integraciones](integraciones.md) y [base de datos](base-de-datos.md):
+  API, Drive, correo, migraciones y motor QMS.
+- [Verificación](verificacion-y-pendientes.md): estado, pruebas y pendientes.
 
 1. Busca el comportamiento en **Dónde editar** y abre primero el archivo de entrada indicado.
 2. Sigue sus imports hasta la fuente canónica; no edites una copia local si ya existe un registro, token o helper compartido.
@@ -121,44 +64,64 @@ adáptalas explícitamente en la frontera.
 
 ## Dónde editar
 
-| Quiero cambiar… | Abrir primero | Acompañar con |
+Capas y fuentes únicas, con los consumidores que deben revisarse juntos. Las
+rutas de código parten de la raíz del proyecto.
+
+| Qué se modifica | Fuente canónica | Consumidores / contrato |
 | --- | --- | --- |
-| Nombre, ruta o grupo de un módulo | [lib/constants/modulos.ts](../../lib/constants/modulos.ts) | [components/Sidebar.tsx](../../components/Sidebar.tsx), [components/Header.tsx](../../components/Header.tsx), [lib/permisos.ts](../../lib/permisos.ts); registro no concede acceso |
-| Roles, etiquetas y colores | [lib/constants/roles.ts](../../lib/constants/roles.ts) | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts) valida roles asignables; guards/API/DB siguen siendo la autoridad de acceso |
-| Color de un estado o prioridad | [lib/constants/estados.ts](../../lib/constants/estados.ts) | [lib/constants/badges.ts](../../lib/constants/badges.ts), [components/ui/Badge.tsx](../../components/ui/Badge.tsx) y [app/styles/theme.css](../../app/styles/theme.css) |
-| Paleta, fuente, tamaños, radios o sombras | [app/styles/theme.css](../../app/styles/theme.css) | [app/styles/components.css](../../app/styles/components.css) y [app/globals.css](../../app/globals.css); mantener tokens, sin colores repetidos por página |
-| Botón, input, select, tabla o paginación | [components/ui/](../../components/ui/)<Componente>.tsx | [components/ui/AGENTS.md](../../components/ui/AGENTS.md) y docs/visual-patterns.md |
-| Modal, foco, Escape o drawer móvil | [components/Modal.tsx](../../components/Modal.tsx) | [components/AuthenticatedLayout.tsx](../../components/AuthenticatedLayout.tsx) y [hooks/useMobileNavigation.ts](../../hooks/useMobileNavigation.ts) |
+| Rutas, nombres, grupos e IDs de módulo | lib/constants/modulos.ts | [components/Sidebar.tsx](../../components/Sidebar.tsx), [components/Header.tsx](../../components/Header.tsx), [lib/permisos.ts](../../lib/permisos.ts); registro no concede acceso |
+| Roles operativos | lib/constants/roles.ts | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts) valida roles asignables; guards/API/DB siguen siendo la autoridad de acceso |
+| Colores de badges/estados | lib/constants/badges.ts y estados.ts; Quejas prioriza estado_color del catálogo | [lib/constants/badges.ts](../../lib/constants/badges.ts), [components/ui/Badge.tsx](../../components/ui/Badge.tsx) y [app/styles/theme.css](../../app/styles/theme.css) |
+| Marca institucional (menú y login) | components/EmpresaLogo.tsx con isotipo ECA local; claves independientes en lib/constants/marca.ts e identidad.ts; editores en app/configuracion/components/IdentidadSettings.tsx | [lib/constants/marca.ts](../../lib/constants/marca.ts), [lib/queries/useLogoEmpresa.ts](../../lib/queries/useLogoEmpresa.ts), [app/api/configuracion/logo/route.ts](../../app/api/configuracion/logo/route.ts) y [editores de Configuración](../../app/configuracion/components/); bucket público branding, recorte cuadrado en cliente y sin máscara circular al mostrarlo |
+| Colores y tipografía | app/styles/theme.css (@theme) | [app/styles/components.css](../../app/styles/components.css) y [app/globals.css](../../app/globals.css); mantener tokens, sin colores repetidos por página |
+| Recetas y utilidades visuales | app/styles/components.css y app/globals.css | — |
+| Controles, modales y cargas | components/ui/ y components/Modal.tsx | [components/ui/AGENTS.md](../../components/ui/AGENTS.md) y docs/visual-patterns.md; entrada: [components/ui/](../../components/ui/)<Componente>.tsx; [components/AuthenticatedLayout.tsx](../../components/AuthenticatedLayout.tsx) y [hooks/useMobileNavigation.ts](../../hooks/useMobileNavigation.ts); entrada: [components/Modal.tsx](../../components/Modal.tsx) |
+| Páginas y editores | app/<modulo>/page.tsx y sus components/ | — |
+| Workspace y ciclo de Quejas/Mis Quejas | app/quejas/components/QuejaExpedientePanels.tsx y quejaExpedienteModel.ts; paneles de cada rol | QuejaExpedientePanels.tsx, quejaExpedienteModel.ts, ResponsablePicker.tsx, AreaQuejaControl.tsx y lib/queries/useQuejaSeguimiento.ts; observaciones en useQuejaComentarios.ts; [contrato del 13 octubre](../quejas-panel-2026-10-13.md) |
+| Tarjetas de «Siguiente paso» y triaje compacto | app/quejas/components/CaseTriageSummary.tsx (CaseTriageSummary, CaseTriageNextStep, CaseTriageExcerpt, CaseTriageAttachments); metadatos por etapa en quejaExpedienteModel.ts; integración en QuejaDetalleModal.tsx y QuejaColaboradorPanel.tsx | — |
+| Borrador guardado de resolución | lib/queries/useQuejaResolucionDraft.ts; guardarResolucionBorrador/enviarResolucionBorradorRevision en quejaWorkflowService.ts; [contrato](../mis-quejas-borrador-resolucion-2026-11-11.md) | — |
+| Asignación de investigación de Calidad | QuejaInvestigacionAsignacion.tsx, useQuejaInvestigationAssignment.ts, iniciarInvestigacionQueja en quejaWorkflowService.ts; migración 20261115041345_quejas_investigacion_asignacion.sql | — |
+| Ciclo de trabajo en Mis Quejas | app/mis-quejas/components/MisQuejasEtapas.tsx y etapasResponsable.ts; QuejaColaboradorPanel.tsx; lectura por expediente en useQuejaAsignada.ts | Buscar QuejaColaboradorPanel.tsx y useEntityRequestGuard; no cambiar filtro de propietario |
+| Historial y notas en ambos módulos | components/quejas/QuejaNotasPanel.tsx y QuejaHistorial.tsx; hooks/useQuejaNotas.ts; useQuejaHistorial.ts y GET /api/quejas/historial | — |
+| Mis adjuntos en Evaluación y Resolución | app/mis-quejas/components/QuejaAdjuntosInvestigacion.tsx; autor y vínculos de oficio/devolución en etapasResponsable.ts, selección de oficio en QuejaDetalleModal.tsx y de PDF en QuejaRespuestaClienteModal.tsx | — |
+| Mi perfil / seguridad personal / foto | components/perfil/MiPerfilModal.tsx (contraseña, generador, mostrar/copiar, datos personales), lib/services/accessClient.ts y lib/services/passwordGenerator.ts; lib/queries/useFotoPerfil.ts y app/api/perfil/avatar/route.ts; bucket privado qms-avatars en la migración 20261117223249, preparada para activar | — |
+| Área, adjuntos y visor compartidos | components/quejas/AreaAfectada.tsx, ListaAdjuntos.tsx y AdjuntoPreviewModal.tsx; AreaQuejaControl.tsx para edición | AreaQuejaCatalogo.tsx dentro de CaseRequestHeader y AreaCatalogoPicker.tsx para el desplegable con acciones por fila; [quejaAreaCatalogService.ts](../../lib/services/quejaAreaCatalogService.ts) para renombrar/activar con snapshot; altas por guardarAreaQueja y lecturas en useCatalogos.ts; no reescribir áreas históricas; entrada: [AreaQuejaControl.tsx](../../app/quejas/components/AreaQuejaControl.tsx); [lib/server/drive.ts](../../lib/server/drive.ts), [lib/constants/adjuntos.ts](../../lib/constants/adjuntos.ts), [components/quejas/](../../components/quejas/) y formulario público; entrada: [app/api/drive/](../../app/api/drive/) |
+| Plazo como semáforo | components/quejas/QuejaPlazoIndicator.tsx; lib/utils/quejaDeadline.ts y caseDeadline para el cálculo existente | — |
+| Informe editable y Word/PDF | QuejaInformeModal.tsx; lib/queries/useQuejaInforme.ts; lib/services/quejaInformeService.ts; lib/utils/quejaInforme*.ts | — |
+| PDF oficial automático por versión | QuejaInformeModal.tsx; subirAdjuntoQueja; informePdfFilename en lib/utils/quejaInforme.ts; quejaAdjuntosKey | — |
+| Soportes de devolución GC | QuejaInvestigacionResumen.tsx; lib/queries/useQuejaDevoluciones.ts; RPC qms_review_resolution_with_attachments; queja_gc_revision_adjuntos | — |
+| Navegación, lectura y resumen comunes | CaseWorkspaceNavigation y CaseReadOnlyHeader en QuejaExpedientePanels.tsx; QuejaCierreResumen.tsx para ambos roles; RegistroDesdeEnlace.tsx consume `?abrir=<id>` | — |
+| Tabla de Usuarios y acciones | app/usuarios/page.tsx (colgroup, encabezados, filas y tarjetas móviles); app/usuarios/components/UsuarioAccionesMenu.tsx (menú/portal/foco) | — |
+| Alta/gestión de Usuarios y acceso | components/usuarios/UsuarioFormModal.tsx (crear/editar, contraseña integrada y pestañas), app/usuarios/page.tsx (callbacks); PasswordModal.tsx y ResetPasswordModal.tsx solo legacy, sin montaje en Usuarios | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts), ultimoAcceso.ts, [components/usuarios/](../../components/usuarios/) y [lib/services/usuariosService.ts](../../lib/services/usuariosService.ts), [lib/services/apiClient.ts](../../lib/services/apiClient.ts), useUsuarios.ts |
+| Acceso temporal de nuevas altas / 2FA opcional e invitaciones legacy | components/usuarios/UsuarioAccesoInicial.tsx, UsuarioFormModal.tsx, UsuarioSeguridadAcceso.tsx y UsuarioAccessBadges.tsx; app/acceso/page.tsx para 2FA, vencimiento y canje legacy; lib/auth.ts, lib/store/auth-store.ts, lib/authRoute.ts, components/Header.tsx y components/perfil/MiPerfilModal.tsx; lib/server/accessIdentity.ts y accessService.ts; migraciones 20261117214855, 20261121190202 y 20261123153151; [sesión y permisos](sesion-y-permisos.md) | lib/server/accessIdentity.ts, accessService.ts; lib/services/accessClient.ts; lib/types/access.ts; migración 20261117214855; Edge qms-access-mailer y Acceso.gs |
+| Eliminar cuenta conservando expedientes | DELETE app/api/usuarios/route.ts; lib/server/usuarioDeletion.ts; RPC service-only qms_delete_user_account; migración aplicada 20261117212024 y [contrato](../usuarios-eliminacion-2026-11-17.md) | — |
+| Correo de acompañamiento y publicación | QuejaRespuestaClienteModal.tsx, QuejaCorreoEditor.tsx; lib/utils/quejaCorreo.ts; useQuejaRespuestaCliente.ts y quejaWorkflowService.ts | — |
+| Lecturas/claves/TTL/paginación | lib/queries/, queryKeys.ts, cacheConfig.ts, pagination.ts | app/<modulo>/page.tsx, queryKeys.ts, pagination.ts, [lib/utils/postgrest.ts](../../lib/utils/postgrest.ts); entrada: lib/queries/use<Modulo>.ts; [lib/providers/QueryProvider.tsx](../../lib/providers/QueryProvider.tsx); revisar overrides del hook; entrada: [lib/queries/cacheConfig.ts](../../lib/queries/cacheConfig.ts); Sidebar y claves de la vista; context.signal al transporte; entrada: [hooks/useHoverPrefetch.ts](../../hooks/useHoverPrefetch.ts), [hooks/useRealtimeSubscription.ts](../../hooks/useRealtimeSubscription.ts) |
+| Calendario laboral y feriados QMS | app/configuracion/components/CalendarioSettings.tsx; lib/queries/useQmsCalendar.ts; lib/services/qmsCalendarService.ts; lib/utils/qmsCalendar.ts | useQmsCalendar.ts, qmsCalendarService.ts, lib/utils/qmsCalendar.ts; RPC qms_publish_calendar con CAS/auditoría, sin recalcular etapas abiertas |
+| Agenda de hoy | lib/queries/useAgendaHoy.ts; components/ui/AgendaHoyWidget.tsx; components/Header.tsx; RPC qms_get_agenda_hoy, migración 20261111172515; [contrato](../agenda-hoy-2026-11-11.md) | — |
+| Workflow/mutaciones | lib/services/; guards privilegiados en lib/server/ | [lib/constants/quejas.ts](../../lib/constants/quejas.ts), [lib/queries/useQuejas.ts](../../lib/queries/useQuejas.ts), paneles de Quejas y wrappers QMS en DB |
+| Consecutivos anuales | qms_private.next_annual_folio; folios_quejas_anuales / qms_private.folios_anuales; migración 20261111151343 y [contrato](../consecutivos-anuales-2026-11-11.md) | — |
+| Lectura de justificación/análisis de Quejas | lib/utils/quejaContent.ts y lib/utils/richText.ts | Compartido por QuejaDetalleModal y QuejaColaboradorPanel; oculta solo la copia plain exacta del motor, sin modificar DB ni inferir formato |
+| Formulario ciudadano y borrador/reintentos | app/q/[token]/page.tsx; app/q/components/usePublicQuejaForm.ts; lib/services/publicQuejasClient.ts | [presentación del 14 octubre](../formulario-publico-visual-2026-10-14.md), [validador cliente/API](../../lib/utils/publicQuejaValidation.ts), [app/q/components/usePublicQuejaForm.ts](../../app/q/components/usePublicQuejaForm.ts), [lib/server/publicForms/](../../lib/server/publicForms/), [app/api/public/](../../app/api/public/), instrumentation-client.ts y next.config.ts |
+| Validación de bytes de evidencias públicas | lib/server/publicForms/files.ts; límites y tipos en lib/constants/publicForms.ts | — |
+| Validación ciudadana idéntica en cliente/API | lib/utils/publicQuejaValidation.ts; códigos de campo cerrados, sin diagnósticos remotos; nombre solo letras y teléfono solo dígitos/signos, con límites aplicados en cliente y API, sin textos de ayuda permanentes | — |
+| Seguimiento privado y publicación final | app/q/seguimiento/; lib/server/publicTracking.ts; app/quejas/components/QuejaPublicacionPanel.tsx | — |
+| Correo: plantillas, identidad, entregas y reintentos | supabase/functions/quejas-mail-queue/, qms-access-mailer/ y _shared/emailIdentity.ts; qmsMailHeader_/qmsMailFrame_ en integration/apps-script/quejas-mail/Codigo.gs y acceso en Acceso.gs; copia completa en docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs; app/api/quejas/correos/reintentar/route.ts | message.ts canónico; diseño HTML en qmsMailHtml_ de integration/apps-script/quejas-mail/Codigo.gs; productor/claims en migración 20261020163142; [estado operativo](../correo-quejas-directo-2026-10-13.md) y [dos correos](../quejas-dos-correos-y-reintentos-2026-10-20.md) |
+| DB aplicada y evidencia | supabase/migrations/ y supabase/backups/ | Ver esquema efectivo y skills de Supabase; [scripts/verificar-auditoria-db.sql](../../scripts/verificar-auditoria-db.sql) no altera estado final |
 | Login o error de autofill | [app/login/page.tsx](../../app/login/page.tsx) | [app/globals.css](../../app/globals.css): ui-login-field; [lib/auth.ts](../../lib/auth.ts) para ejecución |
 | Orden de restauración/login/logout | [lib/store/auth-store.ts](../../lib/store/auth-store.ts) | [lib/auth.ts](../../lib/auth.ts), [lib/authRoute.ts](../../lib/authRoute.ts), [lib/authLogoutIntent.ts](../../lib/authLogoutIntent.ts), [components/AuthShell.tsx](../../components/AuthShell.tsx) |
 | Presentación al validar sesión | [components/SessionScreen.tsx](../../components/SessionScreen.tsx) | [components/AuthShell.tsx](../../components/AuthShell.tsx); fondo neutral antes de autorizar, sin módulos anticipados |
 | Encabezado, usuario y notificaciones | [components/Header.tsx](../../components/Header.tsx), [components/header/](../../components/header/) | [lib/services/notificacionService.ts](../../lib/services/notificacionService.ts), [lib/queries/useNotificaciones.ts](../../lib/queries/useNotificaciones.ts) |
 | Dashboard activo | [app/page.tsx](../../app/page.tsx) | [lib/queries/useDashboard.ts](../../lib/queries/useDashboard.ts), [components/dashboard/QuejasSummary.tsx](../../components/dashboard/QuejasSummary.tsx) y DashboardLoading.tsx |
-| Buscar, filtrar o paginar un listado | lib/queries/use<Modulo>.ts | app/<modulo>/page.tsx, queryKeys.ts, pagination.ts, [lib/utils/postgrest.ts](../../lib/utils/postgrest.ts) |
-| TTL o reintentos de lecturas | [lib/queries/cacheConfig.ts](../../lib/queries/cacheConfig.ts) | [lib/providers/QueryProvider.tsx](../../lib/providers/QueryProvider.tsx); revisar overrides del hook |
-| Precarga del menú o reconexión | [hooks/useHoverPrefetch.ts](../../hooks/useHoverPrefetch.ts), [hooks/useRealtimeSubscription.ts](../../hooks/useRealtimeSubscription.ts) | Sidebar y claves de la vista; context.signal al transporte |
 | Alta operativa | app/<modulo>/components/Nueva*.tsx | [lib/utils/operationalFormValidation.ts](../../lib/utils/operationalFormValidation.ts); mantener doble envío y borrador protegidos |
-| Workflow/estado/responsable de Quejas | [lib/services/quejaWorkflowService.ts](../../lib/services/quejaWorkflowService.ts) | [lib/constants/quejas.ts](../../lib/constants/quejas.ts), [lib/queries/useQuejas.ts](../../lib/queries/useQuejas.ts), paneles de Quejas y wrappers QMS en DB |
-| Mis Quejas, análisis o resolución | [app/mis-quejas/](../../app/mis-quejas/) | Buscar QuejaColaboradorPanel.tsx y useEntityRequestGuard; no cambiar filtro de propietario |
-| Lectura de análisis y copia histórica de procedencia | [lib/utils/quejaContent.ts](../../lib/utils/quejaContent.ts) | Compartido por QuejaDetalleModal y QuejaColaboradorPanel; oculta solo la copia plain exacta del motor, sin modificar DB ni inferir formato |
-| Panel de expediente, actividad y plazos de Quejas | [app/quejas/components/QuejaDetalleModal.tsx](../../app/quejas/components/QuejaDetalleModal.tsx) | QuejaExpedientePanels.tsx, quejaExpedienteModel.ts, ResponsablePicker.tsx, AreaQuejaControl.tsx y lib/queries/useQuejaSeguimiento.ts; observaciones en useQuejaComentarios.ts; [contrato del 13 octubre](../quejas-panel-2026-10-13.md) |
-| Selección y catálogo de áreas afectadas | [AreaQuejaControl.tsx](../../app/quejas/components/AreaQuejaControl.tsx) | AreaQuejaCatalogo.tsx dentro de CaseRequestHeader y AreaCatalogoPicker.tsx para el desplegable con acciones por fila; [quejaAreaCatalogService.ts](../../lib/services/quejaAreaCatalogService.ts) para renombrar/activar con snapshot; altas por guardarAreaQueja y lecturas en useCatalogos.ts; no reescribir áreas históricas |
-| Correos automáticos de Quejas sin Vercel | [supabase/functions/quejas-mail-queue/](../../supabase/functions/quejas-mail-queue/) | message.ts canónico; diseño HTML en qmsMailHtml_ de integration/apps-script/quejas-mail/Codigo.gs; productor/claims en migración 20261020163142; [estado operativo](../correo-quejas-directo-2026-10-13.md) y [dos correos](../quejas-dos-correos-y-reintentos-2026-10-20.md) |
 | Destinatarios y recordatorios internos de Quejas | [migración de avisos](../../supabase/migrations/20261015011028_quejas_internal_notices.sql) | qms_process_notices/claim v2/authorize; [contrato y activación](../avisos-internos-quejas-2026-10-14.md); no cambiar snapshots/plazos para avisar |
 | Sonido de campana entre pestañas | [lib/hooks/useNotificationSound.ts](../../lib/hooks/useNotificationSound.ts) | [lib/utils/notificationSound.ts](../../lib/utils/notificationSound.ts), sonidosNotificacion.ts; IDs/fechas locales, sin contenido ni credenciales |
 | Secciones y editores de Configuración | [app/configuracion/page.tsx](../../app/configuracion/page.tsx) | [app/configuracion/components/](../../app/configuracion/components/); [lib/services/configuracionService.ts](../../lib/services/configuracionService.ts) |
-| Días laborables y feriados del motor QMS | [app/configuracion/components/CalendarioSettings.tsx](../../app/configuracion/components/CalendarioSettings.tsx) | useQmsCalendar.ts, qmsCalendarService.ts, lib/utils/qmsCalendar.ts; RPC qms_publish_calendar con CAS/auditoría, sin recalcular etapas abiertas |
-| CRUD/reset/último acceso de Usuarios | [app/api/usuarios/route.ts](../../app/api/usuarios/route.ts) | [lib/server/usuarioInput.ts](../../lib/server/usuarioInput.ts), ultimoAcceso.ts, [components/usuarios/](../../components/usuarios/) y [lib/services/usuariosService.ts](../../lib/services/usuariosService.ts), [lib/services/apiClient.ts](../../lib/services/apiClient.ts), useUsuarios.ts |
-| Alta con invitación / verificación / reset 2FA (backend activo, web local) | app/acceso/page.tsx; app/api/auth/acceso/route.ts; app/api/public/acceso/invitacion/route.ts; app/api/usuarios/acceso/route.ts | lib/server/accessIdentity.ts, accessService.ts; lib/services/accessClient.ts; lib/types/access.ts; migración 20261117214855; Edge qms-access-mailer y Acceso.gs |
 | Proveedores/modelos/routing de IA | [components/configuracion/AIProvidersManager.tsx](../../components/configuracion/AIProvidersManager.tsx) y [sus editores](../../components/configuracion/ia/) | [lib/services/aiConfigService.ts](../../lib/services/aiConfigService.ts), [app/api/configuracion/ia/route.ts](../../app/api/configuracion/ia/route.ts), [lib/server/aiSettings.ts](../../lib/server/aiSettings.ts) |
 | Ejecución/fallback/memoria de análisis IA | [app/api/ai/analizar/route.ts](../../app/api/ai/analizar/route.ts) | [lib/ai/](../../lib/ai/) y [lib/server/deadline.ts](../../lib/server/deadline.ts); conservar presupuesto y límites |
-| Formulario público, contrato API o protección de bots | [app/q/[token]/page.tsx](../../app/q/[token]/page.tsx) y [lib/services/publicQuejasClient.ts](../../lib/services/publicQuejasClient.ts) | [presentación del 14 octubre](../formulario-publico-visual-2026-10-14.md), [validador cliente/API](../../lib/utils/publicQuejaValidation.ts), [app/q/components/usePublicQuejaForm.ts](../../app/q/components/usePublicQuejaForm.ts), [lib/server/publicForms/](../../lib/server/publicForms/), [app/api/public/](../../app/api/public/), instrumentation-client.ts y next.config.ts |
-| Subir/descargar/eliminar evidencias | [app/api/drive/](../../app/api/drive/) | [lib/server/drive.ts](../../lib/server/drive.ts), [lib/constants/adjuntos.ts](../../lib/constants/adjuntos.ts), [components/quejas/](../../components/quejas/) y formulario público |
 | Zona horaria | [lib/timeZone.ts](../../lib/timeZone.ts) | [app/api/configuracion/zona-horaria/route.ts](../../app/api/configuracion/zona-horaria/route.ts); motor QMS conserva su calendario |
-| Logo institucional del menú | [components/EmpresaLogo.tsx](../../components/EmpresaLogo.tsx) | [lib/constants/marca.ts](../../lib/constants/marca.ts), [lib/queries/useLogoEmpresa.ts](../../lib/queries/useLogoEmpresa.ts), [app/api/configuracion/logo/route.ts](../../app/api/configuracion/logo/route.ts) y [editores de Configuración](../../app/configuracion/components/); bucket público branding, recorte cuadrado en cliente y sin máscara circular al mostrarlo |
 | Imprimir un informe | [app/reporteria/page.tsx](../../app/reporteria/page.tsx) | [app/globals.css](../../app/globals.css): reglas de impresión; lotes limitados a 5000 filas; [observaciones de Quejas](../reporteria-observaciones-2026-10-13.md) en generador/consultas.ts |
 | Validación de API o headers falsificados | [lib/server/auth.ts](../../lib/server/auth.ts), proxy.ts | [lib/server/apiAuthentication.ts](../../lib/server/apiAuthentication.ts); cada método registrado conserva su guard |
-| Política, tabla, función o índice | [supabase/migrations/](../../supabase/migrations/) | Ver esquema efectivo y skills de Supabase; [scripts/verificar-auditoria-db.sql](../../scripts/verificar-auditoria-db.sql) no altera estado final |
 
 Cuando una tabla apunta a una carpeta, usar rg --files en esa carpeta y rg con el
 nombre de la función o propiedad. Seguir imports activos antes de usar un archivo similar.

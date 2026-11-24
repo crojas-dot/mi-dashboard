@@ -1,5 +1,49 @@
 # Base de datos: esquema, políticas y motor QMS
 
+## Contratos aplicados y límites vigentes
+
+- Proyecto Supabase: fykhrrpeoehwqznccmfp. MCP/OAuth es configuración del
+  agente. Consultar esquema, policies, grants y RPC efectivos antes de
+  editar; los inventarios fechados siguientes no son una auditoría nueva.
+- Acceso: `20261117214855` (base MFA), `20261121190202` (temporal),
+  `20261123153151_acceso_temporal_tres_dias_habiles_20261123.sql`
+  aplicada: `qms_private.three_business_days_after` cuenta lunes a viernes
+  en America/Costa_Rica y conserva hora, sin añadir feriados institucionales.
+  `temporary_password_issued_at` / `temporary_password_expires_at` en
+  `qms_private.access_policies`. `access_ready`, `access_summary`,
+  `qms_temporary_access_command`, `qms_access_command` y trigger de clave
+  comprueban vigencia, sesión posterior a emisión, activo y 2FA. Nuevas
+  tablas protegidas deben incorporar `qms_access_allowed()` además de
+  autorización propia. No migrar masivamente cuentas legacy.
+- Destinos de correo separados: `qms_private.mail_wake_settings.access_endpoint`
+  y `endpoint`; RPC `qms_access_mail_transport()` usa
+  `coalesce(access_endpoint,endpoint)`. No sobrescribir Quejas.
+- Seguridad aplicada: 20261006232152, 20261008011901, 20261008012121;
+  estas dos últimas sustituyen políticas amplias de 13 tablas y cierran
+  bypass SACP. Gateway público 20261008224037 y compatibilidad Drive
+  20261009031934. Corte de seguimiento 20261015223440 y workflow publicado
+  antes de cerrar EXECUTE legacy. No reabrir acceso público/legacy.
+- `ai_*` cerrado a Data API cliente incluso admin; guardar con revisión/xmin,
+  clave vacía preserva secreto y consumo; conflicto 409 sin reintento forzado.
+- Drive primero y fila después; reserva de eliminación antes de Drive,
+  publicación atómica de oficio/respuesta; no eliminar documento publicado
+  ni liberar reserva incierta. El límite interno de archivo es 4 MiB.
+- Motor QMS/calendario: publicar con `qms_publish_calendar`, CAS, motivo
+  y auditoría; afecta etapas nuevas y no las abiertas. No usar SLA legacy
+  para publicar reglas ni inventar feriados. Los 3/15 días corresponden al
+  snapshot; devolución/reasignación no reinician plazos.
+- Despertador `pg_net` y recuperación cada cinco minutos, sin pg_cron;
+  migraciones 20261110203610 / 20261110212506 aplicadas. Autorización
+  privada de máquina: 20261120224355 estaba documentada como local;
+  verificar si se aplicó antes de asumirlo.
+- Avatar (20261117223249), autoría de notas e índices preparados no se
+  deben activar sin autorización y comprobación remota. No ejecutar dumps,
+  seeds ni SQL legacy como migración.
+- PR #64 y #65 no modificaron DB. El informe opcional para Felicitación
+  sigue pendiente de cambios coordinados y pruebas, no de una excepción UI.
+
+## Inventario y migraciones documentadas
+
 17 noviembre, aplicada: `20261117212024_usuarios_eliminacion_con_trazabilidad`
 añade `usuarios.eliminado_en`, intento privado de baja y RPC service-only.
 Conserva las FK de responsables/autores, historial y datos de expediente; no ejecuta
@@ -11,7 +55,7 @@ Seis tablas privadas sin grants directos, RPC exclusivamente service role,
 52 policies restrictivas públicas y pre-request de acceso incompleto. Storage
 conserva su policy efectiva, incorporando el guard en los helpers existentes.
 Sin backfill: las dos cuentas activas anteriores conservan su acceso. Backend
-integrado con Edge v2/Apps Script v7; cliente/API local, sin publicación Vercel.
+integrado originalmente con Edge v2/Apps Script v7; contrato actual y estado posterior en integraciones/verificación.
 [Contrato y evidencia](../usuarios-acceso-inicial-mfa-2026-11-17.md).
 
 12 noviembre, **sin aplicar**: `20261112054513_quejas_notas_investigacion` añade
@@ -30,7 +74,7 @@ y enviar con revisión/versión explícitas. Guardar no actualiza Queja ni publi
 el cambio de estado/responsable limpia el borrador, preservando la propuesta enviada.
 48 comprobaciones PostgreSQL aisladas; esquema/grants/guards sin usuario y asesores
 remotos verificados, sin cambios en sus hallazgos existentes ni datos de negocio.
-[Contrato y evidencia](../mis-quejas-borrador-resolucion-2026-11-11.md). Cliente web local.
+[Contrato y evidencia](../mis-quejas-borrador-resolucion-2026-11-11.md). Evidencia del cliente web en la fecha indicada; ver corte vigente.
 
 11 noviembre, aplicada: `20261111184056_agenda_hoy_recibidas_y_proximas` incorpora
 novedades accionables del día y ventana de dos días hábiles, excluyendo vencidas y
@@ -68,7 +112,7 @@ la Edge compatible. RLS/grants y avisos de seguridad antes/después verificados.
 inmutable y borradores internos con CAS; aprobación sin publicación y publicación
 atómica a Finalizado. Puentes invoker, implementación privada y RLS de lectura staff.
 [Contrato, compatibilidad y evidencia](../quejas-revision-y-respuesta-2026-11-04.md).
-El cliente nuevo sigue local, sin despliegue web.
+La referencia histórica no certifica un despliegue web posterior.
 
 19 octubre, **activado y verificado** en `fykhrrpeoehwqznccmfp`:
 `20261015223440_quejas_public_tracking.sql` está aplicada y registrada; agrega
@@ -199,7 +243,7 @@ Las tres vistas tienen `security_invoker=true` y aplican los permisos del llamad
 
 ## Motor de etapas
 
-Esta capa se aplicó en la migración remota `etapas_versionadas`. **Existe y ejecuta triggers aunque la UI todavía use flujos legacy.**
+Esta capa se aplicó en la migración remota `etapas_versionadas`. Existe y ejecuta triggers; Quejas/Mis Quejas/Dashboard/Reportería consumen los plazos persistidos. El editor SLA conserva su función legacy.
 
 - `qms_stages` define etapas de proceso con eventos de inicio/fin. Etapas de quejas actuales: evaluación (`Recibido`) e investigación (`En Investigación`).
 - `qms_publish_stage` y `qms_publish_calendar` solo admin autenticado, con advisory lock, `p_expected` y conflicto SQLSTATE 40001. Agregan nuevas versiones y auditoría en `qms_config_audit`, no reemplazan silenciosamente la historia.
@@ -232,7 +276,7 @@ El SLA visual por antigüedad, el editor sla_config y los widgets que usan fecha
 
 - Desde `20261111151343`, los cinco generadores usan `qms_private.next_annual_folio` con la fecha de la transacción en Costa Rica. Quejas conserva su única tabla `folios_quejas_anuales(anio,ultimo)`; otros módulos usan `qms_private.folios_anuales(modulo,anio,ultimo)`, sin acceso cliente.
 - UPSERT por módulo/año: mínimo tres dígitos (`AAAA-001`), crece a 1000 sin truncar y el nuevo año comienza en 001 salvo histórico ya existente. No requiere reset manual ni cron. Los prefijos SACP-/AUD-/RIESGO-/DOC- se conservan; ningún folio previo se reescribe.
-- SACP/Auditorías/Riesgos aceptan código manual o asignan automáticamente dentro del INSERT mediante `a_qms_annual_folio`. RPC previos conservan ACL para el cliente publicado; la eliminación de la reserva previa en esos modales sigue local. Documentos usa `codigo_doc`; su generador anual no tiene consumidor.
+- SACP/Auditorías/Riesgos aceptan código manual o asignan automáticamente dentro del INSERT mediante `a_qms_annual_folio`. RPC previos conservan ACL para el cliente publicado; ver estado de los modales sin reserva previa en verificación. Documentos usa `codigo_doc`; su generador anual no tiene consumidor.
 - `siguiente_folio_queja()` y las secuencias anteriores quedan cerrados al cliente, sin consumidores vigentes ni reset de valores históricos. Los RPC de creación de Quejas mantienen sus guards y revisión del contrato.
 - No generar un folio de queja adicional en frontend antes de `crear_queja_interna`/pública: la creación lo resuelve en DB.
 

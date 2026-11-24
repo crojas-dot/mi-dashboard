@@ -1,5 +1,127 @@
 # Verificación, despliegue y pendientes
 
+## Corte vigente de entrega — 23 noviembre 2026
+
+- Código funcional en `main`: PR #64 (`80a902e1`, diseño de expedientes) y
+  PR #65 (`d9c2be898e0e237cde23e7bbbf21e140079b5ae3`, formulario, seguimiento,
+  terminología, correos y correcciones de lint). Las variantes descartadas
+  de panel oscuro/lila, pie fijo de decisiones y herramientas plegadas NO
+  forman parte del diseño aprobado.
+- Vercel: el alias productivo `mi-dashboard-iota.vercel.app` se verificó
+  READY en `80a902e1f3e87cd72c4c58b96a7f03d1d187b33c`,
+  despliegue `dpl_41uyHBE9VonR37du4KeBDGDG2pt7`. El PR #65 está integrado
+  en GitHub y su preview `c8d2c076` estaba READY; su publicación en el
+  alias productivo aún no se confirmó en esta comprobación. Verificar SHA,
+  alias y estado antes de declarar publicado cualquier commit posterior.
+- Los módulos conservan sus nombres **Quejas** y **Mis Quejas**. Tipos:
+  Queja, Observación, Sugerencia, Reclamo y Felicitación. Usar **solicitud**
+  para el trámite y **expediente** para el registro de trabajo; conservar
+  nombres de tipos, rutas, tablas, RPC, catálogos, folios, estados y permisos.
+- Pendiente funcional: oficio/informe opcionales para Felicitación, con
+  respuesta de agradecimiento. No está implementado: hoy la publicación,
+  validación de cierre, autorización y transporte final siguen exigiendo
+  documento. Observación/Sugerencia con informe según evaluación de GC
+  es propuesta, no regla vigente. No eliminar controles solo en la UI.
+- Pendiente operativo: publicar y comprobar plantillas nuevas de Quejas
+  en Supabase Edge y Google Apps Script; Vercel no despliega esos servicios.
+  Los PR #64/#65 no modifican la base de datos.
+- QA del PR #65 (head `c8d2c076`): preview READY; TypeScript y lint
+  superaron sus pasos (lint: 0 errores, 1 advertencia); verificación de
+  bandeja Quejas aprobada. CaseWorkspace, Identidad y Reapertura fallaron
+  pruebas posteriores. Hay aserciones antiguas de geometría y login,
+  mocks incompletos de reintento de correo y fallos de acceso de usuarios.
+  Investigar cada caso antes de modificar tests; no asumir que todos son
+  obsoletos. GitHub Actions: runs 45278996866, 45278996483, 45278996512
+  y 45278996490. No afirmar suite global verde ni E2E real. Falta aceptación
+  institucional del ciclo por tipo, permisos, correo y seguimiento.
+
+### Seguridad y pendientes operativos
+
+- **Seguridad pendiente:** en pruebas anteriores se expuso un valor de
+  `QMS_MAIL_SECRET` en un registro. **Rotar coordinadamente**
+  `QMS_MAIL_SECRET` (Google Apps Script) y
+  `QUEJAS_MAIL_SIGNING_SECRET` (Supabase) comprobando su relación con
+  los demás envíos; no rotar unilateralmente ni publicar valores.
+  La rotación no está confirmada. No escribir credenciales, tokens,
+  correo personal o contraseñas temporales en AGENTS, logs o tests.
+
+Evidencia reciente, con alcances distintos y selecciones parcialmente solapadas:
+
+| Área | Evidencia conservada | Referencia |
+| --- | --- | --- |
+| Panel/colores/plazos | 65/65 Node, 379 comprobaciones en 36 escenarios, dos módulos, seis estados, 1536/390/320px; TypeScript, lint, build, estructura y visual correctos | [Panel](../quejas-panel-2026-10-13.md) |
+| PDF de vista inicial | 118/118 focalizadas, PDF original reintentado con éxito y checksum de un único adjunto confirmado | [Formulario/correo](../quejas-formulario-correo-inmediato-2026-11-10.md) |
+| Correo por evento | 83/83 selección de correo, 39/39 emisor, 159 PostgreSQL aisladas; activación HMAC/Drive y ACK final con Word documentados | [Activación](../../supabase/backups/quejas_urgent_mail_activation_20261110.json) |
+
+No sumar esas cifras como suite global nueva. Las verificaciones completas antiguas,
+fallos previos de informe/paginación y auditorías conservan su fecha y alcance
+más abajo. No hay
+benchmark autenticado con miles de filas ni garantía universal de servicios externos.
+
+- **Web (verificada el 23 noviembre de 2026, corte histórico de acceso):** rama
+  productiva `main`, dominio `mi-dashboard-iota.vercel.app`, estado `READY`,
+  commit `8dba9dac7fdf8f8013cc830ac4bfcb6dd404814e`, despliegue
+  `dpl_2xHeJWY7bvPJrkA42NhH7xHkW5Wz`. Incluye acceso inmediato con
+  `phase='ready'`, gracia de 3 días hábiles, aviso en Header, cambio en Mi
+  perfil, correo compacto preparado en GitHub y 2FA opcional. El deploy
+  web NO publica automáticamente la plantilla GAS ni constituye E2E real.
+- **Web (verificada el 14 noviembre de 2026; corte histórico):** `mi-dashboard` en Vercel,
+  rama productiva `main`, dominio `mi-dashboard-iota.vercel.app`, despliegue
+  `dpl_ADVuq52xdGjNfMhAfYqLiuexgQU5`, estado `READY`, commit
+  `21e84eda3d717926c17a3d22f697753ce4b3e48c` (PR #27).
+  Incluye scroll único de Respuesta al cliente/No procede, precarga visual estable,
+  lectura anticipada de borrador/informe y apertura sin esperar PDF. La compilación
+  confirma que el código se construye, no una prueba E2E de permisos, tiempos,
+  Drive o envío real. Volver a consultar alias, SHA y estado de Vercel ante
+  cualquier entrega posterior; el valor aquí es un corte histórico. Publicar
+  solo con autorización expresa y sin cambios destructivos de DB.
+- **Backend (verificado el 23 noviembre):** Supabase aplica la migración
+  `20261123153151`, RPC de gracia y destino independiente de acceso;
+  `qms-access-mailer` v5 `ACTIVE`. La entrega de correos reales fue
+  confirmada por el propietario, pero los últimos ajustes HTML en GitHub
+  aún exigen comprobar una nueva versión publicada de Apps Script.
+  El correo de Quejas tiene evidencia histórica de activación del
+  10 noviembre, independiente del cambio de acceso. No reabrir accesos
+  legacy ni restaurar clientes incompatibles.
+- **Pendientes:** aceptación institucional del ciclo completo con roles/destinatarios,
+  excepción documental de Felicitación, publicación y verificación de plantillas
+  Edge/GAS y resolución de las pruebas fallidas descritas en el corte vigente,
+  feriados confirmados, oficios/adjuntos y manejo de fallos; UI de conciliación de envíos
+  o subidas inciertos; contraste de las barras internas de Google Drive.
+- **Límites de seguridad:** alta, 2FA opcional, plazo de gracia y login
+  directo integrados en web/DB; el propietario comprobó recepción de correo
+  real. Siguen pendientes la rotación coordinada de secretos de correo
+  expuestos, el E2E automatizado del ciclo completo (inicio, reemplazo,
+  vencimiento, reenvío y factores), antivirus, portal ciudadano completo,
+  telemetría persistida/retención anual y Seguridad y Estado.
+  La auditoría npm histórica tras fijar Next 16.4.6 registró cero
+  críticas/altas y seis moderadas indirectas; no presentarla como nueva.
+
+Para Quejas/Mis Quejas consultar también el
+[checklist con alcance real y pruebas pendientes](../quejas-checklist-aceptacion-2026-11-13.md).
+No atribuir pruebas E2E a inspección estática, SQL de metadatos ni compilación
+Vercel. La existencia de archivos Node no demuestra que fueron ejecutados.
+
+### Evidencia de acceso, regresiones y alcance
+
+El propietario confirmó recepción real de correo de acceso. El autodiagnóstico
+GAS y las verificaciones con mocks anteriores pasaron; el nuevo HTML aún exige
+comprobar publicación. El login ready tuvo build READY; falta E2E de inicio,
+cambio de clave, vencimiento, reenvíos y factores. Suites de referencia:
+`tests/auth-visibility.test.mjs`, `tests/usuarios-acceso-mail.test.mjs`,
+`tests/usuarios-acceso-seguro.test.mjs`, `tests/usuarios-acceso-link.test.mjs`,
+`tests/usuarios-invitacion-restaurada.test.mjs`, `tests/mi-perfil.test.mjs`
+y `scripts/test-usuarios-acceso-db.mjs`. Ejecutarlas antes de declarar aprobación;
+QA sintética no demuestra entrega real ni autenticación en producción.
+
+El corte del 14 noviembre sobre PDF/precarga/scroll conserva su rama
+`fix/qms-pdf-pages-preview-scroll-20261114` como referencia histórica, no como
+base actual. Tests Node de scroll, deduplicación, PDF corto/largo y guardado
+son regresiones de código, no pruebas de UX real. Consultar main vigente
+y no sobrescribir cambios ajenos.
+
+Las entradas siguientes son evidencia histórica, no contratos de producto actuales.
+
 17 noviembre, acceso inicial: backend activado con autorización expresa para
 localhost, migración 20261117214855, Edge `qms-access-mailer` v2 y Apps Script v7.
 Seis tablas privadas, 52 policies restrictivas, ACL service-only y acceso de cuentas
@@ -14,7 +136,7 @@ Agenda de hoy, 11 noviembre: 17 checks PostgreSQL aislado, 19 Node y 15 de naveg
 sintético a 320/390/1440 px; TypeScript, lint, build, estructura y capa visual correctos.
 RPC aplicado, cabecera local sin publicar. [Contrato](../agenda-hoy-2026-11-11.md).
 
-Contrato actual consolidado en [AGENTS.md](../../AGENTS.md), revisión del 11 noviembre.
+El corte del 11 noviembre se conserva como evidencia; el contrato vigente está en los documentos temáticos.
 
 Corrección posterior del contador de Quejas: migración 20261111155021 aplicada,
 2089 → 89, siguiente candidato 2026-090; mismas 153 filas y digest de ID/folio,
@@ -300,13 +422,13 @@ transacción distribuida; reservas de resultado incierto requieren reconciliaci�
 | Área | Alcance todavía pendiente |
 | --- | --- |
 | Catálogos | UI legacy aún ofrece DELETE/cambios que el trigger protege; integrar codigo/valor_interno y desactivación/historial |
-| Quejas | Web/seguimiento/DB/Edge/Apps Script y cortes activos el 19 octubre. Falta aceptación institucional del ciclo completo y de correo nuevo con apertura del enlace |
+| Quejas | Falta aceptación institucional de los cinco tipos, informe opcional para Felicitación, plantillas Edge/GAS y pruebas fallidas del corte vigente |
 | QMS | Lectores y editor versionado publicados; editor SLA sigue legacy. Registrar feriados institucionales confirmados; calendario actual lunes–viernes |
 | Avisos/correo | Dos correos ciudadanos desde el 20 octubre, con investigación solo histórica; avisos internos activados el 14 mediante el poll existente, sin pg_cron. Faltan destinatarios activos de Calidad/aceptación institucional y UI de conciliación; mail_queue por sí sola no demuestra envío |
 | Formularios públicos | Gateway/BotID Basic/cuotas DB/idempotencia/capacidad desplegados; DB/WAF/variables y cortes legacy aplicados. POST sin prueba rechazado en producción. Pendientes: antivirus, reconciliación automática y prueba ciudadana positiva de extremo a extremo en producción. [Estado de activación](../seguridad-formularios-publicos.md) |
 | Datos legacy | Migrar consultas directas de componentes según necesidad; la cancelación aplicada a hooks no los reemplaza automáticamente |
 | Usuarios | Último admin y cambios entre Auth/perfil sin transacción distribuida; revisar concurrencia real y coherencia de roles |
-| Seguridad futura | Acceso inicial/MFA de altas nuevas con backend activo el 17 noviembre, cliente/API local y aceptación real pendiente; sin bloqueo distribuido propio del login Supabase. BotID/cuotas del gateway no protegen ese login |
+| Seguridad | Acceso temporal y 2FA integrados; falta E2E de inicio/cambio/vencimiento/reenvío/factores, rotación coordinada y aceptación real. BotID/cuotas del gateway no protegen ese login |
 | Rendimiento | Perfilar navegación autenticada/red/memoria con volumen y distinguir dev de build de producción |
 | Producto | CRUD/derivación de hallazgos, eficacia/validación SACP, versionado/Drive documental y actas/acuerdos completos |
 | Producto | Sin persistencia UI completa de informes_config, tareas o solicitudes documentales |
