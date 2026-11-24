@@ -264,8 +264,10 @@ html:has([data-public-form-embed]), body:has([data-public-form-embed]) {
   [data-dashboard-active-legend] > span > span:nth-child(2) { white-space: nowrap; }
   [data-dashboard-active-legend] strong { margin-left: auto; }
   [data-dashboard-active-legend] > span > span:first-child { width: 7px; height: 7px; }
-  [data-dashboard-active-legend] + * { margin-top: 0; }
-  [data-dashboard-trend] { height: 170px !important; width: 100%; margin-top: 4px; }
+  /* Chromium puede fragmentar un SVG en flujo dentro de una grilla impresa.
+     Reservar el marco y posicionar el SVG dentro evita el salto de página. */
+  [data-dashboard-trend-frame] { position: relative; height: 170px; margin-top: 4px; break-inside: avoid; }
+  [data-dashboard-trend] { position: absolute; inset: 0; height: 100% !important; width: 100%; margin: 0; }
   [data-dashboard-trend-note] { margin-top: 2px; min-height: 0; font-size: 8pt !important; }
   [data-dashboard-trend-note]:empty { display: none; }
   [data-dashboard-distribution] { flex-wrap: nowrap; gap: 8px; margin-top: 8px; }
