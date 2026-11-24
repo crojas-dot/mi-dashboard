@@ -53,7 +53,7 @@ export default function DashboardPage() {
     buttons.current[next]?.focus()
   }
 
-  return <div data-dashboard-print className="min-w-0">
+  return <div data-dashboard-print className="min-w-0 print:w-full print:max-w-none print:p-[10mm]">
     <div data-dashboard-screen-heading className="print:hidden">
     <PageHeader title="Dashboard · Indicadores del SGC" compact={false}>
       <div data-dashboard-controls className="flex flex-wrap items-center gap-2">
