@@ -479,16 +479,18 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
   formas fijas CSS motion-safe, sin temporizadores por registro. Error real
   con reintento, sin datos evaluables no equivale a 0%.
-- Impresión circunscrita al tablero: página nombrada A4 horizontal sin margen
-  externo, padding interno de 10mm, cabecera ECA-QMS · Indicadores del SGC, módulo, período y hora CR
-  en 12h. Shell y controles ocultos, overflow liberado, colores SVG exactos,
-  cuatro KPIs en fila y dos filas de gráficos con geometría solo de impresión
-  y tarjetas indivisibles. Liberar html/body y todos los ancestros del tablero
-  (altura, overflow y espacios), leyenda de activos de una columna y tendencia
-  de 170px en un marco de impresión con SVG posicionado dentro (evita la
-  fragmentación del SVG en la grilla de Chromium). Objetivo: una sola hoja
-  A4 horizontal sin encabezados automáticos;
-  las opciones de impresión del navegador pueden prevalecer. No recortar datos.
+- Impresión circunscrita al tablero: página nombrada A4 horizontal, margen
+  externo cero, contenedor de 297 × 208mm con padding 9mm 11mm y flex/gap
+  4mm. Liberar los ancestros y reservar 2mm de tolerancia para evitar una hoja
+  en blanco. Encabezado institucional azul con módulo, período y hora CR 12h;
+  pie con identificación ISO 9001 y Página 1 de 1. Tres filas distribuidas
+  en el espacio disponible, tarjetas blancas con borde suave, anillos 56px,
+  activos en dos columnas sin colisiones y tendencia de 175px con SVG
+  posicionado en su marco. Impresión de colores exactos. Verificar que no
+  haya contenido recortado en Chromium, incluso con cinco áreas y siete estados.
+  El botón usa un título temporal «ECA-QMS - Informe Ejecutivo - módulo - período»,
+  restaurado con afterprint o fallback al salir de impresión/recuperar foco.
+  El navegador conserva control final sobre nombre y opciones del diálogo.
 - «Solicitudes procedentes» muestra procedentes y no proceden del mismo
   denominador, sin añadir felicitaciones ni solicitudes sin evaluar.
   No modificar AuthShell, SessionScreen, tema global ni alias de ruta.
