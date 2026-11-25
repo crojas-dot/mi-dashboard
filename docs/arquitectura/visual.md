@@ -479,17 +479,18 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
   formas fijas CSS motion-safe, sin temporizadores por registro. Error real
   con reintento, sin datos evaluables no equivale a 0%.
-- Impresión exclusiva del tablero: página nombrada landscape con margen de
-  12mm, ancho 100% adaptable a Carta/A4, sin medidas físicas fijas ni alturas
-  de pantalla. Liberar ancestros y ocultar sus hermanos (shell/portales).
+- Impresión exclusiva del tablero: regla @page raíz de 297 × 167mm (casi
+  16:9), margen externo cero y padding interno de 10mm por lámina, ancho 100%.
+  Los demás módulos usan página qms-standard (papel/margen del navegador). Liberar ancestros y ocultar sus hermanos (shell/portales).
   DashboardPrintReport reutiliza los componentes SVG y la misma data ya
   autorizada, sin consultas adicionales y oculto en pantalla. Dos bloques:
   hoja 1, cabecera oficial azul, cuatro KPIs y tendencia de ancho completo
-  con viewBox amplio y marco de 280px; hoja 2, cabecera compacta, distribución
+  con viewBox amplio y marco de 226px; hoja 2, cabecera compacta, distribución
   y áreas en dos columnas, cumplimiento por etapa de ancho completo. Cada
   hoja lleva pie ISO 9001 con Página 1 de 2 / Página 2 de 2. Un único salto
   después de la primera hoja; no fijar altura ni recortar datos. Verificar
-  paginación y legibilidad en ambos tamaños de papel con Chromium.
+  paginación, MediaBox panorámico y ausencia de encabezados de Chrome con
+  Chromium desde las opciones iniciales Carta/A4.
   Colores exactos, tarjetas blancas con borde suave sin sombra. El botón
   mantiene el título temporal «ECA-QMS - Informe Ejecutivo - módulo - período»
   y lo restaura al terminar/cancelar. El navegador controla las opciones de
