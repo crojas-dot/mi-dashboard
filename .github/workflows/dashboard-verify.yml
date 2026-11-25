@@ -44,7 +44,7 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-sin-credenciales-reales
-      - name: PDF A4 y Carta (Chromium)
+      - name: PDF panorámico 16:9 (Chromium)
         if: always() && steps.build.outcome == 'success'
         run: node tests/dashboard-print-browser.mjs
       - name: Structure
