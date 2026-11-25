@@ -1,128 +1,103 @@
-/**
- * Dashboard principal (ruta: /)
- * Queries: useDashboardIndicadores, useDashboardTareas, useActividadReciente (lib/queries/useDashboard).
- * Los indicadores cuentan registros por módulo; las tareas muestran expedientes próximos a vencer.
- * QuejasSummary se carga con lazy() para no bloquear el primer paint.
- */
 'use client'
 
-import Link from 'next/link'
-import { lazy, Suspense, useEffect } from 'react'
-import { useDashboardIndicadores, useDashboardTareas, useActividadReciente } from '@/lib/queries/useDashboard'
-import { Table, TableHead, TableHeaderCell, TableRow, TableCell } from '@/components/ui/Table'
-import Badge from '@/components/ui/Badge'
-import { varianteEstado } from '@/lib/constants/estados'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { flushSync } from 'react-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { Printer } from 'lucide-react'
+import { useAuthStore } from '@/lib/store/auth-store'
+import { tienePermiso } from '@/lib/permisos'
+import { MODULOS } from '@/lib/constants/modulos'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { dashboardQuejasKey, dashboardQuejasOptions, useDashboardQuejas } from '@/lib/queries/useDashboard'
+import { dashboardPeriod, type PeriodChoice } from '@/lib/utils/dashboardQuejas'
+import DeferredMount from '@/components/ui/DeferredMount'
 import PageHeader from '@/components/ui/PageHeader'
 import DashboardLoading from '@/components/dashboard/DashboardLoading'
+import QuejasSummary, { DashboardPrintReport } from '@/components/dashboard/QuejasSummary'
 import { logger } from '@/lib/utils/logger'
+import { printExecutiveReport } from '@/lib/utils/dashboardPrint'
 
-const QuejasSummary = lazy(() => import('@/components/dashboard/QuejasSummary'))
-
-function useDashboardError(error: unknown, action: string) {
-  useEffect(() => {
-    if (error) logger.error('No se pudo cargar un bloque del dashboard', { module: 'dashboard', action }, error)
-  }, [error, action])
-}
-
-const indicatorBg: Record<string, string> = {
-  '#dc3545': 'bg-qms-danger',
-  '#fd7e14': 'bg-qms-warning',
-  '#0d6efd': 'bg-qms-primary',
-  '#198754': 'bg-qms-success',
-}
+const tabs = ['quejas', 'sacp', 'documentos', 'riesgos', 'auditorias', 'revision', 'procesos'] as const
+type Tab = typeof tabs[number]
+const printDate = () => new Date().toLocaleString('es-CR', { timeZone: 'America/Costa_Rica', dateStyle: 'long', timeStyle: 'short', hourCycle: 'h12' })
 
 export default function DashboardPage() {
-  return (
-    <div>
-      <PageHeader title="Dashboard" description="Panel de control general" compact={false} />
-      <Suspense fallback={<DashboardLoading label="Cargando indicadores de Quejas…" variant="summary" className="mb-5" />}>
-        <QuejasSummary />
-      </Suspense>
-      <IndicadoresBlock />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <TareasPendientesBlock />
-        <ActividadRecienteBlock />
+  const [tab, setTab] = useState<Tab>('quejas')
+  const [choice, setChoice] = useState<PeriodChoice>('year')
+  const [today] = useState(() => new Date())
+  const [generated, setGenerated] = useState(printDate)
+  const restorePrintTitle = useRef<(() => void) | null>(null)
+  const buttons = useRef<(HTMLButtonElement | null)[]>([])
+  const user = useAuthStore(s => s.user)
+  const permisos = useAuthStore(s => s.permisos)
+  const client = useQueryClient()
+  const allowed = tienePermiso(permisos, 'quejas', false, user?.rol)
+  const active = tab === 'quejas' && allowed
+  const period = dashboardPeriod(choice, today)
+  const { data, isPending, error, refetch } = useDashboardQuejas(period, active)
+  const cachedYear = client.getQueryData<NonNullable<typeof data>>(dashboardQuejasOptions(dashboardPeriod('year', today)).queryKey)
+  const hasPrevious = data?.hasPrevious ?? cachedYear?.hasPrevious ?? choice === 'previous'
+  useRealtimeSubscription({ table: 'quejas', enabled: active, invalidateKeys: [dashboardQuejasKey] })
+  useEffect(() => {
+    if (error) logger.error('No se pudieron cargar indicadores ejecutivos', { module: 'dashboard', action: 'quejas' }, error)
+  }, [error])
+  useEffect(() => {
+    const beforePrint = () => flushSync(() => setGenerated(printDate()))
+    window.addEventListener('beforeprint', beforePrint)
+    return () => {
+      window.removeEventListener('beforeprint', beforePrint)
+      restorePrintTitle.current?.()
+    }
+  }, [])
+
+  function printReport() {
+    restorePrintTitle.current?.()
+    flushSync(() => setGenerated(printDate()))
+    restorePrintTitle.current = printExecutiveReport(MODULOS[tab].label, period.label)
+  }
+
+  function moveTab(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const next = event.key === 'ArrowRight' ? (index + 1) % tabs.length : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : -1
+    if (next < 0) return
+    event.preventDefault()
+    setTab(tabs[next])
+    buttons.current[next]?.focus()
+  }
+
+  return <div data-dashboard-print className="min-w-0 print:max-w-none">
+    <div data-dashboard-screen className="print:hidden">
+    <div data-dashboard-screen-heading className="print:hidden">
+    <PageHeader title="Dashboard · Indicadores del SGC" compact={false}>
+      <div data-dashboard-controls className="flex flex-wrap items-center gap-2">
+        <label className="sr-only" htmlFor="dashboard-period">Período</label>
+        <select id="dashboard-period" className="ui-input min-h-11 max-w-full px-4 text-base" value={choice} onChange={event => setChoice(event.target.value as PeriodChoice)}>
+          <option value="year">Año actual ({period.year})</option>
+          <option value="six">Últimos 6 meses</option>
+          {(hasPrevious || choice === 'previous') && <option value="previous">Año anterior ({period.year - 1})</option>}
+        </select>
+        <button type="button" className="ui-button ui-button-outline min-h-11 gap-2 text-base" disabled={!active || !data || !!error} onClick={printReport}><Printer className="size-4" aria-hidden="true" />Imprimir / PDF</button>
       </div>
+    </PageHeader>
     </div>
-  )
-}
-
-// La carga de los indicadores de Quejas no depende de las consultas de otros módulos.
-function IndicadoresBlock() {
-  const { data, isPending, error, refetch } = useDashboardIndicadores()
-  useDashboardError(error, 'indicadores')
-  if (error) return <div role="alert" className="p-4">No se pudo cargar el dashboard. <button onClick={() => void refetch()} className="underline">Reintentar</button></div>
-  if (isPending) return <DashboardLoading label="Cargando indicadores…" className="mb-5 min-h-60" />
-  const indicadores = data ?? []
-  const maxIndicador = Math.max(1, ...indicadores.map((ind) => ind.valor))
-
-  return (
-      <section aria-labelledby="dashboard-modulos-title" className="mb-5 rounded-card border border-qms-border bg-qms-surface p-5">
-        <h2 id="dashboard-modulos-title" className="mb-4 text-lg font-semibold text-qms-dark">Seguimiento por módulo</h2>
-        <div className="space-y-4">
-        {indicadores.map((ind) => (
-          <Link key={ind.label} href={ind.url} prefetch={false} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 text-sm text-qms-dark no-underline hover:text-qms-primary sm:grid-cols-[190px_minmax(0,1fr)_48px]">
-            <span>{ind.label}</span>
-            <div aria-hidden="true" className="order-3 col-span-2 h-5 overflow-hidden rounded-sm bg-gray-100 sm:order-none sm:col-span-1">
-              <div className={`h-full ${indicatorBg[ind.color] || 'bg-qms-primary'}`} style={{ width: `${Math.max(0, ind.valor) / maxIndicador * 100}%` }} />
-            </div>
-            <strong className="text-right tabular-nums">{ind.valor}</strong>
-          </Link>
-        ))}
-        </div>
+    <div data-dashboard-tabs role="tablist" aria-label="Módulos del SGC" className="mb-4 flex gap-2 overflow-x-auto border-b border-qms-border print:hidden">
+      {tabs.map((id, index) => <button key={id} ref={node => { buttons.current[index] = node }} id={'dashboard-tab-' + id} role="tab" type="button"
+        aria-selected={tab === id} aria-controls={'dashboard-panel-' + id} tabIndex={tab === id ? 0 : -1}
+        className={'min-h-12 shrink-0 whitespace-nowrap border-b-2 px-4 text-base font-medium ' + (tab === id ? 'border-qms-primary text-qms-primary' : 'border-transparent text-qms-muted hover:text-qms-dark')}
+        onClick={() => setTab(id)} onKeyDown={event => moveTab(event, index)}>{MODULOS[id].label}</button>)}
+    </div>
+    {tabs.map(id => <DeferredMount key={id} active={tab === id}>
+      <section role="tabpanel" id={'dashboard-panel-' + id} aria-labelledby={'dashboard-tab-' + id} hidden={tab !== id}>
+        {id === 'quejas' ? !allowed ? <div className="rounded-card border border-qms-border bg-qms-surface p-8 text-center text-sm text-qms-muted">No dispone de permiso para consultar los indicadores de Quejas.</div>
+          : error ? <div role="alert" className="rounded-card border border-qms-border bg-qms-surface p-6 text-sm">No se pudieron cargar los indicadores. <button type="button" className="font-medium text-qms-primary underline" onClick={() => void refetch()}>Reintentar</button></div>
+          : isPending || !data ? <DashboardLoading label="Cargando indicadores de Quejas…" variant="executive" />
+          : <QuejasSummary data={data.metrics} />
+          : <div className="flex min-h-80 flex-col items-center justify-center rounded-card border border-qms-border bg-qms-surface p-8 text-center">
+            <svg viewBox="0 0 48 48" className="mb-5 size-16 text-qms-muted" aria-hidden="true"><path d="M8 39V9M8 39H41" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /><rect x="14" y="24" width="6" height="15" rx="2" fill="currentColor" opacity=".35" /><rect x="24" y="16" width="6" height="23" rx="2" fill="currentColor" opacity=".45" /><rect x="34" y="10" width="6" height="29" rx="2" fill="currentColor" opacity=".55" /></svg>
+            <h2 className="text-xl font-semibold text-qms-dark">{MODULOS[id].label}</h2><p className="mt-2 text-base text-qms-muted">Módulo en preparación · Sin indicadores activos</p>
+          </div>}
       </section>
-  )
-}
-
-function TareasPendientesBlock() {
-  const { data: tareas = [], isPending, error, refetch } = useDashboardTareas()
-  useDashboardError(error, 'tareas')
-  return (
-        <div>
-          <h6 className="mb-2 text-base font-bold text-qms-dark">Expedientes Pendientes</h6>
-          {isPending ? <DashboardLoading label="Cargando expedientes…" variant="table" className="min-h-48" /> : error ? <p role="alert" className="p-3 text-sm">No se pudieron cargar los expedientes. <button className="underline" onClick={() => void refetch()}>Reintentar</button></p> : <Table>
-            <TableHead>
-              <tr>
-                <TableHeaderCell>Expediente</TableHeaderCell>
-                <TableHeaderCell>Tipo</TableHeaderCell>
-                <TableHeaderCell>Estado</TableHeaderCell>
-                <TableHeaderCell>Vence</TableHeaderCell>
-              </tr>
-            </TableHead>
-            <tbody>
-              {tareas.length === 0 ? (
-                <tr><td colSpan={4} className="px-3 py-4 text-center text-qms-muted">No hay expedientes pendientes</td></tr>
-              ) : (
-                tareas.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.titulo}</TableCell>
-                    <TableCell><span className="text-qms-muted">{t.tipo}</span></TableCell>
-                    <TableCell><Badge variant={t.entidad === 'Quejas' ? varianteEstado('quejas', t.estado) : t.entidad === 'SACP' ? varianteEstado('sacp', t.estado) : 'neutral'}>{t.estado}</Badge></TableCell>
-                    <TableCell className="text-qms-muted">{t.vence ? new Date(t.vence).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '-'}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </tbody>
-          </Table>}
-        </div>
-  )
-}
-
-function ActividadRecienteBlock() {
-  const actividad = useActividadReciente()
-  useDashboardError(actividad.error, 'actividad')
-  return (
-        <div>
-          <h6 className="mb-2 text-base font-bold text-qms-dark">Actividad Reciente</h6>
-          <div className="divide-y rounded-card border border-qms-border">
-            {actividad.isPending ? <DashboardLoading label="Cargando actividad…" variant="activity" framed={false} />
-              : actividad.error ? <p role="alert" className="p-3 text-sm">No se pudo cargar la actividad. <button className="underline" onClick={() => void actividad.refetch()}>Reintentar</button></p>
-              : !actividad.data?.length ? <p className="p-3 text-sm text-gray-500">No hay actividad registrada.</p>
-              : actividad.data.map((item) => <div key={item.id} className="p-3 text-sm">
-                <p>{item.descripcion}</p>
-                <p className="text-gray-500">{new Date(item.created_at).toLocaleString('es-CR', { hourCycle: 'h12' })}</p>
-              </div>)}
-          </div>
-        </div>
-  )
+    </DeferredMount>)}
+    </div>
+    {active && data && !error && <DashboardPrintReport data={data.metrics} period={period.label} generated={generated} />}
+  </div>
 }

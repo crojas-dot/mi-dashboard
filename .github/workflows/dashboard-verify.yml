@@ -1,0 +1,55 @@
+name: Verificación Dashboard ejecutivo
+
+on:
+  pull_request:
+    paths:
+      - 'app/page.tsx'
+      - 'app/globals.css'
+      - 'components/dashboard/**'
+      - 'components/Sidebar.tsx'
+      - 'lib/queries/useDashboard.ts'
+      - 'lib/utils/dashboardQuejas.ts'
+      - 'tests/dashboard-runtime-regression.test.mjs'
+      - 'tests/dashboard-print-browser.mjs'
+      - '.github/workflows/dashboard-verify.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - id: install
+        run: npm ci
+      - name: TypeScript
+        if: always() && steps.install.outcome == 'success'
+        run: npx tsc --noEmit
+      - name: ESLint
+        if: always() && steps.install.outcome == 'success'
+        run: npm run lint
+      - name: Dashboard runtime regression
+        if: always() && steps.install.outcome == 'success'
+        run: node --test tests/dashboard-runtime-regression.test.mjs
+      - name: Build
+        id: build
+        if: always() && steps.install.outcome == 'success'
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-anon-key-sin-credenciales-reales
+      - name: PDF panorámico 16:9 (Chromium)
+        if: always() && steps.build.outcome == 'success'
+        run: node tests/dashboard-print-browser.mjs
+      - name: Structure
+        if: always() && steps.install.outcome == 'success'
+        run: npm run check:structure
+      - name: Visual
+        if: always() && steps.install.outcome == 'success'
+        run: npm run check:visual

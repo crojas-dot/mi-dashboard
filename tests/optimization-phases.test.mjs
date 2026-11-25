@@ -170,19 +170,22 @@ test('abandonar un bloque del dashboard aborta el transporte Supabase', async ()
   assert.ok(signals.every((signal) => signal.aborted))
 })
 
-test('un bloque fallido no oculta la actividad ni los expedientes cargados', () => {
+test('el dashboard ejecutivo conserva un error real sin renderizar listados retirados', () => {
   const { default: Dashboard } = loadModule('app/page.tsx', {
-    react: { ...React, lazy: () => () => null },
+    react: React,
+    '@tanstack/react-query': { useQueryClient: () => ({ getQueryData: () => undefined }) },
+    '@/lib/store/auth-store': { useAuthStore: selector => selector({ user: { rol: 'calidad' }, permisos: [] }) },
+    '@/lib/permisos': { tienePermiso: () => true },
+    '@/hooks/useRealtimeSubscription': { useRealtimeSubscription() {} },
     '@/lib/queries/useDashboard': {
-      useDashboardIndicadores: () => ({ error: new Error('BD'), isPending: false, refetch() {} }),
-      useDashboardTareas: () => ({ data: [{ id: 'q1', titulo: 'Expediente visible', tipo: 'Queja', estado: 'Recibido', vence: '' }], isPending: false }),
-      useActividadReciente: () => ({ data: [{ id: 'act1', descripcion: 'Actividad visible', created_at: '2026-10-06' }], isPending: false }),
+      dashboardQuejasKey: ['dashboard','quejas-ejecutivo'],
+      dashboardQuejasOptions: () => ({ queryKey: [] }),
+      useDashboardQuejas: () => ({ error: new Error('BD'), isPending: false, refetch() {} }),
     },
     '@/lib/utils/logger': { logger: { error() {} } },
   })
   const html = renderToStaticMarkup(createElement(Dashboard))
-  assert.match(html, /No se pudo cargar el dashboard/)
-  assert.match(html, /Expediente visible/)
-  assert.match(html, /Actividad visible/)
+  assert.match(html, /No se pudieron cargar los indicadores/)
+  assert.match(html, /Reintentar/)
+  assert.doesNotMatch(html, /Expedientes Pendientes|Actividad Reciente|Seguimiento por módulo/)
 })
-

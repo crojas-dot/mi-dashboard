@@ -22,7 +22,7 @@ para ubicar componentes. No recuperar las pruebas descartadas.
 - Antes de verificar una URL privada, solo fondo neutral; no presentar barra, login ni shell de dashboard. Login/logout usa skeleton de login cuando corresponde; datos pendientes del módulo usan solo su carga propia.
 - Skeletons fijos CSS y movimiento reducido; Spinner solo en operaciones. Sin espera mínima ni círculo permanente por registro o Acta Pendiente.
 - Modal mantiene dialog nativo, top layer, Tab/Shift+Tab, foco y scroll lock de modales anidados. Escape/fondo cierran por defecto; dismissOnEscape/dismissOnBackdrop permiten exigir X en una vista concreta.
-- Clases dark: pueden existir, pero no hay selector completo de tema integrado. QuejasSummary dibuja SVG y no carga Chart.js en el dashboard activo.
+- Clases dark: pueden existir, pero no hay selector completo de tema integrado. QuejasSummary dibuja SVG puro y no carga librerías de gráficos.
 
 Catálogos usa `COLORES_CATALOGO` de `lib/constants/badges.ts`: primary, info, success,
 warning, danger y secondary son códigos DB; sus etiquetas y estilos se resuelven
@@ -453,3 +453,48 @@ ISO de API/DB, orden, plazos y reglas de negocio.
 - Visor: marco estable, permiso verificado y Blob local revocable, nunca
   iframe Drive externo. Indicador tras 180 ms; transición breve 150 ms con
   movimiento reducido. Precarga/caché privada en [datos y rendimiento](datos-y-rendimiento.md).
+
+## Dashboard ejecutivo
+
+- Cabecera «Dashboard · Indicadores del SGC», pestañas horizontales accesibles
+  (Quejas activa por defecto), selector de período e Imprimir / PDF discretos.
+  Solo Quejas dibuja ocho tarjetas; las demás muestran preparación sin datos.
+- Fondo #F4F7F6, Inter heredada, tarjeta blanca con borde fino uniforme y sin
+  bordes laterales destacados. Azul #024796, verde QMS #198754, ámbar y gris.
+- Tres filas con escala legible del Dashboard anterior: 4 KPIs de altura mínima
+  184px (altura mínima, sin recortar contenido); tendencia y dona de 350px (65/35 cuando el espacio útil lo permite);
+  áreas y cumplimiento por etapa de 270px. Títulos de 18px, texto secundario
+  de 14px, valores principales de 36px, anillos KPI de 88–116px y dona de 200px. En los KPI de proporción y tiempo,
+  texto a la izquierda y SVG a la derecha en una sola fila; conteos breves
+  con buen contraste.
+  Paddings de 20px en escritorio. Cuatro KPIs desde 1120px de ancho del contenido,
+  dos en pantallas intermedias; permitir scroll vertical antes que miniaturizar.
+- SVG puro: anillos delgados, puntas redondeadas, barras segmentadas,
+  etiquetas cortas, leyenda y tooltip de tendencia por hover/foco; sin Chart.js
+  ni Recharts. Valores positivos encima de cada barra, sin mostrar ceros
+  ni inventar datos; leyenda de dona con cantidad y porcentaje. Meta 90%
+  rotulada sobre su marca vertical en la primera barra de etapas; los
+  conteos se expresan como «X de Y a tiempo». La meta es solo referencia;
+  no sustituye denominadores reales. Sin notas repetidas bajo tendencia.
+- DashboardLoading comparte grillas, tarjetas y alturas con QuejasSummary;
+  formas fijas CSS motion-safe, sin temporizadores por registro. Error real
+  con reintento, sin datos evaluables no equivale a 0%.
+- Impresión exclusiva del tablero: regla @page raíz de 297 × 167mm (casi
+  16:9), margen externo cero y padding interno de 10mm por lámina, ancho 100%.
+  Los demás módulos usan página qms-standard (papel/margen del navegador). Liberar ancestros y ocultar sus hermanos (shell/portales).
+  DashboardPrintReport reutiliza los componentes SVG y la misma data ya
+  autorizada, sin consultas adicionales y oculto en pantalla. Dos bloques:
+  hoja 1, cabecera oficial azul, cuatro KPIs y tendencia de ancho completo
+  con viewBox amplio y marco de 226px; hoja 2, cabecera compacta, distribución
+  y áreas en dos columnas, cumplimiento por etapa de ancho completo. Cada
+  hoja lleva pie ISO 9001 con Página 1 de 2 / Página 2 de 2. Un único salto
+  después de la primera hoja; no fijar altura ni recortar datos. Verificar
+  paginación, MediaBox panorámico y ausencia de encabezados de Chrome con
+  Chromium desde las opciones iniciales Carta/A4.
+  Colores exactos, tarjetas blancas con borde suave sin sombra. El botón
+  mantiene el título temporal «ECA-QMS - Informe Ejecutivo - módulo - período»
+  y lo restaura al terminar/cancelar. El navegador controla las opciones de
+  papel, escala y encabezados automáticos.
+- «Solicitudes procedentes» muestra procedentes y no proceden del mismo
+  denominador, sin añadir felicitaciones ni solicitudes sin evaluar.
+  No modificar AuthShell, SessionScreen, tema global ni alias de ruta.

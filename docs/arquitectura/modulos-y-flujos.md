@@ -14,7 +14,7 @@ archivos, migraciones o documentación.
 
 | Área / ruta | Capacidades conectadas en el código | Alcance que NO se debe suponer |
 | --- | --- | --- |
-| Inicio `/`, alias `/dashboard` | KPIs, resumen de Quejas, tareas por vencimiento, actividad y consultas independientes con caché | Dashboard analítico alternativo, métricas de todos los módulos |
+| Inicio `/`, alias `/dashboard` | Tablero ejecutivo SVG, pestañas y período; Quejas con indicadores verificables | Indicadores de los demás módulos en preparación |
 | Quejas `/quejas` | Alta/consulta, filtros, estados y colores de catálogo, área afectada, timeline, plazos, revisión GC, devolución, relación SACP, resolución, expediente oficial y publicación final | Publicar al aprobar GC, omitir PDF/oficio, derivar desde cualquier estado |
 | Mis Quejas `/mis-quejas` | Casos del responsable real, etapas Análisis/Resolución/Revisión de Calidad, notas e historial, evidencias propias, asistencia, borrador versionado y envío/reenvío a revisión | Acceso a casos ajenos, autoguardado o publicar respuesta ciudadana |
 | Informe y comunicación | Tiptap A4 en modal, versionado, exportación Word/PDF, PDF oficial en Drive por folio/versión, correo editable con borrador/publicación y archivo físico adjunto | Considerar la paginación visual como paginación del PDF; enviar sin documento autorizado |
@@ -43,15 +43,37 @@ optimista y permisos efectivos. Los folios anuales no se regeneran por abrir un 
 
 ### Dashboard activo
 
-- `useDashboardIndicadores`/`useDashboardTareas` usan `useQueries` y **comparten cuatro consultas** bajo `['dashboard','recurso',nombre]`: Quejas, Acciones, Documentos y Riesgos.
-- Quejas y Acciones devuelven count exacto + ocho filas ordenadas por vencimiento; Documentos y Riesgos usan HEAD/count. Las tareas combinan las dos listas y eligen los ocho vencimientos más próximos, poniendo sin fecha al final.
-- Indicadores: Quejas fuera de Finalizado/No Procede/Cerrada, SACP no Cerrada, documentos Borrador y riesgos Activo.
-- Un fallo/lentitud de Documentos no bloquea las tareas de Quejas/SACP. `DashboardLoading.tsx` muestra skeletons proporcionales al contenido (summary/modules/table/activity), con role=status y texto solo para lectores de pantalla, respetando movimiento reducido. Formas de cantidad fija, sin animaciones por registro ni tarjetas anidadas. Cada bloque se revela en cuanto está listo; reintento por bloque.
-- Los listados/lecturas de detalle y las operaciones comparten el contrato de carga descrito en visual.md y ../visual-patterns.md.
-- Actividad: últimas cinco filas de `quejas_actividad`, orden `created_at desc, id`; **no está hardcodeada**.
-- QuejasSummary dibuja SVG para resolución dentro de plazo, procedencia y volumen total/mes; usa `obtener_estadisticas_quejas` y permiso de quejas. El RPC es SECURITY INVOKER y respeta RLS.
-- La lectura combinada legacy `fetchDashboard/useDashboard` fue retirada; la página conserva las cuatro opciones compartidas y sus bloques independientes.
-- El dashboard monta solo los bloques descritos aquí. Las variantes analíticas históricas no definen la composición actual; revisar consumidores antes de integrar otro diseño.
+- Inicio `/` (alias protegido `/dashboard`): tablero ejecutivo gráfico, sin
+  tablas de expedientes, actividad reciente ni barras de seguimiento por módulo.
+  Quejas es la primera pestaña; SACP, Documentos, Riesgos, Auditorías, Revisión
+  por Dirección y Procesos son estados de preparación sin métricas inventadas.
+- Selector civil CR: año actual de enero hasta mes en curso, últimos seis
+  meses incluyendo el mes en curso, y año anterior completo si hay ingresos
+  visibles en ese año. No mezclar históricos con el año vigente.
+- Cohorte de ingresos del período: volumen mensual recibido, distribución
+  de su estado actual, activos (Recibido, Investigación, Revisión GC, Resuelto).
+  Procedencia usa decisiones de esa cohorte, excluye Recibido, Felicitación y
+  tipo ausente, y acepta solo estados decisorios conocidos. Top 5 usa
+  `area_afectada` no vacía de los procedentes; no clasifica por tipo.
+- Resolución: eventos observados `qms_case_events.kind='resolved'`, por mes
+  de resolución (incluye ingresos de otros períodos). Vincular la ejecución
+  de investigación más reciente terminada antes del evento, configurada,
+  con fecha límite persistida y resultado válido. No acreditar dos eventos
+  con la misma ejecución. Comparar instante de resolución contra expires_at.
+  Sin ejecución verificable se excluye del denominador y se indica cobertura;
+  no comparar fecha_cierre con fecha_sla ni reconstruir SLA.
+- Promedio: días calendario transcurridos desde recepción hasta cada resolución
+  observada del período, incluida una eventual reapertura; no afirmar días
+  hábiles. Cumplimiento por etapa: ejecuciones configuradas terminadas en el
+  período por transición válida, comparar ended_at con expires_at. Meta visual
+  90 % y duración nominal 3/15 días, sin alterar el calendario versionado.
+  Ausencia de denominador muestra «— / Sin datos evaluables», no 0 %.
+- Las lecturas usan qms_quejas (security_invoker), qms_case_events y
+  qms_stage_runs con SELECT/RLS del usuario real y permiso de Quejas.
+  RPC obtener_estadisticas_quejas sin cambios para consumidores existentes;
+  su SLA legacy no se utiliza para el tablero. Sin cambios de DB.
+- Exportación por window.print(), período y fecha de generación CR, sin menú
+  ni controles. Ver contrato de [visual](visual.md) y [datos](datos-y-rendimiento.md).
 
 ## Quejas y Mis Quejas: lógica vigente
 

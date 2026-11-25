@@ -3,6 +3,7 @@
 import { useQueries, useQuery, type QueryFunctionContext } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { queryKeys } from './queryKeys'
+import { dashboardPeriod, summarizeDashboard, type DashboardPeriod, type DashboardCase, type DashboardEvent, type DashboardRun } from '@/lib/utils/dashboardQuejas'
 import { getQuejaDeadlineDate, type QuejaConPlazo } from '@/lib/utils/quejaDeadline'
 
 export interface Indicador {
@@ -82,8 +83,12 @@ function dashboardResourceOptions(recurso: DashboardRecurso) {
   }
 }
 
-export function dashboardPrefetchOptions() {
+function legacyResourceOptions() {
   return (Object.keys(recursos) as DashboardRecurso[]).map(dashboardResourceOptions)
+}
+
+export function dashboardPrefetchOptions() {
+  return [dashboardQuejasOptions(dashboardPeriod('year'))]
 }
 
 // Compatibilidad para consumidores imperativos. Las vistas usan las opciones
@@ -100,7 +105,7 @@ export async function fetchDashboardTareas(signal?: AbortSignal): Promise<TareaP
 }
 
 export function useDashboardIndicadores() {
-  const resultados = useQueries({ queries: dashboardPrefetchOptions() })
+  const resultados = useQueries({ queries: legacyResourceOptions() })
   return {
     data: resultados.every((resultado) => resultado.data) ? resultados.map((resultado) => resultado.data!.indicador) : undefined,
     isPending: resultados.some((resultado) => resultado.isPending),
@@ -130,4 +135,73 @@ export function useActividadReciente() {
       return data ?? []
     },
   })
+}
+
+const PAGE_SIZE = 500
+const CASE_COLUMNS = 'id,fecha,tipo,categoria,estado,area_afectada'
+const RUN_COLUMNS = 'id,case_id,stage_id,started_at,expires_at,ended_at,end_event,provenance'
+const STAGE_IDS = ['quejas.evaluation', 'quejas.investigation']
+export const dashboardQuejasKey = [...queryKeys.dashboard, 'quejas-ejecutivo'] as const
+
+// Paginación estable y proyección mínima: no se descargan contactos, descripciones,
+// informes ni snapshots. Todas las lecturas usan el mismo cliente autenticado/RLS.
+async function readAll<T>(page: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>, signal: AbortSignal): Promise<T[]> {
+  const result: T[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    signal.throwIfAborted()
+    const { data, error } = await page(from, from + PAGE_SIZE - 1)
+    if (error) throw error
+    signal.throwIfAborted()
+    const batch = (data ?? []) as T[]
+    result.push(...batch)
+    if (batch.length < PAGE_SIZE) return result
+  }
+}
+const chunks = (ids: string[]) => Array.from({ length: Math.ceil(ids.length / 100) }, (_, i) => ids.slice(i * 100, i * 100 + 100))
+
+export async function fetchDashboardQuejas(period: DashboardPeriod, signal: AbortSignal) {
+  const previousStart = String(period.year - 1) + '-01-01T00:00:00-06:00'
+  const previousEnd = String(period.year) + '-01-01T00:00:00-06:00'
+  const [cohort, events, completed, previous] = await Promise.all([
+    readAll<DashboardCase>((a, b) => supabase.from('qms_quejas').select(CASE_COLUMNS)
+      .gte('fecha', period.start).lt('fecha', period.end).order('id').range(a, b).abortSignal(signal), signal),
+    readAll<DashboardEvent>((a, b) => supabase.from('qms_case_events').select('id,case_id,occurred_at')
+      .eq('module', 'quejas').eq('kind', 'resolved').eq('provenance', 'observed')
+      .gte('occurred_at', period.start).lt('occurred_at', period.end).order('id').range(a, b).abortSignal(signal), signal),
+    readAll<DashboardRun>((a, b) => supabase.from('qms_stage_runs').select(RUN_COLUMNS)
+      .in('stage_id', STAGE_IDS).gte('ended_at', period.start).lt('ended_at', period.end)
+      .order('id').range(a, b).abortSignal(signal), signal),
+    supabase.from('qms_quejas').select('id').gte('fecha', previousStart).lt('fecha', previousEnd).limit(1).abortSignal(signal),
+  ])
+  if (previous.error) throw previous.error
+  const ids = [...new Set(events.map(event => event.case_id))]
+  const cohortIds = new Set(cohort.map(q => q.id))
+  const other: DashboardCase[] = []
+  const history: DashboardRun[] = []
+  // Incluye cierres de ingresos anteriores y ejecuciones iniciadas/terminadas
+  // antes del período. Lotes pequeños, sin lanzar cientos de requests en paralelo.
+  for (const batch of chunks(ids)) {
+    const missing = batch.filter(id => !cohortIds.has(id))
+    const [extra, runs] = await Promise.all([
+      missing.length ? readAll<DashboardCase>((a, b) => supabase.from('qms_quejas').select(CASE_COLUMNS)
+        .in('id', missing).order('id').range(a, b).abortSignal(signal), signal) : Promise.resolve([]),
+      readAll<DashboardRun>((a, b) => supabase.from('qms_stage_runs').select(RUN_COLUMNS)
+        .eq('stage_id', 'quejas.investigation').in('case_id', batch)
+        .lt('ended_at', period.end).order('id').range(a, b).abortSignal(signal), signal),
+    ])
+    other.push(...extra); history.push(...runs)
+  }
+  const runs = [...new Map([...completed, ...history].map(run => [run.id, run])).values()]
+  return { metrics: summarizeDashboard(period, [...cohort, ...other], events, runs), hasPrevious: !!previous.data?.length }
+}
+
+export function dashboardQuejasOptions(period: DashboardPeriod) {
+  return {
+    queryKey: [...dashboardQuejasKey, period.start, period.end] as const,
+    queryFn: ({ signal }: QueryFunctionContext) => fetchDashboardQuejas(period, signal),
+    staleTime: 60_000,
+  }
+}
+export function useDashboardQuejas(period: DashboardPeriod, active: boolean) {
+  return useQuery({ ...dashboardQuejasOptions(period), enabled: active })
 }
