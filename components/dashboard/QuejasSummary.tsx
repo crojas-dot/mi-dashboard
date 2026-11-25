@@ -180,7 +180,7 @@ function ReportFooter({ page }: { page: 1 | 2 }) {
 /** Solo impresión: reusa los mismos indicadores, sin consultas ni cálculos adicionales. */
 export function DashboardPrintReport({ data, period, generated }: { data: DashboardMetrics; period: string; generated: string }) {
   return <div data-dashboard-report className="hidden print:block">
-    <div data-dashboard-sheet="1" className="print:break-after-page">
+    <div data-dashboard-sheet="1" className="print:break-after-page print:p-[10mm] print:box-border print:w-full">
       <div data-dashboard-print-meta className="hidden print:flex items-center justify-between gap-4 border-b-2 border-[#024796] pb-2">
         <div className="min-w-0"><p className="font-bold text-qms-primary">ECA-QMS</p><h1 className="font-semibold text-qms-primary">Reporte de Indicadores del SGC · Quejas</h1></div>
         <div className="shrink-0 text-right text-qms-muted"><p>Período: {period}</p><p>Generado: {generated}</p></div>
@@ -189,7 +189,7 @@ export function DashboardPrintReport({ data, period, generated }: { data: Dashbo
       <div data-dashboard-report-trend><Trend data={data} report /></div>
       <ReportFooter page={1} />
     </div>
-    <div data-dashboard-sheet="2" className="print:break-after-avoid">
+    <div data-dashboard-sheet="2" className="print:break-after-avoid print:p-[10mm] print:box-border print:w-full">
       <div data-dashboard-print-meta data-dashboard-print-secondary className="hidden print:flex items-center justify-between gap-4 border-b border-qms-border pb-2">
         <h1 className="font-semibold text-qms-primary">ECA-QMS · Indicadores de Quejas</h1>
         <p className="shrink-0 text-right text-qms-muted">Período: {period}</p>
