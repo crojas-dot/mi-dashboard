@@ -17,7 +17,7 @@ assert.ok(existsSync(cssDir), 'Ejecutar npm run build antes de esta prueba')
 const files = readdirSync(cssDir, { recursive: true }).filter(path => path.endsWith('.css'))
 assert.ok(files.length, 'No se encontró CSS compilado')
 const css = files.map(path => readFileSync(join(cssDir, path), 'utf8')).join('\n')
-assert.ok(css.includes('qms-dashboard'), 'CSS de impresión no compilado')
+assert.match(css, /@page\s*\{[^}]*size:\s*297mm\s+167mm[^}]*margin:\s*0(?:px)?[;}]/, 'Regla raíz panorámica no compilada')
 const { DashboardPrintReport } = loadModule('components/dashboard/QuejasSummary.tsx')
 
 const counts = [75, 12, 9, 8, 32, 17, 2]
@@ -73,16 +73,23 @@ try {
   assert.ok(loaded, 'No se cargó la reproducción')
   await call('Runtime.evaluate', { expression: 'document.fonts.ready', awaitPromise: true })
   for (const [label, paperWidth, paperHeight] of [['A4', 210 / 25.4, 297 / 25.4], ['Carta', 8.5, 11]]) {
-    const pdf = await call('Page.printToPDF', { landscape: true, paperWidth, paperHeight, preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false })
+    const pdf = await call('Page.printToPDF', { landscape: true, paperWidth, paperHeight, preferCSSPageSize: true, printBackground: true, displayHeaderFooter: true, headerTemplate: '<span>CHROME_HEADER_SENTINEL</span>', footerTemplate: '<span>CHROME_FOOTER_SENTINEL</span>' })
     const bytes = Buffer.from(pdf.data, 'base64')
     const out = join(temp, label + '.pdf')
     writeFileSync(out, bytes)
     const numberOfPages = (bytes.toString('latin1').match(/\/Type\s*\/Page\b/g) ?? []).length
     assert.equal(numberOfPages, 2, label + ': se esperaban exactamente dos páginas')
+    const mediaBoxes = [...bytes.toString('latin1').matchAll(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/g)]
+    assert.ok(mediaBoxes.length, 'PDF sin MediaBox')
+    for (const [, width, height] of mediaBoxes) {
+      assert.ok(Math.abs(Number(width) - 297 / 25.4 * 72) < 2, label + ': ancho no panorámico ' + width)
+      assert.ok(Math.abs(Number(height) - 167 / 25.4 * 72) < 2, label + ': alto no panorámico ' + height)
+    }
     const extract = page => spawnSync('pdftotext', ['-f', String(page), '-l', String(page), '-layout', out, '-'], { encoding: 'utf8' })
     if (spawnSync('which', ['pdftotext']).status === 0) {
       const first = extract(1), second = extract(2)
       assert.equal(first.status, 0); assert.equal(second.status, 0)
+      assert.doesNotMatch(first.stdout + second.stdout, /CHROME_(HEADER|FOOTER)_SENTINEL/)
       assert.match(first.stdout, /Reporte de Indicadores del SGC/)
       assert.match(first.stdout, /Tendencia mensual/)
       assert.match(first.stdout, /Página\s+1\s+de\s+2/)
@@ -97,11 +104,12 @@ try {
       assert.equal(raw.status, 0)
       for (const { area } of data.areas) assert.ok(raw.stdout.replace(/\s+/g, ' ').includes(area), label + ': área faltante ' + area)
     }
-    console.log(label + ': 2 páginas, reporte impreso correctamente')
+    console.log(label + ': 2 láminas panorámicas 297 × 167 mm, sin encabezados del navegador')
   }
 } finally {
   socket?.close()
   chrome.kill()
   await new Promise(resolve => { if (chrome.exitCode !== null || chrome.signalCode !== null) resolve(); else { chrome.once('exit', resolve); setTimeout(resolve, 2000).unref() } })
-  rmSync(temp, { recursive: true, force: true, maxRetries: 3 })
+  // Chromium puede mantener procesos hijos escribiendo durante el cierre.
+  rmSync(temp, { recursive: true, force: true, maxRetries: 12, retryDelay: 200 })
 }
