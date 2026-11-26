@@ -9,7 +9,7 @@ test('el plazo vigente viene del snapshot y no de prioridad o antigüedad', () =
   const queja = { estado: 'En Investigación', plazo_vence: '2026-10-20T05:59:59.999999Z', fecha_sla: '2026-01-01T00:00:00Z', fecha_limite_investigacion: '2026-10-19T05:59:59.999999Z' }
   const result = getQuejaDeadline(queja, now)
   assert.equal(result.vence, queja.plazo_vence)
-  assert.equal(result.label, 'Vence en 10 días')
+  assert.equal(result.label, 'Vence el 19/10/2026')
   assert.equal(result.variant, 'green')
 })
 
@@ -44,7 +44,7 @@ test('un snapshot vencido se muestra vencido aunque su situación viniera de una
 test('la situación de atención no cambia el verde de un plazo que aún tiene más de un día', () => {
   const result = getQuejaDeadline({ estado: 'En Investigación', plazo_vence: '2026-10-20T05:59:59Z', plazo_situacion: 'attention', plazo_dias: 3 }, now)
   assert.equal(result.variant, 'green')
-  assert.equal(result.label, 'Vence en 10 días')
+  assert.equal(result.label, 'Vence el 19/10/2026')
 })
 
 test('usa los códigos de etapa y situación emitidos por el motor efectivo de DB', () => {
@@ -119,5 +119,5 @@ test('reapertura presenta días hábiles capturados sin afectar expedientes norm
     estado: 'En Investigación', reabierta: false,
     bandeja_plazo_vence: fecha, reapertura_dias_habiles_restantes: 15,
   }, now)
-  assert.match(normal.label, /^Vence en \d+ días$/)
+  assert.equal(normal.label, 'Vence el 30/11/2026')
 })

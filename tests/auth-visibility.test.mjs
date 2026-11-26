@@ -142,7 +142,7 @@ function deferred() {
 }
 const flush = () => new Promise(resolve => setImmediate(resolve))
 
-function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async () => user, getSession, getUser, storage, login = async () => ({ user, authId: 'auth-a' }), access=async()=>({managed:false,phase:'ready'}),rpc = async () => ({ data: permissions, error: null }) } = {}) {
+function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async () => user, getSession, getUser, storage, login = async () => ({ user, authId: 'auth-a' }), logoutRoutine, access=async()=>({managed:false,phase:'ready'}),rpc = async () => ({ data: permissions, error: null }) } = {}) {
   let listener
   let activeSession = session
   const signOutPending = deferred()
@@ -157,7 +157,7 @@ function storeFixture({ session = { user: { id: 'auth-a' } }, profile = async ()
       },
       rpc,
     } },
-    '@/lib/auth': { getAppUser: profile, signOut: () => signOutPending.promise, signIn: login },
+    '@/lib/auth': { getAppUser: profile, signOut: logoutRoutine ?? (() => signOutPending.promise), signIn: login },
     '@/lib/services/accessClient': {fetchAccessStatus:access},
     '@/lib/queries/usePermisos': { fetchPermisosByRol: async () => permissions },
     '@/lib/utils/logger': { logger: { error() {} } },
@@ -512,4 +512,22 @@ test('un cierre fallido conserva el bloqueo; solo un login explícito confirmado
   assert.equal(result.error, undefined)
   assert.equal(storage.getItem('qms:logout-pending'), null)
   assert.equal(fixture.store.getState().user.id, user.id)
+})
+
+test('el error devuelto por el SDK conserva la marca hasta que el cierre se confirma', async () => {
+  const storage = tabStorage()
+  let error = new Error('Fallo transitorio sintético')
+  const { signOut } = loadModule('lib/auth.ts', {
+    '@/lib/supabase': { supabase: { auth: { signOut: async () => ({ error }) } } },
+    '@/lib/services/accessClient': {},
+  })
+  const fixture = storeFixture({ storage, logoutRoutine: signOut })
+  await fixture.store.getState().init()
+  await fixture.store.getState().logout()
+  assert.equal(storage.getItem('qms:logout-pending'), 'true')
+  assert.equal(fixture.store.getState().user, null)
+
+  error = null
+  await fixture.store.getState().logout()
+  assert.equal(storage.getItem('qms:logout-pending'), null)
 })

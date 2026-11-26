@@ -22,6 +22,14 @@ test('sábado y domingo no consumen días del snapshot hábil', () => {
     assert.equal(result.progress, 0)
   }
 })
+test('una investigación de 15 días hábiles conserva ese conteo aunque abarque 20 días naturales', () => {
+  const expiresAt = '2026-12-18T23:59:59-06:00'
+  const investigation = { ...run, stage_id: 'quejas.investigation', started_at: '2026-11-28T12:00:00-06:00',
+    expires_at: expiresAt, snapshot: { ...run.snapshot, rule: { day_type: 'business_days', duration: 15 } } }
+  const result = caseDeadline({ estado: 'En Investigación', plazo_vence: expiresAt }, [investigation], at('2026-11-28'))
+  assert.equal(result.label, 'Vence en 15 días hábiles')
+  assert.equal(result.vence, expiresAt)
+})
 test('feriados y semana particular proceden del snapshot, sin calendario actual global', () => {
   const special = { ...run, snapshot: { rule: { day_type: 'business_days', duration: 2 }, calendar: { weekdays: [1, 2, 3, 4, 5], holidays: [{ date: '2026-10-12' }] } } }
   assert.equal(caseDeadline(queja, [special], at('2026-10-09')).label, 'Vence en 2 días hábiles')
@@ -35,10 +43,10 @@ test('vencimiento de hoy y vencido no se presentan como tiempo restante positivo
   assert.equal(result.variant, 'red')
   assert.equal(result.progress, 100)
 })
-test('snapshot ausente, desconocido o corrupto conserva el fallback natural sin progreso inventado', () => {
+test('snapshot ausente, desconocido o corrupto muestra la fecha persistida sin progreso inventado', () => {
   for (const snapshot of [null, {}, { rule: { day_type: 'fantasy', duration: 3 } }, { rule: run.snapshot.rule, calendar: { weekdays: [0], holidays: [] } }, { rule: run.snapshot.rule, calendar: { weekdays: [1,2,3,4,5], holidays: [{ date: '2026-02-31' }] } }]) {
     const result = caseDeadline(queja, [{ ...run, snapshot }], at('2026-10-09'))
-    assert.equal(result.label, 'Vence en 5 días')
+    assert.equal(result.label, 'Vence el 14/10/2026')
     assert.equal(result.progress, null)
     assert.equal(result.business, false)
   }
@@ -98,7 +106,7 @@ test('la vista previa no presenta conteos provisionales mientras consulta el cal
   assert.equal(cached.pending, false)
   assert.equal(caseDeadline(queja, [run], now, false).label, cached.label)
   assert.equal(caseDeadline(queja, [{ ...run, expires_at: '2026-10-13T23:00:00-06:00' }], now, true).label, 'Consultando plazo…')
-  assert.equal(caseDeadline(queja, [], now, false).label, 'Vence en 5 días')
+  assert.equal(caseDeadline(queja, [], now, false).label, 'Vence el 14/10/2026')
   assert.equal(caseDeadline({ ...queja, estado: 'Finalizado' }, [], now, true).label, 'Completado')
 })
 

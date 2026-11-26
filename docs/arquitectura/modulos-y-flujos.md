@@ -120,6 +120,8 @@ permisos ni datos persistidos.
   motivo. Las etapas nuevas usan 3/15 días hábiles; revisión, devolución o reasignación
   no reinician la investigación. Leer el snapshot QMS, nunca prioridad/SLA legacy
   para inventar vencimientos. Los históricos conservan su calendario y revisión.
+  La bandeja muestra la fecha límite si solo dispone del vencimiento. El detalle
+  usa el calendario guardado para mostrar el conteo de días hábiles.
 - En Pendiente de Revisión GC, la propuesta del responsable se lee en el centro
   con sus adjuntos internos debajo, sin «Ver antecedentes». GC puede Aprobar y continuar (Resuelto),
   Devolver con motivo/soportes, o Derivar a SACP si hay propuesta y aún no está

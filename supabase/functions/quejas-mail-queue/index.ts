@@ -6,7 +6,7 @@ import { buildPublicTrackingUrl, mintPublicTrackingCapability, validatePublicTra
 import { loadEmailIdentity } from '../_shared/emailIdentity.ts'
 
 type QueuePurpose = 'claim_request' | 'claim_receipt' | 'authorize_request' | 'authorize_receipt'
-  | 'ack_request' | 'ack_receipt' | 'health_request' | 'health_receipt'
+  | 'dispatch_begin_request' | 'dispatch_begin_receipt' | 'ack_request' | 'ack_receipt' | 'health_request' | 'health_receipt'
 interface QueueEnvelope { version: 1; purpose: QueuePurpose; issuedAt: number; nonce: string; payload: string; signature: string }
 interface QueueDependencies {
   env: (name: string) => string | undefined
@@ -72,7 +72,7 @@ export async function signQueueEnvelope(purpose: QueuePurpose, payload: unknown,
 
 async function authenticate(value: unknown, secret: string, cryptoApi: Crypto, now: number) {
   const candidate = record(value, ['version', 'purpose', 'issuedAt', 'nonce', 'payload', 'signature'])
-  if (candidate.version !== 1 || !['claim_request', 'authorize_request', 'ack_request', 'health_request'].includes(String(candidate.purpose))
+  if (candidate.version !== 1 || !['claim_request', 'authorize_request', 'dispatch_begin_request', 'ack_request', 'health_request'].includes(String(candidate.purpose))
     || !Number.isSafeInteger(candidate.issuedAt) || Math.floor(now / 1000) - Number(candidate.issuedAt) > 300
     || Number(candidate.issuedAt) - Math.floor(now / 1000) > 30 || !isMailUuid(candidate.nonce)
     || typeof candidate.payload !== 'string' || candidate.payload.length > REQUEST_BYTES
@@ -139,7 +139,7 @@ function databaseConfig(env: QueueDependencies['env']) {
   return { url, key, legacyJwt: !modernKey }
 }
 
-async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_claim_batch_v2' | 'qms_mail_claim_batch_v3' | 'qms_mail_claim_batch_v4' | 'qms_mail_claim_urgent_batch' | 'qms_mail_authorize_v2' | 'qms_mail_complete',
+async function rpc(config: ReturnType<typeof databaseConfig>, name: 'qms_mail_claim_batch_v2' | 'qms_mail_claim_batch_v3' | 'qms_mail_claim_batch_v4' | 'qms_mail_claim_urgent_batch' | 'qms_mail_authorize_v2' | 'qms_mail_begin_dispatch' | 'qms_mail_complete',
   args: Record<string, unknown>, fetcher: typeof fetch) {
   const result = await fetcher(new URL(`/rest/v1/rpc/${name}`, config.url).toString(), {
     method: 'POST', redirect: 'error', cache: 'no-store', signal: AbortSignal.timeout(10_000),
@@ -186,7 +186,8 @@ async function officialDocument(config: ReturnType<typeof databaseConfig>, id: s
     publicationParams.source_revision = 'eq.' + event.publicacion_revision
   } else {
     if (typeof event.created_at !== 'string' || event.created_at.length > 64 || !Number.isFinite(Date.parse(event.created_at))) throw new QueueError(503, 'mail_queue_unavailable')
-    publicationParams.publicado_at = 'lte.' + new Date(event.created_at).toISOString()
+    // El evento y la publicación comparten la precisión de microsegundos de Postgres.
+    publicationParams.publicado_at = 'lte.' + event.created_at
   }
   const publication = await read('queja_public_resolutions', publicationParams)
   // El adjunto se obtiene del expediente, sin depender del enlace que caduca.
@@ -233,6 +234,10 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
         const value = record(payload, ['eventId', 'claimToken', 'includeOfficialDocument'])
         if (!isMailUuid(value.eventId) || !isMailUuid(value.claimToken)
           || value.includeOfficialDocument !== undefined && typeof value.includeOfficialDocument !== 'boolean') throw new QueueError()
+        args = { p_id: value.eventId, p_claim_token: value.claimToken }
+      } else if (envelope.purpose === 'dispatch_begin_request') {
+        const value = record(payload, ['eventId', 'claimToken'])
+        if (!isMailUuid(value.eventId) || !isMailUuid(value.claimToken)) throw new QueueError()
         args = { p_id: value.eventId, p_claim_token: value.claimToken }
       } else {
         const value = record(payload, ['eventId', 'claimToken', 'outcome', 'code', 'retryAfterSeconds'])
@@ -290,6 +295,12 @@ export function createQuejasMailQueueHandler(dependencies: QueueDependencies) {
         const document = delivery?.document ?? null
         return response(await signQueueEnvelope('authorize_receipt', { requestNonce: envelope.nonce,
           eventId: args.p_id, authorized, ...(include ? { officialDocument: document } : {}) }, secret, cryptoApi, now()))
+      }
+      if (envelope.purpose === 'dispatch_begin_request') {
+        const granted = await rpc(database, 'qms_mail_begin_dispatch', args, fetcher)
+        if (typeof granted !== 'boolean') throw new QueueError(503, 'mail_queue_unavailable')
+        return response(await signQueueEnvelope('dispatch_begin_receipt', { requestNonce: envelope.nonce,
+          eventId: args.p_id, granted }, secret, cryptoApi, now()))
       }
       const accepted = await rpc(database, 'qms_mail_complete', args, fetcher)
       if (typeof accepted !== 'boolean') throw new QueueError(503, 'mail_queue_unavailable')

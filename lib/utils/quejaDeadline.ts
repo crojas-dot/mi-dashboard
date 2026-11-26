@@ -49,7 +49,7 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
   if (!vence) return { vence: null, etapa: null, label: 'Sin plazo', variant: 'gray', vencido: false }
   const time = now instanceof Date ? now.getTime() : now
   const dueDate = new Date(vence)
-  // Días naturales hasta la fecha local persistida; no recalcular el plazo hábil de DB.
+  // La fecha civil determina los estados de vencimiento. El conteo hábil depende del calendario del expediente.
   const civilDay = (value: number | Date) => {
     const parts = Object.fromEntries(dayFormatter.formatToParts(value).map(p => [p.type, p.value]))
     return Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)) / 86_400_000
@@ -64,7 +64,7 @@ export function getQuejaDeadline(queja: QuejaConPlazo, now: number | Date = Date
     ? queja.reapertura_dias_habiles_restantes : null
   if (habil !== null && habil > 0)
     return { vence, etapa, label: habil === 1 ? 'Vence en 1 día hábil' : `Vence en ${habil} días hábiles`, variant: 'green', vencido: false }
-  return { vence, etapa, label: `Vence en ${remaining} días`, variant: 'green', vencido: false }
+  return { vence, etapa, label: `Vence el ${formatQuejaDeadlineDate(vence)}`, variant: 'green', vencido: false }
 }
 
 /** Los timestamps se muestran siempre en la zona de los plazos, no en la del dispositivo. */

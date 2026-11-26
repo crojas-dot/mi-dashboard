@@ -101,3 +101,21 @@ En Quejas, un fallo confirmado antes de MailApp puede reprogramarse desde el
 expediente. El próximo poll procesa la misma fila y vuelve a autorizar su
 destinatario, publicación y reserva. Los estados `sent` y `uncertain` impiden el
 reintento. El botón no crea un correo adicional ni vuelve a publicar la respuesta.
+
+## Emisor de Sistemas con registro en Supabase
+
+`QMS_MAIL_SUPABASE_DISPATCH=true` en el transporte `supabase` habilita la
+reserva de cada envío en el outbox. La reserva se obtiene después de validar
+el remitente y preparar el adjunto, inmediatamente antes de llamar a Gmail.
+Si la confirmación se pierde, el evento se conserva para conciliación.
+La hoja anterior queda disponible para investigar intentos históricos.
+
+Para publicar este modo, aplicar primero la migración de reserva y desplegar
+la Edge Function compatible. Agregar Gmail API v1 en Servicios y declarar
+`gmail.send` y `gmail.settings.basic` en el manifiesto junto con los alcances
+de petición externa y Drive de la cola. En un proyecto de Google Cloud estándar,
+habilitar Gmail API también en la consola de ese proyecto.
+`qmsMailCheckSender` verifica la cuenta principal `sistemas@eca.or.cr` y el alias
+`qms@eca.or.cr` sin reclamar eventos. Confirmar también la lectura del adjunto
+oficial bajo la misma cuenta. El despertador de Quejas y el activador de cinco
+minutos deben ejecutar el código nuevo bajo esa identidad.

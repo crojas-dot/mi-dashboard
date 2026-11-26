@@ -46,7 +46,8 @@ export async function signIn(email: string, password: string): Promise<LoginResu
 }
 
 export async function signOut(): Promise<void> {
-  await supabase.auth.signOut()
+  const { error } = await supabase.auth.signOut()
+  if (error) throw error
 }
 
 export async function getAppUser(authId: string): Promise<PerfilUsuario | null> {

@@ -8,6 +8,8 @@
  */
 
 /** Servicio independiente de correo. No modifica el procesador de archivos. */
+var qmsMailSystemAlias_ = 'qms@eca.or.cr';
+
 /** Ejecutar una vez tras autorizar drive.readonly. No reclama ni envía correos. */
 function qmsMailEnableOfficialAttachments() {
   DriveApp.getRootFolder();
@@ -38,6 +40,7 @@ function qmsMailWakeSetup_(e) {
     var secret = request.payload.secret;
     if (typeof secret !== 'string' || !/^[a-f0-9]{64}$/.test(secret) || secret === configuration.secret) throw new Error('invalid_mail_request');
     if (request.payload.eventId !== undefined && !qmsMailUuid_(request.payload.eventId)) throw new Error('invalid_mail_request');
+    if (configuration.supabaseDispatch && request.payload.eventId !== undefined) throw new Error('dispatch_mode');
     stage = 'authorization';
     var authorization = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
     if (authorization.getAuthorizationStatus() === ScriptApp.AuthorizationStatus.REQUIRED) {
@@ -45,6 +48,9 @@ function qmsMailWakeSetup_(e) {
         requestNonce: request.envelope.nonce, configured: false, authorizationRequired: true,
         authorizationUrl: authorization.getAuthorizationUrl()
       }, configuration.secret))).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (configuration.supabaseDispatch) {
+      stage = 'sender'; qmsMailSystemSenderToken_();
     }
     stage = 'drive'; DriveApp.getRootFolder();
     stage = 'lock';
@@ -68,6 +74,7 @@ function qmsMailWakeSetup_(e) {
     } finally { lock.releaseLock(); }
     return ContentService.createTextOutput(JSON.stringify(qmsMailSign_('queue_wake_setup_receipt', {
       requestNonce: request.envelope.nonce, configured: true, driveReady: true,
+      ...(configuration.supabaseDispatch ? { senderReady: true } : {}),
       ...(deliveryState ? { deliveryState: deliveryState } : {})
     }, configuration.secret))).setMimeType(ContentService.MimeType.JSON);
   } catch (_) { return ContentService.createTextOutput(JSON.stringify({ error: 'wake_setup_unavailable', ...(authenticated ? { stage: stage } : {}) })).setMimeType(ContentService.MimeType.JSON); }
@@ -122,6 +129,7 @@ function qmsMailConfiguration_() {
     ledgerId: props.getProperty('QMS_MAIL_LEDGER_SPREADSHEET_ID'),
     workerUrl: props.getProperty('QMS_MAIL_WORKER_URL'),
     transport: props.getProperty('QMS_MAIL_TRANSPORT') || 'legacy',
+    supabaseDispatch: props.getProperty('QMS_MAIL_SUPABASE_DISPATCH') === 'true',
     queueUrl: props.getProperty('QMS_MAIL_QUEUE_URL'),
     replyTo: props.getProperty('QMS_MAIL_REPLY_TO'),
     senderName: 'QMS ECA'
@@ -226,7 +234,9 @@ function qmsMailHandlePost(e) {
   // El transporte legacy no tiene preflight de DB: nunca acepta los avisos internos.
   if (!qmsMailValidMessage_(request.payload)) return qmsMailReceipt_(configuration.secret, request, 'failed', 'invalid_delivery');
   // El transporte directo nunca vuelve al endpoint /exec ni permite envíos legacy.
-  if (!configuration.enabled || configuration.transport === 'supabase') return qmsMailReceipt_(configuration.secret, request, 'retry', 'disabled');
+  if (!configuration.enabled || configuration.transport === 'supabase' || configuration.supabaseDispatch) {
+    return qmsMailReceipt_(configuration.secret, request, 'retry', 'disabled');
+  }
   var result = qmsMailDeliver_(configuration, request.payload);
   return qmsMailReceipt_(configuration.secret, request, result.outcome, result.code, result.retryAfterSeconds);
 }
@@ -274,13 +284,8 @@ function qmsMailDeliver_(configuration, payload, officialDocument, identidad) {
       name: configuration.senderName, htmlBody: qmsMailHtml_(payload, identidad) };
     if (officialDocument) {
       // Descargar antes de escribir attempting: un fallo de Drive no es una entrega incierta.
-      try {
-        var document = DriveApp.getFileById(officialDocument.driveId);
-        if (document.isTrashed() || document.getSize() !== officialDocument.size || document.getMimeType() !== officialDocument.mime) return result('retry', 'official_document_changed');
-        var blob = document.getBlob().setName(officialDocument.name);
-        if (blob.getBytes().length !== officialDocument.size) return result('retry', 'official_document_changed');
-        mail.attachments = [blob];
-      } catch (_) { return result('retry', 'official_document_unavailable'); }
+      try { mail.attachments = [qmsMailLoadOfficialDocument_(officialDocument).blob]; }
+      catch (error) { return result('retry', error.message); }
     }
     if (configuration.replyTo) {
       if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(configuration.replyTo) || configuration.replyTo.length > 254) {
@@ -309,12 +314,135 @@ function qmsMailDeliver_(configuration, payload, officialDocument, identidad) {
   } finally { lock.releaseLock(); }
 }
 
+function qmsMailLoadOfficialDocument_(officialDocument) {
+  var blob, bytes;
+  try {
+    var file = DriveApp.getFileById(officialDocument.driveId);
+    if (!file.isTrashed() && file.getSize() === officialDocument.size && file.getMimeType() === officialDocument.mime) {
+      blob = file.getBlob().setName(officialDocument.name);
+      bytes = blob.getBytes();
+    }
+  } catch (_) { throw new Error('official_document_unavailable'); }
+  if (!bytes || bytes.length !== officialDocument.size) throw new Error('official_document_changed');
+  return { blob: blob, bytes: bytes };
+}
+
+/** El token de la ejecución debe corresponder a Sistemas y tener el alias verificado. */
+function qmsMailSystemSenderToken_() {
+  var token = ScriptApp.getOAuthToken();
+  if (!token) throw new Error('system_sender_not_ready');
+  var response = UrlFetchApp.fetch('https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs?fields=sendAs(sendAsEmail,isPrimary,verificationStatus)', {
+    method: 'get', headers: { Authorization: 'Bearer ' + token }, followRedirects: false, muteHttpExceptions: true
+  });
+  if (response.getResponseCode() !== 200) throw new Error('system_sender_not_ready');
+  var text = response.getContentText();
+  var aliases = text.length <= 8192 ? JSON.parse(text).sendAs : null;
+  if (!Array.isArray(aliases)
+    || !aliases.some(function (item) { return item && item.isPrimary === true && item.sendAsEmail === 'sistemas@eca.or.cr'; })
+    || !aliases.some(function (item) { return item && item.sendAsEmail === qmsMailSystemAlias_ && item.verificationStatus === 'accepted'; })) {
+    throw new Error('system_sender_not_ready');
+  }
+  return token;
+}
+
+/** Consultar el remitente efectivo sin reclamar eventos ni enviar correo. */
+function qmsMailCheckSender() {
+  var ready = false;
+  try { qmsMailSystemSenderToken_(); ready = true; } catch (_) { /* No registrar la respuesta de Gmail. */ }
+  console.info('QMS mail sender', JSON.stringify({ ready: ready }));
+  return { ready: ready };
+}
+
+/** Evitar sintaxis de comentarios, grupos o direcciones múltiples en cabeceras MIME. */
+function qmsMailHeaderAddress_(value) {
+  return typeof value === 'string' && value.length <= 254 && /^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(value)
+    && !/[\u0000-\u001f\u007f():\[\]\\"]/.test(value);
+}
+
+function qmsMailSystemMime_(configuration, message, document, documentBytes, identity, renderedHtml) {
+  function textPart(type, content) {
+    return ['Content-Type: ' + type + '; charset=UTF-8', 'Content-Transfer-Encoding: base64', '',
+      base64Lines(Utilities.newBlob(content.replace(/\r\n|\r|\n/g, '\r\n')).getBytes())].join('\r\n');
+  }
+  function base64Lines(bytes) { return Utilities.base64Encode(bytes).replace(/.{76}(?=.)/g, '$&\r\n'); }
+  var subject = Array.from(message.subject), encodedWords = [];
+  for (var index = 0; index < subject.length; index += 10) {
+    var word = Utilities.base64Encode(Utilities.newBlob(subject.slice(index, index + 10).join('')).getBytes());
+    encodedWords.push('=?UTF-8?B?' + word + '?=');
+  }
+  var headers = ['From: QMS ECA <' + qmsMailSystemAlias_ + '>', 'To: <' + message.to + '>',
+    'Subject: ' + encodedWords.join('\r\n '), 'Date: ' + new Date().toUTCString(),
+    'Message-ID: <' + message.eventId + '@eca.or.cr>', 'MIME-Version: 1.0'];
+  if (configuration.replyTo) headers.push('Reply-To: <' + configuration.replyTo + '>');
+  var alternative = 'qms-alt-' + Utilities.getUuid();
+  var html = renderedHtml === undefined ? qmsMailHtml_(message, identity) : renderedHtml;
+  var version = ['Content-Type: multipart/alternative; boundary="' + alternative + '"', '', '--' + alternative,
+    textPart('text/plain', message.body), '--' + alternative, textPart('text/html', html), '--' + alternative + '--'];
+  if (!document) return headers.concat(version, '').join('\r\n');
+
+  // Los parámetros RFC 2231 conservan acentos y mantienen cada línea plegada.
+  var filename = encodeURIComponent(document.name).replace(/[!'()*]/g, function (character) {
+    return '%' + character.charCodeAt(0).toString(16).toUpperCase();
+  });
+  var names = filename.match(/(?:%[0-9A-F]{2}|[^%]){1,16}/g).map(function (part, partIndex) {
+    return ' filename*' + partIndex + '*=' + (partIndex === 0 ? "UTF-8''" : '') + part;
+  });
+  var mixed = 'qms-mixed-' + Utilities.getUuid();
+  return headers.concat(['Content-Type: multipart/mixed; boundary="' + mixed + '"', '', '--' + mixed], version,
+    ['--' + mixed, 'Content-Type: ' + document.mime, 'Content-Disposition: attachment;\r\n' + names.join(';\r\n'),
+      'Content-Transfer-Encoding: base64', '', base64Lines(documentBytes), '--' + mixed + '--', '']).join('\r\n');
+}
+
+function qmsMailGmailAccepted_(token, raw) {
+  var response = UrlFetchApp.fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'post', contentType: 'application/json', headers: { Authorization: 'Bearer ' + token },
+    payload: JSON.stringify({ raw: raw }), followRedirects: false, muteHttpExceptions: true
+  });
+  if (response.getResponseCode() !== 200) return false;
+  var text = response.getContentText();
+  var id = text.length <= 2048 ? JSON.parse(text).id : null;
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(id);
+}
+
+function qmsMailDeliverSystem_(configuration, entry, identity, token, deadline) {
+  function result(outcome, code) { return { outcome: outcome, code: code, retryAfterSeconds: 300 }; }
+  var message = entry.message, document = entry.officialDocument, documentBytes, raw;
+  if (!qmsMailHeaderAddress_(message.to)) return result('failed', 'invalid_delivery');
+  if (configuration.replyTo && !qmsMailHeaderAddress_(configuration.replyTo)) return result('retry', 'invalid_reply_to');
+  if (message.kind === 'final' && !document) return result('retry', 'official_document_missing');
+  if (document) {
+    try { documentBytes = qmsMailLoadOfficialDocument_(document).bytes; }
+    catch (error) { return result('retry', error.message); }
+  }
+  try { raw = Utilities.base64EncodeWebSafe(Utilities.newBlob(qmsMailSystemMime_(configuration, message, document, documentBytes, identity)).getBytes()).replace(/=+$/, ''); }
+  catch (_) { return result('failed', 'invalid_delivery'); }
+  var props = PropertiesService.getScriptProperties();
+  if (props.getProperty('QMS_MAIL_ENABLED') !== 'true' || props.getProperty('QMS_MAIL_SUPABASE_DISPATCH') !== 'true') {
+    return result('retry', 'disabled');
+  }
+  if (Date.now() >= deadline) return result('retry', 'batch_not_started');
+  try {
+    // Una respuesta perdida puede haber reservado el único intento en Supabase.
+    var grant = qmsMailQueueRequest_(configuration, 'dispatch_begin_request', {
+      eventId: message.eventId, claimToken: entry.claimToken
+    }, 'dispatch_begin_receipt');
+    qmsMailRecord_(grant, ['requestNonce', 'eventId', 'granted']);
+    if (grant.eventId !== message.eventId || grant.granted !== true || Date.now() >= deadline
+      || props.getProperty('QMS_MAIL_ENABLED') !== 'true' || props.getProperty('QMS_MAIL_SUPABASE_DISPATCH') !== 'true') {
+      return result('uncertain', 'delivery_uncertain');
+    }
+    if (qmsMailGmailAccepted_(token, raw)) return result('sent', 'sent');
+  } catch (_) { /* El estado reservado impide un segundo intento de entrega. */ }
+  return result('uncertain', 'delivery_uncertain');
+}
+
 /** Preparar manualmente con el correo apagado; nunca instala el trigger ni envía. */
 function qmsMailInitializeLedger() {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(3000)) throw new Error('ledger_busy');
   try {
     var configuration = qmsMailConfiguration_();
+    if (configuration.supabaseDispatch) throw new Error('dispatch_mode');
     if (configuration.enabled) throw new Error('mail_initialization_enabled');
     var book;
     if (configuration.ledgerId) {
@@ -336,10 +464,18 @@ function qmsMailInitializeLedger() {
 /** Instalar explícitamente; no envía correo ni se ejecuta al copiar el archivo. */
 function qmsMailInstallTrigger() {
   var configuration = qmsMailConfiguration_();
-  qmsMailLedger_(configuration);
+  if (!configuration.supabaseDispatch) qmsMailLedger_(configuration);
   if (!configuration.enabled) throw new Error('worker_not_configured');
-  if (configuration.transport === 'supabase') qmsMailQueueUrl_(configuration);
-  else if (configuration.transport !== 'legacy' || !/^https:\/\/[^/?#]+\/api\/quejas\/correos$/.test(configuration.workerUrl || '')) throw new Error('worker_not_configured');
+  if (configuration.transport === 'supabase') {
+    qmsMailQueueUrl_(configuration);
+    if (configuration.supabaseDispatch) {
+      qmsMailSystemSenderToken_();
+      DriveApp.getRootFolder();
+    }
+  } else if (configuration.supabaseDispatch || configuration.transport !== 'legacy'
+    || !/^https:\/\/[^/?#]+\/api\/quejas\/correos$/.test(configuration.workerUrl || '')) {
+    throw new Error('worker_not_configured');
+  }
   if (!ScriptApp.getProjectTriggers().some(function (trigger) { return trigger.getHandlerFunction() === 'qmsMailPoll'; })) {
     ScriptApp.newTrigger('qmsMailPoll').timeBased().everyMinutes(5).create();
   }
@@ -349,7 +485,7 @@ function qmsMailPoll() {
   var configuration = qmsMailConfiguration_();
   if (!configuration.enabled) return;
   if (configuration.transport === 'supabase') return qmsMailPollDirect_(configuration);
-  if (configuration.transport !== 'legacy') throw new Error('worker_not_configured');
+  if (configuration.transport !== 'legacy' || configuration.supabaseDispatch) throw new Error('worker_not_configured');
   if (!/^https:\/\/[^/?#]+\/api\/quejas\/correos$/.test(configuration.workerUrl || '')) throw new Error('worker_not_configured');
   var owner = Utilities.getUuid();
   if (!qmsMailPollLease_(owner)) return;
@@ -454,20 +590,22 @@ function qmsMailAck_(configuration, entry, result) {
   if (receipt.eventId !== entry.message.eventId || receipt.accepted !== true) throw new Error('queue_ack_failed');
 }
 
-/** null permite intentar la entrega; cualquier resultado evita MailApp y se confirma por ACK. */
+/** null permite intentar la entrega; cualquier resultado se confirma por ACK. */
 function qmsMailAuthorizeInternal_(configuration, entry) {
-  var lock = LockService.getScriptLock();
-  if (!lock.tryLock(3000)) return { outcome: 'retry', code: 'ledger_busy', retryAfterSeconds: 60 };
-  try {
-    if (PropertiesService.getScriptProperties().getProperty('QMS_MAIL_ENABLED') !== 'true') {
-      return { outcome: 'retry', code: 'disabled', retryAfterSeconds: 300 };
-    }
+  if (!configuration.supabaseDispatch) {
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(3000)) return { outcome: 'retry', code: 'ledger_busy', retryAfterSeconds: 60 };
     try {
-      // Un ACK perdido no puede convertir una entrega previa en un simple descarte.
-      var recorded = qmsMailRecordedDelivery_(qmsMailLedger_(configuration), entry.message);
-      if (recorded) return recorded;
-    } catch (_) { return { outcome: 'retry', code: 'ledger_unavailable', retryAfterSeconds: 300 }; }
-  } finally { lock.releaseLock(); }
+      if (PropertiesService.getScriptProperties().getProperty('QMS_MAIL_ENABLED') !== 'true') {
+        return { outcome: 'retry', code: 'disabled', retryAfterSeconds: 300 };
+      }
+      try {
+        // Un ACK perdido no puede convertir una entrega previa en un simple descarte.
+        var recorded = qmsMailRecordedDelivery_(qmsMailLedger_(configuration), entry.message);
+        if (recorded) return recorded;
+      } catch (_) { return { outcome: 'retry', code: 'ledger_unavailable', retryAfterSeconds: 300 }; }
+    } finally { lock.releaseLock(); }
+  }
   try {
     // Nunca mantener ScriptLock durante HTTP ni escribir attempting antes de autorizar.
     var attach = entry.message.kind === 'final';
@@ -529,7 +667,7 @@ function qmsMailDirectCapacity_(configuration) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(1000)) return 0;
   try {
-    qmsMailLedger_(configuration);
+    if (!configuration.supabaseDispatch) qmsMailLedger_(configuration);
     if (configuration.replyTo && (configuration.replyTo.length > 254
       || !/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(configuration.replyTo))) throw new Error('mail_not_configured');
     var quota = MailApp.getRemainingDailyQuota();
@@ -544,9 +682,12 @@ function qmsMailPollDirect_(configuration, citizenOnly) {
   if (!qmsMailPollLease_(owner)) return false;
   var counts = { claimed: 0, sent: 0, retry: 0, uncertain: 0, failed: 0, skipped: 0 };
   try {
-    // Un tick sin capacidad mantiene las campanas activas aunque MailApp o el diario no estén disponibles.
-    var limit = 0;
-    try { limit = qmsMailDirectCapacity_(configuration); } catch (_) { /* claim0 no reserva ni entrega correos */ }
+    // Un tick sin capacidad mantiene las campanas activas aunque el emisor no esté disponible.
+    var limit = 0, senderToken;
+    try {
+      if (configuration.supabaseDispatch) senderToken = qmsMailSystemSenderToken_();
+      limit = qmsMailDirectCapacity_(configuration);
+    } catch (_) { /* claim0 no reserva ni entrega correos */ }
     var claim = { limit: limit };
     if (citizenOnly === true) claim.citizenOnly = true;
     var batch = qmsMailClaimReceipt_(qmsMailQueueRequest_(configuration, 'claim_request', claim, 'claim_receipt'), limit);
@@ -554,17 +695,18 @@ function qmsMailPollDirect_(configuration, citizenOnly) {
     for (var index = 0; index < batch.messages.length; index++) {
       if (Date.now() - started >= 240000) break;
       var entry = batch.messages[index];
-      // El ACK de trabajo no iniciado es seguro: no existió llamada a MailApp.
+      // El ACK de trabajo no iniciado es seguro: todavía no se llamó al proveedor.
       // Reservar 30 s al final del lease/budget para no empezar una entrega tarde.
-      var canStart = Date.now() - started < 210000 && batch.expires - Date.now() > 30000;
+      var deadline = Math.min(started + 210000, batch.expires - 30000);
+      var canStart = Date.now() < deadline;
       var result = !canStart ? { outcome: 'retry', code: 'batch_not_started', retryAfterSeconds: 300 }
         : qmsMailInternalKind_(entry.message.kind) || entry.message.kind === 'final' || entry.message.kind === 'solicitud_informacion'
           ? qmsMailAuthorizeInternal_(configuration, entry) : null;
       if (!result) {
         // El HTTP de autorización también consume lease y presupuesto de ejecución.
-        result = Date.now() - started < 210000 && batch.expires - Date.now() > 30000
-          ? qmsMailDeliver_(configuration, entry.message, entry.officialDocument, batch.identidad)
-          : { outcome: 'retry', code: 'batch_not_started', retryAfterSeconds: 300 };
+        if (Date.now() >= deadline) result = { outcome: 'retry', code: 'batch_not_started', retryAfterSeconds: 300 };
+        else if (configuration.supabaseDispatch) result = qmsMailDeliverSystem_(configuration, entry, batch.identidad, senderToken, deadline);
+        else result = qmsMailDeliver_(configuration, entry.message, entry.officialDocument, batch.identidad);
       }
       qmsMailAck_(configuration, entry, result);
       counts[result.outcome]++;
@@ -743,8 +885,23 @@ function qmsAccessMailPostV20261121_(e, diagnostic) {
   var message=qmsAccessMailContent_(p);
   var subtitle=p.kind==='temporary_access'?'':p.kind==='invitation'?'Invitación de usuario':'Verificación de seguridad';
   var html=qmsMailFrame_(message.subject,subtitle,message.detail,message.footer,qmsMailBrandingIdentity_(p.identidadCorreo));
+  var token,raw;
+  if(configuration.supabaseDispatch){
+   if(!qmsMailHeaderAddress_(p.to))return reply('failed','invalid_access_payload');
+   token=qmsMailSystemSenderToken_();
+   var mime=qmsMailSystemMime_({}, {eventId:p.eventId,to:p.to,subject:message.subject,body:message.body}, null, null, null, html);
+   raw=Utilities.base64EncodeWebSafe(Utilities.newBlob(mime).getBytes()).replace(/=+$/, '');
+  }
   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'uncertain'}),21600);
-  try {MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);return reply('sent');}
+  try {
+   if(configuration.supabaseDispatch){
+    if(!qmsMailGmailAccepted_(token,raw))return reply('uncertain','delivery_uncertain');
+   }else{
+    MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});
+   }
+   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);
+   return reply('sent');
+  }
   catch(_){return reply('uncertain','delivery_uncertain');}
  }catch(_){return reply('retry','access_mail_unavailable');
  }finally{lock.releaseLock();}

@@ -79,8 +79,23 @@ function qmsAccessMailPostV20261121_(e, diagnostic) {
   var message=qmsAccessMailContent_(p);
   var subtitle=p.kind==='temporary_access'?'':p.kind==='invitation'?'Invitación de usuario':'Verificación de seguridad';
   var html=qmsMailFrame_(message.subject,subtitle,message.detail,message.footer,qmsMailBrandingIdentity_(p.identidadCorreo));
+  var token,raw;
+  if(configuration.supabaseDispatch){
+   if(!qmsMailHeaderAddress_(p.to))return reply('failed','invalid_access_payload');
+   token=qmsMailSystemSenderToken_();
+   var mime=qmsMailSystemMime_({}, {eventId:p.eventId,to:p.to,subject:message.subject,body:message.body}, null, null, null, html);
+   raw=Utilities.base64EncodeWebSafe(Utilities.newBlob(mime).getBytes()).replace(/=+$/, '');
+  }
   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'uncertain'}),21600);
-  try {MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);return reply('sent');}
+  try {
+   if(configuration.supabaseDispatch){
+    if(!qmsMailGmailAccepted_(token,raw))return reply('uncertain','delivery_uncertain');
+   }else{
+    MailApp.sendEmail({to:p.to,subject:message.subject,body:message.body,htmlBody:html,name:'ECA-QMS'});
+   }
+   cache.put(key,JSON.stringify({hash:fingerprint,outcome:'sent'}),21600);
+   return reply('sent');
+  }
   catch(_){return reply('uncertain','delivery_uncertain');}
  }catch(_){return reply('retry','access_mail_unavailable');
  }finally{lock.releaseLock();}

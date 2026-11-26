@@ -21,6 +21,11 @@ const wakeSecret = 'synthetic-wake-only-'.repeat(3)
 const queueUrl = 'https://fykhrrpeoehwqznccmfp.supabase.co/functions/v1/quejas-mail-queue'
 const syntheticMessage = () => ({ eventId: randomUUID(), claimToken: randomUUID(), kind: 'recibido',
   to: 'controlled@example.test', subject: 'Registro recibido', body: 'Contenido sintético', folio: '2026-001' })
+const systemsDispatch = { QMS_MAIL_SUPABASE_DISPATCH: 'true' }
+const systemAliases = [
+  { sendAsEmail: 'sistemas@eca.or.cr', isPrimary: true },
+  { sendAsEmail: 'qms@eca.or.cr', verificationStatus: 'accepted' },
+]
 const signature = envelope => createHmac('sha256', secret).update(
   `eca-qms-mail:v1:${envelope.purpose}\n${envelope.issuedAt}\n${envelope.nonce}\n${envelope.payload}`
 ).digest('hex')
@@ -36,6 +41,7 @@ function fixture(options = {}) {
     QMS_MAIL_QUEUE_URL: queueUrl, QMS_MAIL_LEDGER_SPREADSHEET_ID: 'synthetic-ledger', ...options.properties }
   const rows = options.rows ?? [['event_id', 'hash', 'status', 'started_at', 'confirmed_at']]
   const sent = [], requests = [], logs = [], triggers = [], cache = new Map()
+  const gmailCalls = [], spreadsheetCalls = [], steps = [], dispatchGrants = new Set()
   const state = { now: Date.now(), locked: false, quota: options.quota ?? 100 }
   class Clock extends Date { static now() { return state.now } }
   const bytes = value => Array.from(Buffer.from(value))
@@ -56,6 +62,12 @@ function fixture(options = {}) {
       leaseUntil: new Date(state.now + 540000).toISOString(), messages: messages.slice(0, request.decoded.limit) }
     if (request.purpose === 'authorize_request') return { requestNonce: request.nonce,
       eventId: request.decoded.eventId, authorized: true }
+    if (request.purpose === 'dispatch_begin_request') {
+      const { eventId } = request.decoded
+      const granted = !dispatchGrants.has(eventId)
+      dispatchGrants.add(eventId)
+      return { requestNonce: request.nonce, eventId, granted }
+    }
     return { requestNonce: request.nonce, eventId: request.decoded.eventId, accepted: true }
   }
   const context = {
@@ -65,6 +77,7 @@ function fixture(options = {}) {
     Utilities: { Charset: { UTF_8: 'UTF-8' }, DigestAlgorithm: { SHA_256: 'sha256' }, getUuid: randomUUID,
       sleep: milliseconds => { state.now += milliseconds },
       newBlob: value => ({ getBytes: () => bytes(value), getDataAsString: () => Buffer.from(value).toString('utf8') }),
+      base64Encode: value => Buffer.from(value).toString('base64'),
       base64EncodeWebSafe: value => Buffer.from(value).toString('base64url'),
       base64DecodeWebSafe: value => bytes(Buffer.from(value, 'base64url')),
       computeHmacSha256Signature: (value, key) => bytes(createHmac('sha256', key).update(value).digest()),
@@ -78,7 +91,7 @@ function fixture(options = {}) {
       tryLock() { if (state.locked || options.lock === false) return false; state.locked = true; return true },
       releaseLock() { assert.equal(state.locked, true); state.locked = false },
     }) },
-    SpreadsheetApp: { openById(id) { assert.equal(state.locked || options.allowUnlockedLedger === true, true); assert.equal(id, 'synthetic-ledger')
+    SpreadsheetApp: { openById(id) { spreadsheetCalls.push('open'); assert.equal(state.locked || options.allowUnlockedLedger === true, true); assert.equal(id, 'synthetic-ledger')
       if (options.noLedger) throw Error('synthetic missing ledger')
       return { getSheetByName: () => sheet }
     }, flush() { assert.equal(state.locked, true) } },
@@ -91,6 +104,25 @@ function fixture(options = {}) {
     } },
     UrlFetchApp: { fetch(url, settings) {
       assert.equal(state.locked, false, 'HTTP nunca mantiene ScriptLock')
+      if (url.startsWith('https://gmail.googleapis.com/')) {
+        assert.equal(settings.headers.Authorization, 'Bearer synthetic-gmail-oauth-token')
+        assert.equal(settings.followRedirects, false)
+        assert.equal(settings.muteHttpExceptions, true)
+        gmailCalls.push(settings.method)
+        if (settings.method === 'get') {
+          assert.equal(url, 'https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs?fields=sendAs(sendAsEmail,isPrimary,verificationStatus)')
+          assert.equal(settings.payload, undefined)
+          steps.push('gmail-aliases')
+          return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ sendAs: options.systemAliases ?? systemAliases }) }
+        }
+        assert.equal(url, 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send')
+        const message = JSON.parse(settings.payload)
+        assert.deepEqual(Object.keys(message), ['raw'])
+        steps.push('gmail-send')
+        if (options.gmailTimeout) throw new Error('synthetic Gmail timeout')
+        sent.push({ mime: Buffer.from(message.raw, 'base64url').toString('utf8') })
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ id: 'synthetic-gmail-id' }) }
+      }
       assert.equal(url, queueUrl, 'sin llamadas a Vercel, /exec u otros proyectos')
       assert.equal(settings.method, 'post'); assert.equal(settings.followRedirects, false)
       assert.equal(settings.muteHttpExceptions, true)
@@ -99,6 +131,7 @@ function fixture(options = {}) {
       assert.equal(parsed.signature, signature(parsed))
       const request = { ...parsed, decoded: JSON.parse(Buffer.from(parsed.payload, 'base64url').toString()) }
       requests.push(request)
+      steps.push(request.purpose)
       const payload = options.response ? options.response(request, { state, properties, messages, defaultResponse }) : defaultResponse(request)
       const purpose = request.purpose.replace('_request', '_receipt')
       const reply = sign(purpose, payload, state.now)
@@ -107,6 +140,7 @@ function fixture(options = {}) {
         getContentText: () => options.rawResponse ?? JSON.stringify(envelope) }
     } },
     ScriptApp: { AuthMode: { FULL: 'full' }, AuthorizationStatus: { REQUIRED: 'required' },
+      getOAuthToken: () => 'synthetic-gmail-oauth-token',
       getAuthorizationInfo: () => ({ getAuthorizationStatus: () => options.authRequired ? 'required' : 'ready', getAuthorizationUrl: () => 'https://script.google.com/synthetic-authorization' }),
       getProjectTriggers: () => triggers, newTrigger(handler) {
       return { timeBased() { return this }, everyMinutes(minutes) { assert.equal(minutes, 5); return this },
@@ -117,7 +151,7 @@ function fixture(options = {}) {
       put(key, value, seconds) { assert.equal(state.locked, true); cache.set(key, { value, expires: state.now + seconds * 1000 }) } }) },
   }
   vm.createContext(context); vm.runInContext(source, context)
-  return { context, properties, rows, sent, requests, logs, state, messages, triggers,
+  return { context, properties, rows, sent, requests, logs, state, messages, triggers, gmailCalls, spreadsheetCalls, steps,
     poll: () => context.qmsMailPoll() }
 }
 
@@ -158,6 +192,103 @@ test('la comprobación de recuperación no envía y preserva cualquier intento r
     assert.equal(value.sent.length,0);assert.equal(value.requests.length,0)
     assert.equal(rows.length,previous?2:1)
   }
+})
+
+test('modo Sistemas verifica el alias y adjunta el oficio antes del permiso único de Supabase', () => {
+  const message = { ...syntheticMessage(), kind: 'final', subject: 'Resolución de la solicitud 🇨🇷' }
+  const content = Buffer.from('%PDF-1.7\r\nOficio de prueba')
+  const document = { driveId: 'synthetic_official_file', name: 'Resolución final.pdf', mime: 'application/pdf', size: content.length }
+  const value = fixture({ properties: systemsDispatch, noLedger: true, messages: [message],
+    drive: { getFileById(id) {
+      value.steps.push('drive-read')
+      assert.equal(id, document.driveId)
+      return { isTrashed: () => false, getSize: () => content.length, getMimeType: () => document.mime,
+        getBlob: () => ({ setName() { return this }, getBytes: () => Array.from(content) }) }
+    } },
+    response(request, { defaultResponse }) {
+      const payload = defaultResponse(request)
+      return request.purpose === 'authorize_request' ? { ...payload, officialDocument: document } : payload
+    },
+  })
+  value.poll()
+  assert.deepEqual(value.steps, ['gmail-aliases', 'claim_request', 'authorize_request', 'drive-read', 'dispatch_begin_request', 'gmail-send', 'ack_request'])
+  assert.deepEqual(value.requests.find(request => request.purpose === 'dispatch_begin_request').decoded,
+    { eventId: message.eventId, claimToken: message.claimToken })
+  assert.equal(value.requests.at(-1).decoded.outcome, 'sent')
+  const { mime } = value.sent[0]
+  assert.match(mime, /^From: QMS ECA <qms@eca\.or\.cr>\r\nTo: <controlled@example\.test>/)
+  assert.ok(mime.includes(`Message-ID: <${message.eventId}@eca.or.cr>`))
+  assert.match(mime, /Content-Type: multipart\/alternative/)
+  const words = [...mime.matchAll(/=\?UTF-8\?B\?([^?]+)\?=/g)].map(word => Buffer.from(word[1], 'base64').toString('utf8'))
+  assert.equal(words.join(''), message.subject)
+  const filenames = [...mime.matchAll(/filename\*\d+\*=([^;\r\n]+)/g)].map(part => part[1]).join('')
+  assert.equal(decodeURIComponent(filenames.replace(/^UTF-8''/, '')), document.name)
+  const attachment = /Content-Transfer-Encoding: base64\r\n\r\n([A-Za-z0-9+/=\r\n]+)\r\n--qms-mixed-/.exec(mime)
+  assert.deepEqual(Buffer.from(attachment[1], 'base64'), content)
+  value.poll()
+  assert.equal(value.sent.length, 1)
+  assert.equal(value.requests.at(-1).decoded.outcome, 'uncertain')
+  assert.deepEqual(value.spreadsheetCalls, [])
+})
+
+test('modo Sistemas impide reclamar con cuenta distinta o alias sin verificar', () => {
+  for (const aliases of [
+    [{ sendAsEmail: 'old-account@example.test', isPrimary: true }, systemAliases[1]],
+    [systemAliases[0], { sendAsEmail: 'qms@eca.or.cr', verificationStatus: 'pending' }],
+  ]) {
+    const value = fixture({ properties: systemsDispatch, noLedger: true, systemAliases: aliases })
+    assert.equal(value.context.qmsMailCheckSender().ready, false)
+    value.poll()
+    assert.equal(value.requests[0].decoded.limit, 0)
+    assert.deepEqual(value.gmailCalls, ['get', 'get'])
+    assert.deepEqual(value.spreadsheetCalls, [])
+  }
+})
+
+test('modo Sistemas mantiene la incertidumbre si se pierde el permiso o la confirmación de Gmail', () => {
+  for (const lostGrant of [true, false]) {
+    const value = fixture({ properties: systemsDispatch, noLedger: true, gmailTimeout: !lostGrant,
+      envelope(reply, request) {
+        return lostGrant && request.purpose === 'dispatch_begin_request' ? { ...reply, signature: '0'.repeat(64) } : reply
+      },
+    })
+    value.poll()
+    assert.deepEqual(value.gmailCalls, lostGrant ? ['get'] : ['get', 'post'])
+    assert.equal(value.requests.at(-1).decoded.outcome, 'uncertain')
+    assert.equal(value.requests.at(-1).decoded.code, 'delivery_uncertain')
+    assert.deepEqual(value.spreadsheetCalls, [])
+  }
+})
+
+test('modo Sistemas confirma un fallo de Drive previo al intento e instala sin reclamar ni enviar', () => {
+  const document = { driveId: 'synthetic_official_file', name: 'Oficio.pdf', mime: 'application/pdf', size: 100 }
+  const value = fixture({ properties: systemsDispatch, noLedger: true, messages: [{ ...syntheticMessage(), kind: 'final' }],
+    drive: { getRootFolder: () => ({}), getFileById() { throw new Error('synthetic Drive unavailable') } },
+    response(request, { defaultResponse }) {
+      const payload = defaultResponse(request)
+      return request.purpose === 'authorize_request' ? { ...payload, officialDocument: document } : payload
+    },
+  })
+  assert.equal(value.context.qmsMailCheckSender().ready, true)
+  value.context.qmsMailInstallTrigger()
+  assert.equal(value.triggers.length, 1)
+  const key = 'e'.repeat(64)
+  const setup = payload => JSON.parse(value.context.doPost({ postData: {
+    contents: JSON.stringify(sign('queue_wake_setup_request', payload, value.state.now)),
+  } }))
+  const readiness = setup({ secret: key })
+  assert.equal(readiness.purpose, 'queue_wake_setup_receipt')
+  assert.equal(JSON.parse(Buffer.from(readiness.payload, 'base64url')).senderReady, true)
+  assert.equal(setup({ secret: key, eventId: randomUUID() }).error, 'wake_setup_unavailable')
+  assert.deepEqual(value.requests, [])
+  assert.deepEqual(value.sent, [])
+  assert.throws(() => value.context.qmsMailInitializeLedger(), /dispatch_mode/)
+  value.poll()
+  assert.deepEqual(value.requests.map(request => request.purpose), ['claim_request', 'authorize_request', 'ack_request'])
+  assert.equal(value.requests.at(-1).decoded.outcome, 'retry')
+  assert.equal(value.requests.at(-1).decoded.code, 'official_document_unavailable')
+  assert.deepEqual(value.gmailCalls, ['get', 'get', 'get', 'get'])
+  assert.deepEqual(value.spreadsheetCalls, [])
 })
 
 test('correo final adjunta solo el archivo autorizado y un reintento no lo vuelve a enviar', () => {
@@ -527,6 +658,34 @@ test('Código.gs y Edge real interoperan health, claim interno, authorize y ACK 
 
 const internalKinds = ['interno_recibido', 'interno_evaluacion_1', 'interno_asignacion', 'interno_investigacion_5',
   'interno_investigacion_3', 'interno_evaluacion_vencida', 'interno_investigacion_vencida']
+
+test('Sistemas envía cada aviso interno vigente, incluidos los vencimientos, con su alias y una sola reserva', () => {
+  for (const kind of internalKinds) {
+    const message = { ...syntheticMessage(), kind }
+    const value = fixture({ properties: systemsDispatch, noLedger: true, messages: [message] })
+    value.poll()
+    assert.deepEqual(value.steps, ['gmail-aliases', 'claim_request', 'authorize_request', 'dispatch_begin_request', 'gmail-send', 'ack_request'], kind)
+    assert.deepEqual(value.requests[1].decoded, { eventId: message.eventId, claimToken: message.claimToken })
+    assert.equal(value.requests.at(-1).decoded.outcome, 'sent')
+    assert.equal(value.sent.length, 1)
+    assert.match(value.sent[0].mime, /^From: QMS ECA <qms@eca\.or\.cr>\r\n/)
+    assert.deepEqual(value.spreadsheetCalls, [])
+  }
+})
+
+test('Sistemas omite un aviso vencido que dejó de ser pertinente antes de reservar el envío', () => {
+  const value = fixture({ properties: systemsDispatch, noLedger: true,
+    messages: [{ ...syntheticMessage(), kind: 'interno_evaluacion_vencida' }],
+    response(request, { defaultResponse }) {
+      const payload = defaultResponse(request)
+      return request.purpose === 'authorize_request' ? { ...payload, authorized: false } : payload
+    },
+  })
+  value.poll()
+  assert.deepEqual(value.steps, ['gmail-aliases', 'claim_request', 'authorize_request', 'ack_request'])
+  assert.equal(value.requests.at(-1).decoded.outcome, 'skipped')
+  assert.equal(value.sent.length, 0)
+})
 
 test('cada aviso interno autoriza justo antes de MailApp y conserva HTML compacto y diario sin PII', () => {
   for (const kind of internalKinds) {

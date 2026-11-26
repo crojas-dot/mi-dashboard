@@ -80,6 +80,26 @@ test('adjunto oficial opt-in solo sale del documento publicado tras autorizar el
   }
 })
 
+test('el correo final histórico encuentra el oficio publicado en el mismo microsegundo', async () => {
+  const id = randomUUID(), claimToken = randomUUID(), caseId = randomUUID()
+  const createdAt = '2026-10-12T10:17:29.123456+00:00'
+  const file = { queja_id: caseId, storage_path: 'synthetic_drive_official_001', nombre: 'Oficio.pdf', tipo_mime: 'application/pdf', tamano: 100 }
+  const f = fixture({ transport: call => {
+    if (call.method === 'POST') return Response.json(true)
+    const url = new URL(call.url)
+    if (url.pathname.endsWith('/queja_mail_outbox')) {
+      return Response.json([{ tipo: 'final', queja_id: caseId, lease_until: new Date(clock + 600000).toISOString(),
+        created_at: createdAt, publicacion_revision: null, queja: { estado: 'Finalizado' } }])
+    }
+    assert.equal(url.pathname, '/rest/v1/queja_public_resolutions')
+    return Response.json(url.searchParams.get('publicado_at') === `lte.${createdAt}` ? [{ adjunto: file }] : [])
+  } })
+  const input = envelope('authorize_request', { eventId: id, claimToken, includeOfficialDocument: true })
+  const result = await receipt(await f.handler(request(input)), 'authorize_receipt')
+  assert.equal(result.authorized, true)
+  assert.deepEqual(result.officialDocument, { driveId: file.storage_path, name: file.nombre, mime: file.tipo_mime, size: file.tamano })
+})
+
 test('despertador firmado selecciona solo el RPC ciudadano y conserva límite y nonce', async () => {
   const f=fixture(),input=envelope('claim_request',{limit:5,citizenOnly:true})
   await receipt(await f.handler(request(input)),'claim_receipt')
@@ -174,6 +194,7 @@ test('flags ausentes mantienen claim y ACK cerrados antes de credenciales/DB', a
   for (const flag of [undefined, 'false', 'TRUE', '1']) {
     const f = fixture({ environment: { QUEJAS_MAIL_QUEUE_ENABLED: flag } })
     for (const input of [envelope('claim_request', { limit: 1 }),
+      envelope('dispatch_begin_request', { eventId: randomUUID(), claimToken: randomUUID() }),
       envelope('authorize_request', { eventId: randomUUID(), claimToken: randomUUID() }), envelope('ack_request', {
       eventId: randomUUID(), claimToken: randomUUID(), outcome: 'sent', code: 'sent', retryAfterSeconds: 300 })]) {
       assert.equal((await f.handler(request(input))).status, 503)
@@ -367,6 +388,48 @@ test('respuesta RPC ACK exige booleano y sanitiza fallos, errores y redirects', 
     assert.deepEqual(await result.json(), { error: 'mail_queue_unavailable' })
     assert.equal(f.calls.length, 1)
     assert.equal(f.calls[0].redirect, 'error')
+  }
+})
+
+test('reserva de envío firmada consulta un RPC fijo y correlaciona una sola concesión', async () => {
+  const eventId = randomUUID(), claimToken = randomUUID()
+  let started = false
+  const f = fixture({ transport(call) {
+    assert.equal(call.url, `${url}/rest/v1/rpc/qms_mail_begin_dispatch`)
+    assert.equal(call.method, 'POST')
+    assert.equal(call.redirect, 'error')
+    assert.equal(call.args.p_id, eventId)
+    const granted = !started && call.args.p_claim_token === claimToken
+    if (granted) started = true
+    return Response.json(granted)
+  } })
+  const input = envelope('dispatch_begin_request', { eventId, claimToken })
+  const wrongToken = envelope('dispatch_begin_request', { eventId, claimToken: randomUUID() })
+  for (const [value, granted] of [[wrongToken, false], [input, true], [input, false]]) {
+    assert.deepEqual(await receipt(await f.handler(request(value)), 'dispatch_begin_receipt'), {
+      requestNonce: value.nonce, eventId, granted,
+    })
+  }
+  assert.deepEqual(f.calls[1].args, { p_id: eventId, p_claim_token: claimToken })
+})
+
+test('reserva rechaza sobres inválidos y errores ambiguos sin permiso de envío', async () => {
+  const payload = { eventId: randomUUID(), claimToken: randomUUID() }
+  const input = envelope('dispatch_begin_request', payload)
+  const f = fixture()
+  for (const unknown of [envelope('dispatch_begin_request', { ...payload, claimToken: 'other' }),
+    envelope('dispatch_begin_request', { ...payload, to: 'injected@example.test' }),
+    { ...envelope('authorize_request', payload), purpose: 'dispatch_begin_request' }]) {
+    assert.equal((await f.handler(request(unknown))).status, 401)
+  }
+  assert.equal(f.calls.length, 0)
+  assert.equal(f.envReads.some(name => name.startsWith('SUPABASE_')), false)
+  for (const transport of [() => Response.json({ granted: true }), () => { throw Error('synthetic timeout') }]) {
+    const uncertain = fixture({ transport })
+    const result = await uncertain.handler(request(input))
+    assert.equal(result.status, 503)
+    assert.deepEqual(await result.json(), { error: 'mail_queue_unavailable' })
+    assert.equal(uncertain.calls.length, 1)
   }
 })
 

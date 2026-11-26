@@ -416,6 +416,46 @@ try {
  check((await claimV3(0)).length===0&&await count('interno_investigacion_3',warning.id)===3,'v3 claim zero retains three-day internal warnings to Calidad and owner')
  check((await pool.query("SELECT count(*)::int n FROM queja_mail_outbox WHERE status='leased'")).rows[0].n===leasedBeforeTwo,'Two-client-mail policy does not make claim zero reserve emails')
  const twoCitizenChecks=checks-baselineChecks
- console.log(JSON.stringify({ok:true,checks,baselineChecks,twoCitizenChecks,scope:'Internal notices and two citizen mails; isolated PostgreSQL; no remote writes or email'}))
- fs.writeFileSync(path.join(root,'.performance/quejas-internal-db-evidence.json'),JSON.stringify({ok:true,checks,baselineChecks,twoCitizenChecks,at:new Date().toISOString()},null,2))
+ const beforeClaimVisibility=checks
+ const editable=fs.readFileSync('supabase/migrations/20261110150300_quejas_correo_editable.sql','utf8')
+ const v4Start=editable.indexOf('create function public.qms_mail_claim_batch_v4(')
+ const v4End=editable.indexOf('-- El autorizador anterior',v4Start)
+ assert.ok(v4Start>=0&&v4End>v4Start,'Editable-mail migration contains the original claim and ACL')
+ await pool.query('ALTER TABLE public.queja_mail_outbox ADD COLUMN correo_asunto text, ADD COLUMN correo_cuerpo text')
+ await pool.query(editable.slice(v4Start,v4End))
+ const claimVisibilityMigration=fs.readdirSync('supabase/migrations').filter(file=>/^\d{14}_quejas_claim_mail_visible\.sql$/.test(file))
+ assert.equal(claimVisibilityMigration.length,1,'One migration fixes the visibility of claimed notices')
+ await pool.query(fs.readFileSync(path.join('supabase/migrations',claimVisibilityMigration[0]),'utf8'))
+ const claimVersion=async(version,nonce=randomUUID(),limit=5)=>as(null,
+   `SELECT * FROM public.qms_mail_claim_batch_v${version}($1,120,$2,$3)`,[limit,nonce,Math.floor(Date.now()/1000)],'service_role')
+ for(const version of [3,4]) {
+   const due=await prepare('quejas.evaluation',0)
+   await freeze()
+   check(await count('interno_evaluacion_vencida',due.id)===0,'Due notices are created by the same claim')
+   const nonce=randomUUID(), claimed=await claimVersion(version,nonce)
+   const stored=(await pool.query("SELECT id,claim_token,status,attempts FROM public.queja_mail_outbox WHERE queja_id=$1 AND tipo='interno_evaluacion_vencida'",[due.id])).rows
+   check(claimed.length===2&&stored.length===2&&claimed.every(row=>row.tipo==='interno_evaluacion_vencida'&&row.public_tracking===null
+     &&stored.some(saved=>saved.id===row.id&&saved.claim_token===row.claim_token&&saved.status==='leased'&&saved.attempts===1)),`v${version} returns every newly created and leased notice with its persisted token`)
+   check((await claimVersion(version,nonce)).length===0,`v${version} consumes the claim nonce once`)
+   if(version===4)check(claimed.every(row=>row.correo===null),'Generated deadline notices carry no custom body')
+   for(const row of claimed)check(await complete(row),`v${version} newly created notices can be acknowledged`)
+ }
+ let editableCase=await newCase()
+ editableCase=await transition(editableCase,'rejected',{resolution:'Motivo de prueba',office:'EDIT-'+editableCase.folio})
+ const editedFinal=await queueRow(editableCase.id,'final')
+ const subject='Asunto editado ficticio', body='Respuesta editada ficticia.'
+ await freeze()
+ await pool.query("UPDATE public.queja_mail_outbox SET status='sent',sent_at=now() WHERE queja_id=$1 AND tipo='recibido'",[editableCase.id])
+ await pool.query('UPDATE public.queja_mail_outbox SET correo_asunto=$2,correo_cuerpo=$3,next_attempt_at=now() WHERE id=$1',[editedFinal.id,subject,body])
+ const [editedClaim]=await claimVersion(4)
+ check(editedClaim?.id===editedFinal.id&&JSON.stringify(editedClaim.public_tracking)===JSON.stringify(editedFinal.public_tracking)
+   &&editedClaim.correo?.subject===subject&&editedClaim.correo?.body===body,'v4 preserves the stored tracking and edited final email')
+ for(const version of [3,4]) {
+   const signature=`public.qms_mail_claim_batch_v${version}(integer,integer,uuid,bigint)`
+   const { anon_exec, auth_exec, service_exec }=(await pool.query("SELECT has_function_privilege('anon',$1,'EXECUTE') anon_exec,has_function_privilege('authenticated',$1,'EXECUTE') auth_exec,has_function_privilege('service_role',$1,'EXECUTE') service_exec",[signature])).rows[0]
+   check(!anon_exec&&!auth_exec&&service_exec,`v${version} remains executable only by the service role among API roles`)
+ }
+ const claimVisibilityChecks=checks-beforeClaimVisibility
+ console.log(JSON.stringify({ok:true,checks,baselineChecks,twoCitizenChecks,claimVisibilityChecks,scope:'Internal notices and two citizen mails; isolated PostgreSQL; no remote writes or email'}))
+ fs.writeFileSync(path.join(root,'.performance/quejas-internal-db-evidence.json'),JSON.stringify({ok:true,checks,baselineChecks,twoCitizenChecks,claimVisibilityChecks,at:new Date().toISOString()},null,2))
 } finally {if(pool)await pool.end();if(started)run('pg_ctl.exe',['-D',data,'-w','stop','-m','fast'])}

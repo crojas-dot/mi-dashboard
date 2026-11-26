@@ -8,18 +8,39 @@ import {loadModule} from './load-module.mjs'
 const secret='synthetic-access-mail-key-'.repeat(3),machine='synthetic-service-role',origin='https://qms.example.test'
 function fixture(options={}) {
  const sent=[],requests=[],cache=new Map(),logs=[]
+ const gmailRequests=[],gmailSent=[]
  const brand='https://synthetic.supabase.co/storage/v1/object/public/branding/identidad/correo_encabezado/11111111-1111-4111-8111-111111111111.png'
- const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:options.scriptOrigin??origin,QMS_MAIL_QUEUE_URL:'https://synthetic.supabase.co/functions/v1/quejas-mail-queue'}
+ const properties={QMS_MAIL_SECRET:secret,QMS_MAIL_ENABLED:'true',QMS_PUBLIC_TRACKING_ORIGIN:options.scriptOrigin??origin,QMS_MAIL_QUEUE_URL:'https://synthetic.supabase.co/functions/v1/quejas-mail-queue',
+  QMS_MAIL_SUPABASE_DISPATCH:options.systems?'true':'false'}
  const bytes=value=>Array.from(Buffer.from(value))
  const context=vm.createContext({Date,JSON,Number,Array,Object,
   console:{warn:(...args)=>logs.push(args),info:(...args)=>logs.push(args)},
   PropertiesService:{getScriptProperties:()=>({getProperty:name=>properties[name]})},
   Utilities:{Charset:{UTF_8:'UTF-8'},getUuid:randomUUID,newBlob:value=>({getBytes:()=>bytes(value),getDataAsString:()=>Buffer.from(value).toString('utf8')}),
+   base64Encode:value=>Buffer.from(value).toString('base64'),
    base64EncodeWebSafe:value=>Buffer.from(value).toString('base64url'),base64DecodeWebSafe:value=>bytes(Buffer.from(value,'base64url')),
    computeHmacSha256Signature:(value,key)=>bytes(createHmac('sha256',key).update(value).digest()),computeDigest:(_,value)=>bytes(createHash('sha256').update(value).digest())},
   LockService:{getScriptLock:()=>({tryLock:()=>true,releaseLock(){}})},
   CacheService:{getScriptCache:()=>({get:key=>cache.get(key),put:(key,value)=>cache.set(key,value)})},
   MailApp:{getRemainingDailyQuota:()=>options.quota??100,sendEmail:mail=>{sent.push(mail);if(options.uncertain)throw new Error('synthetic mail failure')}},
+  ScriptApp:{getOAuthToken:()=> 'synthetic-gmail-oauth-token'},
+  UrlFetchApp:{fetch(url,settings){
+   assert.equal(options.systems,true)
+   assert.equal(settings.headers.Authorization,'Bearer synthetic-gmail-oauth-token')
+   assert.equal(settings.followRedirects,false)
+   gmailRequests.push(settings.method)
+   if(settings.method==='get'){
+    assert.equal(url,'https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs?fields=sendAs(sendAsEmail,isPrimary,verificationStatus)')
+    return {getResponseCode:()=>200,getContentText:()=>JSON.stringify({sendAs:[
+     {sendAsEmail:options.senderAccount??'sistemas@eca.or.cr',isPrimary:true},
+     {sendAsEmail:'qms@eca.or.cr',verificationStatus:options.aliasStatus??'accepted'},
+    ]})}
+   }
+   assert.equal(url,'https://gmail.googleapis.com/gmail/v1/users/me/messages/send')
+   gmailSent.push(Buffer.from(JSON.parse(settings.payload).raw,'base64url').toString('utf8'))
+   if(options.gmailTimeout)throw new Error('synthetic provider timeout')
+   return {getResponseCode:()=>200,getContentText:()=>JSON.stringify({id:options.gmailId??'synthetic-gmail-id'})}
+  }},
   ContentService:{MimeType:{JSON:'application/json'},createTextOutput:text=>({setMimeType:()=>text})},
  })
  vm.runInContext(fs.readFileSync('integration/apps-script/quejas-mail/Codigo.gs','utf8')+'\n'+fs.readFileSync('integration/apps-script/quejas-mail/Acceso.gs','utf8'),context)
@@ -39,9 +60,55 @@ function fixture(options={}) {
   return new Response(output)
  }})
  const send=(message,key=machine)=>api(new Request(origin,{method:'POST',headers:{Authorization:'Bearer '+key},body:JSON.stringify(message)}))
- return {send,sent,requests,cache,logs,context,api,brand}
+ return {send,sent,requests,cache,logs,context,api,brand,gmailRequests,gmailSent}
 }
 const invitation=()=>({eventId:randomUUID(),kind:'invitation',to:'synthetic@example.test',url:origin+'/acceso#invitacion='+'a'.repeat(43)})
+
+test('modo Sistemas envía invitación, OTP y acceso temporal con el alias verificado y una reserva por evento',async()=>{
+ const f=fixture({systems:true})
+ const cases=[
+  [invitation(),'Configurá tu acceso a ECA-QMS'],
+  [{eventId:randomUUID(),kind:'email_otp',to:'synthetic@example.test',code:'123456'},'Tu código de verificación de ECA-QMS'],
+  [{eventId:randomUUID(),kind:'temporary_access',to:'synthetic@example.test',name:'Usuario sintético',password:'Synthetic!Password23',url:origin+'/login'},'Tu acceso a ECA-QMS'],
+ ]
+ for(const [index,[message,subject]] of cases.entries()){
+  assert.deepEqual(await (await f.send(message)).json(),{outcome:'sent'})
+  const mime=f.gmailSent[index]
+  assert.match(mime,/^From: QMS ECA <qms@eca\.or\.cr>\r\nTo: <synthetic@example\.test>/)
+  const words=[...mime.matchAll(/=\?UTF-8\?B\?([^?]+)\?=/g)].map(word=>Buffer.from(word[1],'base64').toString('utf8'))
+  assert.equal(words.join(''),subject)
+  assert.match(mime,/Content-Type: text\/html; charset=UTF-8/)
+  assert.ok(mime.includes(`Message-ID: <${message.eventId}@eca.or.cr>`))
+  assert.deepEqual(await (await f.send(message)).json(),{outcome:'sent'})
+ }
+ assert.deepEqual(f.gmailRequests,['get','post','get','post','get','post'])
+ assert.equal(f.sent.length,0)
+ assert.doesNotMatch(JSON.stringify([...f.cache.values()]),/synthetic@example|Synthetic!Password23|123456|invitacion=/)
+})
+
+test('modo Sistemas rechaza cuenta o alias sin validación antes de reservar o enviar acceso',async()=>{
+ for(const options of [{senderAccount:'old-account@example.test'},{aliasStatus:'pending'}]){
+  const f=fixture({systems:true,...options})
+  assert.deepEqual(await (await f.send(invitation())).json(),{outcome:'failed',code:'access_mail_unavailable'})
+  assert.deepEqual(f.gmailRequests,['get'])
+  assert.equal(f.cache.size,0)
+  assert.equal(f.sent.length,0)
+  assert.equal(f.context.qmsAccessMailSelfTest().valid,true)
+  assert.deepEqual(f.gmailRequests,['get'])
+ }
+})
+
+test('modo Sistemas deja incierto el acceso sin ID de Gmail y conserva el intento sin repetirlo',async()=>{
+ for(const options of [{gmailTimeout:true},{gmailId:'unexpected provider value'}]){
+  const f=fixture({systems:true,...options}),message=invitation()
+  assert.deepEqual(await (await f.send(message)).json(),{outcome:'uncertain',code:'delivery_uncertain'})
+  assert.deepEqual(await (await f.send(message)).json(),{outcome:'uncertain'})
+  assert.deepEqual(f.gmailRequests,['get','post'])
+  assert.match([...f.cache.values()][0],/"outcome":"uncertain"/)
+  assert.equal(f.sent.length,0)
+ }
+})
+
 test('Edge → Apps Script usa HMAC por propósito y confirma invitación sin contraseña',async()=>{
  const f=fixture(),message=invitation()
  assert.equal((await f.send(message)).status,200);assert.equal(f.sent.length,1)

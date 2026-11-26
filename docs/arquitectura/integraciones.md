@@ -91,14 +91,16 @@ antes de estar inicializado; no convierte una simulación de vista en autorizaci
 
 ## Correo de acceso: transporte y plantillas
 
-- **Emisor y destinos separados:** Next API → Supabase Edge
-  `qms-access-mailer` **v5 ACTIVE** → Google Apps Script → MailApp;
+- **Enrutamiento separado:** Next API → Supabase Edge
+  `qms-access-mailer` **v5 ACTIVE** → Google Apps Script → API de Gmail.
+  El emisor verifica `sistemas@eca.or.cr` y el alias `qms@eca.or.cr` con el
+  mismo proveedor que Quejas. Acceso conserva sus recibos y deduplicación.
   `qms_private.mail_wake_settings.access_endpoint` almacena el destino
   exclusivo de acceso, separado de `endpoint` para Quejas. El RPC
   `qms_access_mail_transport()` devuelve `coalesce(access_endpoint,endpoint)`.
   Esta separación y la activación se verificaron en Supabase el 23 noviembre.
   No sobrescribir el transporte de Quejas ni exponer secretos. El correo de
-  Quejas utiliza `delivery_request`; acceso usa `access_delivery_request`.
+  Quejas reclama por la cola firmada y acceso usa `access_delivery_request`.
 - **Apps Script actual:** fuentes `integration/apps-script/quejas-mail/Codigo.gs`
   y `Acceso.gs`; archivo íntegro para copiar/publicar:
   `docs/instalacion-apps-script/ECA-QMS-CODIGO-COMPLETO.gs`. La entrada
@@ -207,6 +209,14 @@ orquestación y revisión de las escrituras. No importar SDK servidor en esas vi
   descargarlo y adjuntarlo físicamente. No aceptar un final nuevo sin adjunto.
   Diario mínimo del emisor sin destinatarios/contenido; no reenviar sent ni reintentar
   incertidumbre a ciegas. Una recuperación histórica autorizada no habilita reenvíos en masa.
+- El emisor de Sistemas verifica su identidad y el alias `qms@eca.or.cr` con Gmail
+  API antes de reclamar correos. Guarda la reserva de envío en la misma fila del
+  outbox justo antes de entregar a Gmail. Un intento reservado solo puede terminar
+  en `sent` o `uncertain`. La hoja del emisor anterior sirve para conciliar intentos
+  históricos. El despliegue y el activador se verifican bajo `sistemas@eca.or.cr`.
+  [Configuración del emisor](../../integration/apps-script/quejas-mail/README.md#emisor-de-sistemas-con-registro-en-supabase).
+- Las reservas v3 y v4 leen sus filas reservadas en una sentencia posterior
+  dentro de la misma llamada. Así incluyen los avisos que el ciclo acaba de crear.
 - Avisos internos: recepción a Calidad, evaluación a un día, asignación al responsable,
   investigación a cinco días a Calidad y a tres a ambos, vencimientos pertinentes.
   Destinatarios activos con rol real calidad; admin no sustituye ese rol. Conservar
