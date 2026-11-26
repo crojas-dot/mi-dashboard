@@ -4,7 +4,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { loadModule } from './load-module.mjs'
 
-const { CaseCompletionDate, CaseFinalMailStatus, CaseAction } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
+const { CaseCompletionDate, CaseFinalMailStatus, CaseAction, hasCaseMailIncidents } = loadModule('app/quejas/components/QuejaExpedientePanels.tsx')
 const html = (component, props) => renderToStaticMarkup(createElement(component, props))
 const close = '2026-11-10T15:40:11.373Z', sent = '2026-11-10T15:44:33.526Z'
 const queja = { estado: 'Finalizado', fecha_cierre: close }
@@ -63,4 +63,44 @@ test('el diagnóstico seguro y el botón de envío aparecen solo si el evento se
   const uncertain = html(CaseFinalMailStatus, { messages: [{ ...base, status: 'uncertain', safe_error: 'delivery_uncertain' }], onRetry() {}, onRetrySend() {} })
   assert.match(uncertain, /Envío por comprobar/)
   assert.doesNotMatch(uncertain, /Reintentar envío/)
+})
+
+
+test('las incidencias compactan únicamente el resumen de cierre y conservan estado, fecha y acciones', () => {
+  for (const estado of ['Finalizado', 'No Procede']) {
+    const props = { queja: { ...queja, estado }, runs: [], presentation: 'reference', responsable: 'Persona responsable', children: 'Acciones conservadas' }
+    const normal = html(CaseAction, props)
+    const compact = html(CaseAction, { ...props, hideSummary: true })
+    assert.match(normal, /Persona responsable/)
+    assert.match(compact, /Finalizada el/)
+    assert.match(compact, /Acciones conservadas/)
+    assert.doesNotMatch(compact, /Persona responsable|Expediente finalizado|No procedencia registrada|conserva sus evidencias|Se conserva la justificación/)
+  }
+})
+
+test('el contador y la compactación reconocen los mismos errores de correo', () => {
+  const base = { id: 'event-synthetic', tipo: 'final', sent_at: null }
+  for (const status of ['failed', 'retry', 'uncertain', 'sent', 'pending', 'leased', 'skipped']) {
+    const messages = [{ ...base, status }]
+    const expected = ['failed', 'retry', 'uncertain'].includes(status)
+    assert.equal(hasCaseMailIncidents(messages, true), expected)
+    assert.equal(hasCaseMailIncidents(messages, false), false)
+    assert.equal(hasCaseMailIncidents([{ ...messages[0], tipo: 'interno_asignacion' }], false), expected)
+    const result = html(CaseFinalMailStatus, { messages, compact: true, onRetry() {} })
+    assert.equal(/1 incidencia/.test(result), expected)
+  }
+})
+
+test('los motivos y correos adicionales del cierre se despliegan sin scroll anidado', () => {
+  const messages = [
+    { id: 'final', tipo: 'final', status: 'sent', sent_at: sent },
+    ...['a', 'b', 'c'].map(id => ({ id, tipo: 'interno_asignacion', status: 'uncertain', safe_error: 'delivery_uncertain' })),
+  ]
+  const props = { messages, compact: true, onRetry() {} }
+  const result = html(CaseFinalMailStatus, { ...props, singleScroll: true })
+  assert.match(result, /3 incidencias/)
+  assert.match(result, /Ver 2 correos más/)
+  assert.match(result, /Ver motivo/)
+  assert.doesNotMatch(result, /overflow-y-auto|max-h-28|max-h-56/)
+  assert.match(html(CaseFinalMailStatus, props), /overflow-y-auto/)
 })
