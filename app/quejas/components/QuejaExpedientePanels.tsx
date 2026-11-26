@@ -37,21 +37,32 @@ const mailNames: Record<QuejaCorreoEstado['tipo'], string> = {
   interno_escalamiento_1: 'Seguimiento preventivo', interno_fallo_entrega: 'Aviso de entrega',
 }
 
+function isCaseMailIssue(item: QuejaCorreoEstado) {
+  return ['failed', 'retry', 'uncertain'].includes(item.status)
+}
+
+/** Usa el mismo criterio del contador de incidencias del panel de correo. */
+export function hasCaseMailIncidents(messages: QuejaCorreoEstado[], finalizada: boolean) {
+  const final = finalizada ? messages.find(item => item.tipo === 'final') : undefined
+  return (!!final && isCaseMailIssue(final)) || messages.some(item => item.tipo !== 'final' && isCaseMailIssue(item))
+}
+
 /** Muestra el diagnóstico guardado por el emisor y la acción permitida para ese evento. */
-export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry, compact = false }: {
+export function CaseFinalMailStatus({ messages, finalizada = true, loading, error, onRetry, onRetrySend, retry, compact = false, singleScroll = false }: {
   messages: QuejaCorreoEstado[]; finalizada?: boolean; loading?: boolean; error?: boolean; onRetry: () => void
   onRetrySend?: (eventId: string) => void
   retry?: { id?: string; pending: boolean; error?: string; succeeded: boolean }
   compact?: boolean
+  singleScroll?: boolean
 }) {
   const final = finalizada ? messages.find(item => item.tipo === 'final') : undefined
   const otherIssues = messages.filter(item => item.tipo !== 'final' && (
-    ['retry', 'failed', 'uncertain'].includes(item.status) || (!!retry?.id && item.id === retry.id)))
+    isCaseMailIssue(item) || (!!retry?.id && item.id === retry.id)))
 
   if (compact) {
     if (!finalizada && !error && otherIssues.length === 0) return null
     const items = [...(final ? [final] : []), ...otherIssues]
-    const issueCount = items.filter(item => ['failed', 'retry', 'uncertain'].includes(item.status)).length
+    const issueCount = items.filter(isCaseMailIssue).length
 
     if (error || loading) return <div className="mt-3 border-t border-qms-border pt-2" aria-live="polite">
       <p className="text-xs font-semibold text-qms-muted">Correos del expediente</p>
@@ -83,7 +94,7 @@ export function CaseFinalMailStatus({ messages, finalizada = true, loading, erro
         {retryResult?.succeeded && ['pending', 'leased'].includes(item.status) && <p className="mt-1 text-xs text-qms-muted">Correo en cola de envío.</p>}
         {(reason || retryResult?.error) && <details className="mt-1 min-w-0">
           <summary className="w-fit cursor-pointer text-xs font-medium text-qms-primary">Ver motivo</summary>
-          <div className="mt-1 max-h-28 min-w-0 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-qms-muted [overflow-wrap:anywhere]">
+          <div className={`mt-1 min-w-0 whitespace-pre-wrap text-xs leading-relaxed text-qms-muted [overflow-wrap:anywhere] ${singleScroll ? '' : 'max-h-28 overflow-y-auto'}`}>
             {reason && <p>{reason}</p>}
             {retryResult?.error && <p className="mt-1">{retryResult.error}</p>}
           </div>
@@ -97,7 +108,7 @@ export function CaseFinalMailStatus({ messages, finalizada = true, loading, erro
       {items.slice(0, 2).map(compactStatus)}
       {items.length > 2 && <details className="mt-1 min-w-0">
         <summary className="cursor-pointer py-1 text-xs font-medium text-qms-primary">Ver {items.length - 2} {items.length === 3 ? 'correo más' : 'correos más'}</summary>
-        <div className="max-h-56 min-w-0 overflow-y-auto overscroll-y-auto">{items.slice(2).map(compactStatus)}</div>
+        <div className={`min-w-0 ${singleScroll ? '' : 'max-h-56 overflow-y-auto overscroll-y-auto'}`}>{items.slice(2).map(compactStatus)}</div>
       </details>}
     </div>
   }
@@ -193,7 +204,7 @@ export function CaseWorkspaceNavigation({ expanded, onToggleExpanded, onPrevious
 }
 
 /** Comparte solo la geometría; cada rol conserva sus documentos, permisos y acciones. */
-export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false, qualitySideGutters = false, preserveEditorWidth = false, notionStyle = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean; qualitySideGutters?: boolean; preserveEditorWidth?: boolean; notionStyle?: boolean }) {
+export function CaseWorkspace({ children, compact, compactContent, cycle, action, headerMeta, request, requestFooter, documentKey, expanded = false, cyclePlacement = 'side', presentation = 'default', documentStyle = 'sheet', readingLayout = false, qualityTwoColumn = false, qualitySideGutters = false, preserveEditorWidth = false, notionStyle = false, singleActionScroll = false }: { children: ReactNode; compact: ReactNode; compactContent?: ReactNode; cycle: ReactNode; action: ReactNode; headerMeta?: ReactNode; request?: ReactNode; requestFooter?: ReactNode; documentKey: string; expanded?: boolean; cyclePlacement?: 'side' | 'top' | 'header'; presentation?: 'default' | 'reference'; documentStyle?: 'sheet' | 'cards'; readingLayout?: boolean; qualityTwoColumn?: boolean; qualitySideGutters?: boolean; preserveEditorWidth?: boolean; notionStyle?: boolean; singleActionScroll?: boolean }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const centerRef = useRef<HTMLDivElement>(null)
   const qualityPanelRef = useRef<HTMLElement>(null)
@@ -227,6 +238,8 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
   const showQualitySideGutters = qualitySideGutters && qualityTwoColumn && expanded
   // Mis Quejas mantiene el ancho del editor; su hoja de lectura se limita internamente.
   const showDocumentSheet = showQualitySideGutters && !preserveEditorWidth
+  // En cierres con incidencias, el scroll exterior alcanza incluso diagnósticos extensos.
+  const useSingleActionScroll = showQualitySideGutters && singleActionScroll
   const referenceColumns = qualityTwoColumn
     ? '@min-[1100px]:grid-cols-[minmax(0,1fr)_360px] @min-[1100px]:gap-0 @min-[1100px]:px-0'
     : comfortableReading
@@ -249,7 +262,7 @@ export function CaseWorkspace({ children, compact, compactContent, cycle, action
             <main data-case-document className={`min-w-0 pb-6 ${documentStyle === 'cards' ? `${comfortableReading ? 'space-y-6' : 'space-y-4'} bg-qms-hover-bg` : `divide-y divide-qms-border bg-qms-surface ${expanded && !qualityTwoColumn ? 'rounded-card border border-qms-border' : ''} ${qualityTwoColumn ? `@min-[1100px]:min-h-[calc(100dvh-70px)] bg-white ${showDocumentSheet ? '@min-[1100px]:mx-auto @min-[1100px]:w-full @min-[1100px]:max-w-[210mm] @min-[1100px]:border @min-[1100px]:border-qms-border @min-[1100px]:shadow-sm' : ''}` : ''}`}`}>{children}</main>
           </div>
           {/* La rueda continúa hacia el scrollport exterior si el panel no tiene recorrido o llega al borde. */}
-          <aside ref={showQualitySideGutters ? qualityPanelRef : undefined} data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none @min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start ${showQualitySideGutters ? '@min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-y-auto @min-[1100px]:[scrollbar-width:thin]' : '@min-[1100px]:overflow-visible'} @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
+          <aside ref={showQualitySideGutters && !useSingleActionScroll ? qualityPanelRef : undefined} data-case-action data-case-coreui-docs-panel={showQualitySideGutters || undefined} className={`order-1 min-w-0 ${qualityTwoColumn ? `${showQualitySideGutters ? 'bg-transparent' : 'bg-[#F3F6FB]'} p-4 @min-[1100px]:order-none ${useSingleActionScroll ? '@min-[1100px]:min-h-[calc(100dvh-70px)] @min-[1100px]:self-stretch @min-[1100px]:overflow-visible' : `@min-[1100px]:sticky @min-[1100px]:top-0 @min-[1100px]:h-[calc(100dvh-70px)] @min-[1100px]:self-start ${showQualitySideGutters ? '@min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-y-auto @min-[1100px]:[scrollbar-width:thin]' : '@min-[1100px]:overflow-visible'}`} @min-[1100px]:border-l @min-[1100px]:border-[#E1E6EE] @min-[1100px]:px-5 @min-[1100px]:py-5` : expanded ? '@min-[1100px]:order-none @min-[1100px]:max-h-full @min-[1100px]:overflow-y-auto @min-[1100px]:overscroll-contain' : 'border-b border-qms-border bg-qms-surface p-4'}`}>
             {action}
             {qualityTwoColumn && <div data-case-quality-tools className="mt-4 border-t border-[#DFE5ED] pt-3">
               <p className="text-xs font-semibold tracking-[0.06em] text-qms-muted">MI TRABAJO EN ESTE EXPEDIENTE</p>
@@ -411,7 +424,7 @@ export function CaseCycle({ queja, audience = 'quality', compact = false, varian
   return compact ? <div className="overflow-x-auto">{cycle}</div> : <CaseSection title={flow.label} variant={variant}>{cycle}{flow.detail && <p className="mt-4 border-t border-qms-border pt-3 text-xs text-qms-muted">{flow.detail}</p>}</CaseSection>
 }
 
-export function CaseAction({ queja, runs, children, plazoError, plazoLoading = false, condensed = false, variant = 'panel', heading, presentation = 'default', responsable, actionTitle, actionDetail }: { queja: Queja; runs: QuejaPlazoRun[]; children?: ReactNode; plazoError?: boolean; plazoLoading?: boolean; condensed?: boolean; variant?: CaseSectionVariant; heading?: string; presentation?: 'default' | 'reference'; responsable?: string; actionTitle?: string; actionDetail?: string }) {
+export function CaseAction({ queja, runs, children, plazoError, plazoLoading = false, condensed = false, variant = 'panel', heading, presentation = 'default', responsable, actionTitle, actionDetail, hideSummary = false }: { queja: Queja; runs: QuejaPlazoRun[]; children?: ReactNode; plazoError?: boolean; plazoLoading?: boolean; condensed?: boolean; variant?: CaseSectionVariant; heading?: string; presentation?: 'default' | 'reference'; responsable?: string; actionTitle?: string; actionDetail?: string; hideSummary?: boolean }) {
   const action = CASE_ACTIONS[queja.estado], deadline = caseDeadline(queja, runs, undefined, plazoLoading)
   // Evaluación conserva el mismo panel lateral y los tokens visuales de las demás etapas.
   if (presentation === 'reference' && queja.estado === 'Recibido' && !actionTitle) return (
@@ -436,9 +449,11 @@ export function CaseAction({ queja, runs, children, plazoError, plazoLoading = f
     <CaseCompletionDate queja={queja} />
     {deadline.vence && <div className="mt-3"><p className="mb-1 text-sm text-qms-muted">{deadline.stageTitle}</p><QuejaPlazoIndicator deadline={deadline} /></div>}
     {plazoError && <p role="alert" className="mt-2 text-xs text-qms-muted">No se pudo cargar el detalle del calendario.</p>}
-    <h4 className="mt-5 text-base font-semibold">{actionTitle ?? action?.title ?? 'Consultar expediente'}</h4><p className="mt-2 text-sm leading-relaxed text-qms-muted">{actionDetail ?? action?.detail ?? 'Consultar la información registrada.'}</p>
-    <div className="mt-4"><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm">{responsable || 'Por asignar'}</p></div>
-    {children && <div className="mt-4 flex min-w-0 flex-col gap-2">{children}</div>}
+    {!hideSummary && <>
+      <h4 className="mt-5 text-base font-semibold">{actionTitle ?? action?.title ?? 'Consultar expediente'}</h4><p className="mt-2 text-sm leading-relaxed text-qms-muted">{actionDetail ?? action?.detail ?? 'Consultar la información registrada.'}</p>
+      <div className="mt-4"><p className="text-xs text-qms-muted">Responsable</p><p className="mt-1 break-words text-sm">{responsable || 'Por asignar'}</p></div>
+    </>}
+    {children && <div className={`flex min-w-0 flex-col gap-2 ${hideSummary ? 'mt-0' : 'mt-4'}`}>{children}</div>}
   </CaseSection>
   if (condensed) return <CaseSection title="Acciones" variant={variant}>{children}</CaseSection>
   const badgeClassName = variant === 'plain' ? 'max-w-full whitespace-normal justify-start text-left' : undefined
