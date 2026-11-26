@@ -196,3 +196,19 @@ test('el panel ampliado de dos columnas permite continuar la rueda al expediente
     assert.ok(outer.includes('overflow-y-auto overscroll-contain'))
   }
 })
+
+
+test('el cierre con incidencias utiliza solo el scroll exterior sin recortar el panel', () => {
+  const result = html(CaseWorkspace, {
+    documentKey: 'case', presentation: 'reference', expanded: true,
+    cyclePlacement: 'header', qualityTwoColumn: true, qualitySideGutters: true,
+    singleActionScroll: true, compact: null, cycle: null, action: 'Acciones', children: 'Documento',
+  })
+  const aside = result.match(/<aside[^>]*data-case-coreui-docs-panel="true"[^>]*>/)?.[0] ?? ''
+  assert.ok(aside.includes('@min-[1100px]:overflow-visible'))
+  assert.ok(aside.includes('@min-[1100px]:self-stretch'))
+  assert.ok(!aside.includes('overflow-y-auto'))
+  assert.ok(!aside.includes(':sticky'))
+  assert.match(result, /data-case-stack-scroll[^>]*overflow-y-auto/)
+  assert.match(result, /MI TRABAJO EN ESTE EXPEDIENTE/)
+})
