@@ -136,10 +136,14 @@ importado antes de modificar archivos similares de una etapa anterior.
   expediente, sin modal duplicado de lectura. Fecha real de cierre bajo el estado;
   Calidad ve el estado/hora del correo final sin reenviarlo por consultar.
   `CaseFinalMailStatus` compacto (Quejas ampliadas): tipo/estado, contador
-  de incidencias y reintento individual; «Ver motivo» despliega detalles
-  extensos con altura limitada y ajuste de palabras. Después de dos correos,
-  los adicionales se pliegan. No inventar reintento masivo ni reenviar por
-  consultar. En Mis Quejas, error de resolución resumido con «Ver motivo»
+  de incidencias y reintento individual. En cierres con incidencias (o error de
+  consulta), se omite el título/descripción redundante y responsable en la etapa
+  actual; se conservan estado, fecha, acciones e historial. El lateral crece con
+  el documento y comparte el scroll exterior; «Ver motivo» y los correos
+  adicionales se despliegan sin scroll anidado y con ajuste de palabras.
+  Fuera de ese caso se conserva el panel y sus límites originales. Después de
+  dos correos, los adicionales se pliegan. No inventar reintento masivo ni
+  reenviar por consultar. En Mis Quejas, error de resolución resumido con «Ver motivo»
   y scroll acotado; conservar los detalles y recuperación existente.
 - Mis Quejas presenta Análisis, Resolución y Revisión de Calidad. El breadcrumb
   separa la etapa vigente de la consultada y funciona en el contraído y el
