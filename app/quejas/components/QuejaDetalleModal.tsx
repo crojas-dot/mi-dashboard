@@ -51,7 +51,7 @@ import { useQuejaInvestigationAssignment } from '@/lib/queries/useQuejaInvestiga
 import { useQuejaPlazos, useQuejaCorreos, useReintentarQuejaCorreo } from '@/lib/queries/useQuejaSeguimiento'
 import { usePublicacionQuejasDisponible } from '@/lib/queries/useQuejaPublicacion'
 import { CASE_ACTIONS, caseDeadline, getCaseProcessCycle, getCaseTriageNextStep } from '@/app/quejas/components/quejaExpedienteModel'
-import { CaseSection, CaseReadOnlyHeader, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseAction, CaseFinalMailStatus, CaseWorkspace } from '@/app/quejas/components/QuejaExpedientePanels'
+import { CaseSection, CaseReadOnlyHeader, CaseCycle, CaseProcessHeader, CaseWorkspaceNavigation, CaseAction, CaseFinalMailStatus, CaseWorkspace, hasCaseMailIncidents } from '@/app/quejas/components/QuejaExpedientePanels'
 import ResponsablePicker from '@/app/quejas/components/ResponsablePicker'
 import AdjuntoPreviewModal from '@/components/quejas/AdjuntoPreviewModal'
 import QuejaClienteDropdown from '@/components/quejas/QuejaClienteDropdown'
@@ -173,6 +173,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
   const reintentarCorreo = useReintentarQuejaCorreo(quejaId, accessIdentity ?? undefined)
   const { data: correos = [], isLoading: correosLoading, error: correosError, refetch: refetchCorreos } = useQuejaCorreos(quejaId, esStaff && expanded,
     reintentarCorreo.isSuccess ? reintentarCorreo.variables : undefined)
+  const compactTerminalMail = esStaff && expanded && finalizada && (!!correosError || hasCaseMailIncidents(correos, finalizada))
 
   const [prevQuejaId, setPrevQuejaId] = useState<string | null>(queja?.id ?? null)
   if ((queja?.id ?? null) !== prevQuejaId) {
@@ -725,7 +726,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
       headerCenter={<div className={expanded ? 'mx-auto w-full max-w-3xl' : 'w-full'}><CaseProcessHeader chevrons queja={queja} selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} /></div>}
       headerActions={<CaseWorkspaceNavigation expanded={expanded} onToggleExpanded={() => { if (expanded) setReadOnlyStage(null); setExpanded(!expanded) }}
         onPrevious={onPrevious} onNext={onNext} disabled={navigationDisabled} />}>
-      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn qualitySideGutters notionStyle
+      <CaseWorkspace documentKey={queja.id + (readOnlyStage ? ':read:' + readOnlyStage : qualityReview ? ':review' : ':detail')} expanded={expanded} compactContent={compactTriage} presentation="reference" cyclePlacement="header" readingLayout qualityTwoColumn qualitySideGutters notionStyle singleActionScroll={compactTerminalMail}
         requestFooter={<div className="space-y-2">
           {!readOnlyStage && esStaff && estadoActual === 'Resuelto' && <div data-close-report-shortcut className="min-w-0">
             <Button size="sm" variant="secondary" className="min-h-11 w-full min-w-0 justify-center border border-qms-primary/20 bg-qms-primary-soft text-qms-primary hover:bg-qms-primary/10"
@@ -746,7 +747,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
         </div>}
         compact={<CaseCycle queja={queja} process chevrons compact />}
         cycle={<CaseCycle queja={queja} process chevrons compact selectedStage={expanded ? readOnlyStage : null} onStageChange={expanded ? toggleProcessStage : undefined} disabled={navigationDisabled} />}
-        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} plazoLoading={plazosPending || plazosFetching} presentation="reference" responsable={responsableActual?.nombre}
+        action={<CaseAction queja={queja} runs={runs} plazoError={!!plazosError} plazoLoading={plazosPending || plazosFetching} presentation="reference" responsable={responsableActual?.nombre} hideSummary={compactTerminalMail && !readOnlyStage}
           actionTitle={readOnlyStage ? 'Vista de consulta' : estadoActual === 'En Investigación' ? 'Esperar propuesta del investigador' : undefined}
           actionDetail={readOnlyStage ? 'Los cambios de etapa no se realizan desde esta vista de lectura.' : estadoActual === 'En Investigación' ? investigationActionDetail : undefined}>
           {!readOnlyStage && estadoActual === 'Recibido' && <div data-case-evaluation-fields className="flex min-w-0 flex-col gap-2.5">
@@ -755,7 +756,7 @@ export default function QuejaDetalleModal({ queja, onClose, onUpdated, onPreviou
             {workflowActions}
           </div>}
           {estadoActual !== 'Recibido' && workflowActions}
-          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError} compact={expanded}
+          {esStaff && <CaseFinalMailStatus messages={correos} finalizada={finalizada} loading={correosLoading} error={!!correosError} compact={expanded} singleScroll={compactTerminalMail}
             onRetry={() => { void refetchCorreos() }} onRetrySend={id => reintentarCorreo.mutate(id)}
             retry={{ id: reintentarCorreo.variables, pending: reintentarCorreo.isPending, error: reintentarCorreo.error?.message, succeeded: reintentarCorreo.isSuccess }} />}
           {esStaff && !readOnlyStage && estadoActual === 'Finalizado' && <Button type="button" size="sm" variant="secondary"
