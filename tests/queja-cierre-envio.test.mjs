@@ -72,7 +72,7 @@ test('las incidencias compactan únicamente el resumen de cierre y conservan est
     const normal = html(CaseAction, props)
     const compact = html(CaseAction, { ...props, hideSummary: true })
     assert.match(normal, /Persona responsable/)
-    assert.match(compact, /Finalizada el/)
+    assert.match(compact, estado === 'No Procede' ? /Cerrada el/ : /Finalizada el/)
     assert.match(compact, /Acciones conservadas/)
     assert.doesNotMatch(compact, /Persona responsable|Expediente finalizado|No procedencia registrada|conserva sus evidencias|Se conserva la justificación/)
   }
