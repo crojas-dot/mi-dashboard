@@ -1,5 +1,10 @@
 # Formulario público: lectura y adjuntos — 14 de octubre de 2026
 
+El pie del formulario reserva una línea para el folio y el contador de
+evidencias. El botón comunica la etapa de envío y los errores de operación
+siguen visibles al terminar el intento. La tarjeta final conserva su condición
+de mostrar el recibo solo después de confirmar todos los adjuntos y la finalización.
+
 Actualización local del **20 octubre**: la pantalla «Queja registrada» adopta la
 jerarquía del correo automático vigente: marca compacta en cabecera blanca,
 título y folio azul en línea, cuerpo en una columna y pie discreto. Se retiran el

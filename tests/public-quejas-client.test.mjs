@@ -519,8 +519,10 @@ for (const scenario of [
     });
     const rendered = view.render();
     assert.equal(elementsOfType(rendered, 'form').length, 1);
-    assert.match(textContent(rendered), /Registro de solicitud/);
+    assert.ok(findElement(rendered, node => node.props?.Title === 'h1' && node.props?.title === 'Registro de solicitud'));
     assert.match(textContent(rendered), /Q-SYNTHETIC-001/);
+    assert.match(textContent(rendered), /[01]\/1 evidencias/);
+    if (scenario.enviando) assert.equal(textContent(rendered).match(/Adjuntando evidencias…/g)?.length, 1);
   });
 }
 
@@ -813,21 +815,40 @@ test('la reclamación persiste el intento: una respuesta perdida seguida de reca
 
 test('un folio confirmado sobrevive la recarga y bloquea otra creación del mismo enlace', async () => {
   const storage = storageShim()
-  const first = hookHarness(ordinaryHandler, {}, storage)
+  const privateLink = 'https://qms.example.test/q/seguimiento#clave=synthetic.payload'
+  const first = hookHarness(call => call.url.endsWith('/finalizar')
+    ? response({ trackingState: 'available', trackingUrl: privateLink }) : ordinaryHandler(call), {}, storage)
   first.fill()
   await first.form.submit()
   first.render()
   assert.equal(first.form.receipt.folio, 'Q-SYNTHETIC-001')
+  assert.equal(first.form.trackingUrl, privateLink)
+  const completed = { v: 1, finalized: true, receipt: { folio: 'Q-SYNTHETIC-001' } }
+  assert.deepEqual(JSON.parse(storage.peek(CHAVE_RECLAMACION)), completed)
 
   const second = hookHarness(ordinaryHandler, {}, storage)
   assert.equal(second.form.receipt.folio, 'Q-SYNTHETIC-001')
   assert.equal(second.form.finalized, true)
+  assert.equal(second.form.trackingUrl, null)
+  assert.equal(second.form.draft.email, '')
   await second.form.submit()
   second.render()
   await second.form.retryPending()
   second.render()
-  assert.equal(second.calls.filter((call) => call.url === '/api/public/quejas').length, 0)
+  assert.equal(second.calls.length, 0)
   assert.equal(second.form.finalized, true)
+})
+
+test('una reclamación finalizada anterior se reduce al folio al volver a abrirla', () => {
+  const storage = storageShim()
+  storage.setItem(CHAVE_RECLAMACION, JSON.stringify({ v: 1, submissionId: 'synthetic-submission', draft: DRAFT,
+    finalized: true, receipt: receipt({ submissionId: 'synthetic-submission' }),
+    trackingUrl: 'https://qms.example.test/q/seguimiento#clave=synthetic.payload', trackingState: 'available' }))
+  const harness = hookHarness(ordinaryHandler, {}, storage)
+  assert.equal(harness.form.finalized, true)
+  assert.equal(harness.form.trackingUrl, null)
+  assert.equal(harness.form.draft.email, '')
+  assert.deepEqual(JSON.parse(storage.peek(CHAVE_RECLAMACION)), { v: 1, finalized: true, receipt: { folio: 'Q-SYNTHETIC-001' } })
 })
 
 test('la reclamación vencida o corrupta se descarta y el formulario arranca limpio', () => {

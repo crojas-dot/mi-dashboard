@@ -1,6 +1,28 @@
 # Verificación, despliegue y pendientes
 
-## Corte vigente de entrega — 23 noviembre 2026
+## Aceptación para uso real
+
+Estado verificado el 26 de noviembre de 2026. La versión `0492f6b` está
+activa en el alias de producción de Vercel. La API privada rechazó solicitudes
+sin sesión. El formulario y el seguimiento rechazaron solicitudes sin
+verificación anti-bot. Supabase Auth muestra un límite de 150 solicitudes cada
+cinco minutos por IP para el login con contraseña y la renovación de sesiones.
+La respuesta `429` se comprobó con una simulación local. La última suite
+completa pasó 1.126 de 1.202 pruebas y reprodujo los mismos 76 fallos de la base.
+
+Antes del piloto interno, confirmar la rotación coordinada de las claves de
+firma de correo descrita en [Seguridad y pendientes operativos](#seguridad-y-pendientes-operativos).
+Con autorización para las escrituras y los envíos de prueba, registrar una
+solicitud ficticia desde el formulario público, consultar su seguimiento y
+completar la resolución con su adjunto usando los roles correspondientes.
+Confirmar en el buzón de prueba que llegaron tanto el acuse como la resolución
+desde `qms@eca.or.cr`. Después del cambio a Sistemas, el proveedor confirmó el
+envío de una resolución. Su recepción en bandeja sigue pendiente de comprobar.
+Si el piloto requiere nuevas cuentas, verificar también la llegada de un correo
+de acceso con el emisor actual. Validar el piloto interno antes de abrir el
+formulario al público. [Checklist de Quejas](../quejas-checklist-aceptacion-2026-11-13.md).
+
+## Corte histórico de entrega — 23 noviembre 2026
 
 - Código funcional en `main`: PR #64 (`80a902e1`, diseño de expedientes) y
   PR #65 (`d9c2be898e0e237cde23e7bbbf21e140079b5ae3`, formulario, seguimiento,

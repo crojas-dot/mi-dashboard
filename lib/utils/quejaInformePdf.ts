@@ -13,6 +13,22 @@ const LINE_HEIGHT = 15.5
 const BLUE = informeRgb(INFORME_DESIGN.accent)
 const TEXT = informeRgb(INFORME_DESIGN.text)
 const MUTED = informeRgb(INFORME_DESIGN.muted)
+const LOGO_PATH = '/eca-logo-informe.png'
+const LOGO_MAX_WIDTH = 108
+const LOGO_MAX_HEIGHT = 32
+
+let logoPromise: Promise<Uint8Array> | undefined
+
+function cargarLogoPdf() {
+  logoPromise ??= fetch(LOGO_PATH).then(async response => {
+    if (!response.ok) throw new Error('No se pudo cargar el logo institucional.')
+    return new Uint8Array(await response.arrayBuffer())
+  }).catch(error => {
+    logoPromise = undefined
+    throw error
+  })
+  return logoPromise
+}
 
 const LABELS = /^(INFORME N[°ºo]\.?(?:\s*)|A|DE|FECHA|ASUNTO|Folio|Recepción|Estado al generar|Área afectada):\s*(.*)$/i
 const SECTION = /^(?:\d+(?:\.\d+)*[.)]?\s+\S|Anexos\s*$)/i
@@ -59,12 +75,19 @@ function spansOf(nodes: JSONContent[] = [], inherited = { bold: false, italic: f
 
 export async function crearInformePdf(contenido: string): Promise<Blob> {
   const tree = new MarkdownManager({ extensions: richTextExtensions() }).parse(contenido)
-  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait' })
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', orientation: 'portrait', compress: true })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const contentWidth = pageWidth - MARGIN_X * 2
   const maxY = pageHeight - MARGIN_BOTTOM
   let y = MARGIN_TOP
+
+  const logo = await cargarLogoPdf()
+  const { width: logoWidth, height: logoHeight } = doc.getImageProperties(logo)
+  const logoScale = Math.min(LOGO_MAX_WIDTH / logoWidth, LOGO_MAX_HEIGHT / logoHeight)
+  const width = logoWidth * logoScale
+  const height = logoHeight * logoScale
+  doc.addImage(logo, 'PNG', pageWidth - MARGIN_X - width, MARGIN_TOP - 10 - height, width, height)
 
   const setText = (size = BODY_SIZE, color: [number, number, number] = TEXT, bold = false, italic = false) => {
     doc.setFont('helvetica', bold ? (italic ? 'bolditalic' : 'bold') : (italic ? 'italic' : 'normal'))

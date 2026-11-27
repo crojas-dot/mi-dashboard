@@ -62,8 +62,10 @@ export async function POST(request: NextRequest) {
     if (!rootFolderId || rootFolderId.startsWith(PLACEHOLDER_PREFIX) || !drive) {
       return NextResponse.json({ error: 'Servicio de evidencias no disponible' }, { status: 503 })
     }
-    const buffer = await streamToBuffer(file.stream(), MAX_FILE_BYTES)
-    await assertPrivateDriveFolder(drive, rootFolderId)
+    const [buffer] = await Promise.all([
+      streamToBuffer(file.stream(), MAX_FILE_BYTES),
+      assertPrivateDriveFolder(drive, rootFolderId),
+    ])
     const carpetaQuejaId = await buscarOCrearSubcarpeta(drive, rootFolderId, queja.folio)
     await assertPrivateDriveFolder(drive, carpetaQuejaId)
     const carpetaAnalisisId = await buscarOCrearSubcarpeta(drive, carpetaQuejaId, 'Analisis')

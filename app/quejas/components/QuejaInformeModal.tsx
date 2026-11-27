@@ -226,7 +226,8 @@ function InformeEditor({
   )
 
   const dirty = contenidoBase !== contenido
-  const pending = guardando || exportando || exportandoPdf
+  const editorPending = guardando || exportando || exportandoPdf
+  const pending = editorPending || guardandoPdf
 
   useEffect(() => {
     if (!exportMenuOpen) return
@@ -296,6 +297,8 @@ function InformeEditor({
       if (operation.isCurrent()) {
         setContenidoBase(result.contenido)
         setGuardado(result)
+        setGuardando(false)
+        setGuardandoPdf(true)
         onSaved?.(result)
       }
 
@@ -312,7 +315,6 @@ function InformeEditor({
         && esOficioPublicableQueja(file, queja.id))
 
       if (!pdf) {
-        setGuardandoPdf(true)
         const generado = prepararPdf
           ? await prepararPdf
           : await import('@/lib/utils/quejaInformePdf').then(module => module.crearInformePdf(result!.contenido))
@@ -333,12 +335,12 @@ function InformeEditor({
       }
       if (operation.isCurrent()) {
         onPdfReady?.(pdf)
-        setAviso(`Versión ${result.version} guardada con su PDF oficial. El archivo se adjuntará automáticamente en la respuesta al cliente.`)
+        setAviso(`PDF oficial de la versión ${result.version} listo para adjuntar en la respuesta al cliente.`)
       }
     } catch (caught) {
       if (operation.isCurrent()) {
         setError(result
-          ? `La versión ${result.version} se guardó, pero no se pudo adjuntar su PDF: ${errorMsg(caught, 'Error al subir el archivo.')}. Volvé a pulsar Guardar para reintentar sin crear otra versión.`
+          ? `La versión ${result.version} quedó guardada. Su PDF sigue pendiente. ${errorMsg(caught, 'Error al subir el archivo.')}`
           : errorMsg(caught, 'No se pudo guardar el informe. Tu texto se conserva.'))
       }
     } finally {
@@ -465,7 +467,7 @@ function InformeEditor({
   }
 
   const saveStatus = guardandoPdf
-    ? 'Registrando PDF en Drive…'
+    ? 'Versión guardada · Preparando PDF…'
     : guardando
     ? 'Guardando versión…'
     : dirty
@@ -491,7 +493,7 @@ function InformeEditor({
               role="status"
               aria-live="polite"
               title={saveStatus}
-              className="mr-5 hidden shrink-0 whitespace-nowrap text-xs text-qms-muted sm:inline-flex"
+              className="sr-only text-xs text-qms-muted sm:not-sr-only sm:mr-5 sm:shrink-0 sm:whitespace-nowrap"
             >
               {saveStatus}
             </span>
@@ -507,7 +509,8 @@ function InformeEditor({
               }
             >
               <Save className="size-4" />
-              Guardar
+              <span className={guardandoPdf ? 'hidden sm:inline' : undefined}>Guardar</span>
+              {guardandoPdf && <span className="sm:hidden">PDF…</span>}
             </Button>
 
             <div
@@ -618,7 +621,7 @@ function InformeEditor({
             setContenido(value)
             setContenidoBase(value)
           }}
-          disabled={pending}
+          disabled={editorPending}
         />
       </Modal>
 

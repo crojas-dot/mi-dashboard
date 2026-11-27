@@ -51,6 +51,10 @@ Leer solo esta guía, el AGENTS.md de la capa afectada y la referencia del tema.
 - Mantener honestidad sobre alcance: código, prueba ejecutada, migración
   aplicada, deploy web y servicio externo activo son hechos distintos.
   Verificar el alias y su commit antes de afirmar publicación.
+- Antes del piloto con usuarios reales, cerrar los pendientes de seguridad
+  aplicables y comprobar el ciclo de Quejas con roles representativos, un
+  expediente ficticio y un buzón de prueba. Validar el piloto interno antes de
+  abrir el formulario al público. Consultar [aceptación para uso real](docs/arquitectura/verificacion-y-pendientes.md#aceptación-para-uso-real).
 - No copiar secretos, tokens, credenciales, datos privados o .env a código,
   documentación, prompts, logs ni fixtures. Rotación coordinada de secretos
   de correo pendiente: consultar [verificación](docs/arquitectura/verificacion-y-pendientes.md);

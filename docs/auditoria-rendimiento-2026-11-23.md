@@ -78,4 +78,5 @@ Ocho recorridos por variante y 16 aperturas de Login por variante. Tiempos en ms
 - Pasaron 111 pruebas focalizadas. La suite general pasó 1.093 de 1.170 pruebas y reprodujo los mismos 77 fallos de la base. El build de producción local y los controles de estructura y capa visual pasaron.
 
 - Planes, muestras y scripts en `.performance/auditoria-rendimiento-20261123/`. Los JSON contienen datos sintéticos y métricas agregadas.
-- Migración local en [rendimiento de bandeja y Agenda](../supabase/migrations/20261123185531_rendimiento_bandeja_agenda.sql).
+- Migración aplicada en Supabase en [rendimiento de bandeja y Agenda](../supabase/migrations/20261127023155_rendimiento_bandeja_agenda.sql).
+- En una muestra de producción de 25 filas, la ejecución SQL pasó de 103,35 ms a 17,13 ms. La prueba aislada conservó los resultados y permisos en seis perfiles.

@@ -8,7 +8,7 @@ class FixtureNode {
   contains() { return false }
 }
 
-function reportHarness({ initial = null, saveError = null, uploadError = null, preparePdf = false } = {}) {
+function reportHarness({ initial = null, saveError = null, uploadError = null, preparePdf = false, waitForUpload } = {}) {
   const slots = [], pendingEffects = new Map(), listeners = new Map(), saves = [], downloads = [], prepared = [], selected = [], pdfUploads = [], attached = [], remembered = []
   let cursor = 0, tree, closed = 0
   const document = {
@@ -62,6 +62,7 @@ function reportHarness({ initial = null, saveError = null, uploadError = null, p
       esOficioPublicableQueja: (file, id) => file.queja_id === id && !!file.usuario_id,
       async subirAdjuntoQueja(quejaId, file) {
         pdfUploads.push(file)
+        if (waitForUpload) await waitForUpload()
         if (uploadError && pdfUploads.length === 1) throw uploadError
         const saved = { id: 'pdf-' + pdfUploads.length, queja_id: quejaId, nombre: file.name, tipo_mime: file.type, usuario_id: 'staff', storage_path: 'document_file_123', created_at: new Date().toISOString() }
         attached.push(saved)
@@ -322,6 +323,27 @@ test('guardar crea y registra un PDF versionado que el correo puede seleccionar'
   assert.equal(report.attached.length, 1)
   assert.equal(report.remembered.length, 1)
   assert.equal(report.remembered[0].id, report.attached[0].storage_path)
+})
+
+test('el texto queda guardado y se puede seguir editando mientras Drive registra su PDF', async () => {
+  const started = Promise.withResolvers()
+  const upload = Promise.withResolvers()
+  const report = reportHarness({ waitForUpload: () => { started.resolve(); return upload.promise } })
+  const saving = report.findButton(report.render(), 'Guardar').props.onClick()
+  await started.promise
+  const inFlight = report.render()
+  const button = report.findButton(inFlight, 'Guardar')
+  assert.equal(button.props.loading, false)
+  assert.equal(button.props.disabled, true)
+  assert.equal(inFlight.find(node => node.type === 'QuejaInformeHoja').props.disabled, false)
+  report.change('Edición posterior al guardado')
+  upload.resolve()
+  await saving
+  const ready = report.render()
+  assert.equal(report.content(ready), 'Edición posterior al guardado')
+  assert.equal(report.findButton(ready, 'Guardar').props.disabled, false)
+  assert.equal(report.saves.length, 1)
+  assert.equal(report.pdfUploads.length, 1)
 })
 
 test('un fallo al adjuntar no pierde el informe y Guardar reintenta sin nueva versión', async () => {

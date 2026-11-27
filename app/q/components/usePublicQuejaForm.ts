@@ -17,17 +17,24 @@ interface ArchivoPublico {
 
 const EMPTY_DRAFT: PublicQuejaDraft = { nombre: '', email: '', telefono: '', categoria: '', descripcion: '' }
 
-/** La reclamación se conserva en el navegador por sesión y token: si la confirmación se
- * pierde o la página recarga, reenviar recupera el mismo folio en lugar de crear otra solicitud. */
-interface ReclamacionPublica {
+type FolioPublico = Pick<PublicQuejaReceipt, 'folio'>
+
+/** Conservar la información de reintento mientras falta confirmar la finalización. */
+interface ReclamacionPendiente {
   v: 1
   submissionId: string
   draft: PublicQuejaDraft
   receipt: PublicQuejaReceipt | null
-  finalized: boolean
-  trackingUrl: string | null
-  trackingState: PublicTrackingState
+  finalized: false
 }
+
+interface ReclamacionFinalizada {
+  v: 1
+  receipt: FolioPublico
+  finalized: true
+}
+
+type ReclamacionPublica = ReclamacionPendiente | ReclamacionFinalizada
 
 const RECLAMACION_PREFIJO = 'qms-public-reclamacion:'
 
@@ -36,16 +43,18 @@ function claveReclamacion(token: string): string {
 }
 
 function leerReclamacion(token: string): ReclamacionPublica | null {
-  if (typeof window === 'undefined' || !window.sessionStorage) return null
+  if (typeof window === 'undefined') return null
   try {
     const raw = window.sessionStorage.getItem(claveReclamacion(token))
     if (!raw) return null
     const r = JSON.parse(raw)
-    if (!r || r.v !== 1 || typeof r.submissionId !== 'string'
+    if (!r || r.v !== 1) return null
+    if (r.finalized === true) return typeof r.receipt?.folio === 'string'
+      ? { v: 1, finalized: true, receipt: { folio: r.receipt.folio } } : null
+    if (r.finalized !== false || typeof r.submissionId !== 'string'
       || typeof r.draft?.nombre !== 'string' || typeof r.draft?.email !== 'string'
       || typeof r.draft?.telefono !== 'string' || typeof r.draft?.categoria !== 'string'
-      || typeof r.draft?.descripcion !== 'string'
-      || !['disabled', 'available', 'pending'].includes(r.trackingState)) return null
+      || typeof r.draft?.descripcion !== 'string') return null
     if (r.receipt != null && (typeof r.receipt.folio !== 'string' || typeof r.receipt.quejaId !== 'string'
       || typeof r.receipt.uploadToken !== 'string' || typeof r.receipt.expiresAt !== 'string')) return null
     return r
@@ -53,30 +62,24 @@ function leerReclamacion(token: string): ReclamacionPublica | null {
 }
 
 function guardarReclamacion(token: string, r: ReclamacionPublica): void {
-  if (typeof window === 'undefined' || !window.sessionStorage) return
-  try { window.sessionStorage.setItem(claveReclamacion(token), JSON.stringify(r)) } catch {}
+  if (typeof window === 'undefined') return
+  const key = claveReclamacion(token)
+  try { window.sessionStorage.setItem(key, JSON.stringify(r)) }
+  catch { if (r.finalized) descartarReclamacion(token) }
 }
 
 function descartarReclamacion(token: string): void {
-  if (typeof window === 'undefined' || !window.sessionStorage) return
+  if (typeof window === 'undefined') return
   try { window.sessionStorage.removeItem(claveReclamacion(token)) } catch {}
 }
 
-/** Conserva el resto de la reclamación al actualizar solo el avance de finalización. */
-function actualizarReclamacion(token: string, cambios: Partial<Pick<ReclamacionPublica, 'finalized' | 'trackingUrl' | 'trackingState'>>): void {
-  const r = leerReclamacion(token)
-  if (r) guardarReclamacion(token, { ...r, ...cambios })
-}
-
-function snapshotReclamacion(input: PublicQuejaInput): ReclamacionPublica {
+function snapshotReclamacion(input: PublicQuejaInput): ReclamacionPendiente {
   return {
     v: 1,
     submissionId: input.submissionId,
     draft: { nombre: input.nombre, email: input.email, telefono: input.telefono, categoria: input.categoria, descripcion: input.descripcion },
     receipt: null,
     finalized: false,
-    trackingUrl: null,
-    trackingState: 'disabled',
   }
 }
 
@@ -84,19 +87,20 @@ export function usePublicQuejaForm(token: string) {
   const reclamacion = useRef<ReclamacionPublica | null | undefined>(undefined)
   if (reclamacion.current === undefined) reclamacion.current = leerReclamacion(token)
   const previa = reclamacion.current
-  const [draft, setDraft] = useState<PublicQuejaDraft>(previa?.draft ?? EMPTY_DRAFT)
+  const pendiente = previa?.finalized === false ? previa : null
+  const [draft, setDraft] = useState<PublicQuejaDraft>(pendiente?.draft ?? EMPTY_DRAFT)
   const [honeypot, setHoneypot] = useState('')
   const [archivos, setArchivos] = useState<ArchivoPublico[]>([])
-  const [receipt, setReceipt] = useState<PublicQuejaReceipt | null>(previa?.receipt ?? null)
-  const [confirmationPending, setConfirmationPending] = useState(Boolean(previa && !previa.receipt))
+  const [receipt, setReceipt] = useState<FolioPublico | null>(previa?.receipt ? { folio: previa.receipt.folio } : null)
+  const [confirmationPending, setConfirmationPending] = useState(Boolean(pendiente && !pendiente.receipt))
   const [finalized, setFinalized] = useState(previa?.finalized ?? false)
-  const [trackingUrl, setTrackingUrl] = useState<string | null>(previa?.trackingUrl ?? null)
-  const [trackingState, setTrackingState] = useState<PublicTrackingState>(previa?.trackingState ?? 'disabled')
-  const trackingStateRef = useRef<PublicTrackingState>(previa?.trackingState ?? 'disabled')
+  const [trackingUrl, setTrackingUrl] = useState<string | null>(null)
+  const [trackingState, setTrackingState] = useState<PublicTrackingState>('disabled')
+  const trackingStateRef = useRef<PublicTrackingState>('disabled')
   const [error, setError] = useState('')
   const [invalidField, setInvalidField] = useState<{ field: PublicQuejaField } | null>(null)
   const [etapa, setEtapa] = useState('')
-  const receiptRef = useRef(previa?.receipt ?? null)
+  const receiptRef = useRef(pendiente?.receipt ?? null)
   const finalizedRef = useRef(previa?.finalized ?? false)
   const mounted = useRef(false)
   const request = useRef<AbortController | null>(null)
@@ -105,21 +109,23 @@ export function usePublicQuejaForm(token: string) {
   const files = useRef<ArchivoPublico[]>([])
   const lock = useOperationLock<'submit' | 'retry' | 'tracking'>()
 
-  if (previa && !previa.receipt) {
+  if (pendiente && !pendiente.receipt) {
     // La reclamación anterior puede estar comprometida en DB: reenviar reutiliza su ID
     // y no descarta el submission en rechazos posteriores hasta confirmar el folio.
-    submission.current = { ...previa.draft, formToken: token, submissionId: previa.submissionId, honeypot: '' }
+    submission.current = { ...pendiente.draft, formToken: token, submissionId: pendiente.submissionId, honeypot: '' }
     uncertainAttempt.current = true
   }
 
   // La página remonta este hook por token; abortar también invalida respuestas ya en vuelo.
   useLayoutEffect(() => {
     mounted.current = true
+    const stored = reclamacion.current
+    if (stored?.finalized) guardarReclamacion(token, stored)
     return () => {
       mounted.current = false
       request.current?.abort()
     }
-  }, [])
+  }, [token])
 
   function publishFiles(next: ArchivoPublico[]) {
     files.current = next
@@ -193,7 +199,12 @@ export function usePublicQuejaForm(token: string) {
         setTrackingUrl(result?.trackingUrl ?? null)
         trackingStateRef.current = result.trackingState
         setTrackingState(result.trackingState)
-        actualizarReclamacion(token, { finalized: true, trackingUrl: result?.trackingUrl ?? null, trackingState: result.trackingState })
+        // El folio permite mostrar el recibo al recargar. Las capacidades quedan en memoria.
+        reclamacion.current = { v: 1, finalized: true, receipt: { folio: created.folio } }
+        guardarReclamacion(token, reclamacion.current)
+        submission.current = null
+        setDraft(EMPTY_DRAFT)
+        if (result.trackingState !== 'pending') receiptRef.current = null
       }
     } catch (failure) {
       if (isCurrent()) setError(publicFinalizationMessage(failure, 'La solicitud está registrada. No se pudo confirmar la finalización; podés reintentar sin crear otra solicitud.'))
@@ -201,7 +212,7 @@ export function usePublicQuejaForm(token: string) {
   }
 
   async function submit() {
-    if (!mounted.current || receiptRef.current || lock.isLocked()) return
+    if (!mounted.current || receiptRef.current || finalizedRef.current || lock.isLocked()) return
     let validated: PublicQuejaDraft
     try {
       validated = validarBorradorPublico(draft)
@@ -230,7 +241,7 @@ export function usePublicQuejaForm(token: string) {
       const created = await crearQuejaPublica(attempted, controller.signal)
       if (!isCurrent()) return
       receiptRef.current = created
-      setReceipt(created)
+      setReceipt({ folio: created.folio })
       guardarReclamacion(token, { ...snapshotReclamacion(attempted), receipt: created })
       setConfirmationPending(false)
       await processAttachments(created, controller)
@@ -266,7 +277,7 @@ export function usePublicQuejaForm(token: string) {
   }
 
   async function retryPending() {
-    if (!mounted.current || !receiptRef.current || !lock.begin('retry')) return
+    if (!mounted.current || !receiptRef.current || finalizedRef.current || !lock.begin('retry')) return
     const created = receiptRef.current
     const controller = new AbortController()
     request.current = controller
@@ -304,7 +315,7 @@ export function usePublicQuejaForm(token: string) {
       trackingStateRef.current = result.trackingState
       setTrackingState(result.trackingState)
       setTrackingUrl(result.trackingUrl)
-      actualizarReclamacion(token, { trackingUrl: result.trackingUrl, trackingState: result.trackingState })
+      if (result.trackingState !== 'pending') receiptRef.current = null
     } catch (failure) {
       if (isCurrent()) setError(publicFinalizationMessage(failure, 'Tu solicitud está registrada. No se pudo recuperar el enlace de seguimiento.'))
     } finally {

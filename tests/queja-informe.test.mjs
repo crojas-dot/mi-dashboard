@@ -8,6 +8,11 @@ const { unzipSync, strFromU8 } = createRequire(import.meta.resolve('docx'))('ffl
 
 const { crearPlantillaInforme, informeFilename } = loadModule('lib/utils/quejaInforme.ts')
 const { richTextExtensions } = loadModule('lib/utils/richTextExtensions.ts')
+const logoBytes = readFileSync(new URL('../public/eca-logo-informe.png', import.meta.url))
+const fetchLogo = async url => {
+  assert.equal(url, '/eca-logo-informe.png')
+  return new Response(logoBytes)
+}
 const caseId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 const sample = { id: caseId, folio: '2026-001', revision: 7, cliente_nombre: 'Persona **literal** <script>', categoria: 'Queja', descripcion: 'Texto **sin negrita**',
   estado: 'Pendiente de Revisión GC', fecha: '2026-11-03', notas: '[Procede] Procede\nHallazgo propio', justificacion_procede: 'Procede', resolucion: '**Propuesta en negrita**', resolucion_formato: 'markdown' }
@@ -125,14 +130,21 @@ test('PDF presenta jerarquía, metadatos alineados y contenido sin sintaxis Mark
     roundedRect(...args) { calls.push(['rect', ...args]) }
     line(...args) { calls.push(['line', ...args]) }
     addPage() { calls.push(['page']) }
+    getImageProperties() { return { width: 320, height: 120 } }
+    addImage(...args) { calls.push(['image', ...args]) }
     output() { return 'pdf-blob' }
   }
-  const { crearInformePdf } = loadModule('lib/utils/quejaInformePdf.ts', { jspdf: { jsPDF: PdfFixture } })
+  const { crearInformePdf } = loadModule('lib/utils/quejaInformePdf.ts', { jspdf: { jsPDF: PdfFixture } }, { fetch: fetchLogo })
   const output = await crearInformePdf('## ENTE COSTARRICENSE DE ACREDITACIÓN\n\n## 1. Antecedentes del expediente\n\n**Folio:** 2026-001\n\nDescripción del caso')
   const textCalls = calls.filter(call => call[0] === 'text')
   const label = textCalls.find(call => call[1] === 'Folio:')
   const value = textCalls.find(call => call[1] === '2026-001')
   assert.equal(output, 'pdf-blob')
+  const [, logo, format, x, y, width, height] = calls.find(call => call[0] === 'image')
+  assert.deepEqual(Buffer.from(logo), logoBytes)
+  assert.equal(format, 'PNG')
+  assert.equal(x + width, 595 - 62)
+  assert.ok(y + height < textCalls[0][3])
   assert.ok(!calls.some(call => call[0] === 'rect'))
   assert.ok(calls.some(call => call[0] === 'color' && call.slice(1).join(',') === '42,97,176'))
   assert.ok(label && value && value[2] > label[2])
@@ -243,7 +255,7 @@ test('PDF de una solicitud breve ocupa una hoja, sin crear hojas vacías; texto 
   const { jsPDF: RealPdf } = await import('jspdf')
   let instance
   function SpyPdf(...args) { instance = new RealPdf(...args); return instance }
-  const { crearInformePdf } = loadModule('lib/utils/quejaInformePdf.ts', { jspdf: { jsPDF: SpyPdf } })
+  const { crearInformePdf } = loadModule('lib/utils/quejaInformePdf.ts', { jspdf: { jsPDF: SpyPdf } }, { fetch: fetchLogo, Uint8Array })
   const short = crearPlantillaInforme({ ...sample, descripcion: 'Descripción breve.', notas: '',
     justificacion_procede: 'Procede.', resolucion: 'Resolución breve.' }, [], 'Calidad',
     new Date('2026-11-03T18:00:00Z'))

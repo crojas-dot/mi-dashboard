@@ -60,7 +60,7 @@ export default function FormularioQuejaPublica({ token, isEmbed, initialLogo }: 
   })
 
   if (!form.receipt && token && consulta.isPending) {
-    return <section data-public-form-loading role="status" aria-busy="true" className={`${cardClass} ${isEmbed ? '' : 'sm:flex sm:flex-1 sm:flex-col'}`}>
+    return <section data-public-form-loading role="status" aria-busy={true} className={`${cardClass} ${isEmbed ? '' : 'sm:flex sm:flex-1 sm:flex-col'}`}>
       <span className="sr-only">Cargando formulario…</span>
       <div aria-hidden="true" className="flex flex-1 flex-col motion-safe:animate-pulse [animation-duration:2.4s]">
         <PublicQmsHeader title="Registro de solicitud" subtitle="Gestión de Calidad" logo={logoFormulario} Title="p" />
@@ -76,7 +76,10 @@ export default function FormularioQuejaPublica({ token, isEmbed, initialLogo }: 
               <Skeleton className="h-5 w-36" /><Skeleton className="h-11 w-44" /><Skeleton className="h-4 w-3/4" />
             </div>
           </div>
-          <div className="border-t border-qms-border pt-3"><Skeleton className="h-11 w-full" /></div>
+          <div className="space-y-3 border-t border-qms-border pt-3">
+            <div className="min-h-5" />
+            <Skeleton className="h-11 w-full" />
+          </div>
         </div>
       </div>
     </section>
@@ -199,16 +202,17 @@ export default function FormularioQuejaPublica({ token, isEmbed, initialLogo }: 
           </Field>}
         </div>
         <div className="space-y-3 border-t border-qms-border pt-3">
-          {(form.confirmationPending || footerError || form.receipt) && <div className="space-y-2" aria-live="polite" aria-atomic="true">
-            {form.receipt && <p className="text-sm text-qms-dark">Solicitud registrada. Tu folio es <strong className="font-mono text-qms-primary">{form.receipt.folio}</strong>. Guardalo para dar seguimiento.</p>}
-            <p role={footerError ? 'alert' : 'status'} className={footerError ? 'text-sm text-qms-danger' : completed ? 'text-sm text-qms-success' : 'text-sm text-qms-muted'}>
-              {footerError || (form.enviando ? form.etapa : completed ? 'Envío completado.' : form.receipt ? (failed ? 'La solicitud conserva su folio. Podés reintentar únicamente las evidencias pendientes.' : 'La solicitud está registrada; falta confirmar la finalización.') : 'Tus datos se conservaron. Reintentá el mismo envío sin crear otra solicitud.')}
+          <div className="min-h-5 space-y-2 text-sm leading-5">
+            <p role="status" className="text-qms-muted">
+              {form.receipt ? <>Folio <strong className="font-mono text-qms-primary">{form.receipt.folio}</strong>
+                {form.archivos.length > 0 && ` · ${uploaded}/${form.archivos.length} evidencias`}</>
+                : form.confirmationPending && !form.enviando ? 'Tus datos se conservaron. Reintentá el mismo envío.' : null}
             </p>
-            {form.receipt && form.archivos.length > 0 && <p className="text-xs text-qms-muted">{uploaded} de {form.archivos.length} evidencias adjuntadas.</p>}
-          </div>}
+            {footerError && !form.enviando && <p role="alert" className="break-words text-qms-danger">{footerError}</p>}
+          </div>
           {form.receipt ? <Button type="button" className="min-h-11 w-full text-base" loading={form.enviando} loadingLabel={form.etapa || 'Enviando…'} disabled={completed} onClick={() => void form.retryPending()}>
-            {form.enviando ? form.etapa : completed ? 'Envío completado' : failed ? 'Reintentar evidencias pendientes' : 'Reintentar finalización'}
-          </Button> : <Button type="submit" className="min-h-11 w-full text-base" loading={form.enviando} loadingLabel={form.etapa || 'Enviando…'}>{form.enviando ? form.etapa : form.confirmationPending ? 'Reintentar el mismo envío' : 'Enviar solicitud'}</Button>}
+            {form.enviando ? <span className="min-w-0 truncate">{form.etapa}</span> : completed ? 'Envío completado' : failed ? 'Reintentar evidencias pendientes' : 'Reintentar finalización'}
+          </Button> : <Button type="submit" className="min-h-11 w-full text-base" loading={form.enviando} loadingLabel={form.etapa || 'Enviando…'}>{form.enviando ? <span className="min-w-0 truncate">{form.etapa}</span> : form.confirmationPending ? 'Reintentar el mismo envío' : 'Enviar solicitud'}</Button>}
         </div>
       </form>
   </section>

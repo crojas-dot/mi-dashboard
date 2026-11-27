@@ -1,5 +1,12 @@
 # Informe editable y exportación Word de Quejas
 
+Al confirmar el guardado del texto, el editor vuelve a quedar disponible
+mientras Drive registra el PDF de esa versión. Se mantiene el bloqueo de otro
+guardado y del cierre hasta confirmar el adjunto para conservar la selección y
+los errores. Los PDF nuevos y los exportados incorporan el logo azul del
+formulario público en la esquina superior derecha de la primera página. El
+archivo institucional se sirve desde `public/eca-logo-informe.png`.
+
 ## Identidad documental y separación de secciones — 11 noviembre
 
 El exportador Word omitía todos los párrafos vacíos y asignaba el mismo sombreado
